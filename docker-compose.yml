@@ -1,0 +1,12 @@
+services:
+  seo-tools:
+    image: ghcr.io/3h4x/seo-tools:latest
+    container_name: seo-tools
+    restart: unless-stopped
+    ports:
+      - "3031:3031"
+    volumes:
+      - ./data:/app/data
+    environment:
+      # Optional — if omitted, paste the key in the Config tab after first boot
+      - GOOGLE_SA_KEY_JSON=${GOOGLE_SA_KEY_JSON:-}

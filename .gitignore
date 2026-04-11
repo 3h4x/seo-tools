@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.superpowers/
+.playwright-mcp/
+*.png
+data/*
+.env
+.env.local
+.env.*.local
+.env.docker
+.envrc
+docs/
+tsconfig.tsbuildinfo
+.claude/
+scripts/migrate-sites.mjs
