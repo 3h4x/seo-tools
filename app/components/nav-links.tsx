@@ -7,7 +7,6 @@ const links = [
   { href: '/', label: 'Overview' },
   { href: '/audit', label: 'Audit' },
   { href: '/gaps', label: 'Gaps' },
-  { href: '/traffic', label: 'Traffic' },
   { href: '/report', label: 'Report' },
   { href: '/decay', label: 'Decay' },
   { href: '/trends', label: 'Trends' },
