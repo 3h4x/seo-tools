@@ -2,6 +2,8 @@
 
 Unified SEO dashboard for tracking Search Console + GA4 data across multiple sites from one place.
 
+> **Blog post:** [seo-tools — how I keep analytics and SEO across multiple sites from becoming a second job](https://3h4x.github.io/tech/2026/04/13/seo-tools)
+
 ## Features
 
 - **Audit** — robots.txt, sitemap, meta tags, OG images, TTFB, HTTPS, HSTS, favicon, image alt text, internal links, SC indexing
