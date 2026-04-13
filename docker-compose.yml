@@ -2,6 +2,7 @@ services:
   seo-tools:
     image: ghcr.io/3h4x/seo-tools:latest
     container_name: seo-tools
+    # user: "0"  # uncomment on Synology NAS (ACL on volumes blocks uid 1001)
     restart: unless-stopped
     ports:
       - "3031:3031"

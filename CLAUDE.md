@@ -133,6 +133,22 @@ Compares each site against best practices and outputs recommendations:
 
 Managed site local paths are specific to each deployment. This project lives at `~/workspace/seo-tools`.
 
+## Synology NAS Deployment
+
+Deployed to Synology NAS at `marcin@192.168.0.200` under `/volume2/docker/seo-tools/`.
+
+- Image: `ghcr.io/3h4x/seo-tools:latest` (built + pushed by GHA on every release)
+- Port: 3031
+- Data: `/volume2/docker/seo-tools/data/` (SQLite db persisted here)
+- Env: `/volume2/docker/seo-tools/.env` — set `GOOGLE_SA_KEY_JSON` here (or configure via Config tab after boot)
+
+**Update command:**
+```bash
+ssh marcin@192.168.0.200 "cd /volume2/docker/seo-tools && /usr/local/bin/docker-compose pull && /usr/local/bin/docker-compose up -d"
+```
+
+GHA auto-builds on every push to `main` that triggers a semantic-release version bump. Uses `docker-compose` (v1) — not `docker compose`.
+
 ## Dev
 
 ```bash

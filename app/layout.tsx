@@ -24,6 +24,7 @@ export default function RootLayout({
               <div className="flex items-center justify-between h-14">
                 <div className="flex items-center gap-6">
                   <span className="text-white font-bold text-lg">SEO Tools</span>
+                  <span className="text-xs font-mono bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">{process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev'}</span>
                   <NavLinks />
                 </div>
                 <div className="flex items-center gap-3">
