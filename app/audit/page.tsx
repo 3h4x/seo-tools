@@ -2,46 +2,13 @@ import Link from 'next/link';
 import { cachedAuditAllSites, type CheckStatus, type SiteAuditResult } from '@/lib/audit';
 import { getManagedSites } from '@/lib/sites';
 import { analyzeSiteGaps } from '@/lib/gaps';
+import { formatRelativeTime } from '@/lib/format';
+import { statusColors, statusDots, accentBorder } from '../components/audit/check-card';
 import { CopyButton } from '../components/copy-button';
 
 export const revalidate = 300;
 
-function formatRelativeTime(timestampMs: number): string {
-  const now = Date.now();
-  const diff = now - timestampMs;
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (seconds < 60) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days === 1) return 'yesterday';
-  return `${days}d ago`;
-}
-
-const statusColors: Record<CheckStatus, string> = {
-  pass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  warn: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  fail: 'bg-red-500/10 text-red-400 border-red-500/20',
-  error: 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20',
-};
-
-const statusDots: Record<CheckStatus, string> = {
-  pass: 'bg-emerald-500',
-  warn: 'bg-amber-500',
-  fail: 'bg-red-500',
-  error: 'bg-neutral-500',
-};
-
-const accentBorder: Record<string, string> = {
-  pass: 'border-l-emerald-500',
-  warn: 'border-l-amber-500',
-  fail: 'border-l-red-500',
-  error: 'border-l-neutral-600',
-};
-
+// Custom StatusBadge with support for custom labels (different from check-card's StatusBadge)
 function StatusBadge({ status, label }: { status: CheckStatus; label?: string }) {
   const labels: Record<CheckStatus, string> = { pass: 'Pass', warn: 'Warn', fail: 'Fail', error: 'Error' };
   return (

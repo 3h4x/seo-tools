@@ -16,7 +16,7 @@ export const statusDots: Record<CheckStatus, string> = {
   error: 'bg-neutral-500',
 };
 
-const accentBorder: Record<CheckStatus, string> = {
+export const accentBorder: Record<CheckStatus, string> = {
   pass: 'border-l-emerald-500',
   warn: 'border-l-amber-500',
   fail: 'border-l-red-500',

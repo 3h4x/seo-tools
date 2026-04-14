@@ -426,7 +426,8 @@ export function getConfig(key: string): string | null {
     const db = getDb();
     const row = db.prepare('SELECT value FROM config WHERE key = ?').get(key) as { value: string } | undefined;
     return row?.value ?? null;
-  } catch {
+  } catch (err) {
+    console.error('[getConfig]', key, 'error:', err);
     return null;
   }
 }
