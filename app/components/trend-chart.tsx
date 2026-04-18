@@ -10,6 +10,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import ClientChart from './client-chart';
+import { formatDateShort } from '@/lib/format';
 
 interface TrendDataPoint {
   date: string;
@@ -29,17 +30,12 @@ interface TrendChartProps {
   formatDate?: (date: string) => string;
 }
 
-function defaultFormatDate(date: string): string {
-  const d = new Date(date + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
 export default function TrendChart({
   data,
   lines,
   height = 200,
   formatValue = (v) => v.toLocaleString(),
-  formatDate = defaultFormatDate,
+  formatDate = formatDateShort,
 }: TrendChartProps) {
   if (data.length < 2) {
     return (

@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import ConfigForm from '../components/config-form';
 import SitesManager from '../components/sites-manager';
+import type { Site } from '@/lib/sites';
 
 export default function ConfigPage() {
   const [source, setSource] = useState<'db' | 'env' | 'none'>('none');
-  const [sites, setSites] = useState<any[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

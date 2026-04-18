@@ -13,6 +13,7 @@ import {
   Tooltip,
 } from 'recharts';
 import ClientChart from './client-chart';
+import { formatDateShort } from '@/lib/format';
 
 const METRIC_COLORS: Record<string, string> = {
   users: '#3b82f6',
@@ -38,11 +39,6 @@ interface SiteMeta {
   id: string;
   name: string;
   color: string;
-}
-
-function formatDate(date: string): string {
-  const d = new Date(date + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export default function DailyTrafficChart({ days }: { days: number }) {
@@ -114,7 +110,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
 
   if (viewMode === 'cumulative') {
     chartData = dates.map(date => {
-      const entry: Record<string, string | number> = { date: formatDate(date) };
+      const entry: Record<string, string | number> = { date: formatDateShort(date) };
       for (const metric of METRICS) {
         if (!activeMetrics.has(metric)) continue;
         let total = 0;
@@ -133,7 +129,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
   } else {
     // Per-site mode: one series per site per metric
     chartData = dates.map(date => {
-      const entry: Record<string, string | number> = { date: formatDate(date) };
+      const entry: Record<string, string | number> = { date: formatDateShort(date) };
       for (const metric of METRICS) {
         if (!activeMetrics.has(metric)) continue;
         for (const siteId of siteIds) {

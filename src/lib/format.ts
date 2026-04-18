@@ -60,3 +60,8 @@ export function calcPercentChange(current: number, previous: number): number | n
   if (Math.abs(change) < 1) return null;
   return change;
 }
+
+export function formatDateShort(date: string): string {
+  const d = new Date(date + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}

@@ -23,11 +23,11 @@ export const accentBorder: Record<CheckStatus, string> = {
   error: 'border-l-neutral-600',
 };
 
-export function StatusBadge({ status }: { status: CheckStatus }) {
+export function StatusBadge({ status, label }: { status: CheckStatus; label?: string }) {
   const labels: Record<CheckStatus, string> = { pass: 'Pass', warn: 'Warn', fail: 'Fail', error: 'Error' };
   return (
     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${statusColors[status]}`}>
-      {labels[status]}
+      {label ?? labels[status]}
     </span>
   );
 }

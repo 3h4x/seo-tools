@@ -14,7 +14,6 @@ import { getScDaily, getGa4Daily } from '@/lib/db';
 import { pluralize, formatSource, formatDuration, formatBounce } from '@/lib/format';
 import TimeRange from '../components/time-range';
 import { TrendBadge } from '../components/trend-badge';
-import { SummaryCard } from '../components/summary-card';
 import { Icons } from '../components/icons';
 import TrendChart from '../components/trend-chart';
 import { MetricCard } from '../components/metric-card';
@@ -118,8 +117,8 @@ export default async function SiteDashboardPage({
       <div>
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Search Console</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <SummaryCard icon={Icons.clicks} label="Clicks" value={sc?.current.clicks ?? 0} previous={sc?.previous.clicks} accent="border-emerald-500" />
-          <SummaryCard icon={Icons.impressions} label="Impressions" value={sc?.current.impressions ?? 0} previous={sc?.previous.impressions} accent="border-cyan-500" />
+          <MetricCard icon={Icons.clicks} label="Clicks" current={sc?.current.clicks ?? 0} previous={sc?.previous.clicks} accent="border-emerald-500" />
+          <MetricCard icon={Icons.impressions} label="Impressions" current={sc?.current.impressions ?? 0} previous={sc?.previous.impressions} accent="border-cyan-500" />
           <MetricCard label="CTR" value={hasSc ? `${(sc!.current.ctr * 100).toFixed(2)}%` : '\u2014'} current={hasSc ? sc!.current.ctr * 100 : 0} previous={hasSc ? sc!.previous.ctr * 100 : 0} accent="border-violet-500" icon={Icons.ctr} />
           <MetricCard label="Avg Position" value={hasSc ? sc!.current.position.toFixed(1) : '\u2014'} current={hasSc ? sc!.current.position : 0} previous={hasSc ? sc!.previous.position : 0} accent="border-amber-500" icon={Icons.position} invert />
         </div>
@@ -129,9 +128,9 @@ export default async function SiteDashboardPage({
       <div>
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">GA4 Analytics</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <SummaryCard icon={Icons.users} label="Users" value={ga4Data?.current.users ?? 0} previous={ga4Data?.previous.users} accent="border-blue-500" />
-          <SummaryCard icon={Icons.sessions} label="Sessions" value={ga4Data?.current.sessions ?? 0} previous={ga4Data?.previous.sessions} accent="border-pink-500" />
-          <SummaryCard icon={Icons.views} label="Page Views" value={ga4Data?.current.views ?? 0} previous={ga4Data?.previous.views} accent="border-amber-500" />
+          <MetricCard icon={Icons.users} label="Users" current={ga4Data?.current.users ?? 0} previous={ga4Data?.previous.users} accent="border-blue-500" />
+          <MetricCard icon={Icons.sessions} label="Sessions" current={ga4Data?.current.sessions ?? 0} previous={ga4Data?.previous.sessions} accent="border-pink-500" />
+          <MetricCard icon={Icons.views} label="Page Views" current={ga4Data?.current.views ?? 0} previous={ga4Data?.previous.views} accent="border-amber-500" />
           <MetricCard label="Bounce Rate" value={hasGa4 ? formatBounce(ga4Data!.current.bounceRate) : '\u2014'} current={hasGa4 ? ga4Data!.current.bounceRate * 100 : 0} previous={hasGa4 ? ga4Data!.previous.bounceRate * 100 : 0} accent="border-red-500" icon={Icons.bounce} invert />
           <MetricCard label="Avg Duration" value={hasGa4 ? formatDuration(ga4Data!.current.avgSessionDuration) : '\u2014'} current={hasGa4 ? ga4Data!.current.avgSessionDuration : 0} previous={hasGa4 ? ga4Data!.previous.avgSessionDuration : 0} accent="border-teal-500" icon={Icons.duration} />
         </div>

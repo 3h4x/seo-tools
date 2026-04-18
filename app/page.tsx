@@ -3,7 +3,7 @@ import { cachedGetSearchConsoleData } from '@/lib/search-console';
 import { getSCUrl } from '@/lib/sites';
 import { pluralize, formatSource } from '@/lib/format';
 import TimeRange from './components/time-range';
-import { SummaryCard } from './components/summary-card';
+import { MetricCard } from './components/metric-card';
 import { Icons } from './components/icons';
 import { TrafficSourcesChart, SiteMetricsChart } from './components/overview-charts';
 import DailyTrafficChart from './components/daily-traffic-chart';
@@ -85,11 +85,11 @@ export default async function Overview({ searchParams }: { searchParams: Promise
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <SummaryCard icon={Icons.users} label="Users" value={totals.users} previous={totals.prevUsers} accent="border-blue-500" />
-        <SummaryCard icon={Icons.sessions} label="Sessions" value={totals.sessions} previous={totals.prevSessions} accent="border-violet-500" />
-        <SummaryCard icon={Icons.views} label="Page Views" value={totals.views} previous={totals.prevViews} accent="border-amber-500" />
-        <SummaryCard icon={Icons.clicks} label="SC Clicks" value={totals.clicks} accent="border-emerald-500" />
-        <SummaryCard icon={Icons.impressions} label="SC Impressions" value={totals.impressions} accent="border-cyan-500" />
+        <MetricCard icon={Icons.users} label="Users" current={totals.users} previous={totals.prevUsers} accent="border-blue-500" />
+        <MetricCard icon={Icons.sessions} label="Sessions" current={totals.sessions} previous={totals.prevSessions} accent="border-violet-500" />
+        <MetricCard icon={Icons.views} label="Page Views" current={totals.views} previous={totals.prevViews} accent="border-amber-500" />
+        <MetricCard icon={Icons.clicks} label="SC Clicks" current={totals.clicks} accent="border-emerald-500" />
+        <MetricCard icon={Icons.impressions} label="SC Impressions" current={totals.impressions} accent="border-cyan-500" />
       </div>
 
       {/* Daily Traffic Chart */}

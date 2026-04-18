@@ -72,7 +72,7 @@ function getMissingDates(table: string, siteId: string, source: string, startDat
   return missing;
 }
 
-function batchRanges(dates: string[]): Array<{ start: string; end: string }> {
+export function batchRanges(dates: string[]): Array<{ start: string; end: string }> {
   if (dates.length === 0) return [];
   const sorted = [...dates].sort();
   const ranges: Array<{ start: string; end: string }> = [];

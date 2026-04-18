@@ -1,22 +1,21 @@
 import Link from 'next/link';
 import { cachedAuditAllSites, type CheckStatus, type SiteAuditResult } from '@/lib/audit';
 import { getManagedSites } from '@/lib/sites';
-import { analyzeSiteGaps } from '@/lib/gaps';
+import { analyzeSiteGaps, type GapSeverity, type GapCategory } from '@/lib/gaps';
+import { detectAllDecay, type DecaySeverity } from '@/lib/decay';
 import { formatRelativeTime } from '@/lib/format';
-import { statusColors, statusDots, accentBorder } from '../components/audit/check-card';
+import { statusColors, statusDots, accentBorder, StatusBadge } from '../components/audit/check-card';
 import { CopyButton } from '../components/copy-button';
+import { GapsClient, type SiteGap } from '../components/gaps-client';
+import DecayToggle from '../components/decay-toggle';
 
 export const revalidate = 300;
 
-// Custom StatusBadge with support for custom labels (different from check-card's StatusBadge)
-function StatusBadge({ status, label }: { status: CheckStatus; label?: string }) {
-  const labels: Record<CheckStatus, string> = { pass: 'Pass', warn: 'Warn', fail: 'Fail', error: 'Error' };
-  return (
-    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${statusColors[status]}`}>
-      {label || labels[status]}
-    </span>
-  );
-}
+const DECAY_SEVERITY_COLORS: Record<DecaySeverity, { badge: string; badgeBg: string }> = {
+  severe: { badge: 'text-red-400', badgeBg: 'bg-red-500/10' },
+  moderate: { badge: 'text-amber-400', badgeBg: 'bg-amber-500/10' },
+  mild: { badge: 'text-blue-400', badgeBg: 'bg-blue-500/10' },
+};
 
 function worstStatus(audit: SiteAuditResult): CheckStatus {
   const passRate = audit.score.total > 0 ? audit.score.pass / audit.score.total : 0;
@@ -56,8 +55,15 @@ function internalLinksSummary(audit: SiteAuditResult): { status: CheckStatus; la
   return { status: 'pass', label: 'Good linking' };
 }
 
-export default async function AuditPage() {
-  const [audits, managedSites] = await Promise.all([cachedAuditAllSites(), getManagedSites()]);
+export default async function AuditPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
+  const sp = await searchParams;
+  const period = sp.period === '30' ? 30 : 7;
+
+  const [audits, managedSites, decayResults] = await Promise.all([
+    cachedAuditAllSites(),
+    getManagedSites(),
+    detectAllDecay(period as 7 | 30),
+  ]);
 
   const totalPass = audits.reduce((s, a) => s + a.score.pass, 0);
   const totalWarn = audits.reduce((s, a) => s + a.score.warn, 0);
@@ -65,10 +71,37 @@ export default async function AuditPage() {
   const totalChecks = totalPass + totalWarn + totalFail;
   const healthPct = totalChecks > 0 ? Math.round((totalPass / totalChecks) * 100) : 0;
   const healthySites = audits.filter(a => a.score.total > 0 && a.score.pass / a.score.total >= 0.9).length;
-  const totalRecs = audits.reduce((s, a) => {
-    const site = managedSites.find(si => si.id === a.siteId);
-    return s + (site ? analyzeSiteGaps(a, site).gaps.length : 0);
-  }, 0);
+
+  const allSiteGaps: SiteGap[] = [];
+  for (const audit of audits) {
+    const site = managedSites.find(s => s.id === audit.siteId);
+    if (!site) continue;
+    const { gaps } = analyzeSiteGaps(audit, site);
+    for (const gap of gaps) {
+      allSiteGaps.push({ gap, siteId: site.id, siteName: site.name, domain: site.domain });
+    }
+  }
+  const severityOrder: Record<GapSeverity, number> = { high: 0, medium: 1, low: 2 };
+  allSiteGaps.sort((a, b) => {
+    const sev = severityOrder[a.gap.severity] - severityOrder[b.gap.severity];
+    if (sev !== 0) return sev;
+    const cat = a.gap.category.localeCompare(b.gap.category);
+    if (cat !== 0) return cat;
+    return a.gap.title.localeCompare(b.gap.title);
+  });
+  const totalRecs = allSiteGaps.length;
+  const gapSiteIds = [...new Set(allSiteGaps.map(sg => sg.siteId))];
+  const gapSites = gapSiteIds
+    .map(id => managedSites.find(s => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => s !== null)
+    .map(s => ({ id: s.id, name: s.name, domain: s.domain }));
+  const categoryOrder: GapCategory[] = ['crawlability', 'content', 'social', 'indexing', 'structured-data', 'performance', 'security'];
+  const gapCategories = ([...new Set(allSiteGaps.map(sg => sg.gap.category))] as GapCategory[])
+    .sort((a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b));
+
+  const allDecaying = decayResults.flatMap(r => r.decayingPages);
+  const severeCount = allDecaying.filter(p => p.severity === 'severe').length;
+  const decaySitesAffected = new Set(allDecaying.map(p => p.siteId)).size;
 
   if (audits.length === 0) {
     return (
@@ -184,6 +217,106 @@ export default async function AuditPage() {
             </Link>
           );
         })}
+      </div>
+
+      {/* Gap Analysis */}
+      {allSiteGaps.length > 0 && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-bold text-white">Gap Analysis</h2>
+            <p className="text-neutral-500 text-sm mt-1">
+              Cross-site SEO recommendations · {totalRecs} issues
+              {allSiteGaps.filter(sg => sg.gap.severity === 'high').length > 0 && (
+                <span className="text-red-400 ml-2">· {allSiteGaps.filter(sg => sg.gap.severity === 'high').length} high priority</span>
+              )}
+            </p>
+          </div>
+          <GapsClient allSiteGaps={allSiteGaps} sites={gapSites} categories={gapCategories} />
+        </div>
+      )}
+
+      {/* Content Decay */}
+      <div className="space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-white">Content Decay</h2>
+            <p className="text-neutral-500 text-sm mt-1">Pages losing traffic · {period}-day comparison</p>
+          </div>
+          <DecayToggle />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-4">
+            <div className="text-neutral-500 text-xs uppercase tracking-wider mb-2">Decaying Pages</div>
+            <span className="text-red-400 text-2xl font-mono font-bold">{allDecaying.length}</span>
+          </div>
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-4">
+            <div className="text-neutral-500 text-xs uppercase tracking-wider mb-2">Severe</div>
+            <span className="text-amber-400 text-2xl font-mono font-bold">{severeCount}</span>
+          </div>
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-blue-500 p-4">
+            <div className="text-neutral-500 text-xs uppercase tracking-wider mb-2">Sites Affected</div>
+            <span className="text-blue-400 text-2xl font-mono font-bold">{decaySitesAffected}</span>
+          </div>
+        </div>
+
+        {allDecaying.length === 0 ? (
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-emerald-500 p-8 text-center">
+            <svg className="size-12 mx-auto text-emerald-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <p className="text-emerald-400 font-bold text-lg">All clear — no content decay</p>
+            <p className="text-neutral-500 text-sm mt-2 max-w-md mx-auto">
+              Every page across all {decayResults.length} sites is maintaining or growing traffic over the last {period} days.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-neutral-800 text-neutral-500 text-left text-xs uppercase tracking-wider">
+                  <th className="px-4 py-3 font-semibold">Site</th>
+                  <th className="px-4 py-3 font-semibold">Page</th>
+                  <th className="px-4 py-3 font-semibold text-right">Clicks</th>
+                  <th className="px-4 py-3 font-semibold text-right hidden md:table-cell">Impressions</th>
+                  <th className="px-4 py-3 font-semibold text-right hidden md:table-cell">Position</th>
+                  <th className="px-4 py-3 font-semibold text-right">Severity</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800">
+                {allDecaying.map((page, i) => {
+                  let shortPage = page.page;
+                  try { shortPage = new URL(page.page).pathname; } catch {}
+                  const colors = DECAY_SEVERITY_COLORS[page.severity];
+                  return (
+                    <tr key={i} className="hover:bg-neutral-800/30 transition-colors">
+                      <td className="px-4 py-2.5 text-neutral-400 text-xs">{page.domain}</td>
+                      <td className="px-4 py-2.5 text-neutral-300 font-mono text-xs truncate max-w-[200px]" title={page.page}>{shortPage}</td>
+                      <td className="px-4 py-2.5 text-right font-mono">
+                        <span className="text-neutral-300">{page.currentClicks}</span>
+                        <span className="text-red-400 text-[10px] ml-1">{page.clicksDelta}%</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono hidden md:table-cell">
+                        <span className="text-neutral-400">{page.currentImpressions}</span>
+                        <span className="text-red-400 text-[10px] ml-1">{page.impressionsDelta}%</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono hidden md:table-cell">
+                        <span className="text-neutral-400">{page.currentPosition.toFixed(1)}</span>
+                        {page.positionDelta > 0 && <span className="text-red-400 text-[10px] ml-1">+{page.positionDelta}</span>}
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <span className={`${colors.badgeBg} ${colors.badge} text-[10px] px-2 py-0.5 rounded-full font-medium uppercase`}>
+                          {page.severity}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

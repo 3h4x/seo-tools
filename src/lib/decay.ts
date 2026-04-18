@@ -1,5 +1,6 @@
 import { getManagedSites, getSCUrl, type Site } from './sites';
 import { getSearchConsolePagesForPeriod, type SCPageRow } from './search-console';
+import { daysAgo } from './format';
 
 export type DecaySeverity = 'severe' | 'moderate' | 'mild';
 
@@ -24,12 +25,6 @@ export interface SiteDecayResult {
   domain: string;
   decayingPages: DecayingPage[];
   totalPages: number;
-}
-
-function daysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().split('T')[0];
 }
 
 export function classifySeverity(clicksDelta: number, positionDelta: number): DecaySeverity {

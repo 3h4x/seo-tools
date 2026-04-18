@@ -1,14 +1,9 @@
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { getAuth } from './google-auth';
+import { daysAgo } from './format';
 
 function getSc() {
   return new searchconsole_v1.Searchconsole({ auth: getAuth() });
-}
-
-function daysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().split('T')[0];
 }
 
 function formatSiteUrl(siteUrl: string): string {

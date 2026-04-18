@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
+import { formatBounce, formatDuration } from '@/lib/format';
 
 export type PerformanceRow = {
   id: string;
@@ -21,17 +22,6 @@ export type PerformanceRow = {
 };
 
 type SortKey = 'name' | 'users' | 'sessions' | 'views' | 'bounceRate' | 'avgSessionDuration' | 'scClicks' | 'scPosition';
-
-function formatBounce(rate: number): string {
-  return (rate * 100).toFixed(0) + '%';
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds === 0) return '0s';
-  const m = Math.floor(seconds / 60);
-  const s = Math.round(seconds % 60);
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
-}
 
 const COLUMNS: { key: SortKey; label: string; defaultDir: 'asc' | 'desc'; className?: string }[] = [
   { key: 'users',             label: 'Users',       defaultDir: 'desc' },

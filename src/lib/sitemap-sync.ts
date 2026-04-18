@@ -64,7 +64,7 @@ async function fetchSitemap(url: string): Promise<string> {
   return res.text();
 }
 
-function parseSitemap(xml: string): { urlCount: number; latestLastmod: string | null; isIndex: boolean } {
+export function parseSitemap(xml: string): { urlCount: number; latestLastmod: string | null; isIndex: boolean } {
   const isIndex = xml.includes('<sitemapindex');
   const urlCount = isIndex
     ? (xml.match(/<sitemap>/gi) || []).length
@@ -76,7 +76,7 @@ function parseSitemap(xml: string): { urlCount: number; latestLastmod: string | 
   return { urlCount, latestLastmod, isIndex };
 }
 
-function hashContent(xml: string): string {
+export function hashContent(xml: string): string {
   const normalized = xml.replace(/\s+/g, ' ').trim();
   return createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }

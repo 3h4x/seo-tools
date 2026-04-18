@@ -4,6 +4,7 @@ import { getScTrends, getGa4Trends, getAuditTrends, getSnapshotCount, type ScTre
 import { formatDuration, formatBounce } from '@/lib/format';
 import TrendChart from '../components/trend-chart';
 import { PositionBadge } from '../components/position-badge';
+import { MetricCard } from '../components/metric-card';
 
 export const revalidate = 300;
 
@@ -91,11 +92,11 @@ export default async function TrendsPage() {
 
       {/* Aggregate summary */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <MiniMetric label="Total Users" value={totals.users} accent="border-blue-500" />
-        <MiniMetric label="Total Views" value={totals.views} accent="border-amber-500" />
-        <MiniMetric label="Total Sessions" value={totals.sessions} accent="border-violet-500" />
-        <MiniMetric label="SC Clicks" value={totals.clicks} accent="border-emerald-500" />
-        <MiniMetric label="SC Impressions" value={totals.impressions} accent="border-cyan-500" />
+        <MetricCard label="Total Users" current={totals.users} accent="border-blue-500" />
+        <MetricCard label="Total Views" current={totals.views} accent="border-amber-500" />
+        <MetricCard label="Total Sessions" current={totals.sessions} accent="border-violet-500" />
+        <MetricCard label="SC Clicks" current={totals.clicks} accent="border-emerald-500" />
+        <MetricCard label="SC Impressions" current={totals.impressions} accent="border-cyan-500" />
       </div>
 
       {/* Per-site cards */}
@@ -299,15 +300,6 @@ export default async function TrendsPage() {
           })}
         </div>
       </div>
-    </div>
-  );
-}
-
-function MiniMetric({ label, value, accent }: { label: string; value: number; accent: string }) {
-  return (
-    <div className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accent} p-4`}>
-      <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">{label}</div>
-      <div className="text-white text-2xl font-mono font-bold">{value > 0 ? value.toLocaleString() : '\u2014'}</div>
     </div>
   );
 }
