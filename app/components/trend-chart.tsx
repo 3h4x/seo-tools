@@ -18,7 +18,6 @@ interface TrendDataPoint {
 }
 
 interface TrendChartProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any[];
   lines: Array<{
     key: string;

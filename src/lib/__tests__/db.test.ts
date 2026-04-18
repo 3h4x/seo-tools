@@ -13,7 +13,6 @@ vi.mock('better-sqlite3', async () => {
   // via ESM interop the actual value may land on `.default` or be the constructor
   // itself — handle both shapes.
   const actual = await vi.importActual('better-sqlite3');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Ctor: new (path: string, opts?: object) => object = (actual as any).default ?? actual;
   return {
     default: class {
