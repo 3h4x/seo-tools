@@ -2,6 +2,7 @@ import { discoverPropertyIds, cachedGetAnalytics } from '@/lib/ga4';
 import { cachedGetSearchConsoleData } from '@/lib/search-console';
 import { getSCUrl } from '@/lib/sites';
 import { pluralize, formatSource } from '@/lib/format';
+import { TrafficSourcesList } from './components/traffic-sources-list';
 import TimeRange from './components/time-range';
 import { MetricCard } from './components/metric-card';
 import { Icons } from './components/icons';
@@ -231,14 +232,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
                   {hasSources && (
                     <div>
                       <h4 className="text-neutral-500 text-xs uppercase tracking-wider mb-2 font-semibold">Traffic Sources</h4>
-                      <div className="space-y-1.5">
-                        {site.ga4!.trafficSources.slice(0, 5).map((src, i) => (
-                          <div key={i} className="flex items-center justify-between text-xs">
-                            <span className="text-neutral-400 font-mono">{formatSource(src.source, src.medium)}</span>
-                            <span className="text-neutral-500 font-mono">{pluralize(src.sessions, 'session')}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <TrafficSourcesList sources={site.ga4!.trafficSources} limit={5} />
                     </div>
                   )}
                 </div>

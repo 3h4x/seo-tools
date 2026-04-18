@@ -11,7 +11,8 @@ import {
 import { cachedAuditSite } from '@/lib/audit';
 import { analyzeSiteGaps } from '@/lib/gaps';
 import { getScDaily, getGa4Daily } from '@/lib/db';
-import { pluralize, formatSource, formatDuration, formatBounce } from '@/lib/format';
+import { pluralize, formatDuration, formatBounce } from '@/lib/format';
+import { TrafficSourcesList } from '../components/traffic-sources-list';
 import TimeRange from '../components/time-range';
 import { TrendBadge } from '../components/trend-badge';
 import { Icons } from '../components/icons';
@@ -368,20 +369,7 @@ export default async function SiteDashboardPage({
         {/* Traffic Sources */}
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Traffic Sources</h2>
-          {ga4Data && ga4Data.trafficSources.length > 0 ? (
-            <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
-              <div className="space-y-1.5">
-                {ga4Data.trafficSources.map((src, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="text-neutral-400 font-mono">{formatSource(src.source, src.medium)}</span>
-                    <span className="text-neutral-500 font-mono">{pluralize(src.sessions, 'session')}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-neutral-600 text-sm">No traffic source data available.</p>
-          )}
+          <TrafficSourcesList sources={ga4Data?.trafficSources ?? []} />
         </div>
       </div>
 
