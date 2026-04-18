@@ -1,4 +1,4 @@
-export function MetricCard({ label, value, current, previous = 0, accent, icon, invert }: {
+export function MetricCard({ label, value, current, previous = 0, accent, icon, invert, valueColor = 'text-white' }: {
   label: string;
   value?: string;
   current: number;
@@ -6,6 +6,7 @@ export function MetricCard({ label, value, current, previous = 0, accent, icon, 
   accent: string;
   icon?: React.ReactNode;
   invert?: boolean;
+  valueColor?: string;
 }) {
   const displayValue = value ?? (current > 0 ? current.toLocaleString() : '\u2014');
   const diff = previous > 0 ? ((current - previous) / previous) * 100 : 0;
@@ -18,7 +19,7 @@ export function MetricCard({ label, value, current, previous = 0, accent, icon, 
         <span className="text-xs uppercase tracking-wider">{label}</span>
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="text-white text-2xl font-mono font-bold">{displayValue}</span>
+        <span className={`${valueColor} text-2xl font-mono font-bold`}>{displayValue}</span>
         {show && (
           <span className={`text-[10px] font-medium ${up ? 'text-emerald-400' : 'text-red-400'}`}>
             {diff > 0 ? '\u2191' : '\u2193'}{Math.abs(diff).toFixed(0)}%

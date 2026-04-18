@@ -4,7 +4,8 @@ import { getManagedSites } from '@/lib/sites';
 import { analyzeSiteGaps, type GapSeverity, type GapCategory } from '@/lib/gaps';
 import { detectAllDecay, type DecaySeverity } from '@/lib/decay';
 import { formatRelativeTime } from '@/lib/format';
-import { statusColors, statusDots, accentBorder, StatusBadge } from '../components/audit/check-card';
+import { statusDots, accentBorder, StatusBadge } from '../components/audit/check-card';
+import { MetricCard } from '../components/metric-card';
 import { CopyButton } from '../components/copy-button';
 import { GapsClient, type SiteGap } from '../components/gaps-client';
 import DecayToggle from '../components/decay-toggle';
@@ -154,18 +155,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1">
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-emerald-500 p-4">
-            <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Passed</div>
-            <div className="text-emerald-400 text-2xl font-mono font-bold">{totalPass}</div>
-          </div>
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-4">
-            <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Warnings</div>
-            <div className="text-amber-400 text-2xl font-mono font-bold">{totalWarn}</div>
-          </div>
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-4">
-            <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Failures</div>
-            <div className="text-red-400 text-2xl font-mono font-bold">{totalFail}</div>
-          </div>
+          <MetricCard label="Passed" current={totalPass} accent="border-l-emerald-500" valueColor="text-emerald-400" />
+          <MetricCard label="Warnings" current={totalWarn} accent="border-l-amber-500" valueColor="text-amber-400" />
+          <MetricCard label="Failures" current={totalFail} accent="border-l-red-500" valueColor="text-red-400" />
         </div>
       </div>
 
@@ -246,18 +238,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-4">
-            <div className="text-neutral-500 text-xs uppercase tracking-wider mb-2">Decaying Pages</div>
-            <span className="text-red-400 text-2xl font-mono font-bold">{allDecaying.length}</span>
-          </div>
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-4">
-            <div className="text-neutral-500 text-xs uppercase tracking-wider mb-2">Severe</div>
-            <span className="text-amber-400 text-2xl font-mono font-bold">{severeCount}</span>
-          </div>
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-blue-500 p-4">
-            <div className="text-neutral-500 text-xs uppercase tracking-wider mb-2">Sites Affected</div>
-            <span className="text-blue-400 text-2xl font-mono font-bold">{decaySitesAffected}</span>
-          </div>
+          <MetricCard label="Decaying Pages" current={allDecaying.length} accent="border-l-red-500" valueColor="text-red-400" />
+          <MetricCard label="Severe" current={severeCount} accent="border-l-amber-500" valueColor="text-amber-400" />
+          <MetricCard label="Sites Affected" current={decaySitesAffected} accent="border-l-blue-500" valueColor="text-blue-400" />
         </div>
 
         {allDecaying.length === 0 ? (
