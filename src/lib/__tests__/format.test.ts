@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { pluralize, formatSource, formatDuration, formatBounce, daysAgo, formatRelativeTime, calcPercentChange } from '../format';
+import { pluralize, formatSource, formatDuration, formatBounce, daysAgo, formatRelativeTime } from '../format';
 
 describe('pluralize', () => {
   it('uses singular for count of 1', () => {
@@ -146,31 +146,5 @@ describe('formatRelativeTime', () => {
     vi.useFakeTimers();
     vi.setSystemTime(1_000_000_000);
     expect(formatRelativeTime(1_000_000_000 - 3 * 24 * 3_600_000)).toBe('3d ago');
-  });
-});
-
-describe('calcPercentChange', () => {
-  it('returns null when previous is 0', () => {
-    expect(calcPercentChange(100, 0)).toBeNull();
-    expect(calcPercentChange(0, 0)).toBeNull();
-  });
-
-  it('returns null when change is less than 1%', () => {
-    expect(calcPercentChange(100, 100)).toBeNull();
-    expect(calcPercentChange(100, 100.5)).toBeNull();
-  });
-
-  it('returns positive percentage for an increase >= 1%', () => {
-    expect(calcPercentChange(110, 100)).toBe(10);
-    expect(calcPercentChange(200, 100)).toBe(100);
-  });
-
-  it('returns negative percentage for a decrease >= 1%', () => {
-    expect(calcPercentChange(90, 100)).toBe(-10);
-    expect(calcPercentChange(50, 100)).toBe(-50);
-  });
-
-  it('returns null for a sub-1% decrease', () => {
-    expect(calcPercentChange(99.5, 100)).toBeNull();
   });
 });

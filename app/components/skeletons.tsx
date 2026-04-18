@@ -68,16 +68,6 @@ export function SkeletonHeader() {
   );
 }
 
-export function SkeletonScoreRow() {
-  return (
-    <div className="flex gap-6">
-      <Skeleton className="h-5 w-20" />
-      <Skeleton className="h-5 w-24" />
-      <Skeleton className="h-5 w-20" />
-    </div>
-  );
-}
-
 export function SkeletonChart() {
   return (
     <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 space-y-3">

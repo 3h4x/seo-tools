@@ -14,7 +14,6 @@ import { getScDaily, getGa4Daily } from '@/lib/db';
 import { pluralize, formatDuration, formatBounce } from '@/lib/format';
 import { TrafficSourcesList } from '../components/traffic-sources-list';
 import TimeRange from '../components/time-range';
-import { TrendBadge } from '../components/trend-badge';
 import { Icons } from '../components/icons';
 import TrendChart from '../components/trend-chart';
 import { MetricCard } from '../components/metric-card';
