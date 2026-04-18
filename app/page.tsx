@@ -1,8 +1,8 @@
 import { discoverPropertyIds, cachedGetAnalytics } from '@/lib/ga4';
 import { cachedGetSearchConsoleData } from '@/lib/search-console';
 import { getSCUrl } from '@/lib/sites';
-import { pluralize, formatSource } from '@/lib/format';
-import { TrafficSourcesList } from './components/traffic-sources-list';
+import { formatSource } from '@/lib/format';
+import { VALID_DAYS } from '@/lib/constants';
 import TimeRange from './components/time-range';
 import { MetricCard } from './components/metric-card';
 import { Icons } from './components/icons';
@@ -11,8 +11,6 @@ import DailyTrafficChart from './components/daily-traffic-chart';
 import { SortablePerformanceTable, type PerformanceRow } from './components/sortable-performance-table';
 
 export const revalidate = 300;
-
-const VALID_DAYS = [1, 7, 30, 90, 180, 365];
 
 async function getSiteData(days: number) {
   const sites = await discoverPropertyIds();
@@ -140,7 +138,6 @@ export default async function Overview({ searchParams }: { searchParams: Promise
 
       {/* Charts row */}
       {(() => {
-        // Aggregate traffic sources across all sites
         const sourceMap = new Map<string, number>();
         for (const site of sites) {
           if (site.ga4?.trafficSources) {
@@ -155,7 +152,6 @@ export default async function Overview({ searchParams }: { searchParams: Promise
           .slice(0, 8)
           .map(([name, sessions]) => ({ name, sessions }));
 
-        // Site quality metrics
         const metricsData = sites
           .filter(s => s.ga4 && s.ga4.current.users > 0)
           .map(s => ({
@@ -178,70 +174,6 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Site Performance</h2>
         <SortablePerformanceTable rows={performanceRows} />
       </div>
-
-      {/* Site Details */}
-      <div>
-        <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Site Details</h2>
-        <div className="space-y-4">
-          {sites.map((site) => {
-            const hasPages = site.ga4 && site.ga4.topPages.length > 0;
-            const hasSources = site.ga4 && site.ga4.trafficSources.length > 0;
-            const maxPageViews = hasPages ? site.ga4!.topPages[0].views : 1;
-
-            if (!hasPages && !hasSources) {
-              return (
-                <div key={site.id} className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="text-white font-semibold">{site.name}</span>
-                    <span className="text-neutral-600 text-xs">{site.domain}</span>
-                  </div>
-                  <p className="text-neutral-600 text-sm mt-3">No analytics data available. Check GA4 property linkage.</p>
-                </div>
-              );
-            }
-
-            return (
-              <div key={site.id} className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
-                {/* Card header */}
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-white font-semibold">{site.name}</span>
-                  <span className="text-neutral-600 text-xs">{site.domain}</span>
-                </div>
-
-                {/* Two-column body */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Top Pages */}
-                  {hasPages && (
-                    <div>
-                      <h4 className="text-neutral-500 text-xs uppercase tracking-wider mb-2 font-semibold">Top Pages</h4>
-                      <div className="space-y-1.5">
-                        {site.ga4!.topPages.slice(0, 5).map((page, i) => (
-                          <div key={i} className="flex items-center gap-3 text-xs">
-                            <span className="text-neutral-400 font-mono truncate min-w-0 flex-1">{page.path}</span>
-                            <div className="w-16 bg-neutral-800 h-1 rounded-full overflow-hidden shrink-0">
-                              <div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${(page.views / maxPageViews) * 100}%` }} />
-                            </div>
-                            <span className="text-neutral-500 font-mono shrink-0 w-20 text-right">{pluralize(page.views, 'view')}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Traffic Sources */}
-                  {hasSources && (
-                    <div>
-                      <h4 className="text-neutral-500 text-xs uppercase tracking-wider mb-2 font-semibold">Traffic Sources</h4>
-                      <TrafficSourcesList sources={site.ga4!.trafficSources} limit={5} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
-

@@ -24,10 +24,9 @@ import { MetaChecksTable } from '../components/audit/meta-checks-table';
 import { gapsBySection } from '../components/audit/gap-helpers';
 import { ExportButton } from '../components/export-button';
 import { PositionBadge } from '../components/position-badge';
+import { VALID_DAYS } from '@/lib/constants';
 
 export const revalidate = 300;
-
-const VALID_DAYS = [1, 7, 30, 90, 180, 365];
 
 export default async function SiteDashboardPage({
   params,
