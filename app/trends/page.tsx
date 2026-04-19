@@ -6,6 +6,7 @@ import TrendChart from '../components/trend-chart';
 import { PositionBadge } from '../components/position-badge';
 import { MetricCard } from '../components/metric-card';
 import { TrendBadge } from '../components/trend-badge';
+import { TrendsTable } from '../components/trends-table';
 
 export const revalidate = 300;
 
@@ -191,109 +192,70 @@ export default async function TrendsPage() {
 
                 {/* Data tables */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                  {/* GA4 Table */}
                   {ga4Trends.length > 0 && (
-                    <div>
-                      <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-2 font-semibold">GA4 Data</h3>
-                      <div className="overflow-hidden rounded border border-neutral-800 max-h-64 overflow-y-auto">
-                        <table className="w-full text-xs">
-                          <thead className="sticky top-0 bg-neutral-900">
-                            <tr className="border-b border-neutral-800 text-neutral-500">
-                              <th className="px-3 py-2 text-left font-semibold">Date</th>
-                              <th className="px-3 py-2 text-right font-semibold">Users</th>
-                              <th className="px-3 py-2 text-right font-semibold">Sessions</th>
-                              <th className="px-3 py-2 text-right font-semibold">Views</th>
-                              <th className="px-3 py-2 text-right font-semibold">Bounce</th>
-                              <th className="px-3 py-2 text-right font-semibold">Duration</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-neutral-800">
-                            {ga4Trends.map((row, i) => {
-                              const prev = ga4Trends[i - 1];
-                              return (
-                                <tr key={row.date} className="hover:bg-neutral-800/30">
-                                  <td className="px-3 py-2 text-neutral-400 font-mono">{row.date}</td>
-                                  <td className="px-3 py-2 text-right font-mono">
-                                    <span className="text-neutral-300">{row.users.toLocaleString()}</span>
-                                    {prev && <TrendBadge current={row.users} previous={prev.users} />}
-                                  </td>
-                                  <td className="px-3 py-2 text-right text-neutral-400 font-mono">{row.sessions.toLocaleString()}</td>
-                                  <td className="px-3 py-2 text-right text-neutral-400 font-mono">{row.views.toLocaleString()}</td>
-                                  <td className="px-3 py-2 text-right text-neutral-400 font-mono">{formatBounce(row.bounceRate)}</td>
-                                  <td className="px-3 py-2 text-right text-neutral-400 font-mono">{formatDuration(row.avgDuration)}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                    <TrendsTable
+                      title="GA4 Data"
+                      columns={[
+                        { label: 'Date' },
+                        { label: 'Users', align: 'right' },
+                        { label: 'Sessions', align: 'right' },
+                        { label: 'Views', align: 'right' },
+                        { label: 'Bounce', align: 'right' },
+                        { label: 'Duration', align: 'right' },
+                      ]}
+                      rows={ga4Trends.map((row, i) => {
+                        const prev = ga4Trends[i - 1];
+                        return [
+                          <span key="d" className="text-neutral-400">{row.date}</span>,
+                          <span key="u" className="inline-flex items-center gap-1"><span className="text-neutral-300">{row.users.toLocaleString()}</span>{prev && <TrendBadge current={row.users} previous={prev.users} />}</span>,
+                          <span key="s" className="text-neutral-400">{row.sessions.toLocaleString()}</span>,
+                          <span key="v" className="text-neutral-400">{row.views.toLocaleString()}</span>,
+                          <span key="b" className="text-neutral-400">{formatBounce(row.bounceRate)}</span>,
+                          <span key="dur" className="text-neutral-400">{formatDuration(row.avgDuration)}</span>,
+                        ];
+                      })}
+                    />
                   )}
 
-                  {/* SC Table */}
                   {scTrends.length > 0 && (
-                    <div>
-                      <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-2 font-semibold">SC Data</h3>
-                      <div className="overflow-hidden rounded border border-neutral-800 max-h-64 overflow-y-auto">
-                        <table className="w-full text-xs">
-                          <thead className="sticky top-0 bg-neutral-900">
-                            <tr className="border-b border-neutral-800 text-neutral-500">
-                              <th className="px-3 py-2 text-left font-semibold">Date</th>
-                              <th className="px-3 py-2 text-right font-semibold">Clicks</th>
-                              <th className="px-3 py-2 text-right font-semibold">Impr</th>
-                              <th className="px-3 py-2 text-right font-semibold">CTR</th>
-                              <th className="px-3 py-2 text-right font-semibold">Position</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-neutral-800">
-                            {scTrends.map((row, i) => {
-                              const prev = scTrends[i - 1];
-                              return (
-                                <tr key={row.date} className="hover:bg-neutral-800/30">
-                                  <td className="px-3 py-2 text-neutral-400 font-mono">{row.date}</td>
-                                  <td className="px-3 py-2 text-right font-mono">
-                                    <span className="text-neutral-300">{row.clicks.toLocaleString()}</span>
-                                    {prev && <TrendBadge current={row.clicks} previous={prev.clicks} />}
-                                  </td>
-                                  <td className="px-3 py-2 text-right text-neutral-400 font-mono">{row.impressions.toLocaleString()}</td>
-                                  <td className="px-3 py-2 text-right text-neutral-400 font-mono">{(row.ctr * 100).toFixed(1)}%</td>
-                                  <td className="px-3 py-2 text-right"><PositionBadge position={row.position} /></td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                    <TrendsTable
+                      title="SC Data"
+                      columns={[
+                        { label: 'Date' },
+                        { label: 'Clicks', align: 'right' },
+                        { label: 'Impr', align: 'right' },
+                        { label: 'CTR', align: 'right' },
+                        { label: 'Position', align: 'right' },
+                      ]}
+                      rows={scTrends.map((row, i) => {
+                        const prev = scTrends[i - 1];
+                        return [
+                          <span key="d" className="text-neutral-400">{row.date}</span>,
+                          <span key="c" className="inline-flex items-center gap-1"><span className="text-neutral-300">{row.clicks.toLocaleString()}</span>{prev && <TrendBadge current={row.clicks} previous={prev.clicks} />}</span>,
+                          <span key="i" className="text-neutral-400">{row.impressions.toLocaleString()}</span>,
+                          <span key="ctr" className="text-neutral-400">{(row.ctr * 100).toFixed(1)}%</span>,
+                          <PositionBadge key="pos" position={row.position} />,
+                        ];
+                      })}
+                    />
                   )}
 
-                  {/* Audit Table */}
                   {auditTrends.length > 0 && (
-                    <div>
-                      <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-2 font-semibold">Audit Score</h3>
-                      <div className="overflow-hidden rounded border border-neutral-800 max-h-64 overflow-y-auto">
-                        <table className="w-full text-xs">
-                          <thead className="sticky top-0 bg-neutral-900">
-                            <tr className="border-b border-neutral-800 text-neutral-500">
-                              <th className="px-3 py-2 text-left font-semibold">Date</th>
-                              <th className="px-3 py-2 text-right font-semibold">Pass</th>
-                              <th className="px-3 py-2 text-right font-semibold">Warn</th>
-                              <th className="px-3 py-2 text-right font-semibold">Fail</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-neutral-800">
-                            {auditTrends.map((row) => (
-                              <tr key={row.date} className="hover:bg-neutral-800/30">
-                                <td className="px-3 py-2 text-neutral-400 font-mono">{row.date}</td>
-                                <td className="px-3 py-2 text-right text-emerald-400 font-mono">{row.pass}</td>
-                                <td className="px-3 py-2 text-right text-amber-400 font-mono">{row.warn}</td>
-                                <td className="px-3 py-2 text-right text-red-400 font-mono">{row.fail}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                    <TrendsTable
+                      title="Audit Score"
+                      columns={[
+                        { label: 'Date' },
+                        { label: 'Pass', align: 'right' },
+                        { label: 'Warn', align: 'right' },
+                        { label: 'Fail', align: 'right' },
+                      ]}
+                      rows={auditTrends.map((row) => [
+                        <span key="d" className="text-neutral-400">{row.date}</span>,
+                        <span key="p" className="text-emerald-400">{row.pass}</span>,
+                        <span key="w" className="text-amber-400">{row.warn}</span>,
+                        <span key="f" className="text-red-400">{row.fail}</span>,
+                      ])}
+                    />
                   )}
                 </div>
               </div>
