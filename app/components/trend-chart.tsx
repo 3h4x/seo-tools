@@ -26,6 +26,8 @@ interface TrendChartProps {
   height?: number;
   formatValue?: (value: number) => string;
   formatDate?: (date: string) => string;
+  xDataKey?: string;
+  yAxisWidth?: number;
 }
 
 export default function TrendChart({
@@ -34,6 +36,8 @@ export default function TrendChart({
   height = 200,
   formatValue = (v) => v.toLocaleString(),
   formatDate = formatDateShort,
+  xDataKey,
+  yAxisWidth = 40,
 }: TrendChartProps) {
   if (data.length < 2) {
     return (
@@ -46,10 +50,10 @@ export default function TrendChart({
     );
   }
 
-  const chartData = data.map((d) => ({
-    ...d,
-    _label: formatDate(d.date as string),
-  }));
+  const xKey = xDataKey ?? '_label';
+  const chartData = xKey === '_label'
+    ? data.map((d) => ({ ...d, _label: formatDate(d.date as string) }))
+    : data;
 
   return (
     <ClientChart height={height}><ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
@@ -64,7 +68,7 @@ export default function TrendChart({
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
         <XAxis
-          dataKey="_label"
+          dataKey={xKey}
           tick={{ fill: '#737373', fontSize: 10 }}
           axisLine={{ stroke: '#404040' }}
           tickLine={false}
@@ -73,7 +77,7 @@ export default function TrendChart({
           tick={{ fill: '#737373', fontSize: 10 }}
           axisLine={false}
           tickLine={false}
-          width={40}
+          width={yAxisWidth}
           tickFormatter={(v) => {
             if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
             return String(v);

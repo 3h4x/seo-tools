@@ -3,9 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   ResponsiveContainer,
-  AreaChart,
   BarChart,
-  Area,
   Bar,
   XAxis,
   YAxis,
@@ -13,6 +11,7 @@ import {
   Tooltip,
 } from 'recharts';
 import ClientChart from './client-chart';
+import TrendChart from './trend-chart';
 import { formatDateShort } from '@/lib/format';
 
 const METRIC_COLORS: Record<string, string> = {
@@ -153,8 +152,6 @@ export default function DailyTrafficChart({ days }: { days: number }) {
     }
   }
 
-  const ChartComponent = chartType === 'area' ? AreaChart : BarChart;
-
   return (
     <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
       {/* Controls */}
@@ -211,43 +208,17 @@ export default function DailyTrafficChart({ days }: { days: number }) {
       </div>
 
       {/* Chart */}
-      <div className="h-80">
-        <ClientChart><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-          {chartType === 'area' ? (
-            <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-              <defs>
-                {seriesKeys.map(s => (
-                  <linearGradient key={s.key} id={`grad-daily-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={s.color} stopOpacity={0.3} />
-                    <stop offset="100%" stopColor={s.color} stopOpacity={0} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-              <XAxis dataKey="date" tick={{ fill: '#737373', fontSize: 10 }} axisLine={{ stroke: '#404040' }} tickLine={false} />
-              <YAxis tick={{ fill: '#737373', fontSize: 10 }} axisLine={false} tickLine={false} width={50} tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)} />
-              <Tooltip
-                contentStyle={TOOLTIP_STYLE}
-                labelStyle={{ color: '#a3a3a3', marginBottom: 4 }}
-                formatter={(value, name) => {
-                  const s = seriesKeys.find(k => k.key === name);
-                  return [Number(value).toLocaleString(), s?.label || String(name)];
-                }}
-              />
-              {seriesKeys.map(s => (
-                <Area
-                  key={s.key}
-                  type="monotone"
-                  dataKey={s.key}
-                  stroke={s.color}
-                  strokeWidth={2}
-                  fill={`url(#grad-daily-${s.key})`}
-                  dot={false}
-                  activeDot={{ r: 3, fill: s.color, stroke: '#0a0a0a', strokeWidth: 2 }}
-                />
-              ))}
-            </AreaChart>
-          ) : (
+      {chartType === 'area' ? (
+        <TrendChart
+          data={chartData as { date: string }[]}
+          lines={seriesKeys}
+          xDataKey="date"
+          yAxisWidth={50}
+          height={320}
+        />
+      ) : (
+        <div className="h-80">
+          <ClientChart><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <BarChart data={chartData} barGap={1} barCategoryGap="15%">
               <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
               <XAxis dataKey="date" tick={{ fill: '#737373', fontSize: 10 }} axisLine={{ stroke: '#404040' }} tickLine={false} />
@@ -270,9 +241,9 @@ export default function DailyTrafficChart({ days }: { days: number }) {
                 />
               ))}
             </BarChart>
-          )}
-        </ResponsiveContainer></ClientChart>
-      </div>
+          </ResponsiveContainer></ClientChart>
+        </div>
+      )}
 
       {/* Clickable site legend */}
       {viewMode === 'persite' && (
