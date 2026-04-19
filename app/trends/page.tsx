@@ -4,7 +4,6 @@ import { getScTrends, getGa4Trends, getAuditTrends, getSnapshotCount } from '@/l
 import { formatDuration, formatBounce } from '@/lib/format';
 import TrendChart from '../components/trend-chart';
 import { PositionBadge } from '../components/position-badge';
-import { MetricCard } from '../components/metric-card';
 import { TrendBadge } from '../components/trend-badge';
 import { TrendsTable } from '../components/trends-table';
 
@@ -69,16 +68,6 @@ export default async function TrendsPage() {
     return { site, scTrends, ga4Trends, auditTrends, latestGa4, latestSc };
   }).sort((a, b) => (b.latestGa4?.users ?? 0) - (a.latestGa4?.users ?? 0));
 
-  // Aggregate totals from latest snapshot
-  const totals = sitesData.reduce(
-    (acc, { latestGa4, latestSc }) => {
-      if (latestGa4) { acc.users += latestGa4.users; acc.views += latestGa4.views; acc.sessions += latestGa4.sessions; }
-      if (latestSc) { acc.clicks += latestSc.clicks; acc.impressions += latestSc.impressions; }
-      return acc;
-    },
-    { users: 0, views: 0, sessions: 0, clicks: 0, impressions: 0 },
-  );
-
   const isSingle = snapshotCount === 1;
 
   return (
@@ -90,15 +79,6 @@ export default async function TrendsPage() {
           {snapshotCount} {snapshotCount === 1 ? 'snapshot' : 'snapshots'} collected
           {isSingle && ' \u00b7 Run daily for trend data'}
         </p>
-      </div>
-
-      {/* Aggregate summary */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <MetricCard label="Total Users" current={totals.users} accent="border-blue-500" />
-        <MetricCard label="Total Views" current={totals.views} accent="border-amber-500" />
-        <MetricCard label="Total Sessions" current={totals.sessions} accent="border-violet-500" />
-        <MetricCard label="SC Clicks" current={totals.clicks} accent="border-emerald-500" />
-        <MetricCard label="SC Impressions" current={totals.impressions} accent="border-cyan-500" />
       </div>
 
       {/* Per-site cards */}
