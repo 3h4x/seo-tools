@@ -21,8 +21,7 @@ import { CheckCard, statusDots } from '../components/audit/check-card';
 import { Recommendation } from '../components/audit/recommendation';
 import { MetaChecksTable } from '../components/audit/meta-checks-table';
 import { gapsBySection } from '../components/audit/gap-helpers';
-import { ExportButton } from '../components/export-button';
-import { PositionBadge } from '../components/position-badge';
+import { ScTable } from '../components/sc-table';
 import { VALID_DAYS } from '@/lib/constants';
 
 export const revalidate = 300;
@@ -252,89 +251,26 @@ export default async function SiteDashboardPage({
 
       {/* SC Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Queries */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Top Queries</h2>
-            {scQueries && scQueries.length > 0 && (
-              <ExportButton
-                data={scQueries.map(r => ({ query: r.query, clicks: r.clicks, impressions: r.impressions, ctr: `${(r.ctr * 100).toFixed(2)}%`, position: r.position.toFixed(1) }))}
-                filename={`${siteId}-queries-${days}d`}
-              />
-            )}
-          </div>
-          {scQueries && scQueries.length > 0 ? (
-            <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-800 text-neutral-500 text-left text-xs uppercase tracking-wider">
-                    <th className="px-4 py-3 font-semibold">Query</th>
-                    <th className="px-4 py-3 font-semibold text-right">Clicks</th>
-                    <th className="px-4 py-3 font-semibold text-right hidden md:table-cell">Impr</th>
-                    <th className="px-4 py-3 font-semibold text-right hidden md:table-cell">CTR</th>
-                    <th className="px-4 py-3 font-semibold text-right">Pos</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-800">
-                  {scQueries.map((row, i) => (
-                    <tr key={i} className="hover:bg-neutral-800/30 transition-colors">
-                      <td className="px-4 py-2.5 text-neutral-300 font-mono text-xs truncate max-w-[200px]">{row.query}</td>
-                      <td className="px-4 py-2.5 text-right text-neutral-300 font-mono">{row.clicks.toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right text-neutral-400 font-mono hidden md:table-cell">{row.impressions.toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right text-neutral-400 font-mono hidden md:table-cell">{(row.ctr * 100).toFixed(1)}%</td>
-                      <td className="px-4 py-2.5 text-right"><PositionBadge position={row.position} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-neutral-600 text-sm">No query data available.</p>
-          )}
-        </div>
-
-        {/* Top Pages */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Top Pages (Search Console)</h2>
-            {scPages && scPages.length > 0 && (
-              <ExportButton
-                data={scPages.map(r => ({ page: r.page, clicks: r.clicks, impressions: r.impressions, position: r.position.toFixed(1) }))}
-                filename={`${siteId}-pages-${days}d`}
-              />
-            )}
-          </div>
-          {scPages && scPages.length > 0 ? (
-            <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-800 text-neutral-500 text-left text-xs uppercase tracking-wider">
-                    <th className="px-4 py-3 font-semibold">Page</th>
-                    <th className="px-4 py-3 font-semibold text-right">Clicks</th>
-                    <th className="px-4 py-3 font-semibold text-right hidden md:table-cell">Impr</th>
-                    <th className="px-4 py-3 font-semibold text-right">Pos</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-800">
-                  {scPages.map((row, i) => {
-                    let shortPage = row.page;
-                    try { shortPage = new URL(row.page).pathname; } catch {}
-                    return (
-                      <tr key={i} className="hover:bg-neutral-800/30 transition-colors">
-                        <td className="px-4 py-2.5 text-neutral-300 font-mono text-xs truncate max-w-[200px]" title={row.page}>{shortPage}</td>
-                        <td className="px-4 py-2.5 text-right text-neutral-300 font-mono">{row.clicks.toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right text-neutral-400 font-mono hidden md:table-cell">{row.impressions.toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right"><PositionBadge position={row.position} /></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-neutral-600 text-sm">No page data available.</p>
-          )}
-        </div>
+        <ScTable
+          heading="Top Queries"
+          columnLabel="Query"
+          rows={(scQueries ?? []).map(r => ({ label: r.query, clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position }))}
+          emptyMessage="No query data available."
+          exportData={(scQueries ?? []).map(r => ({ query: r.query, clicks: r.clicks, impressions: r.impressions, ctr: `${(r.ctr * 100).toFixed(2)}%`, position: r.position.toFixed(1) }))}
+          filename={`${siteId}-queries-${days}d`}
+        />
+        <ScTable
+          heading="Top Pages (Search Console)"
+          columnLabel="Page"
+          rows={(scPages ?? []).map(r => {
+            let label = r.page;
+            try { label = new URL(r.page).pathname; } catch {}
+            return { label, title: r.page, clicks: r.clicks, impressions: r.impressions, position: r.position };
+          })}
+          emptyMessage="No page data available."
+          exportData={(scPages ?? []).map(r => ({ page: r.page, clicks: r.clicks, impressions: r.impressions, position: r.position.toFixed(1) }))}
+          filename={`${siteId}-pages-${days}d`}
+        />
       </div>
 
       {/* GA4 Tables */}

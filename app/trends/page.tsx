@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { getManagedSites } from '@/lib/sites';
-import { getScTrends, getGa4Trends, getAuditTrends, getSnapshotCount, type ScTrendPoint, type Ga4TrendPoint } from '@/lib/db';
+import { getScTrends, getGa4Trends, getAuditTrends, getSnapshotCount } from '@/lib/db';
 import { formatDuration, formatBounce } from '@/lib/format';
 import TrendChart from '../components/trend-chart';
 import { PositionBadge } from '../components/position-badge';
 import { MetricCard } from '../components/metric-card';
+import { TrendBadge } from '../components/trend-badge';
 
 export const revalidate = 300;
 
@@ -214,7 +215,7 @@ export default async function TrendsPage() {
                                   <td className="px-3 py-2 text-neutral-400 font-mono">{row.date}</td>
                                   <td className="px-3 py-2 text-right font-mono">
                                     <span className="text-neutral-300">{row.users.toLocaleString()}</span>
-                                    {prev && <Delta current={row.users} previous={prev.users} />}
+                                    {prev && <TrendBadge current={row.users} previous={prev.users} />}
                                   </td>
                                   <td className="px-3 py-2 text-right text-neutral-400 font-mono">{row.sessions.toLocaleString()}</td>
                                   <td className="px-3 py-2 text-right text-neutral-400 font-mono">{row.views.toLocaleString()}</td>
@@ -252,7 +253,7 @@ export default async function TrendsPage() {
                                   <td className="px-3 py-2 text-neutral-400 font-mono">{row.date}</td>
                                   <td className="px-3 py-2 text-right font-mono">
                                     <span className="text-neutral-300">{row.clicks.toLocaleString()}</span>
-                                    {prev && <Delta current={row.clicks} previous={prev.clicks} />}
+                                    {prev && <TrendBadge current={row.clicks} previous={prev.clicks} />}
                                   </td>
                                   <td className="px-3 py-2 text-right text-neutral-400 font-mono">{row.impressions.toLocaleString()}</td>
                                   <td className="px-3 py-2 text-right text-neutral-400 font-mono">{(row.ctr * 100).toFixed(1)}%</td>
@@ -313,14 +314,3 @@ function MetricCell({ label, value, color }: { label: string; value: string; col
   );
 }
 
-function Delta({ current, previous }: { current: number; previous: number }) {
-  if (previous === 0) return null;
-  const pct = ((current - previous) / previous) * 100;
-  if (Math.abs(pct) < 1) return null;
-  const up = pct > 0;
-  return (
-    <span className={`text-[10px] font-medium ml-1 ${up ? 'text-emerald-400' : 'text-red-400'}`}>
-      {up ? '\u2191' : '\u2193'}{Math.abs(pct).toFixed(0)}%
-    </span>
-  );
-}

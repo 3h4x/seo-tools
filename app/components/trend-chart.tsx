@@ -14,11 +14,10 @@ import { formatDateShort } from '@/lib/format';
 
 interface TrendDataPoint {
   date: string;
-  [key: string]: string | number;
 }
 
 interface TrendChartProps {
-  data: any[];
+  data: TrendDataPoint[];
   lines: Array<{
     key: string;
     color: string;
