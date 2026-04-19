@@ -6,7 +6,7 @@ import { VALID_DAYS } from '@/lib/constants';
 import TimeRange from './components/time-range';
 import { MetricCard } from './components/metric-card';
 import { Icons } from './components/icons';
-import { TrafficSourcesChart, SiteMetricsChart } from './components/overview-charts';
+import { TrafficSourcesChart } from './components/overview-charts';
 import DailyTrafficChart from './components/daily-traffic-chart';
 import { SortablePerformanceTable, type PerformanceRow } from './components/sortable-performance-table';
 
@@ -94,49 +94,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       {/* Daily Traffic Chart */}
       <DailyTrafficChart days={days} />
 
-      {/* Traffic Distribution */}
-      <div>
-        <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Traffic Distribution</h2>
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
-          {(() => {
-            const fallbackColors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#06b6d4', '#f43f5e', '#a78bfa'];
-            const activeSites = sites.filter(s => (s.ga4?.current.users ?? 0) > 0);
-            return (
-              <>
-                <div className="flex h-4 rounded-full overflow-hidden bg-neutral-800">
-                  {activeSites.map((site, idx) => {
-                    const pct = ((site.ga4?.current.users ?? 0) / totals.users) * 100;
-                    const color = site.color ?? fallbackColors[idx % fallbackColors.length];
-                    return (
-                      <div
-                        key={site.id}
-                        className="h-full transition-all"
-                        style={{ width: `${pct}%`, backgroundColor: color }}
-                        title={`${site.name}: ${site.ga4?.current.users ?? 0} users (${pct.toFixed(0)}%)`}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="flex flex-wrap gap-4 mt-3">
-                  {activeSites.map((site, idx) => {
-                    const pct = ((site.ga4?.current.users ?? 0) / totals.users) * 100;
-                    const color = site.color ?? fallbackColors[idx % fallbackColors.length];
-                    return (
-                      <div key={site.id} className="flex items-center gap-2 text-xs">
-                        <div className="size-2 rounded-full" style={{ backgroundColor: color }} />
-                        <span className="text-neutral-400">{site.name}</span>
-                        <span className="text-neutral-600 font-mono">{pct.toFixed(0)}%</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            );
-          })()}
-        </div>
-      </div>
-
-      {/* Charts row */}
+      {/* Traffic Sources */}
       {(() => {
         const sourceMap = new Map<string, number>();
         for (const site of sites) {
@@ -151,22 +109,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
           .sort((a, b) => b[1] - a[1])
           .slice(0, 8)
           .map(([name, sessions]) => ({ name, sessions }));
-
-        const metricsData = sites
-          .filter(s => s.ga4 && s.ga4.current.users > 0)
-          .map(s => ({
-            name: s.name,
-            bounceRate: Math.round(s.ga4!.current.bounceRate * 100),
-            avgDuration: Math.round(s.ga4!.current.avgSessionDuration),
-            users: s.ga4!.current.users,
-          }));
-
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <TrafficSourcesChart data={sourceData} />
-            <SiteMetricsChart data={metricsData} />
-          </div>
-        );
+        return <TrafficSourcesChart data={sourceData} />;
       })()}
 
       {/* Site Performance */}
