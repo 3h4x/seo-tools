@@ -8,8 +8,7 @@ import {
   Tooltip,
 } from 'recharts';
 import ClientChart from './client-chart';
-
-const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#06b6d4', '#f43f5e', '#64748b', '#a855f7'];
+import { CHART_COLORS } from '@/lib/constants';
 
 interface SourceData {
   name: string;
@@ -37,7 +36,7 @@ export function TrafficSourcesChart({ data }: { data: SourceData[] }) {
                 strokeWidth={0}
               >
                 {data.map((_, idx) => (
-                  <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                  <Cell key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip
@@ -52,7 +51,7 @@ export function TrafficSourcesChart({ data }: { data: SourceData[] }) {
           {data.map((d, i) => (
             <div key={d.name} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                <div className="size-2 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                 <span className="text-neutral-400">{d.name}</span>
               </div>
               <div className="flex items-center gap-3">

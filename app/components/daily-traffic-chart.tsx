@@ -13,13 +13,7 @@ import {
 import ClientChart from './client-chart';
 import TrendChart from './trend-chart';
 import { formatDateShort } from '@/lib/format';
-
-const METRIC_COLORS: Record<string, string> = {
-  users: '#3b82f6',
-  views: '#f59e0b',
-  clicks: '#10b981',
-  impressions: '#06b6d4',
-};
+import { METRIC_COLORS } from '@/lib/constants';
 
 const METRICS = ['views', 'users', 'clicks', 'impressions'] as const;
 type Metric = (typeof METRICS)[number];

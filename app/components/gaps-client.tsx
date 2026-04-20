@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gaps';
+import { CATEGORY_LABELS } from '@/lib/gaps';
 
 export interface SiteGap {
   gap: GapRecommendation;
@@ -15,16 +16,6 @@ const SEVERITY_CONFIG: Record<GapSeverity, { label: string; badgeCls: string; do
   high:   { label: 'High',   badgeCls: 'bg-red-500/10 text-red-400 border-red-500/20',    dotCls: 'bg-red-500',    borderCls: 'border-l-red-500' },
   medium: { label: 'Medium', badgeCls: 'bg-amber-500/10 text-amber-400 border-amber-500/20', dotCls: 'bg-amber-500',  borderCls: 'border-l-amber-500' },
   low:    { label: 'Low',    badgeCls: 'bg-blue-500/10 text-blue-400 border-blue-500/20',  dotCls: 'bg-blue-500',   borderCls: 'border-l-blue-500' },
-};
-
-const CATEGORY_LABELS: Record<GapCategory, string> = {
-  crawlability: 'Crawlability',
-  content: 'Content',
-  social: 'Social',
-  indexing: 'Indexing',
-  'structured-data': 'Structured Data',
-  performance: 'Performance',
-  security: 'Security',
 };
 
 function GapRow({ sg }: { sg: SiteGap }) {

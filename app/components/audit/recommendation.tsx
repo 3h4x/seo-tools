@@ -1,19 +1,10 @@
 import type { GapRecommendation, GapSeverity } from '@/lib/gaps';
+import { CATEGORY_LABELS } from '@/lib/gaps';
 
 export const SEVERITY_COLORS: Record<GapSeverity, { bg: string; text: string; dot: string }> = {
   high: { bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-500' },
   medium: { bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-500' },
   low: { bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-500' },
-};
-
-export const CATEGORY_LABELS: Record<string, string> = {
-  crawlability: 'Crawlability',
-  content: 'Content',
-  social: 'Social',
-  indexing: 'Indexing',
-  'structured-data': 'Structured Data',
-  performance: 'Performance',
-  security: 'Security',
 };
 
 export function Recommendation({ gap }: { gap: GapRecommendation }) {
