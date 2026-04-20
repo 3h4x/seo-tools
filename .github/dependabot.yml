@@ -1,0 +1,37 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      next:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      google-apis:
+        patterns:
+          - "@google-analytics/*"
+          - "@googleapis/*"
+          - "google-auth-library"
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "postcss"
+      testing:
+        patterns:
+          - "vitest"
+          - "@playwright/test"
+          - "playwright"
+      types:
+        patterns:
+          - "@types/*"
+      dev-tools:
+        patterns:
+          - "eslint*"
+          - "husky"
+          - "typescript"
