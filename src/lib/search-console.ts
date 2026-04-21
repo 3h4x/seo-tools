@@ -1,6 +1,7 @@
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { getAuth } from './google-auth';
 import { daysAgo } from './format';
+import { withCache } from './db';
 
 function getSc() {
   return new searchconsole_v1.Searchconsole({ auth: getAuth() });
@@ -254,57 +255,45 @@ export async function getSitemapSubmissions(siteUrl: string): Promise<SitemapSub
 }
 
 export async function cachedGetSitemapSubmissions(siteUrl: string) {
-  const cached = getCached<SitemapSubmission[]>('sitemap-submissions', siteUrl);
-  if (cached) return cached;
-  const result = await getSitemapSubmissions(siteUrl);
-  if (result.length) setCache('sitemap-submissions', siteUrl, result);
-  return result;
+  return withCache<SitemapSubmission[]>('sitemap-submissions', siteUrl, () => getSitemapSubmissions(siteUrl));
 }
-
-// --- Cached versions ---
-
-import { getCached, setCache } from './db';
 
 export async function cachedGetSearchConsoleDataWithComparison(
   siteUrl: string,
   days: number = 7,
 ) {
-  const cached = getCached<{ current: SCAggregates; previous: SCAggregates }>(`sc-comparison-${days}`, siteUrl);
-  if (cached) return cached;
-  const result = await getSearchConsoleDataWithComparison(siteUrl, days);
-  if (result) setCache(`sc-comparison-${days}`, siteUrl, result);
-  return result;
+  return withCache<{ current: SCAggregates; previous: SCAggregates }>(
+    `sc-comparison-${days}`, siteUrl,
+    () => getSearchConsoleDataWithComparison(siteUrl, days),
+  );
 }
 
 export async function cachedGetSearchConsoleQueries(
   siteUrl: string,
   days: number = 7,
 ) {
-  const cached = getCached<SCQueryRow[]>(`sc-queries-${days}`, siteUrl);
-  if (cached) return cached;
-  const result = await getSearchConsoleQueries(siteUrl, days);
-  if (result) setCache(`sc-queries-${days}`, siteUrl, result);
-  return result;
+  return withCache<SCQueryRow[]>(
+    `sc-queries-${days}`, siteUrl,
+    () => getSearchConsoleQueries(siteUrl, days),
+  );
 }
 
 export async function cachedGetSearchConsolePages(
   siteUrl: string,
   days: number = 7,
 ) {
-  const cached = getCached<SCPageRow[]>(`sc-pages-${days}`, siteUrl);
-  if (cached) return cached;
-  const result = await getSearchConsolePages(siteUrl, days);
-  if (result) setCache(`sc-pages-${days}`, siteUrl, result);
-  return result;
+  return withCache<SCPageRow[]>(
+    `sc-pages-${days}`, siteUrl,
+    () => getSearchConsolePages(siteUrl, days),
+  );
 }
 
 export async function cachedGetSearchConsoleData(
   siteUrl: string,
   days: number = 7,
 ) {
-  const cached = getCached<{ clicks: number; impressions: number; ctr: string; position: string }>(`sc-data-${days}`, siteUrl);
-  if (cached) return cached;
-  const result = await getSearchConsoleData(siteUrl, days);
-  if (result) setCache(`sc-data-${days}`, siteUrl, result);
-  return result;
+  return withCache<{ clicks: number; impressions: number; ctr: string; position: string }>(
+    `sc-data-${days}`, siteUrl,
+    () => getSearchConsoleData(siteUrl, days),
+  );
 }

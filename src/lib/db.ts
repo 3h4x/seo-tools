@@ -167,6 +167,19 @@ export function setCache(key: string, siteId: string, data: unknown): void {
   }
 }
 
+export async function withCache<T>(
+  key: string,
+  id: string,
+  fetcher: () => Promise<T | null>,
+  ttlMs?: number,
+): Promise<T | null> {
+  const cached = getCached<T>(key, id, ttlMs);
+  if (cached !== null) return cached;
+  const result = await fetcher();
+  if (result != null) setCache(key, id, result);
+  return result;
+}
+
 export function clearCache(keyPattern?: string): void {
   try {
     const db = getDb();

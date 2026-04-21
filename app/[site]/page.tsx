@@ -326,10 +326,10 @@ export default async function SiteDashboardPage({
             {audit.sitemap.url && (
               <p className="text-neutral-600 text-xs font-mono mt-2">URL: {audit.sitemap.url}</p>
             )}
-            {sitemapSubmissions.length > 0 && (
+            {(sitemapSubmissions ?? []).length > 0 && (
               <div className="mt-3 border-t border-neutral-800 pt-3 space-y-2">
                 <p className="text-neutral-500 text-xs font-semibold uppercase tracking-wide">Google Search Console</p>
-                {sitemapSubmissions.map((s, i) => (
+                {(sitemapSubmissions ?? []).map((s, i) => (
                   <div key={i} className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono">
                     <span className="text-neutral-400 truncate max-w-xs">{s.path.replace(/^https?:\/\/[^/]+/, '') || s.path}</span>
                     <span className="text-neutral-500">

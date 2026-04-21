@@ -652,14 +652,10 @@ export async function auditAllSites(): Promise<SiteAuditResult[]> {
 
 // --- Cached versions ---
 
-import { getCached, setCache, CACHE_TTL_WEEK } from './db';
+import { withCache, CACHE_TTL_WEEK } from './db';
 
 export async function cachedAuditSite(site: Site): Promise<SiteAuditResult> {
-  const cached = getCached<SiteAuditResult>('audit', site.id, CACHE_TTL_WEEK);
-  if (cached) return cached;
-  const result = await auditSite(site);
-  setCache('audit', site.id, result);
-  return result;
+  return (await withCache<SiteAuditResult>('audit', site.id, () => auditSite(site), CACHE_TTL_WEEK))!;
 }
 
 export async function cachedAuditAllSites(): Promise<SiteAuditResult[]> {

@@ -149,13 +149,9 @@ export async function getAnalytics(propertyId: string, days: number = 7): Promis
 
 // --- Cached version ---
 
-import { getCached, setCache } from './db';
+import { withCache } from './db';
 
 export async function cachedGetAnalytics(propertyId: string, days: number = 7): Promise<GA4Data | null> {
   if (!propertyId) return null;
-  const cached = getCached<GA4Data>(`ga4-${days}`, propertyId);
-  if (cached) return cached;
-  const result = await getAnalytics(propertyId, days);
-  if (result) setCache(`ga4-${days}`, propertyId, result);
-  return result;
+  return withCache<GA4Data>(`ga4-${days}`, propertyId, () => getAnalytics(propertyId, days));
 }
