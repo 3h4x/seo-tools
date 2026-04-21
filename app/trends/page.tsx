@@ -3,6 +3,7 @@ import { getManagedSites } from '@/lib/sites';
 import { getScTrends, getGa4Trends, getAuditTrends, getSnapshotCount } from '@/lib/db';
 import { formatDuration, formatBounce } from '@/lib/format';
 import TrendChart from '../components/trend-chart';
+import { METRIC_COLORS } from '@/lib/constants';
 import { PositionBadge } from '../components/position-badge';
 import { TrendBadge } from '../components/trend-badge';
 import { TrendsTable } from '../components/trends-table';
@@ -149,9 +150,9 @@ export default async function TrendsPage() {
                       <TrendChart
                         data={ga4Trends}
                         lines={[
-                          { key: 'users', color: '#3b82f6', label: 'Users' },
-                          { key: 'views', color: '#f59e0b', label: 'Views' },
-                          { key: 'sessions', color: '#8b5cf6', label: 'Sessions' },
+                          { key: 'users', color: METRIC_COLORS.users, label: 'Users' },
+                          { key: 'views', color: METRIC_COLORS.views, label: 'Views' },
+                          { key: 'sessions', color: METRIC_COLORS.sessions, label: 'Sessions' },
                         ]}
                       />
                     </div>
@@ -162,8 +163,8 @@ export default async function TrendsPage() {
                       <TrendChart
                         data={scTrends}
                         lines={[
-                          { key: 'clicks', color: '#10b981', label: 'Clicks' },
-                          { key: 'impressions', color: '#06b6d4', label: 'Impressions' },
+                          { key: 'clicks', color: METRIC_COLORS.clicks, label: 'Clicks' },
+                          { key: 'impressions', color: METRIC_COLORS.impressions, label: 'Impressions' },
                         ]}
                       />
                     </div>

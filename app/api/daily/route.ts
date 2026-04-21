@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getScDaily, getGa4Daily } from '@/lib/db';
 import { getManagedSites } from '@/lib/sites';
+import { CHART_COLORS } from '@/lib/constants';
 
 export async function GET(req: NextRequest) {
   const days = Math.min(365, Math.max(1, parseInt(req.nextUrl.searchParams.get('days') || '30')));
@@ -34,10 +35,9 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const sitesMeta = sites.map((s, i) => {
-    const defaults = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#06b6d4', '#f43f5e', '#a78bfa'];
-    return { id: s.id, name: s.name, color: s.color ?? defaults[i % defaults.length] };
-  });
+  const sitesMeta = sites.map((s, i) => ({
+    id: s.id, name: s.name, color: s.color ?? CHART_COLORS[i % CHART_COLORS.length],
+  }));
 
   return NextResponse.json({ data: result, sites: sitesMeta });
 }

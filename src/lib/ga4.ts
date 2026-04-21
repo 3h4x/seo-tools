@@ -2,6 +2,7 @@ import { AnalyticsAdminServiceClient } from '@google-analytics/admin';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getAuth } from './google-auth';
 import { getManagedSites } from './sites';
+import { withCache } from './db';
 
 function getAdminClient() {
   return new AnalyticsAdminServiceClient({ auth: getAuth() });
@@ -146,10 +147,6 @@ export async function getAnalytics(propertyId: string, days: number = 7): Promis
     return null;
   }
 }
-
-// --- Cached version ---
-
-import { withCache } from './db';
 
 export async function cachedGetAnalytics(propertyId: string, days: number = 7): Promise<GA4Data | null> {
   if (!propertyId) return null;

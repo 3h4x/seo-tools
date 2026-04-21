@@ -11,6 +11,7 @@ import {
 import { cachedAuditSite } from '@/lib/audit';
 import { analyzeSiteGaps } from '@/lib/gaps';
 import { getScDaily, getGa4Daily } from '@/lib/db';
+import { METRIC_COLORS } from '@/lib/constants';
 import { pluralize, formatDuration, formatBounce } from '@/lib/format';
 import { TrafficSourcesList } from '../components/traffic-sources-list';
 import TimeRange from '../components/time-range';
@@ -150,7 +151,7 @@ export default async function SiteDashboardPage({
                   <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">Search Position</h3>
                   <TrendChart
                     data={scDaily}
-                    lines={[{ key: 'position', color: '#f59e0b', label: 'Avg Position' }]}
+                    lines={[{ key: 'position', color: METRIC_COLORS.position, label: 'Avg Position' }]}
                   />
                 </div>
                 <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
@@ -158,8 +159,8 @@ export default async function SiteDashboardPage({
                   <TrendChart
                     data={scDaily}
                     lines={[
-                      { key: 'clicks', color: '#10b981', label: 'Clicks' },
-                      { key: 'impressions', color: '#06b6d4', label: 'Impressions' },
+                      { key: 'clicks', color: METRIC_COLORS.clicks, label: 'Clicks' },
+                      { key: 'impressions', color: METRIC_COLORS.impressions, label: 'Impressions' },
                     ]}
                   />
                 </div>
@@ -172,8 +173,8 @@ export default async function SiteDashboardPage({
                   <TrendChart
                     data={ga4DailyData}
                     lines={[
-                      { key: 'users', color: '#3b82f6', label: 'Users' },
-                      { key: 'sessions', color: '#8b5cf6', label: 'Sessions' },
+                      { key: 'users', color: METRIC_COLORS.users, label: 'Users' },
+                      { key: 'sessions', color: METRIC_COLORS.sessions, label: 'Sessions' },
                     ]}
                   />
                 </div>
@@ -181,7 +182,7 @@ export default async function SiteDashboardPage({
                   <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">Page Views</h3>
                   <TrendChart
                     data={ga4DailyData}
-                    lines={[{ key: 'views', color: '#f59e0b', label: 'Page Views' }]}
+                    lines={[{ key: 'views', color: METRIC_COLORS.views, label: 'Page Views' }]}
                   />
                 </div>
               </>

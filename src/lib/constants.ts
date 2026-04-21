@@ -4,7 +4,9 @@ export const CHART_COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#06b6d
 
 export const METRIC_COLORS: Record<string, string> = {
   users: '#3b82f6',
+  sessions: '#8b5cf6',
   views: '#f59e0b',
   clicks: '#10b981',
   impressions: '#06b6d4',
+  position: '#f59e0b',
 };
