@@ -73,7 +73,6 @@ export default async function Overview({ searchParams }: { searchParams: Promise
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Overview</h1>
@@ -81,8 +80,6 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         </div>
         <TimeRange />
       </div>
-
-      {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <MetricCard icon={Icons.users} label="Users" current={totals.users} previous={totals.prevUsers} accent="border-blue-500" />
         <MetricCard icon={Icons.sessions} label="Sessions" current={totals.sessions} previous={totals.prevSessions} accent="border-violet-500" />
@@ -90,11 +87,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         <MetricCard icon={Icons.clicks} label="SC Clicks" current={totals.clicks} accent="border-emerald-500" />
         <MetricCard icon={Icons.impressions} label="SC Impressions" current={totals.impressions} accent="border-cyan-500" />
       </div>
-
-      {/* Daily Traffic Chart */}
       <DailyTrafficChart days={days} />
-
-      {/* Traffic Sources */}
       {(() => {
         const sourceMap = new Map<string, number>();
         for (const site of sites) {
@@ -111,8 +104,6 @@ export default async function Overview({ searchParams }: { searchParams: Promise
           .map(([name, sessions]) => ({ name, sessions }));
         return <TrafficSourcesChart data={sourceData} />;
       })()}
-
-      {/* Site Performance */}
       <div>
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Site Performance</h2>
         <SortablePerformanceTable rows={performanceRows} />

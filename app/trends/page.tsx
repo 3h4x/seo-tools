@@ -73,7 +73,6 @@ export default async function TrendsPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Trends</h1>
         <p className="text-neutral-500 text-sm mt-1">
@@ -81,8 +80,6 @@ export default async function TrendsPage() {
           {isSingle && ' \u00b7 Run daily for trend data'}
         </p>
       </div>
-
-      {/* Per-site cards */}
       <div>
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Per-Site Data</h2>
         <div className="space-y-4">
@@ -141,8 +138,6 @@ export default async function TrendsPage() {
                   <span className="text-neutral-600 text-xs">{site.domain}</span>
                   <span className="text-neutral-700 text-[10px] ml-auto">{ga4Trends.length || scTrends.length} data points</span>
                 </div>
-
-                {/* Charts */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   {ga4Trends.length > 0 && (
                     <div>
@@ -170,8 +165,6 @@ export default async function TrendsPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Data tables */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   {ga4Trends.length > 0 && (
                     <TrendsTable

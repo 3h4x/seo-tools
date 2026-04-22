@@ -113,7 +113,6 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
               key={row.id}
               className={`transition-colors ${row.hasData ? 'hover:bg-neutral-800/30 cursor-pointer' : 'opacity-40'} ${idx === 0 && row.hasData ? 'border-l-2 border-l-emerald-500' : ''}`}
             >
-              {/* Site name cell */}
               <td className="px-5 py-3.5">
                 <Link href={`/${row.id}`} className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
@@ -132,24 +131,16 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
                   )}
                 </Link>
               </td>
-
-              {/* Users */}
               <td className="px-5 py-3.5 text-right font-mono text-neutral-300">
                 {row.users.toLocaleString()}
                 <TrendBadge current={row.users} previous={row.prevUsers} />
               </td>
-
-              {/* Sessions */}
               <td className="px-5 py-3.5 text-right font-mono text-neutral-300">
                 {row.sessions.toLocaleString()}
               </td>
-
-              {/* Views */}
               <td className="px-5 py-3.5 text-right font-mono text-neutral-300">
                 {row.views.toLocaleString()}
               </td>
-
-              {/* Bounce - color coded: green <40%, amber 40-70%, red >70% */}
               <td className="px-5 py-3.5 text-right font-mono hidden md:table-cell">
                 {row.bounceRate !== null && row.hasData ? (
                   <span className={
@@ -163,20 +154,14 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
                   <span className="text-neutral-600">—</span>
                 )}
               </td>
-
-              {/* Avg Duration */}
               <td className="px-5 py-3.5 text-right font-mono text-neutral-300 hidden md:table-cell">
                 {row.avgSessionDuration !== null && row.hasData
                   ? formatDuration(row.avgSessionDuration)
                   : <span className="text-neutral-600">—</span>}
               </td>
-
-              {/* SC Clicks */}
               <td className="px-5 py-3.5 text-right font-mono text-neutral-300">
                 {row.scClicks > 0 ? row.scClicks.toLocaleString() : <span className="text-neutral-600">—</span>}
               </td>
-
-              {/* SC Position - color coded: green ≤3, amber ≤10, neutral >10 */}
               <td className="px-5 py-3.5 text-right font-mono hidden md:table-cell">
                 {row.scPosition > 0 ? (
                   <span className={

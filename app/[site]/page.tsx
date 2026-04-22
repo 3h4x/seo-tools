@@ -74,7 +74,6 @@ export default async function SiteDashboardPage({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <Link href="/" className="text-neutral-500 hover:text-neutral-300 text-sm transition-colors">&larr; Overview</Link>
@@ -83,8 +82,6 @@ export default async function SiteDashboardPage({
         </div>
         <TimeRange />
       </div>
-
-      {/* Audit Score Summary */}
       <div className="flex flex-wrap gap-6">
         <div className="flex items-center gap-2">
           <div className="size-2 rounded-full bg-emerald-500" />
@@ -111,8 +108,6 @@ export default async function SiteDashboardPage({
           </div>
         )}
       </div>
-
-      {/* SC Metrics */}
       <div>
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Search Console</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -122,8 +117,6 @@ export default async function SiteDashboardPage({
           <MetricCard label="Avg Position" value={hasSc ? sc!.current.position.toFixed(1) : '\u2014'} current={hasSc ? sc!.current.position : 0} previous={hasSc ? sc!.previous.position : 0} accent="border-amber-500" icon={Icons.position} invert />
         </div>
       </div>
-
-      {/* GA4 Metrics */}
       <div>
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">GA4 Analytics</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -134,8 +127,6 @@ export default async function SiteDashboardPage({
           <MetricCard label="Avg Duration" value={hasGa4 ? formatDuration(ga4Data!.current.avgSessionDuration) : '\u2014'} current={hasGa4 ? ga4Data!.current.avgSessionDuration : 0} previous={hasGa4 ? ga4Data!.previous.avgSessionDuration : 0} accent="border-teal-500" icon={Icons.duration} />
         </div>
       </div>
-
-      {/* Daily Trend Charts */}
       {(scDaily.length >= 2 || ga4DailyData.length >= 2) && (
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">
@@ -190,8 +181,6 @@ export default async function SiteDashboardPage({
           </div>
         </div>
       )}
-
-      {/* Keyword Position Distribution */}
       {scQueries && scQueries.length > 0 && (() => {
         const buckets = [
           { label: 'Top 3', sublabel: 'pos 1–3', colorBar: 'bg-emerald-500', colorText: 'text-emerald-400', test: (p: number) => p <= 3 },
@@ -249,8 +238,6 @@ export default async function SiteDashboardPage({
           </div>
         );
       })()}
-
-      {/* SC Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ScTable
           heading="Top Queries"
@@ -273,10 +260,7 @@ export default async function SiteDashboardPage({
           filename={`${siteId}-pages-${days}d`}
         />
       </div>
-
-      {/* GA4 Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* GA4 Top Pages */}
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Top Pages (GA4)</h2>
           {ga4Data && ga4Data.topPages.length > 0 ? (
@@ -300,20 +284,15 @@ export default async function SiteDashboardPage({
             <p className="text-neutral-600 text-sm">No GA4 page data available.</p>
           )}
         </div>
-
-        {/* Traffic Sources */}
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Traffic Sources</h2>
           <TrafficSourcesList sources={ga4Data?.trafficSources ?? []} />
         </div>
       </div>
-
-      {/* ── Audit Details ── */}
       <div className="border-t border-neutral-800 pt-8">
         <h2 className="text-lg font-bold text-white mb-6">Site Audit</h2>
 
         <div className="space-y-6">
-          {/* robots.txt */}
           <CheckCard check={audit.robotsTxt} gaps={sections['robotsTxt']}>
             {audit.robotsTxt.raw && (
               <pre className="bg-neutral-800 rounded p-3 mt-3 text-xs text-neutral-400 font-mono overflow-x-auto max-h-40">
@@ -321,8 +300,6 @@ export default async function SiteDashboardPage({
               </pre>
             )}
           </CheckCard>
-
-          {/* Sitemap */}
           <CheckCard check={audit.sitemap} gaps={sections['sitemap']}>
             {audit.sitemap.url && (
               <p className="text-neutral-600 text-xs font-mono mt-2">URL: {audit.sitemap.url}</p>
@@ -347,11 +324,7 @@ export default async function SiteDashboardPage({
               </div>
             )}
           </CheckCard>
-
-          {/* SC Sitemap Freshness */}
           <CheckCard check={audit.scSitemapFreshness} />
-
-          {/* Indexing Coverage */}
           <CheckCard check={audit.indexingCoverage}>
             {audit.indexingCoverage.sitemapUrls != null && audit.indexingCoverage.indexedPages != null && (
               <div className="mt-3">
@@ -377,8 +350,6 @@ export default async function SiteDashboardPage({
               </div>
             )}
           </CheckCard>
-
-          {/* Meta Tags */}
           <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
             <h2 className="text-white font-semibold text-sm mb-4">Meta Tags &middot; {audit.metaTags.length} pages checked</h2>
             <div className="space-y-5">
@@ -395,8 +366,6 @@ export default async function SiteDashboardPage({
             </div>
             {sections['metaTags']?.map(g => <Recommendation key={g.id} gap={g} />)}
           </div>
-
-          {/* OG Image */}
           <CheckCard check={audit.ogImage} gaps={sections['ogImage']}>
             {audit.ogImage.url && (
               <div className="mt-3 space-y-3">
@@ -414,8 +383,6 @@ export default async function SiteDashboardPage({
               </div>
             )}
           </CheckCard>
-
-          {/* Image SEO */}
           <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
             <h2 className="text-white font-semibold text-sm mb-4">Image SEO &middot; {audit.imageSeo.length} pages checked</h2>
             <div className="space-y-5">
@@ -447,8 +414,6 @@ export default async function SiteDashboardPage({
             </div>
             {sections['imageSeo']?.map(g => <Recommendation key={g.id} gap={g} />)}
           </div>
-
-          {/* Internal Links */}
           <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
             <h2 className="text-white font-semibold text-sm mb-4">Internal Links &middot; {audit.internalLinks.length} pages checked</h2>
             <div className="space-y-3">
@@ -463,8 +428,6 @@ export default async function SiteDashboardPage({
             </div>
             {sections['internalLinks']?.map(g => <Recommendation key={g.id} gap={g} />)}
           </div>
-
-          {/* Security */}
           {audit.security && (
             <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
               <h2 className="text-white font-semibold text-sm mb-4">Security</h2>
@@ -480,8 +443,6 @@ export default async function SiteDashboardPage({
               {sections['security']?.map(g => <Recommendation key={g.id} gap={g} />)}
             </div>
           )}
-
-          {/* TTFB */}
           <CheckCard check={audit.ttfb} gaps={sections['ttfb']}>
             {audit.ttfb.ms !== undefined && (
               <div className="mt-3">
@@ -502,8 +463,6 @@ export default async function SiteDashboardPage({
               </div>
             )}
           </CheckCard>
-
-          {/* Indexing recommendations */}
           {sections['indexing'] && sections['indexing'].length > 0 && (
             <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
               <h2 className="text-white font-semibold text-sm mb-4">Indexing</h2>

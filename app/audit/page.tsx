@@ -124,10 +124,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
         <p className="text-neutral-500 text-sm mt-1">Live checks · {audits.length} sites</p>
       </div>
-
-      {/* Summary with health ring */}
       <div className="flex gap-6 items-center">
-        {/* Health ring */}
         <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 flex items-center gap-5 shrink-0">
           <div className="relative size-24">
             <svg viewBox="0 0 100 100" className="size-24 -rotate-90">
@@ -152,16 +149,12 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             {totalRecs > 0 && <div className="text-neutral-500 text-xs">{totalRecs} recommendations</div>}
           </div>
         </div>
-
-        {/* Stat cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1">
           <MetricCard label="Passed" current={totalPass} accent="border-l-emerald-500" valueColor="text-emerald-400" />
           <MetricCard label="Warnings" current={totalWarn} accent="border-l-amber-500" valueColor="text-amber-400" />
           <MetricCard label="Failures" current={totalFail} accent="border-l-red-500" valueColor="text-red-400" />
         </div>
       </div>
-
-      {/* Site cards */}
       <div className="space-y-4">
         {audits.map((audit) => {
           const worst = worstStatus(audit);
@@ -210,8 +203,6 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           );
         })}
       </div>
-
-      {/* Gap Analysis */}
       {allSiteGaps.length > 0 && (
         <div className="space-y-4">
           <div>
@@ -226,8 +217,6 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           <GapsClient allSiteGaps={allSiteGaps} sites={gapSites} categories={gapCategories} />
         </div>
       )}
-
-      {/* Content Decay */}
       <div className="space-y-4">
         <div className="flex items-start justify-between">
           <div>
