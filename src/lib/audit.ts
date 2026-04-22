@@ -300,11 +300,6 @@ export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
   };
 }
 
-async function checkMetaTags(domain: string, path: string): Promise<MetaTagResult> {
-  const res = await safeFetch(`https://${domain}${path}`, { ua: GOOGLEBOT_UA });
-  return parseMetaTags(res, path);
-}
-
 export function checkImageSeo(html: string, page: string): ImageSeoResult {
   const imgTags = html.match(/<img\b[^>]*>/gi) || [];
   const totalImages = imgTags.length;
