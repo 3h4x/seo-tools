@@ -26,7 +26,6 @@ function GapRow({ sg }: { sg: SiteGap }) {
     <div className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${cfg.borderCls} p-4`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          {/* Title row */}
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${cfg.badgeCls}`}>
               {cfg.label}
@@ -36,11 +35,7 @@ function GapRow({ sg }: { sg: SiteGap }) {
             </span>
             <span className="text-white font-semibold text-sm">{gap.title}</span>
           </div>
-
-          {/* Description */}
           <p className="text-neutral-500 text-xs mt-1">{gap.description}</p>
-
-          {/* How to fix */}
           <details className="mt-2 group">
             <summary className="text-neutral-500 text-xs cursor-pointer hover:text-neutral-300 transition-colors list-none flex items-center gap-1">
               <span className="group-open:hidden">▸ How to fix</span>
@@ -51,8 +46,6 @@ function GapRow({ sg }: { sg: SiteGap }) {
             </pre>
           </details>
         </div>
-
-        {/* Site link */}
         <Link
           href={`/${siteId}`}
           className="shrink-0 bg-neutral-800 hover:bg-neutral-700 rounded-md px-3 py-1.5 transition-colors text-right"
@@ -99,7 +92,6 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
 
   return (
     <div className="space-y-6">
-      {/* Filter bar */}
       <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-neutral-500 text-xs font-semibold uppercase tracking-wider">Filter</span>
@@ -112,8 +104,6 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
             </button>
           )}
         </div>
-
-        {/* Site filter */}
         {sites.length > 1 && (
           <div className="flex flex-wrap gap-2">
             <span className="text-neutral-600 text-xs self-center shrink-0 w-16">Sites</span>
@@ -141,8 +131,6 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
             </div>
           </div>
         )}
-
-        {/* Category filter */}
         {categories.length > 1 && (
           <div className="flex flex-wrap gap-2">
             <span className="text-neutral-600 text-xs self-center shrink-0 w-16">Category</span>
@@ -170,8 +158,6 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
             </div>
           </div>
         )}
-
-        {/* Severity filter */}
         <div className="flex flex-wrap gap-2">
           <span className="text-neutral-600 text-xs self-center shrink-0 w-16">Severity</span>
           <div className="flex flex-wrap gap-1.5">
@@ -200,8 +186,6 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
           </div>
         </div>
       </div>
-
-      {/* Summary row (updates with filter) */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-4">
           <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">High Priority</div>
@@ -219,8 +203,6 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
           <div className="text-neutral-600 text-xs mt-1">Nice to have</div>
         </div>
       </div>
-
-      {/* Gaps by severity section */}
       {(['high', 'medium', 'low'] as GapSeverity[]).map((severity) => {
         const items = grouped[severity];
         if (items.length === 0) return null;

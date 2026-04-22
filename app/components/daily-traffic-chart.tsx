@@ -148,11 +148,8 @@ export default function DailyTrafficChart({ days }: { days: number }) {
 
   return (
     <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
-      {/* Controls */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold mr-auto">Daily Traffic</h2>
-
-        {/* Metric toggles */}
         <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
           {METRICS.map(m => (
             <button
@@ -169,8 +166,6 @@ export default function DailyTrafficChart({ days }: { days: number }) {
             </button>
           ))}
         </div>
-
-        {/* Chart type */}
         <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
           {(['area', 'bar'] as const).map(t => (
             <button
@@ -184,8 +179,6 @@ export default function DailyTrafficChart({ days }: { days: number }) {
             </button>
           ))}
         </div>
-
-        {/* View mode */}
         <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
           {([['cumulative', 'Cumulative'], ['persite', 'Per Site']] as const).map(([v, label]) => (
             <button
@@ -200,8 +193,6 @@ export default function DailyTrafficChart({ days }: { days: number }) {
           ))}
         </div>
       </div>
-
-      {/* Chart */}
       {chartType === 'area' ? (
         <TrendChart
           data={chartData as { date: string }[]}
@@ -238,8 +229,6 @@ export default function DailyTrafficChart({ days }: { days: number }) {
           </ResponsiveContainer></ClientChart>
         </div>
       )}
-
-      {/* Clickable site legend */}
       {viewMode === 'persite' && (
         <div className="flex flex-wrap gap-3 mt-3">
           {allSiteIds.filter(id => dates.some(d => {

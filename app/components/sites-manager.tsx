@@ -187,8 +187,6 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           + Add Site
         </button>
       </div>
-
-      {/* Sites table */}
       {sites.length === 0 && !isEditing && (
         <p className="text-sm text-neutral-500">
           No sites configured — add a site or use Discover to import from Google.
@@ -260,8 +258,6 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           </table>
         </div>
       )}
-
-      {/* Edit / Add panel */}
       {isEditing && (
         <div className="border border-neutral-700 rounded-lg p-4 space-y-4 bg-neutral-900/50">
           <h3 className="text-sm font-medium text-white">
@@ -400,8 +396,6 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           </div>
         </div>
       )}
-
-      {/* Discover section */}
       {hasAuth && (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
