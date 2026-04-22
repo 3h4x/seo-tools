@@ -13,7 +13,7 @@ function formatSiteUrl(siteUrl: string): string {
     : `sc-domain:${siteUrl}`;
 }
 
-export async function getSearchConsoleData(siteUrl: string, days: number = 7) {
+async function getSearchConsoleData(siteUrl: string, days: number = 7) {
   try {
     const response = await getSc().searchanalytics.query({
       siteUrl: formatSiteUrl(siteUrl),
@@ -64,7 +64,7 @@ export interface SCPageRow {
   position: number;
 }
 
-export async function getSearchConsoleDataWithComparison(
+async function getSearchConsoleDataWithComparison(
   siteUrl: string,
   days: number = 7,
 ): Promise<{ current: SCAggregates; previous: SCAggregates } | null> {
@@ -109,7 +109,7 @@ export async function getSearchConsoleDataWithComparison(
   }
 }
 
-export async function getSearchConsoleQueries(
+async function getSearchConsoleQueries(
   siteUrl: string,
   days: number = 7,
 ): Promise<SCQueryRow[] | null> {
@@ -137,7 +137,7 @@ export async function getSearchConsoleQueries(
   }
 }
 
-export async function getSearchConsolePages(
+async function getSearchConsolePages(
   siteUrl: string,
   days: number = 7,
 ): Promise<SCPageRow[] | null> {
@@ -195,37 +195,6 @@ export async function getSearchConsolePagesForPeriod(
   }
 }
 
-// --- Daily per-date breakdown ---
-
-export async function getSearchConsoleDailyData(
-  siteUrl: string,
-  startDate: string,
-  endDate: string,
-): Promise<Array<{ date: string; clicks: number; impressions: number; ctr: number; position: number }> | null> {
-  try {
-    const response = await getSc().searchanalytics.query({
-      siteUrl: formatSiteUrl(siteUrl),
-      requestBody: {
-        startDate,
-        endDate,
-        dimensions: ['date'],
-        rowLimit: 500,
-      },
-    });
-
-    return (response.data.rows || []).map((row) => ({
-      date: row.keys?.[0] || '',
-      clicks: row.clicks || 0,
-      impressions: row.impressions || 0,
-      ctr: row.ctr || 0,
-      position: row.position || 0,
-    }));
-  } catch (error) {
-    console.error(`Error fetching SC daily data for ${siteUrl}:`, error);
-    return null;
-  }
-}
-
 // --- Sitemap submissions ---
 
 export interface SitemapSubmission {
@@ -237,7 +206,7 @@ export interface SitemapSubmission {
   errors: number;
 }
 
-export async function getSitemapSubmissions(siteUrl: string): Promise<SitemapSubmission[]> {
+async function getSitemapSubmissions(siteUrl: string): Promise<SitemapSubmission[]> {
   try {
     const url = formatSiteUrl(siteUrl);
     const res = await getSc().sitemaps.list({ siteUrl: url });

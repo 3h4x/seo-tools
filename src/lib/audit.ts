@@ -585,7 +585,7 @@ async function checkIndexingCoverage(site: Site, sitemapUrlCount?: number): Prom
   }
 }
 
-export async function auditSite(site: Site): Promise<SiteAuditResult> {
+async function auditSite(site: Site): Promise<SiteAuditResult> {
   const robotsTxt = await checkRobotsTxt(site.domain);
 
   const [sitemap, ttfb, security, scSitemapFreshness] = await Promise.all([
@@ -645,7 +645,7 @@ export async function auditSite(site: Site): Promise<SiteAuditResult> {
   return { siteId: site.id, domain: site.domain, timestamp: Date.now(), robotsTxt, sitemap, scSitemapFreshness, indexingCoverage, metaTags, ogImage, ttfb, imageSeo, internalLinks, security: skippedSecurity, score };
 }
 
-export async function auditAllSites(): Promise<SiteAuditResult[]> {
+async function auditAllSites(): Promise<SiteAuditResult[]> {
   const sites = await getManagedSites();
   return Promise.all(sites.map(site => auditSite(site)));
 }

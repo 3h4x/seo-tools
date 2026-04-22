@@ -62,7 +62,7 @@ export interface GA4Data {
   trafficSources: GA4TrafficSource[];
 }
 
-export async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Data | null> {
+async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Data | null> {
   if (!propertyId) return null;
 
   try {

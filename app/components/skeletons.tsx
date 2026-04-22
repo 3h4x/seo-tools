@@ -76,3 +76,17 @@ export function SkeletonChart() {
     </div>
   );
 }
+
+export function SiteListSkeleton() {
+  return (
+    <div className="space-y-6">
+      <SkeletonHeader />
+      <SkeletonSummaryRow count={4} />
+      <div className="grid gap-4">
+        {[...Array(6)].map((_, i) => (
+          <SkeletonSiteCard key={i} />
+        ))}
+      </div>
+    </div>
+  );
+}
