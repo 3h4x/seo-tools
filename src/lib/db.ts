@@ -193,48 +193,6 @@ export function clearCache(keyPattern?: string): void {
   }
 }
 
-// --- Insert helpers ---
-
-export function insertScSnapshot(
-  siteId: string,
-  date: string,
-  pages: Array<{ page: string; clicks: number; impressions: number; ctr: number; position: number }>,
-): void {
-  const db = getDb();
-  const stmt = db.prepare(
-    'INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)',
-  );
-  const insertMany = db.transaction((rows: typeof pages) => {
-    for (const row of rows) {
-      stmt.run(siteId, date, row.page, row.clicks, row.impressions, row.ctr, row.position);
-    }
-  });
-  insertMany(pages);
-}
-
-export function insertGa4Snapshot(
-  siteId: string,
-  date: string,
-  metrics: { users: number; sessions: number; views: number; bounceRate: number; avgSessionDuration: number },
-): void {
-  const db = getDb();
-  db.prepare(
-    'INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration) VALUES (?, ?, ?, ?, ?, ?, ?)',
-  ).run(siteId, date, metrics.users, metrics.sessions, metrics.views, metrics.bounceRate, metrics.avgSessionDuration);
-}
-
-export function insertAuditSnapshot(
-  siteId: string,
-  date: string,
-  score: { pass: number; warn: number; fail: number },
-  checksJson: string,
-): void {
-  const db = getDb();
-  db.prepare(
-    'INSERT INTO audit_snapshots (site_id, date, pass_count, warn_count, fail_count, checks_json) VALUES (?, ?, ?, ?, ?, ?)',
-  ).run(siteId, date, score.pass, score.warn, score.fail, checksJson);
-}
-
 // --- Query helpers ---
 
 export interface ScTrendPoint {
