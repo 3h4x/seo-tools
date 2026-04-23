@@ -32,14 +32,14 @@
     "react-dom": "^19.2.4",
     "recharts": "^3.8.1",
     "tailwindcss": "^4.2.3",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.6.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.1",
+    "eslint": "^10",
+    "eslint-config-next": "16.2.4",
     "husky": "^9.1.7",
     "vitest": "^4.1.4"
   },
