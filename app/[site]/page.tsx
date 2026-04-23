@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getManagedSite, getSCUrl } from '@/lib/sites';
@@ -138,44 +139,22 @@ export default async function SiteDashboardPage({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {scDaily.length >= 2 && (
               <>
-                <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
-                  <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">Search Position</h3>
-                  <TrendChart
-                    data={scDaily}
-                    lines={[{ key: 'position', color: METRIC_COLORS.position, label: 'Avg Position' }]}
-                  />
-                </div>
-                <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
-                  <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">Clicks &amp; Impressions</h3>
-                  <TrendChart
-                    data={scDaily}
-                    lines={[
-                      { key: 'clicks', color: METRIC_COLORS.clicks, label: 'Clicks' },
-                      { key: 'impressions', color: METRIC_COLORS.impressions, label: 'Impressions' },
-                    ]}
-                  />
-                </div>
+                <ChartPanel title="Search Position">
+                  <TrendChart data={scDaily} lines={[{ key: 'position', color: METRIC_COLORS.position, label: 'Avg Position' }]} />
+                </ChartPanel>
+                <ChartPanel title="Clicks & Impressions">
+                  <TrendChart data={scDaily} lines={[{ key: 'clicks', color: METRIC_COLORS.clicks, label: 'Clicks' }, { key: 'impressions', color: METRIC_COLORS.impressions, label: 'Impressions' }]} />
+                </ChartPanel>
               </>
             )}
             {ga4DailyData.length >= 2 && (
               <>
-                <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
-                  <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">Users &amp; Sessions</h3>
-                  <TrendChart
-                    data={ga4DailyData}
-                    lines={[
-                      { key: 'users', color: METRIC_COLORS.users, label: 'Users' },
-                      { key: 'sessions', color: METRIC_COLORS.sessions, label: 'Sessions' },
-                    ]}
-                  />
-                </div>
-                <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
-                  <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">Page Views</h3>
-                  <TrendChart
-                    data={ga4DailyData}
-                    lines={[{ key: 'views', color: METRIC_COLORS.views, label: 'Page Views' }]}
-                  />
-                </div>
+                <ChartPanel title="Users & Sessions">
+                  <TrendChart data={ga4DailyData} lines={[{ key: 'users', color: METRIC_COLORS.users, label: 'Users' }, { key: 'sessions', color: METRIC_COLORS.sessions, label: 'Sessions' }]} />
+                </ChartPanel>
+                <ChartPanel title="Page Views">
+                  <TrendChart data={ga4DailyData} lines={[{ key: 'views', color: METRIC_COLORS.views, label: 'Page Views' }]} />
+                </ChartPanel>
               </>
             )}
           </div>
@@ -350,8 +329,7 @@ export default async function SiteDashboardPage({
               </div>
             )}
           </CheckCard>
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
-            <h2 className="text-white font-semibold text-sm mb-4">Meta Tags &middot; {audit.metaTags.length} pages checked</h2>
+          <AuditPanel title={`Meta Tags · ${audit.metaTags.length} pages checked`}>
             <div className="space-y-5">
               {audit.metaTags.map((meta, i) => (
                 <div key={i}>
@@ -365,7 +343,7 @@ export default async function SiteDashboardPage({
               ))}
             </div>
             {sections['metaTags']?.map(g => <Recommendation key={g.id} gap={g} />)}
-          </div>
+          </AuditPanel>
           <CheckCard check={audit.ogImage} gaps={sections['ogImage']}>
             {audit.ogImage.url && (
               <div className="mt-3 space-y-3">
@@ -383,8 +361,7 @@ export default async function SiteDashboardPage({
               </div>
             )}
           </CheckCard>
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
-            <h2 className="text-white font-semibold text-sm mb-4">Image SEO &middot; {audit.imageSeo.length} pages checked</h2>
+          <AuditPanel title={`Image SEO · ${audit.imageSeo.length} pages checked`}>
             <div className="space-y-5">
               {audit.imageSeo.map((img, i) => (
                 <div key={i}>
@@ -413,9 +390,8 @@ export default async function SiteDashboardPage({
               ))}
             </div>
             {sections['imageSeo']?.map(g => <Recommendation key={g.id} gap={g} />)}
-          </div>
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
-            <h2 className="text-white font-semibold text-sm mb-4">Internal Links &middot; {audit.internalLinks.length} pages checked</h2>
+          </AuditPanel>
+          <AuditPanel title={`Internal Links · ${audit.internalLinks.length} pages checked`}>
             <div className="space-y-3">
               {audit.internalLinks.map((link, i) => (
                 <div key={i} className="flex items-center gap-4 text-xs">
@@ -427,10 +403,9 @@ export default async function SiteDashboardPage({
               ))}
             </div>
             {sections['internalLinks']?.map(g => <Recommendation key={g.id} gap={g} />)}
-          </div>
+          </AuditPanel>
           {audit.security && (
-            <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
-              <h2 className="text-white font-semibold text-sm mb-4">Security</h2>
+            <AuditPanel title="Security">
               <div className="space-y-2">
                 {[audit.security.https, audit.security.hsts, audit.security.favicon].map((check, i) => (
                   <div key={i} className="flex items-center gap-3 text-xs">
@@ -441,7 +416,7 @@ export default async function SiteDashboardPage({
                 ))}
               </div>
               {sections['security']?.map(g => <Recommendation key={g.id} gap={g} />)}
-            </div>
+            </AuditPanel>
           )}
           <CheckCard check={audit.ttfb} gaps={sections['ttfb']}>
             {audit.ttfb.ms !== undefined && (
@@ -464,13 +439,30 @@ export default async function SiteDashboardPage({
             )}
           </CheckCard>
           {sections['indexing'] && sections['indexing'].length > 0 && (
-            <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
-              <h2 className="text-white font-semibold text-sm mb-4">Indexing</h2>
+            <AuditPanel title="Indexing">
               {sections['indexing'].map(g => <Recommendation key={g.id} gap={g} />)}
-            </div>
+            </AuditPanel>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ChartPanel({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
+      <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function AuditPanel({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
+      <h2 className="text-white font-semibold text-sm mb-4">{title}</h2>
+      {children}
     </div>
   );
 }
