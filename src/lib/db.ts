@@ -363,10 +363,10 @@ export function getGa4Daily(siteId: string, limit: number = 90): Ga4DailyPoint[]
   return rows.reverse();
 }
 
-export function getScDailyMissingDates(siteId: string, startDate: string, endDate: string): string[] {
+function missingDatesFromTable(table: string, siteId: string, startDate: string, endDate: string): string[] {
   const db = getDb();
   const existing = db.prepare(
-    'SELECT date FROM sc_daily WHERE site_id = ? AND date >= ? AND date <= ?',
+    `SELECT date FROM ${table} WHERE site_id = ? AND date >= ? AND date <= ?`,
   ).all(siteId, startDate, endDate) as Array<{ date: string }>;
   const existingSet = new Set(existing.map(r => r.date));
 
@@ -381,22 +381,12 @@ export function getScDailyMissingDates(siteId: string, startDate: string, endDat
   return missing;
 }
 
-export function getGa4DailyMissingDates(siteId: string, startDate: string, endDate: string): string[] {
-  const db = getDb();
-  const existing = db.prepare(
-    'SELECT date FROM ga4_daily WHERE site_id = ? AND date >= ? AND date <= ?',
-  ).all(siteId, startDate, endDate) as Array<{ date: string }>;
-  const existingSet = new Set(existing.map(r => r.date));
+export function getScDailyMissingDates(siteId: string, startDate: string, endDate: string): string[] {
+  return missingDatesFromTable('sc_daily', siteId, startDate, endDate);
+}
 
-  const missing: string[] = [];
-  const cur = new Date(startDate);
-  const end = new Date(endDate);
-  while (cur <= end) {
-    const d = cur.toISOString().split('T')[0];
-    if (!existingSet.has(d)) missing.push(d);
-    cur.setDate(cur.getDate() + 1);
-  }
-  return missing;
+export function getGa4DailyMissingDates(siteId: string, startDate: string, endDate: string): string[] {
+  return missingDatesFromTable('ga4_daily', siteId, startDate, endDate);
 }
 
 export function getSnapshotCount(): number {
