@@ -150,6 +150,9 @@ async function takeSnapshot() {
     CREATE TABLE IF NOT EXISTS ga4_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, site_id TEXT NOT NULL, date TEXT NOT NULL, users INTEGER NOT NULL DEFAULT 0, sessions INTEGER NOT NULL DEFAULT 0, views INTEGER NOT NULL DEFAULT 0, bounce_rate REAL NOT NULL DEFAULT 0, avg_duration REAL NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE INDEX IF NOT EXISTS idx_sc_site_date ON sc_snapshots(site_id, date);
     CREATE INDEX IF NOT EXISTS idx_ga4_site_date ON ga4_snapshots(site_id, date);
+    -- keyword_history is also created in src/lib/db.ts (app initSchema); keep schemas in sync
+    CREATE TABLE IF NOT EXISTS keyword_history (site_id TEXT NOT NULL, date TEXT NOT NULL, query TEXT NOT NULL, clicks INTEGER NOT NULL DEFAULT 0, impressions INTEGER NOT NULL DEFAULT 0, ctr REAL NOT NULL DEFAULT 0, position REAL NOT NULL DEFAULT 0, PRIMARY KEY (site_id, date, query));
+    CREATE INDEX IF NOT EXISTS idx_kw_history_site_query ON keyword_history(site_id, query, date);
   `);
 
   const sites = loadSites();
@@ -182,6 +185,32 @@ async function takeSnapshot() {
       console.log(`  SC ${site.id}: ${rows.length} pages`);
     } catch (e) {
       console.log(`  SC ${site.id}: error - ${e.message.slice(0, 60)}`);
+    }
+  }
+
+  const kwInsert = db.prepare(
+    `INSERT INTO keyword_history (site_id, date, query, clicks, impressions, ctr, position)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(site_id, date, query) DO UPDATE SET
+       clicks = excluded.clicks, impressions = excluded.impressions,
+       ctr = excluded.ctr, position = excluded.position`,
+  );
+  for (const site of sites) {
+    try {
+      const q = await sc.searchanalytics.query({
+        siteUrl: site.scUrl,
+        requestBody: { startDate, endDate, dimensions: ['query'], rowLimit: 50 },
+      });
+      const rows = q.data.rows || [];
+      const insertAll = db.transaction(() => {
+        for (const row of rows) {
+          kwInsert.run(site.id, today, row.keys?.[0] || '', row.clicks || 0, row.impressions || 0, row.ctr || 0, row.position || 0);
+        }
+      });
+      insertAll();
+      console.log(`  KW ${site.id}: ${rows.length} queries`);
+    } catch (e) {
+      console.log(`  KW ${site.id}: error - ${e.message.slice(0, 60)}`);
     }
   }
 

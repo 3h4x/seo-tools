@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
+import { computeKeywordDeltas, type KeywordDelta } from './keyword-history';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'seo-tools.db');
 
@@ -130,6 +131,20 @@ function initSchema(db: Database.Database): void {
       skip_checks     TEXT NOT NULL DEFAULT '[]',
       sort_order      INTEGER NOT NULL DEFAULT 0
     );
+
+    -- keyword_history is also created in scripts/seo.mjs (standalone CLI); keep schemas in sync
+    CREATE TABLE IF NOT EXISTS keyword_history (
+      site_id     TEXT NOT NULL,
+      date        TEXT NOT NULL,
+      query       TEXT NOT NULL,
+      clicks      INTEGER NOT NULL DEFAULT 0,
+      impressions INTEGER NOT NULL DEFAULT 0,
+      ctr         REAL NOT NULL DEFAULT 0,
+      position    REAL NOT NULL DEFAULT 0,
+      PRIMARY KEY (site_id, date, query)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_kw_history_site_query ON keyword_history(site_id, query, date);
   `);
   // Migrations for existing DBs
   try { db.exec(`ALTER TABLE sites ADD COLUMN color TEXT`); } catch { /* already exists */ }
@@ -495,4 +510,78 @@ export function dbUpsertSite(site: SiteRecord, sortOrder?: number): void {
 export function dbDeleteSite(id: string): void {
   const db = getDb();
   db.prepare('DELETE FROM sites WHERE id = ?').run(id);
+}
+
+// --- Keyword history ---
+
+export interface KeywordHistoryPoint {
+  date: string;
+  query: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+export function getKeywordHistory(siteId: string, days: number = 35): KeywordHistoryPoint[] {
+  const db = getDb();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffDate = cutoff.toISOString().split('T')[0];
+  return db.prepare(
+    `SELECT date, query, clicks, impressions, ctr, position
+     FROM keyword_history
+     WHERE site_id = ? AND date >= ?
+     ORDER BY date ASC, impressions DESC`,
+  ).all(siteId, cutoffDate) as KeywordHistoryPoint[];
+}
+
+export function getTopKeywordsWithHistory(
+  siteId: string,
+  topN: number = 5,
+  days: number = 30,
+): { topQueries: string[]; history: KeywordHistoryPoint[] } {
+  const db = getDb();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffDate = cutoff.toISOString().split('T')[0];
+
+  const topRows = db.prepare(
+    `SELECT query, SUM(impressions) as total
+     FROM keyword_history
+     WHERE site_id = ? AND date >= ?
+     GROUP BY query
+     ORDER BY total DESC
+     LIMIT ?`,
+  ).all(siteId, cutoffDate, topN) as Array<{ query: string; total: number }>;
+  const topQueries = topRows.map((r) => r.query);
+
+  if (topQueries.length === 0) return { topQueries: [], history: [] };
+
+  const placeholders = topQueries.map(() => '?').join(',');
+  const history = db.prepare(
+    `SELECT date, query, clicks, impressions, ctr, position
+     FROM keyword_history
+     WHERE site_id = ? AND date >= ? AND query IN (${placeholders})
+     ORDER BY date ASC`,
+  ).all(siteId, cutoffDate, ...topQueries) as KeywordHistoryPoint[];
+
+  return { topQueries, history };
+}
+
+export function getKeywordDeltas(siteId: string): KeywordDelta[] {
+  const history = getKeywordHistory(siteId, 35);
+  if (history.length === 0) return [];
+  // Use the most recent snapshot date as "today" so stale DBs still compute deltas correctly.
+  const latestDate = history.reduce((max, r) => (r.date > max ? r.date : max), history[0].date);
+  return computeKeywordDeltas(
+    history.map((r) => ({ date: r.date, query: r.query, position: r.position })),
+    latestDate,
+  );
+}
+
+export function getKeywordCount(): number {
+  const db = getDb();
+  const row = db.prepare('SELECT COUNT(DISTINCT query) as count FROM keyword_history').get() as { count: number };
+  return row.count;
 }
