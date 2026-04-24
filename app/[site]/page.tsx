@@ -11,7 +11,9 @@ import {
 } from '@/lib/search-console';
 import { cachedAuditSite } from '@/lib/audit';
 import { analyzeSiteGaps } from '@/lib/gaps';
-import { getScDaily, getGa4Daily } from '@/lib/db';
+import { getScDaily, getGa4Daily, getKeywordDeltas } from '@/lib/db';
+import type { KeywordDelta } from '@/lib/keyword-history';
+import { KeywordRankTable } from '../components/keyword-rank-table';
 import { METRIC_COLORS } from '@/lib/constants';
 import { pluralize, formatDuration, formatBounce } from '@/lib/format';
 import { TrafficSourcesList } from '../components/traffic-sources-list';
@@ -68,9 +70,11 @@ export default async function SiteDashboardPage({
 
   let scDaily: ReturnType<typeof getScDaily> = [];
   let ga4DailyData: ReturnType<typeof getGa4Daily> = [];
+  let keywordDeltas: KeywordDelta[] = [];
   try {
     scDaily = getScDaily(siteId);
     ga4DailyData = getGa4Daily(siteId);
+    keywordDeltas = getKeywordDeltas(siteId);
   } catch { /* no data yet */ }
 
   return (
@@ -239,6 +243,17 @@ export default async function SiteDashboardPage({
           filename={`${siteId}-pages-${days}d`}
         />
       </div>
+      {keywordDeltas.length > 0 && (
+        <div>
+          <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">
+            Keyword Rank Changes
+            <Link href="/trends?tab=keywords" className="ml-3 text-neutral-600 hover:text-neutral-400 normal-case font-normal">view history →</Link>
+          </h2>
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
+            <KeywordRankTable deltas={keywordDeltas} />
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Top Pages (GA4)</h2>
