@@ -28,6 +28,7 @@ interface TrendChartProps {
   formatDate?: (date: string) => string;
   xDataKey?: string;
   yAxisWidth?: number;
+  yAxisReversed?: boolean;
 }
 
 export default function TrendChart({
@@ -38,6 +39,7 @@ export default function TrendChart({
   formatDate = formatDateShort,
   xDataKey,
   yAxisWidth = 40,
+  yAxisReversed = false,
 }: TrendChartProps) {
   if (data.length < 2) {
     return (
@@ -78,6 +80,7 @@ export default function TrendChart({
           axisLine={false}
           tickLine={false}
           width={yAxisWidth}
+          reversed={yAxisReversed}
           tickFormatter={(v) => {
             if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
             return String(v);
