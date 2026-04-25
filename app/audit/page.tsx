@@ -159,6 +159,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         {audits.map((audit) => {
           const worst = worstStatus(audit);
           const meta = metaTagsSummary(audit);
+          const images = imageSeoSummary(audit);
+          const links = internalLinksSummary(audit);
           const site = managedSites.find(s => s.id === audit.siteId);
           const gapCount = site ? analyzeSiteGaps(audit, site).gaps.length : 0;
           return (
@@ -195,8 +197,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                 <CheckItem label="Indexing" status={audit.indexingCoverage.status} sublabel={audit.indexingCoverage.coveragePct != null ? `${audit.indexingCoverage.coveragePct}%` : undefined} />
                 <CheckItem label="Meta Tags" status={meta.status} sublabel={meta.label} />
                 <CheckItem label="OG Image" status={audit.ogImage.status} />
-                <CheckItem label="Images" status={imageSeoSummary(audit).status} sublabel={imageSeoSummary(audit).label} />
-                <CheckItem label="Int. Links" status={internalLinksSummary(audit).status} sublabel={internalLinksSummary(audit).label} />
+                <CheckItem label="Images" status={images.status} sublabel={images.label} />
+                <CheckItem label="Int. Links" status={links.status} sublabel={links.label} />
                 <CheckItem label="TTFB" status={audit.ttfb.status} sublabel={audit.ttfb.ms ? `${audit.ttfb.ms}ms` : undefined} />
               </div>
             </Link>

@@ -71,6 +71,20 @@ export default async function Overview({ searchParams }: { searchParams: Promise
     hasData: !!(site.ga4 && site.ga4.current.users > 0),
   }));
 
+  const sourceMap = new Map<string, number>();
+  for (const site of sites) {
+    if (site.ga4?.trafficSources) {
+      for (const src of site.ga4.trafficSources) {
+        const name = formatSource(src.source, src.medium);
+        sourceMap.set(name, (sourceMap.get(name) || 0) + src.sessions);
+      }
+    }
+  }
+  const sourceData = [...sourceMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([name, sessions]) => ({ name, sessions }));
+
   return (
     <div className="space-y-8">
       <div className="flex items-start justify-between">
@@ -88,22 +102,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         <MetricCard icon={Icons.impressions} label="SC Impressions" current={totals.impressions} accent="border-cyan-500" />
       </div>
       <DailyTrafficChart days={days} />
-      {(() => {
-        const sourceMap = new Map<string, number>();
-        for (const site of sites) {
-          if (site.ga4?.trafficSources) {
-            for (const src of site.ga4.trafficSources) {
-              const name = formatSource(src.source, src.medium);
-              sourceMap.set(name, (sourceMap.get(name) || 0) + src.sessions);
-            }
-          }
-        }
-        const sourceData = [...sourceMap.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 8)
-          .map(([name, sessions]) => ({ name, sessions }));
-        return <TrafficSourcesChart data={sourceData} />;
-      })()}
+      <TrafficSourcesChart data={sourceData} />
       <div>
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Site Performance</h2>
         <SortablePerformanceTable rows={performanceRows} />
