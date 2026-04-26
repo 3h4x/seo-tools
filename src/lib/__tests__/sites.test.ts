@@ -21,9 +21,9 @@ describe('getSCUrl', () => {
     expect(getSCUrl(site)).toBe('sc-domain:example.com');
   });
 
-  it('falls back to domain when scUrl is not set', () => {
+  it('prefixes domain with sc-domain: when scUrl is not set', () => {
     const site = makeSite({ domain: 'example.com' });
-    expect(getSCUrl(site)).toBe('example.com');
+    expect(getSCUrl(site)).toBe('sc-domain:example.com');
   });
 
   it('uses sc-domain: prefixed scUrl for domain properties', () => {

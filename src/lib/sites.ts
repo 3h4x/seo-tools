@@ -14,7 +14,9 @@ export interface Site {
 
 /** Returns the URL to use for Search Console API calls for a given site. */
 export function getSCUrl(site: Site): string {
-  return site.scUrl ?? site.domain;
+  const url = site.scUrl ?? site.domain;
+  if (url.startsWith('sc-domain:') || url.startsWith('http')) return url;
+  return `sc-domain:${url}`;
 }
 
 import { dbGetSites } from './db';
