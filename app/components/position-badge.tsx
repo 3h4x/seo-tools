@@ -1,8 +1,3 @@
-/**
- * Color-coded Search Console position badge.
- * Rankings:  1–3 = gold (top 3), 4–10 = green (page 1),
- *           11–20 = blue (page 2), 21+ = neutral (low rank)
- */
 export function PositionBadge({ position }: { position: number }) {
   const pos = Math.round(position);
   let cls: string;

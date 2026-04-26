@@ -1,8 +1,3 @@
-/**
- * Background daily data collector.
- * Runs inside the Next.js server process — no external cron needed.
- * Collects SC + GA4 per-day data, backfills missing dates.
- */
 import { getAuth } from './google-auth';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
@@ -231,7 +226,6 @@ let _intervalId: ReturnType<typeof setInterval> | null = null;
 export function startCollector(): void {
   if (_intervalId) return; // already running
 
-  // Run immediately on startup, then every 6 hours
   collectDaily().catch(e => console.error('[collect-daily] startup error:', e.message));
 
   _intervalId = setInterval(() => {

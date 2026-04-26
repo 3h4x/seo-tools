@@ -1,13 +1,3 @@
-/**
- * Sitemap change detector + auto-resubmitter.
- * Runs inside the Next.js server process — no external cron needed.
- *
- * Logic:
- *   - Fetch each site's sitemap XML every 6 hours
- *   - Hash the content (SHA-256, first 16 chars)
- *   - If hash changed since last check → submit to GSC (max once per 24h per site)
- *   - If unchanged → skip
- */
 import { createHash } from 'node:crypto';
 import { getAuth } from './google-auth';
 import { searchconsole_v1 } from '@googleapis/searchconsole';

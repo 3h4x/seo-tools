@@ -74,10 +74,12 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const healthySites = audits.filter(a => a.score.total > 0 && a.score.pass / a.score.total >= 0.9).length;
 
   const allSiteGaps: SiteGap[] = [];
+  const gapCountBySite = new Map<string, number>();
   for (const audit of audits) {
     const site = managedSites.find(s => s.id === audit.siteId);
     if (!site) continue;
     const { gaps } = analyzeSiteGaps(audit, site);
+    gapCountBySite.set(site.id, gaps.length);
     for (const gap of gaps) {
       allSiteGaps.push({ gap, siteId: site.id, siteName: site.name, domain: site.domain });
     }
@@ -162,7 +164,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           const images = imageSeoSummary(audit);
           const links = internalLinksSummary(audit);
           const site = managedSites.find(s => s.id === audit.siteId);
-          const gapCount = site ? analyzeSiteGaps(audit, site).gaps.length : 0;
+          const gapCount = gapCountBySite.get(audit.siteId) ?? 0;
           return (
             <Link
               key={audit.siteId}

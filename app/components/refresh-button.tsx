@@ -2,27 +2,12 @@
 
 import { useRefresh } from './refresh-context';
 import { useEffect, useState } from 'react';
-
-function formatRelativeTime(timestampMs: number): string {
-  const now = Date.now();
-  const diff = now - timestampMs;
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (seconds < 60) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days === 1) return 'yesterday';
-  return `${days}d ago`;
-}
+import { formatRelativeTime } from '@/lib/format';
 
 export default function RefreshButton() {
   const { refreshing, triggerRefresh, lastUpdated } = useRefresh();
   const [displayTime, setDisplayTime] = useState<string>('');
 
-  // Update the display time whenever lastUpdated changes
   useEffect(() => {
     if (lastUpdated) {
       setDisplayTime(formatRelativeTime(lastUpdated));
