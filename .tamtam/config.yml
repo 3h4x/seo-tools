@@ -1,0 +1,13 @@
+# TamTam project configuration — committed to version control
+# See .tamtam/agents/ for agent definitions
+
+test_command: pnpm check
+pr_workflow_enabled: false
+auto_commit_enabled: true
+auto_push_enabled: true
+auto_pr_merge_enabled: false
+release_after_run: true
+test_cron_enabled: true
+tests_disabled: false
+review_disabled: false
+issue_auto_branch: true

@@ -94,9 +94,10 @@ export function batchRanges(dates: string[]): Array<{ start: string; end: string
 
 export async function collectDaily(): Promise<void> {
   const startDate = dateStr(daysBack(LOOKBACK_DAYS));
-  const endDate = dateStr(daysBack(2)); // SC data delayed ~2 days
+  const scEndDate = dateStr(daysBack(2)); // SC data delayed ~2 days
+  const ga4EndDate = dateStr(daysBack(1)); // GA4 has near-realtime data; yesterday is fully complete
 
-  console.log(`[collect-daily] Collecting ${startDate} → ${endDate}`);
+  console.log(`[collect-daily] Collecting ${startDate} → SC:${scEndDate} GA4:${ga4EndDate}`);
 
   const sc = new searchconsole_v1.Searchconsole({ auth: getAuth() });
 
@@ -104,7 +105,7 @@ export async function collectDaily(): Promise<void> {
   const sites = await getManagedSites();
   for (const site of sites) {
     if (!site.searchConsole) continue;
-    const missing = getMissingDates('sc_daily', site.id, 'sc', startDate, endDate);
+    const missing = getMissingDates('sc_daily', site.id, 'sc', startDate, scEndDate);
     if (missing.length === 0) {
       console.log(`[collect-daily] SC ${site.domain}: up to date`);
       continue;
@@ -163,7 +164,7 @@ export async function collectDaily(): Promise<void> {
   for (const site of enrichedSites) {
     if (!site.ga4PropertyId) continue;
 
-    const missing = getMissingDates('ga4_daily', site.id, 'ga4', startDate, endDate);
+    const missing = getMissingDates('ga4_daily', site.id, 'ga4', startDate, ga4EndDate);
     if (missing.length === 0) {
       console.log(`[collect-daily] GA4 ${site.domain}: up to date`);
       continue;

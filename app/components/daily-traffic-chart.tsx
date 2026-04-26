@@ -71,8 +71,11 @@ export default function DailyTrafficChart({ days }: { days: number }) {
     );
   }
 
-  const dates = Object.keys(data).sort();
-  if (dates.length < 2) {
+  const collectedDates = Object.keys(data).sort();
+  const today = new Date().toISOString().split('T')[0];
+  const latestCollected = collectedDates[collectedDates.length - 1];
+  const dates = collectedDates.includes(today) ? collectedDates : [...collectedDates, today];
+  if (collectedDates.length < 2) {
     return (
       <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
         <div className="h-40 flex items-center justify-center text-neutral-600 text-sm">
@@ -82,7 +85,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
     );
   }
 
-  const allSiteIds = [...new Set(dates.flatMap(d => Object.keys(data[d])))].sort();
+  const allSiteIds = [...new Set(dates.flatMap(d => Object.keys(data[d] ?? {})))].sort();
   const siteIds = allSiteIds.filter(id => !hiddenSites.has(id));
 
   const toggleMetric = (m: Metric) => {
@@ -149,7 +152,14 @@ export default function DailyTrafficChart({ days }: { days: number }) {
   return (
     <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold mr-auto">Daily Traffic</h2>
+        <div className="mr-auto">
+          <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Daily Traffic</h2>
+          {latestCollected && latestCollected < today && (
+            <p className="text-[10px] text-neutral-600 mt-0.5">
+              Today's data still collecting · GA4 latest: {latestCollected} · SC lags ~2 days
+            </p>
+          )}
+        </div>
         <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
           {METRICS.map(m => (
             <button
