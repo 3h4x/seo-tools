@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gaps';
-import { CATEGORY_LABELS } from '@/lib/gaps';
+import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gaps';
 
 export interface SiteGap {
   gap: GapRecommendation;
@@ -12,23 +12,17 @@ export interface SiteGap {
   domain: string;
 }
 
-const SEVERITY_CONFIG: Record<GapSeverity, { label: string; badgeCls: string; dotCls: string; borderCls: string }> = {
-  high:   { label: 'High',   badgeCls: 'bg-red-500/10 text-red-400 border-red-500/20',    dotCls: 'bg-red-500',    borderCls: 'border-l-red-500' },
-  medium: { label: 'Medium', badgeCls: 'bg-amber-500/10 text-amber-400 border-amber-500/20', dotCls: 'bg-amber-500',  borderCls: 'border-l-amber-500' },
-  low:    { label: 'Low',    badgeCls: 'bg-blue-500/10 text-blue-400 border-blue-500/20',  dotCls: 'bg-blue-500',   borderCls: 'border-l-blue-500' },
-};
-
 function GapRow({ sg }: { sg: SiteGap }) {
   const { gap, siteId, siteName, domain } = sg;
-  const cfg = SEVERITY_CONFIG[gap.severity];
+  const s = GAP_SEVERITY_STYLES[gap.severity];
 
   return (
-    <div className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${cfg.borderCls} p-4`}>
+    <div className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${s.accentBorder} p-4`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${cfg.badgeCls}`}>
-              {cfg.label}
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${s.bg} ${s.text} ${s.border}`}>
+              {s.label}
             </span>
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-neutral-700 text-neutral-400 shrink-0">
               {CATEGORY_LABELS[gap.category]}
@@ -164,7 +158,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
             {(['high', 'medium', 'low'] as GapSeverity[]).map((sev) => {
               const count = allSiteGaps.filter(sg => sg.gap.severity === sev).length;
               if (count === 0) return null;
-              const cfg = SEVERITY_CONFIG[sev];
+              const s = GAP_SEVERITY_STYLES[sev];
               const active = filterSeverity === sev;
               return (
                 <button
@@ -172,11 +166,11 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
                   onClick={() => setFilterSeverity(active ? null : sev)}
                   className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                     active
-                      ? `${cfg.badgeCls}`
+                      ? `${s.bg} ${s.text} ${s.border}`
                       : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:text-white hover:border-neutral-500'
                   }`}
                 >
-                  {cfg.label}
+                  {s.label}
                   <span className={`ml-1.5 font-mono text-[10px] ${active ? '' : 'text-neutral-600'}`}>
                     {count}
                   </span>
@@ -206,16 +200,16 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
       {(['high', 'medium', 'low'] as GapSeverity[]).map((severity) => {
         const items = grouped[severity];
         if (items.length === 0) return null;
-        const cfg = SEVERITY_CONFIG[severity];
+        const s = GAP_SEVERITY_STYLES[severity];
 
         return (
           <div key={severity} className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className={`size-2 rounded-full ${cfg.dotCls}`} />
+              <div className={`size-2 rounded-full ${s.dot}`} />
               <h2 className="text-white font-semibold text-sm uppercase tracking-wider">
-                {cfg.label} Priority
+                {s.label} Priority
               </h2>
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${cfg.badgeCls}`}>
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${s.bg} ${s.text} ${s.border}`}>
                 {items.length}
               </span>
             </div>

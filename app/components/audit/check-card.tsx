@@ -1,6 +1,6 @@
 import type { CheckStatus, CheckResult } from '@/lib/audit';
-import type { GapRecommendation, GapSeverity } from '@/lib/gaps';
-import { CATEGORY_LABELS } from '@/lib/gaps';
+import type { GapRecommendation } from '@/lib/gaps';
+import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gaps';
 
 export const statusColors: Record<CheckStatus, string> = {
   pass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -23,12 +23,6 @@ export const accentBorder: Record<CheckStatus, string> = {
   error: 'border-l-neutral-600',
 };
 
-const SEVERITY_COLORS: Record<GapSeverity, { bg: string; text: string; dot: string }> = {
-  high: { bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-500' },
-  medium: { bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-500' },
-  low: { bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-500' },
-};
-
 export function StatusBadge({ status, label }: { status: CheckStatus; label?: string }) {
   const labels: Record<CheckStatus, string> = { pass: 'Pass', warn: 'Warn', fail: 'Fail', error: 'Error' };
   return (
@@ -39,13 +33,13 @@ export function StatusBadge({ status, label }: { status: CheckStatus; label?: st
 }
 
 export function Recommendation({ gap }: { gap: GapRecommendation }) {
-  const colors = SEVERITY_COLORS[gap.severity];
+  const s = GAP_SEVERITY_STYLES[gap.severity];
   return (
-    <div className={`mt-3 rounded-md ${colors.bg} border border-neutral-800 p-4`}>
+    <div className={`mt-3 rounded-md ${s.bg} border border-neutral-800 p-4`}>
       <div className="flex items-center gap-2 mb-1.5">
-        <div className={`size-1.5 rounded-full ${colors.dot}`} />
-        <span className={`text-xs font-semibold ${colors.text}`}>
-          {gap.severity === 'high' ? 'High' : gap.severity === 'medium' ? 'Medium' : 'Low'} priority
+        <div className={`size-1.5 rounded-full ${s.dot}`} />
+        <span className={`text-xs font-semibold ${s.text}`}>
+          {s.label} priority
         </span>
         <span className="text-neutral-600 text-xs">{CATEGORY_LABELS[gap.category] || gap.category}</span>
       </div>
