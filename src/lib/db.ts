@@ -487,7 +487,7 @@ export interface KeywordHistoryPoint {
   position: number;
 }
 
-export function getKeywordHistory(siteId: string, days: number = 35): KeywordHistoryPoint[] {
+function getKeywordHistory(siteId: string, days: number = 35): KeywordHistoryPoint[] {
   const db = getDb();
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
