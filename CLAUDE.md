@@ -198,6 +198,41 @@ Storage & charting:
 - Trend charts use `recharts` (AreaChart) — rendered client-side, data passed from server components
 - Dark theme default (dark neutrals, monospace accents)
 
+## Dependency & Supply-Chain Security
+
+1. Always commit `pnpm-lock.yaml` — never delete it or install without it.
+2. `pnpm.onlyBuiltDependencies` is locked to `["better-sqlite3"]`. Any new dep that needs a postinstall/build step must be added here explicitly with justification.
+3. Run `pnpm audit` after any dependency change; resolve critical/high findings before committing.
+4. Verify new packages on npmjs.com (publish date, download count, maintainer history) before adding. Justify every new dep in the commit message.
+5. Never add a package not already in `package.json` without explicit user approval.
+
+## Coding Conventions
+
+1. **TypeScript**: strict mode is enabled (`"strict": true`). `@typescript-eslint/no-explicit-any` is intentionally disabled — use `any` sparingly when necessary.
+2. **Path aliases**: use `@/` for imports from `src/` (e.g. `import { db } from '@/lib/db'`). Prefer `@/` over relative `../` imports across directory boundaries.
+3. **File layout**:
+   - App routes → `app/` (Next.js App Router; note: no `src/app/` — the `app/` dir is at the project root)
+   - Business logic / shared utilities → `src/lib/`
+   - React components → `app/components/`
+   - Unit tests → `src/lib/__tests__/<module>.test.ts` (colocated with the lib they test)
+   - E2E tests → `e2e/`
+   - CLI scripts → `scripts/`
+4. **Naming**: source files use kebab-case (`search-console.ts`, `google-auth.ts`). React component files use PascalCase where applicable.
+5. **Caching**: use `withCache()` HOF for any new API route calling Google APIs. Do not inline cache logic.
+6. **No hardcoded site data**: never hardcode domain names, GA4 property IDs, or SC URLs. All site config comes from SQLite via `src/lib/sites.ts`.
+
+## Testing Rules
+
+1. **Runner**: vitest (`pnpm test`). Run after every non-trivial lib change.
+2. **Pre-commit hook** (husky) runs `pnpm lint && pnpm type-check && pnpm test` — all three must pass before commit.
+3. **Unit tests**: live in `src/lib/__tests__/`, named `<module>.test.ts`. Test new lib functions, data transformations, and edge cases in audit/gap logic. Skip thin API route handlers that are already covered by lib tests.
+4. **Mocking**: mock external Google API clients in unit tests. Do not mock SQLite — use an in-memory or temp-file DB for tests that need persistence.
+5. **E2E tests**: Playwright (`pnpm test:e2e`), config in `playwright.config.ts`, tests in `e2e/`. Run manually for UI flow verification; not enforced in pre-commit.
+
+## Commit Style
+
+Conventional commits (matching this repo's history): `type: description`. Types in use: `feat`, `fix`, `refactor`, `chore`, `test`, `docs`. Keep the subject line under 72 characters.
+
 ## Performance (measured via Playwright browser metrics, 2026-03-27)
 
 | Page | TTFB | FCP | Full Load | Transfer | Notes |
