@@ -263,3 +263,33 @@ export function analyzeSiteGaps(audit: SiteAuditResult, site: Site): SiteGapAnal
 
   return { siteId: site.id, domain: site.domain, gaps, counts };
 }
+
+const GAP_SECTION_MAP: Record<string, string> = {
+  'missing-robots-txt': 'robotsTxt',
+  'robots-no-sitemap-directive': 'robotsTxt',
+  'missing-sitemap': 'sitemap',
+  'stale-sitemap': 'sitemap',
+  'weak-meta-tags': 'metaTags',
+  'missing-canonical': 'metaTags',
+  'missing-twitter-card': 'metaTags',
+  'missing-og-image': 'ogImage',
+  'missing-json-ld': 'metaTags',
+  'missing-image-alt': 'imageSeo',
+  'missing-lazy-loading': 'imageSeo',
+  'low-internal-linking': 'internalLinks',
+  'slow-ttfb': 'ttfb',
+  'missing-indexnow': 'indexing',
+  'missing-noindex-dead': 'indexing',
+  'no-https': 'security',
+  'missing-hsts': 'security',
+  'missing-favicon': 'security',
+};
+
+export function gapsBySection(gaps: GapRecommendation[]): Record<string, GapRecommendation[]> {
+  const map: Record<string, GapRecommendation[]> = {};
+  for (const gap of gaps) {
+    const section = GAP_SECTION_MAP[gap.id] || 'other';
+    (map[section] ??= []).push(gap);
+  }
+  return map;
+}

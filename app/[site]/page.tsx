@@ -21,10 +21,8 @@ import TimeRange from '../components/time-range';
 import { Icons } from '../components/icons';
 import TrendChart from '../components/trend-chart';
 import { MetricCard } from '../components/metric-card';
-import { CheckCard, statusDots } from '../components/audit/check-card';
-import { Recommendation } from '../components/audit/recommendation';
-import { MetaChecksTable } from '../components/audit/meta-checks-table';
-import { gapsBySection } from '../components/audit/gap-helpers';
+import { CheckCard, statusDots, Recommendation, MetaChecksTable } from '../components/audit/check-card';
+import { gapsBySection } from '@/lib/gaps';
 import { ScTable } from '../components/sc-table';
 import { VALID_DAYS } from '@/lib/constants';
 

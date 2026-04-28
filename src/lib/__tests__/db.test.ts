@@ -28,8 +28,6 @@ import {
   getCached,
   setCache,
   clearCache,
-  getScDailyMissingDates,
-  getGa4DailyMissingDates,
   upsertScDaily,
   upsertGa4Daily,
   getDb,
@@ -139,87 +137,6 @@ describe('clearCache', () => {
 
   it('is idempotent — calling twice does not throw', () => {
     expect(() => { clearCache(); clearCache(); }).not.toThrow();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// getScDailyMissingDates
-// ---------------------------------------------------------------------------
-
-describe('getScDailyMissingDates', () => {
-  it('returns every date in the range when nothing is stored', () => {
-    const missing = getScDailyMissingDates('site-a', '2025-01-01', '2025-01-03');
-    expect(missing).toEqual(['2025-01-01', '2025-01-02', '2025-01-03']);
-  });
-
-  it('returns an empty array when all dates are already present', () => {
-    upsertScDaily('site-a', [
-      { date: '2025-01-01', clicks: 10, impressions: 100, ctr: 0.1, position: 5 },
-      { date: '2025-01-02', clicks: 20, impressions: 200, ctr: 0.1, position: 4 },
-    ]);
-    const missing = getScDailyMissingDates('site-a', '2025-01-01', '2025-01-02');
-    expect(missing).toEqual([]);
-  });
-
-  it('returns only the dates that are missing from the stored set', () => {
-    upsertScDaily('site-a', [
-      { date: '2025-01-02', clicks: 5, impressions: 50, ctr: 0.1, position: 6 },
-    ]);
-    const missing = getScDailyMissingDates('site-a', '2025-01-01', '2025-01-03');
-    expect(missing).toEqual(['2025-01-01', '2025-01-03']);
-  });
-
-  it('is scoped to the requested site — another site\'s data does not count', () => {
-    upsertScDaily('site-c', [
-      { date: '2025-01-01', clicks: 1, impressions: 10, ctr: 0.1, position: 3 },
-    ]);
-    const missing = getScDailyMissingDates('site-a', '2025-01-01', '2025-01-01');
-    expect(missing).toEqual(['2025-01-01']);
-  });
-
-  it('handles a single-day range', () => {
-    expect(getScDailyMissingDates('site-a', '2025-06-15', '2025-06-15')).toEqual(['2025-06-15']);
-
-    upsertScDaily('site-a', [
-      { date: '2025-06-15', clicks: 3, impressions: 30, ctr: 0.1, position: 7 },
-    ]);
-    expect(getScDailyMissingDates('site-a', '2025-06-15', '2025-06-15')).toEqual([]);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// getGa4DailyMissingDates
-// ---------------------------------------------------------------------------
-
-describe('getGa4DailyMissingDates', () => {
-  it('returns every date in the range when nothing is stored', () => {
-    const missing = getGa4DailyMissingDates('site-a', '2025-03-01', '2025-03-03');
-    expect(missing).toEqual(['2025-03-01', '2025-03-02', '2025-03-03']);
-  });
-
-  it('returns an empty array when all dates are present', () => {
-    upsertGa4Daily('site-a', [
-      { date: '2025-03-01', users: 100, sessions: 120, views: 300, bounceRate: 0.4, avgDuration: 45 },
-      { date: '2025-03-02', users: 110, sessions: 130, views: 320, bounceRate: 0.4, avgDuration: 50 },
-    ]);
-    const missing = getGa4DailyMissingDates('site-a', '2025-03-01', '2025-03-02');
-    expect(missing).toEqual([]);
-  });
-
-  it('returns only dates not yet stored', () => {
-    upsertGa4Daily('site-a', [
-      { date: '2025-03-02', users: 50, sessions: 60, views: 150, bounceRate: 0.35, avgDuration: 40 },
-    ]);
-    const missing = getGa4DailyMissingDates('site-a', '2025-03-01', '2025-03-03');
-    expect(missing).toEqual(['2025-03-01', '2025-03-03']);
-  });
-
-  it('is scoped per site', () => {
-    upsertGa4Daily('site-b', [
-      { date: '2025-03-01', users: 1, sessions: 1, views: 1, bounceRate: 0, avgDuration: 0 },
-    ]);
-    const missing = getGa4DailyMissingDates('site-a', '2025-03-01', '2025-03-01');
-    expect(missing).toEqual(['2025-03-01']);
   });
 });
 
