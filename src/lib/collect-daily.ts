@@ -87,7 +87,7 @@ export function batchRanges(dates: string[]): Array<{ start: string; end: string
   return ranges;
 }
 
-export async function collectDaily(): Promise<void> {
+async function collectDaily(): Promise<void> {
   const startDate = dateStr(daysBack(LOOKBACK_DAYS));
   const scEndDate = dateStr(daysBack(2)); // SC data delayed ~2 days
   const ga4EndDate = dateStr(daysBack(1)); // GA4 has near-realtime data; yesterday is fully complete
