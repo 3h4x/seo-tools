@@ -137,21 +137,17 @@ async function getSearchConsoleQueries(
   }
 }
 
-async function getSearchConsolePages(
+async function queryScPages(
   siteUrl: string,
-  days: number = 7,
+  startDate: string,
+  endDate: string,
+  rowLimit: number = 20,
 ): Promise<SCPageRow[] | null> {
   try {
     const response = await getSc().searchanalytics.query({
       siteUrl: formatSiteUrl(siteUrl),
-      requestBody: {
-        startDate: daysAgo(days),
-        endDate: daysAgo(1),
-        dimensions: ['page'],
-        rowLimit: 20,
-      },
+      requestBody: { startDate, endDate, dimensions: ['page'], rowLimit },
     });
-
     return (response.data.rows || []).map((row) => ({
       page: row.keys?.[0] || '',
       clicks: row.clicks || 0,
@@ -165,34 +161,17 @@ async function getSearchConsolePages(
   }
 }
 
+async function getSearchConsolePages(siteUrl: string, days: number = 7) {
+  return queryScPages(siteUrl, daysAgo(days), daysAgo(1));
+}
+
 export async function getSearchConsolePagesForPeriod(
   siteUrl: string,
   startDate: string,
   endDate: string,
   rowLimit: number = 100,
 ): Promise<SCPageRow[] | null> {
-  try {
-    const response = await getSc().searchanalytics.query({
-      siteUrl: formatSiteUrl(siteUrl),
-      requestBody: {
-        startDate,
-        endDate,
-        dimensions: ['page'],
-        rowLimit,
-      },
-    });
-
-    return (response.data.rows || []).map((row) => ({
-      page: row.keys?.[0] || '',
-      clicks: row.clicks || 0,
-      impressions: row.impressions || 0,
-      ctr: row.ctr || 0,
-      position: row.position || 0,
-    }));
-  } catch (error) {
-    console.error(`Error fetching SC pages for period ${startDate}-${endDate}:`, error);
-    return null;
-  }
+  return queryScPages(siteUrl, startDate, endDate, rowLimit);
 }
 
 // --- Sitemap submissions ---
