@@ -8,7 +8,7 @@ import { statusDots, accentBorder, StatusBadge } from '../components/audit/check
 import { MetricCard } from '../components/metric-card';
 import { CopyButton } from '../components/copy-button';
 import { GapsClient, type SiteGap } from '../components/gaps-client';
-import DecayToggle from '../components/decay-toggle';
+import TimeRange from '../components/time-range';
 
 export const revalidate = 300;
 
@@ -227,7 +227,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             <h2 className="text-lg font-bold text-white">Content Decay</h2>
             <p className="text-neutral-500 text-sm mt-1">Pages losing traffic · {period}-day comparison</p>
           </div>
-          <DecayToggle />
+          <TimeRange param="period" options={[{ value: '7', label: '7d' }, { value: '30', label: '30d' }]} />
         </div>
 
         <div className="grid grid-cols-3 gap-4">

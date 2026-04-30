@@ -41,14 +41,14 @@ async function getSearchConsoleData(siteUrl: string, days: number = 7) {
 
 // --- Detailed breakdowns ---
 
-export interface SCAggregates {
+interface SCAggregates {
   clicks: number;
   impressions: number;
   ctr: number;
   position: number;
 }
 
-export interface SCQueryRow {
+interface SCQueryRow {
   query: string;
   clicks: number;
   impressions: number;

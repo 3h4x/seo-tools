@@ -32,7 +32,7 @@ export interface GapRecommendation {
   affectedPages?: string[];
 }
 
-export interface SiteGapAnalysis {
+interface SiteGapAnalysis {
   siteId: string;
   domain: string;
   gaps: GapRecommendation[];

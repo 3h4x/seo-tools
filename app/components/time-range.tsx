@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
-const ranges = [
+const DEFAULT_RANGES = [
   { value: '1', label: '1d' },
   { value: '7', label: '7d' },
   { value: '30', label: '30d' },
@@ -11,20 +11,28 @@ const ranges = [
   { value: '365', label: '1y' },
 ];
 
-export default function TimeRange() {
+export default function TimeRange({
+  param = 'days',
+  options = DEFAULT_RANGES,
+  defaultValue = '7',
+}: {
+  param?: string;
+  options?: { value: string; label: string }[];
+  defaultValue?: string;
+} = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const current = searchParams.get('days') || '7';
+  const current = searchParams.get(param) || defaultValue;
 
   return (
     <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
-      {ranges.map((r) => (
+      {options.map((r) => (
         <button
           key={r.value}
           onClick={() => {
             const params = new URLSearchParams(searchParams);
-            params.set('days', r.value);
+            params.set(param, r.value);
             router.push(`${pathname}?${params.toString()}`);
           }}
           className={`px-2.5 py-1 text-xs rounded transition-colors ${

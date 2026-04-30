@@ -4,7 +4,7 @@ import { daysAgo } from './format';
 
 export type DecaySeverity = 'severe' | 'moderate' | 'mild';
 
-export interface DecayingPage {
+interface DecayingPage {
   page: string;
   siteId: string;
   domain: string;
@@ -20,7 +20,7 @@ export interface DecayingPage {
   positionDelta: number;
 }
 
-export interface SiteDecayResult {
+interface SiteDecayResult {
   siteId: string;
   domain: string;
   decayingPages: DecayingPage[];

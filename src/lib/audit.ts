@@ -11,13 +11,13 @@ export interface CheckResult {
   details?: string;
 }
 
-export interface RobotsTxtResult extends CheckResult {
+interface RobotsTxtResult extends CheckResult {
   raw?: string;
   hasSitemapDirective: boolean;
   sitemapUrl?: string;
 }
 
-export interface SitemapResult extends CheckResult {
+interface SitemapResult extends CheckResult {
   url?: string;
   urlCount?: number;
   isIndex?: boolean;
@@ -25,7 +25,7 @@ export interface SitemapResult extends CheckResult {
   lastmodSample?: string;
 }
 
-export interface MetaTagResult {
+interface MetaTagResult {
   page: string;
   ogImageUrl?: string;
   title: CheckResult;
@@ -38,24 +38,24 @@ export interface MetaTagResult {
   jsonLd: CheckResult;
 }
 
-export interface OgImageResult extends CheckResult {
+interface OgImageResult extends CheckResult {
   url?: string;
   contentType?: string;
   dimensions?: string;
 }
 
-export interface TtfbResult extends CheckResult {
+interface TtfbResult extends CheckResult {
   ms?: number;
 }
 
-export interface ImageDetail {
+interface ImageDetail {
   src: string;
   hasAlt: boolean;
   altText?: string;
   isLazy: boolean;
 }
 
-export interface ImageSeoResult {
+interface ImageSeoResult {
   page: string;
   totalImages: number;
   withAlt: number;
@@ -67,7 +67,7 @@ export interface ImageSeoResult {
   images: ImageDetail[];
 }
 
-export interface InternalLinkResult {
+interface InternalLinkResult {
   page: string;
   internalLinks: number;
   externalLinks: number;
@@ -76,13 +76,13 @@ export interface InternalLinkResult {
   message: string;
 }
 
-export interface SecurityResult {
+interface SecurityResult {
   https: CheckResult;
   hsts: CheckResult;
   favicon: CheckResult;
 }
 
-export interface IndexingCoverageResult extends CheckResult {
+interface IndexingCoverageResult extends CheckResult {
   sitemapUrls?: number;
   indexedPages?: number;
   coveragePct?: number;

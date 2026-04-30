@@ -210,7 +210,7 @@ export function clearCache(keyPattern?: string): void {
 
 // --- Query helpers ---
 
-export interface ScTrendPoint {
+interface ScTrendPoint {
   date: string;
   clicks: number;
   impressions: number;
@@ -218,7 +218,7 @@ export interface ScTrendPoint {
   position: number;
 }
 
-export interface Ga4TrendPoint {
+interface Ga4TrendPoint {
   date: string;
   users: number;
   sessions: number;
@@ -227,7 +227,7 @@ export interface Ga4TrendPoint {
   avgDuration: number;
 }
 
-export interface AuditTrendPoint {
+interface AuditTrendPoint {
   date: string;
   pass: number;
   warn: number;
@@ -288,7 +288,7 @@ export function getAuditTrends(siteId: string, limit: number = 90): AuditTrendPo
 
 // --- Daily SC/GA4 helpers ---
 
-export interface DailyPoint {
+interface DailyPoint {
   date: string;
   clicks: number;
   impressions: number;
@@ -296,7 +296,7 @@ export interface DailyPoint {
   position: number;
 }
 
-export interface Ga4DailyPoint {
+interface Ga4DailyPoint {
   date: string;
   users: number;
   sessions: number;

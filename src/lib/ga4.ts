@@ -34,7 +34,7 @@ export async function discoverPropertyIds() {
   }
 }
 
-export interface GA4Metrics {
+interface GA4Metrics {
   users: number;
   sessions: number;
   views: number;
@@ -42,20 +42,20 @@ export interface GA4Metrics {
   avgSessionDuration: number;
 }
 
-export interface GA4TopPage {
+interface GA4TopPage {
   path: string;
   views: number;
   users: number;
 }
 
-export interface GA4TrafficSource {
+interface GA4TrafficSource {
   source: string;
   medium: string;
   sessions: number;
   users: number;
 }
 
-export interface GA4Data {
+interface GA4Data {
   current: GA4Metrics;
   previous: GA4Metrics;
   topPages: GA4TopPage[];
