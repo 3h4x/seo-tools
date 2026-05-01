@@ -42,7 +42,7 @@ export function SkeletonSummaryRow({ count = 4 }: { count?: number }) {
   );
 }
 
-export function SkeletonSiteCard() {
+function SkeletonSiteCard() {
   return (
     <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 space-y-4">
       <div className="flex items-center justify-between">

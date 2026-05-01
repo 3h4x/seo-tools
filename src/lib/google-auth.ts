@@ -26,7 +26,3 @@ export function getAuth(): GoogleAuth {
   });
 }
 
-// Convenience wrapper kept for callers that need a raw auth client
-export async function getAuthClient() {
-  return await getAuth().getClient();
-}

@@ -2,7 +2,7 @@ import type { CheckStatus, CheckResult } from '@/lib/audit';
 import type { GapRecommendation } from '@/lib/gaps';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gaps';
 
-export const statusColors: Record<CheckStatus, string> = {
+const statusColors: Record<CheckStatus, string> = {
   pass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   warn: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   fail: 'bg-red-500/10 text-red-400 border-red-500/20',
