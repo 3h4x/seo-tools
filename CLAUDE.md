@@ -220,12 +220,14 @@ Storage & charting:
 4. **Naming**: source files use kebab-case (`search-console.ts`, `google-auth.ts`). React component files use PascalCase where applicable.
 5. **Caching**: use `withCache()` HOF for any new API route calling Google APIs. Do not inline cache logic.
 6. **No hardcoded site data**: never hardcode domain names, GA4 property IDs, or SC URLs. All site config comes from SQLite via `src/lib/sites.ts`.
+7. **Module exports**: only export what is consumed outside the module. Remove `export` from interfaces, types, and functions that are internal to a file — unexported symbols are easier to refactor and test.
+8. **Component size**: inline single-use React components (≤~40 lines, used in exactly one place) directly into the parent file. Only extract to a separate file when the component is reused in 2+ places or is large enough to warrant it. Extend existing flexible components with optional props rather than creating specialized one-off variants.
 
 ## Testing Rules
 
 1. **Runner**: vitest (`pnpm test`). Run after every non-trivial lib change.
 2. **Pre-commit hook** (husky) runs `pnpm lint && pnpm type-check && pnpm test` — all three must pass before commit.
-3. **Unit tests**: live in `src/lib/__tests__/`, named `<module>.test.ts`. Test new lib functions, data transformations, and edge cases in audit/gap logic. Skip thin API route handlers that are already covered by lib tests.
+3. **Unit tests**: live in `src/lib/__tests__/`, named `<module>.test.ts`. Test new lib functions, data transformations, and edge cases in audit/gap logic. Skip thin API route handlers with no logic of their own. Do test route handlers that contain non-trivial branching, auth validation, credential normalization, or cache management — import the handler directly and mock its dependencies.
 4. **Mocking**: mock external Google API clients in unit tests. Do not mock SQLite — use an in-memory or temp-file DB for tests that need persistence.
 5. **E2E tests**: Playwright (`pnpm test:e2e`), config in `playwright.config.ts`, tests in `e2e/`. Run manually for UI flow verification; not enforced in pre-commit.
 
