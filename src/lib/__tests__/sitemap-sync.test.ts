@@ -1,10 +1,47 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../google-auth', () => ({ getAuth: vi.fn() }));
 vi.mock('../db', () => ({ getDb: vi.fn() }));
 vi.mock('@googleapis/searchconsole', () => ({ searchconsole_v1: { Searchconsole: vi.fn() } }));
 
-import { parseSitemap, hashContent } from '../sitemap-sync';
+import { getAuth } from '../google-auth';
+import { getDb } from '../db';
+import { searchconsole_v1 } from '@googleapis/searchconsole';
+import { parseSitemap, hashContent, runSitemapSync } from '../sitemap-sync';
+
+const SAMPLE_XML = `<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://example.com/</loc><lastmod>2024-01-01</lastmod></url></urlset>`;
+
+function makeDb(rows: { id: string; domain: string; sc_url: string | null }[] = [], prevState?: Record<string, unknown>) {
+  const stmtGet = { get: vi.fn().mockReturnValue(prevState ?? undefined) };
+  const stmtAll = { all: vi.fn().mockReturnValue(rows) };
+  const stmtRun = { run: vi.fn() };
+  const prepare = vi.fn().mockImplementation((sql: string) => {
+    if (sql.includes('SELECT id')) return stmtAll;
+    if (sql.includes('SELECT *')) return stmtGet;
+    return stmtRun;
+  });
+  return { exec: vi.fn(), prepare, _stmtRun: stmtRun, _stmtGet: stmtGet };
+}
+
+function mockFetch(ok: boolean, body = SAMPLE_XML) {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok,
+    status: ok ? 200 : 404,
+    text: () => Promise.resolve(body),
+  }));
+}
+
+function mockSc(submitImpl: () => Promise<unknown> = () => Promise.resolve({})) {
+  vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+    return { sitemaps: { submit: vi.fn().mockImplementation(submitImpl) } };
+  } as never);
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(getAuth).mockReturnValue({} as never);
+  mockSc();
+});
 
 describe('parseSitemap', () => {
   it('counts <url> elements in a standard sitemap', () => {
@@ -85,5 +122,167 @@ describe('hashContent', () => {
     const mixedNewlines = '<urlset>\n  <url>\n  </url>\n</urlset>';
     expect(hashContent(singleSpace)).toBe(hashContent(multiSpace));
     expect(hashContent(singleSpace)).toBe(hashContent(mixedNewlines));
+  });
+});
+
+describe('runSitemapSync', () => {
+  it('completes without error when there are no sites', async () => {
+    vi.mocked(getDb).mockReturnValue(makeDb([]) as never);
+    await expect(runSitemapSync()).resolves.toBeUndefined();
+  });
+
+  it('skips site and counts error when sitemap fetch fails', async () => {
+    const db = makeDb([{ id: 'site1', domain: 'example.com', sc_url: null }]);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNREFUSED')));
+
+    await runSitemapSync();
+
+    expect(db._stmtRun.run).not.toHaveBeenCalled();
+  });
+
+  it('skips site and counts error when fetch returns non-OK status', async () => {
+    const db = makeDb([{ id: 'site1', domain: 'example.com', sc_url: null }]);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(false);
+
+    await runSitemapSync();
+
+    expect(db._stmtRun.run).not.toHaveBeenCalled();
+  });
+
+  it('updates state without submitting when content is unchanged', async () => {
+    const hash = hashContent(SAMPLE_XML);
+    const prevState = { content_hash: hash, last_submitted_at: null, submit_count: 2 };
+    const db = makeDb([{ id: 'site1', domain: 'example.com', sc_url: null }], prevState);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(true);
+
+    const submit = vi.fn();
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return { sitemaps: { submit } };
+    } as never);
+
+    await runSitemapSync();
+
+    expect(submit).not.toHaveBeenCalled();
+    expect(db._stmtRun.run).toHaveBeenCalledOnce();
+  });
+
+  it('updates state without submitting when throttled (< 24h since last submit)', async () => {
+    const prevState = {
+      content_hash: 'old-hash',
+      last_submitted_at: Date.now() - 1000,
+      submit_count: 1,
+    };
+    const db = makeDb([{ id: 'site1', domain: 'example.com', sc_url: null }], prevState);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(true);
+
+    const submit = vi.fn();
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return { sitemaps: { submit } };
+    } as never);
+
+    await runSitemapSync();
+
+    expect(submit).not.toHaveBeenCalled();
+    expect(db._stmtRun.run).toHaveBeenCalledOnce();
+  });
+
+  it('submits sitemap when content changed and throttle window has passed', async () => {
+    const prevState = {
+      content_hash: 'old-hash',
+      last_submitted_at: Date.now() - 25 * 60 * 60 * 1000,
+      submit_count: 3,
+    };
+    const db = makeDb([{ id: 'site1', domain: 'example.com', sc_url: 'sc-domain:example.com' }], prevState);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(true);
+
+    const submit = vi.fn().mockResolvedValue({});
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return { sitemaps: { submit } };
+    } as never);
+
+    await runSitemapSync();
+
+    expect(submit).toHaveBeenCalledWith({
+      siteUrl: 'sc-domain:example.com',
+      feedpath: 'https://example.com/sitemap.xml',
+    });
+    const callArgs = db._stmtRun.run.mock.calls[0][0] as Record<string, unknown>;
+    expect(callArgs.submit_count).toBe(4);
+  });
+
+  it('submits when no previous state exists (first time)', async () => {
+    const db = makeDb([{ id: 'site1', domain: 'example.com', sc_url: null }], undefined);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(true);
+
+    const submit = vi.fn().mockResolvedValue({});
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return { sitemaps: { submit } };
+    } as never);
+
+    await runSitemapSync();
+
+    expect(submit).toHaveBeenCalledOnce();
+  });
+
+  it('records error and saves state without submitting when SC submit throws', async () => {
+    const prevState = {
+      content_hash: 'old-hash',
+      last_submitted_at: Date.now() - 25 * 60 * 60 * 1000,
+      submit_count: 0,
+    };
+    const db = makeDb([{ id: 'site1', domain: 'example.com', sc_url: null }], prevState);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(true);
+
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return { sitemaps: { submit: vi.fn().mockRejectedValue(new Error('Quota exceeded')) } };
+    } as never);
+
+    await runSitemapSync();
+
+    expect(db._stmtRun.run).toHaveBeenCalledOnce();
+    const callArgs = db._stmtRun.run.mock.calls[0][0] as Record<string, unknown>;
+    expect(callArgs.submit_count).toBe(0);
+  });
+
+  it('constructs sitemapUrl with https:// prefix for bare domain', async () => {
+    const db = makeDb([{ id: 'site1', domain: 'mysite.io', sc_url: null }], undefined);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(true);
+
+    const submit = vi.fn().mockResolvedValue({});
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return { sitemaps: { submit } };
+    } as never);
+
+    await runSitemapSync();
+
+    expect(fetch).toHaveBeenCalledWith(
+      'https://mysite.io/sitemap.xml',
+      expect.any(Object),
+    );
+  });
+
+  it('uses sc_url from db when provided', async () => {
+    const db = makeDb([{ id: 'site1', domain: 'mysite.io', sc_url: 'https://mysite.io/' }], undefined);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(true);
+
+    const submit = vi.fn().mockResolvedValue({});
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return { sitemaps: { submit } };
+    } as never);
+
+    await runSitemapSync();
+
+    expect(submit).toHaveBeenCalledWith(
+      expect.objectContaining({ siteUrl: 'https://mysite.io/' }),
+    );
   });
 });
