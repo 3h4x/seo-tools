@@ -209,19 +209,42 @@ Storage & charting:
 ## Coding Conventions
 
 1. **TypeScript**: strict mode is enabled (`"strict": true`). `@typescript-eslint/no-explicit-any` is intentionally disabled — use `any` sparingly when necessary.
-2. **Path aliases**: use `@/` for imports from `src/` (e.g. `import { db } from '@/lib/db'`). Prefer `@/` over relative `../` imports across directory boundaries.
-3. **File layout**:
+2. **Runtime/framework versions**: this repo is on Next 16, React 19, TypeScript 6, Tailwind v4, ESLint 9, Vitest 4, and Playwright 1.59. Follow current App Router/server component patterns; do not introduce Pages Router, legacy React class components, or old Tailwind config assumptions.
+3. **Path aliases**: use `@/` for imports from `src/` (e.g. `import { db } from '@/lib/db'`). Prefer `@/` over relative `../` imports across directory boundaries.
+4. **File layout**:
    - App routes → `app/` (Next.js App Router; note: no `src/app/` — the `app/` dir is at the project root)
    - Business logic / shared utilities → `src/lib/`
    - React components → `app/components/`
    - Unit tests → `src/lib/__tests__/<module>.test.ts` (colocated with the lib they test)
    - E2E tests → `e2e/`
    - CLI scripts → `scripts/`
-4. **Naming**: source files use kebab-case (`search-console.ts`, `google-auth.ts`). React component files use PascalCase where applicable.
-5. **Caching**: use `withCache()` HOF for any new API route calling Google APIs. Do not inline cache logic.
-6. **No hardcoded site data**: never hardcode domain names, GA4 property IDs, or SC URLs. All site config comes from SQLite via `src/lib/sites.ts`.
-7. **Module exports**: only export what is consumed outside the module. Remove `export` from interfaces, types, and functions that are internal to a file — unexported symbols are easier to refactor and test.
-8. **Component size**: inline single-use React components (≤~40 lines, used in exactly one place) directly into the parent file. Only extract to a separate file when the component is reused in 2+ places or is large enough to warrant it. Extend existing flexible components with optional props rather than creating specialized one-off variants.
+5. **Naming**: source files use kebab-case (`search-console.ts`, `google-auth.ts`). React component files use PascalCase where applicable.
+6. **Caching**: use `withCache()` HOF for any new API route calling Google APIs. Do not inline cache logic.
+7. **No hardcoded site data**: never hardcode domain names, GA4 property IDs, or SC URLs. All site config comes from SQLite via `src/lib/sites.ts`.
+8. **Error handling**: Google/API integrations should catch provider failures, log a short contextual `console.error`, and return neutral data (`null`, empty arrays, or zeroed aggregates) so one bad site does not break the dashboard. API routes should return `NextResponse.json({ error })` with an appropriate 4xx/5xx status for user-fixable failures.
+9. **Async patterns**: use `async`/`await` and bounded, obvious `Promise.all` fan-out for independent per-site/API calls. Keep cache reads/writes best-effort; do not make cache failures user-visible.
+10. **Lint/format**: run `pnpm lint` and fix reported issues in source rather than disabling rules locally unless the existing file already establishes that exception.
+11. **Module exports**: only export what is consumed outside the module. Remove `export` from interfaces, types, and functions that are internal to a file — unexported symbols are easier to refactor and test.
+12. **Component size**: inline single-use React components (≤~40 lines, used in exactly one place) directly into the parent file. Only extract to a separate file when the component is reused in 2+ places or is large enough to warrant it. Extend existing flexible components with optional props rather than creating specialized one-off variants.
+
+## Architecture & Patterns
+
+1. **SQLite access**: centralize schema, migrations, cache helpers, and query helpers in `src/lib/db.ts`; do not create parallel DB/cache modules. Keep CLI schema changes in sync where scripts create the same tables.
+2. **Site config**: use `src/lib/sites.ts` as the boundary for managed site CRUD and normalization. UI and route handlers should call that module instead of reading the `sites` table directly.
+3. **Google clients**: keep Search Console logic in `src/lib/search-console.ts`, GA4 logic in `src/lib/ga4.ts`, and service account parsing/auth in `src/lib/google-auth.ts`. Do not expose credentials to client components.
+4. **Server/client split**: prefer server components for data loading and small client components only for interaction, sorting, charts, form state, refresh state, and clipboard behavior.
+5. **Caching strategy**: all Search Console, GA4, and audit fetches should use the SQLite `api_cache` table through `withCache()` unless they are explicit refresh, mutation, or health-check paths.
+6. **Background jobs**: long-running recurring work belongs in `src/lib/sitemap-sync.ts` or `src/lib/collect-daily.ts` with CLI wrappers in `scripts/`; keep startup hooks idempotent.
+7. **Styling**: use Tailwind v4 classes and the existing dark neutral dashboard style in `app/globals.css` and existing components. Keep operational pages dense and scannable rather than marketing-oriented.
+
+## Scope & Safety Rules
+
+1. Never commit secrets, `.env*` files, `data/seo-tools.db`, Playwright reports, or generated local build artifacts.
+2. Do not change SQLite schema, migration behavior, Docker deployment files, release automation, or service account storage semantics without a focused reason in the user request.
+3. Do not run destructive database, git, Docker, or deployment commands (`rm` data files, `git reset --hard`, forced pushes, Synology update commands) unless the user explicitly asks for that operation.
+4. Work on the current branch unless instructed otherwise. This repo's recent workflow commits directly on `main`; do not create feature branches by default.
+5. Before committing, verify `git status --short` and include only relevant files. Leave unrelated user changes untouched.
+6. Preserve `pnpm-lock.yaml` and the `pnpm.onlyBuiltDependencies` allowlist when installing or updating dependencies.
 
 ## Testing Rules
 
