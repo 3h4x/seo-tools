@@ -20,6 +20,10 @@ function getReq(days?: number): NextRequest {
   return new NextRequest(url);
 }
 
+function getReqRaw(query: string): NextRequest {
+  return new NextRequest(`http://localhost/api/daily?${query}`);
+}
+
 const SITE = { id: 'site1', name: 'Site One', domain: 'site1.com', testPages: [] };
 
 beforeEach(() => {
@@ -82,6 +86,12 @@ describe('GET /api/daily', () => {
   it('defaults to 30 days when no param provided', async () => {
     await GET(getReq());
     expect(getScDaily).toHaveBeenCalledWith('site1', 30);
+  });
+
+  it('defaults to 30 days when days param is invalid', async () => {
+    await GET(getReqRaw('days=abc'));
+    expect(getScDaily).toHaveBeenCalledWith('site1', 30);
+    expect(getGa4Daily).toHaveBeenCalledWith('site1', 30);
   });
 
   it('assigns a default color to sites metadata', async () => {

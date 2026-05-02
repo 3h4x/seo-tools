@@ -4,7 +4,8 @@ import { getManagedSites } from '@/lib/sites';
 import { CHART_COLORS } from '@/lib/constants';
 
 export async function GET(req: NextRequest) {
-  const days = Math.min(365, Math.max(1, parseInt(req.nextUrl.searchParams.get('days') || '30')));
+  const parsedDays = parseInt(req.nextUrl.searchParams.get('days') || '30');
+  const days = Number.isFinite(parsedDays) ? Math.min(365, Math.max(1, parsedDays)) : 30;
 
   // Calculate the cutoff date
   const cutoff = new Date();
