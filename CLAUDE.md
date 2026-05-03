@@ -205,6 +205,7 @@ Storage & charting:
 3. Run `pnpm audit` after any dependency change; resolve critical/high findings before committing.
 4. Verify new packages on npmjs.com (publish date, download count, maintainer history) before adding. Justify every new dep in the commit message.
 5. Never add a package not already in `package.json` without explicit user approval.
+6. Before adding or updating any package, inspect its lifecycle scripts (`postinstall`, `prepare`, `preinstall`) in the registry tarball or manifest and avoid packages that execute unnecessary install-time code.
 
 ## Coding Conventions
 
@@ -226,6 +227,7 @@ Storage & charting:
 10. **Lint/format**: run `pnpm lint` and fix reported issues in source rather than disabling rules locally unless the existing file already establishes that exception.
 11. **Module exports**: only export what is consumed outside the module. Remove `export` from interfaces, types, and functions that are internal to a file — unexported symbols are easier to refactor and test.
 12. **Component size**: inline single-use React components (≤~40 lines, used in exactly one place) directly into the parent file. Only extract to a separate file when the component is reused in 2+ places or is large enough to warrant it. Extend existing flexible components with optional props rather than creating specialized one-off variants.
+13. **Imports and barrels**: prefer direct imports from the owning module (`@/lib/foo`, `@/app/components/Bar`) and avoid new barrel files or `export *` aggregators unless the pattern already exists in that folder.
 
 ## Architecture & Patterns
 
@@ -236,6 +238,8 @@ Storage & charting:
 5. **Caching strategy**: all Search Console, GA4, and audit fetches should use the SQLite `api_cache` table through `withCache()` unless they are explicit refresh, mutation, or health-check paths.
 6. **Background jobs**: long-running recurring work belongs in `src/lib/sitemap-sync.ts` or `src/lib/collect-daily.ts` with CLI wrappers in `scripts/`; keep startup hooks idempotent.
 7. **Styling**: use Tailwind v4 classes and the existing dark neutral dashboard style in `app/globals.css` and existing components. Keep operational pages dense and scannable rather than marketing-oriented.
+8. **Route handlers**: keep `app/api/**/route.ts` files thin. Parse the request, delegate business logic to `src/lib/**`, and keep response shaping or status-code branching in the handler.
+9. **State management**: load dashboard data on the server by default, pass serialized results into client components, and keep client state local to the page or component. Do not introduce a global client state library for fetched data.
 
 ## Scope & Safety Rules
 
@@ -245,6 +249,7 @@ Storage & charting:
 4. Work on the current branch unless instructed otherwise. This repo's recent workflow commits directly on `main`; do not create feature branches by default.
 5. Before committing, verify `git status --short` and include only relevant files. Leave unrelated user changes untouched.
 6. Preserve `pnpm-lock.yaml` and the `pnpm.onlyBuiltDependencies` allowlist when installing or updating dependencies.
+7. Do not bypass repo safeguards with `--no-verify`, disabled hooks, force-pushes, or history rewrites unless the user explicitly asks for that exact operation.
 
 ## Testing Rules
 
