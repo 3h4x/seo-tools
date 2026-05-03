@@ -244,7 +244,7 @@ export default async function SiteDashboardPage({
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">
             Keyword Rank Changes
-            <Link href="/trends?tab=keywords" className="ml-3 text-neutral-600 hover:text-neutral-400 normal-case font-normal">view history →</Link>
+            <Link href="/trends#keywords" className="ml-3 text-neutral-600 hover:text-neutral-400 normal-case font-normal">view history →</Link>
           </h2>
           <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
             <KeywordRankTable deltas={keywordDeltas} />
@@ -491,4 +491,3 @@ function AuditPanel({ title, children }: { title: string; children: ReactNode })
     </div>
   );
 }
-

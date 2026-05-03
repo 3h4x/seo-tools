@@ -23,10 +23,9 @@ export const revalidate = 300;
 export default async function TrendsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = await searchParams;
-  const activeTab = sp.tab === 'keywords' ? 'keywords' : 'overview';
+  await searchParams;
 
   let snapshotCount: number;
   let keywordCount: number;
@@ -88,39 +87,8 @@ export default async function TrendsPage({
           {snapshotCount === 1 && ' · Run daily for trend data'}
         </p>
       </div>
-
-      {/* Tab navigation */}
-      <div className="flex gap-1 border-b border-neutral-800">
-        <Link
-          href="/trends"
-          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-            activeTab === 'overview'
-              ? 'border-white text-white'
-              : 'border-transparent text-neutral-500 hover:text-neutral-300'
-          }`}
-        >
-          Overview
-        </Link>
-        <Link
-          href="/trends?tab=keywords"
-          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-            activeTab === 'keywords'
-              ? 'border-white text-white'
-              : 'border-transparent text-neutral-500 hover:text-neutral-300'
-          }`}
-        >
-          Keywords
-          {keywordCount > 0 && (
-            <span className="ml-1.5 text-[10px] text-neutral-600 font-mono">{keywordCount.toLocaleString()}</span>
-          )}
-        </Link>
-      </div>
-
-      {activeTab === 'overview' ? (
-        <OverviewTab managedSites={managedSites} snapshotCount={snapshotCount} />
-      ) : (
-        <KeywordsTab managedSites={managedSites} keywordCount={keywordCount} />
-      )}
+      <OverviewTab managedSites={managedSites} snapshotCount={snapshotCount} />
+      <KeywordsSection managedSites={managedSites} keywordCount={keywordCount} />
     </div>
   );
 }
@@ -302,7 +270,7 @@ function OverviewTab({
   );
 }
 
-function KeywordsTab({
+function KeywordsSection({
   managedSites,
   keywordCount,
 }: {
@@ -311,12 +279,18 @@ function KeywordsTab({
 }) {
   if (keywordCount === 0) {
     return (
-      <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-8 text-center">
-        <p className="text-amber-400 font-bold">No keyword history yet</p>
-        <p className="text-neutral-500 text-sm mt-2">
-          Run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> to start capturing per-keyword rank data.
-        </p>
-      </div>
+      <section id="keywords" className="space-y-4 scroll-mt-8">
+        <div>
+          <h2 className="text-lg font-bold text-white">Keyword History</h2>
+          <p className="text-neutral-500 text-sm mt-1">Rank movement over time across tracked queries</p>
+        </div>
+        <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-8 text-center">
+          <p className="text-amber-400 font-bold">No keyword history yet</p>
+          <p className="text-neutral-500 text-sm mt-2">
+            Run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> to start capturing per-keyword rank data.
+          </p>
+        </div>
+      </section>
     );
   }
 
@@ -326,56 +300,64 @@ function KeywordsTab({
     return { site, topQueries, history, deltas };
   }).filter((s) => s.topQueries.length > 0);
 
-  if (sitesData.length === 0) {
-    return (
-      <p className="text-neutral-500 text-sm">No keyword data found for any configured site.</p>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      {sitesData.map(({ site, topQueries, history, deltas }) => {
-        const chartData = buildKeywordChartData(history, topQueries);
-        const chartLines = topQueries.map((q, i) => ({
-          key: q,
-          color: CHART_COLORS[i % CHART_COLORS.length],
-          label: q,
-        }));
+    <section id="keywords" className="space-y-4 scroll-mt-8">
+      <div>
+        <h2 className="text-lg font-bold text-white">Keyword History</h2>
+        <p className="text-neutral-500 text-sm mt-1">
+          Rank movement over time across tracked queries
+          {keywordCount > 0 && <span className="text-neutral-600 font-mono ml-2">{keywordCount.toLocaleString()} keywords</span>}
+        </p>
+      </div>
 
-        return (
-          <div key={site.id} className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 space-y-5">
-            <div className="flex items-center gap-3">
-              <Link href={`/${site.id}`} className="text-white font-semibold hover:underline">{site.name}</Link>
-              <span className="text-neutral-600 text-xs">{site.domain}</span>
-              <span className="text-neutral-700 text-[10px] ml-auto">{deltas.length} tracked queries</span>
-            </div>
+      {sitesData.length === 0 ? (
+        <p className="text-neutral-500 text-sm">No keyword data found for any configured site.</p>
+      ) : (
+        <div className="space-y-6">
+          {sitesData.map(({ site, topQueries, history, deltas }) => {
+            const chartData = buildKeywordChartData(history, topQueries);
+            const chartLines = topQueries.map((q, i) => ({
+              key: q,
+              color: CHART_COLORS[i % CHART_COLORS.length],
+              label: q,
+            }));
 
-            {chartData.length >= 2 && (
-              <div>
-                <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">
-                  Position Over Time · top {topQueries.length} queries · lower is better
-                </h3>
-                <TrendChart
-                  data={chartData as Parameters<typeof TrendChart>[0]['data']}
-                  lines={chartLines}
-                  yAxisReversed
-                  formatValue={(v) => v.toFixed(1)}
-                  height={220}
-                  yAxisWidth={30}
-                />
+            return (
+              <div key={site.id} className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 space-y-5">
+                <div className="flex items-center gap-3">
+                  <Link href={`/${site.id}`} className="text-white font-semibold hover:underline">{site.name}</Link>
+                  <span className="text-neutral-600 text-xs">{site.domain}</span>
+                  <span className="text-neutral-700 text-[10px] ml-auto">{deltas.length} tracked queries</span>
+                </div>
+
+                {chartData.length >= 2 && (
+                  <div>
+                    <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">
+                      Position Over Time · top {topQueries.length} queries · lower is better
+                    </h3>
+                    <TrendChart
+                      data={chartData as Parameters<typeof TrendChart>[0]['data']}
+                      lines={chartLines}
+                      yAxisReversed
+                      formatValue={(v) => v.toFixed(1)}
+                      height={220}
+                      yAxisWidth={30}
+                    />
+                  </div>
+                )}
+
+                {deltas.length > 0 && (
+                  <div>
+                    <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">Rank Changes</h3>
+                    <KeywordRankTable deltas={deltas} />
+                  </div>
+                )}
               </div>
-            )}
-
-            {deltas.length > 0 && (
-              <div>
-                <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">Rank Changes</h3>
-                <KeywordRankTable deltas={deltas} />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 
