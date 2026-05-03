@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 
 vi.mock('../google-auth', () => ({ getAuth: vi.fn() }));
 vi.mock('../db', () => ({
@@ -16,37 +16,145 @@ import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { getDb, upsertGa4Daily, upsertScDaily } from '../db';
 import { discoverPropertyIds } from '../ga4';
 import { getAuth } from '../google-auth';
-import { batchRanges, startCollector } from '../collect-daily';
 import { getManagedSites, getSCUrl } from '../sites';
+
+beforeEach(() => {
+  vi.resetModules();
+});
 
 afterEach(() => {
   vi.useRealTimers();
   vi.clearAllMocks();
 });
 
+async function loadCollectDailyModule() {
+  return import('../collect-daily');
+}
+
+type DbState = {
+  genesis?: Record<string, string>;
+  latest?: Record<string, string | null>;
+  existing?: Record<string, string[]>;
+};
+
+function mockDbState(state: DbState = {}) {
+  const genesis = new Map(Object.entries(state.genesis ?? {}));
+  const latest = new Map(Object.entries(state.latest ?? {}));
+  const existing = new Map(Object.entries(state.existing ?? {}));
+  const genesisRun = vi.fn((siteId: string, source: string, date: string) => {
+    genesis.set(`${source}:${siteId}`, date);
+  });
+
+  vi.mocked(getDb).mockReturnValue({
+    prepare: vi.fn((sql: string) => {
+      if (sql.includes('SELECT genesis_date')) {
+        return {
+          get: vi.fn((siteId: string, source: string) => {
+            const value = genesis.get(`${source}:${siteId}`);
+            return value ? { genesis_date: value } : undefined;
+          }),
+        };
+      }
+      if (sql.includes('SELECT MAX(date)')) {
+        return {
+          get: vi.fn((siteId: string) => ({
+            latest: latest.get(siteId) ?? null,
+          })),
+        };
+      }
+      if (sql.includes('SELECT date FROM')) {
+        return {
+          all: vi.fn((siteId: string, start: string, end: string) => {
+            const rows = existing.get(siteId) ?? [];
+            return rows
+              .filter(date => date >= start && date <= end)
+              .map(date => ({ date }));
+          }),
+        };
+      }
+      if (sql.includes('INSERT OR REPLACE INTO daily_genesis')) {
+        return { run: genesisRun };
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    }),
+  } as never);
+
+  return { genesisRun };
+}
+
+function mockSites() {
+  const site = {
+    id: 'site1',
+    name: 'Site One',
+    domain: 'example.com',
+    searchConsole: true,
+    testPages: [],
+  };
+
+  vi.mocked(getManagedSites).mockResolvedValue([site]);
+  vi.mocked(discoverPropertyIds).mockResolvedValue([{ ...site, ga4PropertyId: '123' }]);
+  vi.mocked(getSCUrl).mockReturnValue('sc-domain:example.com');
+  vi.mocked(getAuth).mockReturnValue('auth' as never);
+
+  return site;
+}
+
+function mockClients(options?: {
+  scRows?: Array<{
+    keys?: string[];
+    clicks?: number;
+    impressions?: number;
+    ctr?: number;
+    position?: number;
+  }>;
+  ga4Rows?: Array<{
+    dimensionValues?: Array<{ value?: string }>;
+    metricValues?: Array<{ value?: string }>;
+  }>;
+}) {
+  const scQuery = vi.fn().mockResolvedValue({ data: { rows: options?.scRows ?? [] } });
+  vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function SearchconsoleMock() {
+    return {
+      searchanalytics: { query: scQuery },
+    };
+  } as never);
+
+  const runReport = vi.fn().mockResolvedValue([{ rows: options?.ga4Rows ?? [] }]);
+  vi.mocked(BetaAnalyticsDataClient).mockImplementation(function BetaAnalyticsDataClientMock() {
+    return { runReport };
+  } as never);
+
+  return { scQuery, runReport };
+}
+
 describe('batchRanges', () => {
-  it('returns empty array for empty input', () => {
+  it('returns empty array for empty input', async () => {
+    const { batchRanges } = await loadCollectDailyModule();
     expect(batchRanges([])).toEqual([]);
   });
 
-  it('returns single range for a single date', () => {
+  it('returns single range for a single date', async () => {
+    const { batchRanges } = await loadCollectDailyModule();
     expect(batchRanges(['2024-01-15'])).toEqual([{ start: '2024-01-15', end: '2024-01-15' }]);
   });
 
-  it('returns single range for consecutive dates', () => {
+  it('returns single range for consecutive dates', async () => {
+    const { batchRanges } = await loadCollectDailyModule();
     expect(batchRanges(['2024-01-01', '2024-01-02', '2024-01-03'])).toEqual([
       { start: '2024-01-01', end: '2024-01-03' },
     ]);
   });
 
-  it('splits non-consecutive dates into separate ranges', () => {
+  it('splits non-consecutive dates into separate ranges', async () => {
+    const { batchRanges } = await loadCollectDailyModule();
     expect(batchRanges(['2024-01-01', '2024-01-03'])).toEqual([
       { start: '2024-01-01', end: '2024-01-01' },
       { start: '2024-01-03', end: '2024-01-03' },
     ]);
   });
 
-  it('handles multiple gaps correctly', () => {
+  it('handles multiple gaps correctly', async () => {
+    const { batchRanges } = await loadCollectDailyModule();
     const dates = ['2024-01-01', '2024-01-02', '2024-01-05', '2024-01-06', '2024-01-10'];
     expect(batchRanges(dates)).toEqual([
       { start: '2024-01-01', end: '2024-01-02' },
@@ -55,24 +163,28 @@ describe('batchRanges', () => {
     ]);
   });
 
-  it('sorts input dates before batching', () => {
+  it('sorts input dates before batching', async () => {
+    const { batchRanges } = await loadCollectDailyModule();
     const unordered = ['2024-01-03', '2024-01-01', '2024-01-02'];
     expect(batchRanges(unordered)).toEqual([{ start: '2024-01-01', end: '2024-01-03' }]);
   });
 
-  it('handles month boundary correctly', () => {
+  it('handles month boundary correctly', async () => {
+    const { batchRanges } = await loadCollectDailyModule();
     expect(batchRanges(['2024-01-31', '2024-02-01'])).toEqual([
       { start: '2024-01-31', end: '2024-02-01' },
     ]);
   });
 
-  it('handles year boundary correctly', () => {
+  it('handles year boundary correctly', async () => {
+    const { batchRanges } = await loadCollectDailyModule();
     expect(batchRanges(['2023-12-31', '2024-01-01'])).toEqual([
       { start: '2023-12-31', end: '2024-01-01' },
     ]);
   });
 
-  it('does not mutate input array', () => {
+  it('does not mutate input array', async () => {
+    const { batchRanges } = await loadCollectDailyModule();
     const input = ['2024-01-03', '2024-01-01'];
     batchRanges(input);
     expect(input).toEqual(['2024-01-03', '2024-01-01']);
@@ -84,56 +196,18 @@ describe('startCollector', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
 
-    const genesisRun = vi.fn();
-    vi.mocked(getDb).mockReturnValue({
-      prepare: vi.fn((sql: string) => {
-        if (sql.includes('SELECT genesis_date')) {
-          return { get: vi.fn(() => undefined) };
-        }
-        if (sql.includes('SELECT MAX(date)')) {
-          return { get: vi.fn(() => ({ latest: null })) };
-        }
-        if (sql.includes('SELECT date FROM')) {
-          return { all: vi.fn(() => []) };
-        }
-        if (sql.includes('INSERT OR REPLACE INTO daily_genesis')) {
-          return { run: genesisRun };
-        }
-        throw new Error(`Unexpected SQL: ${sql}`);
-      }),
-    } as never);
-
-    const site = {
-      id: 'site1',
-      name: 'Site One',
-      domain: 'example.com',
-      searchConsole: true,
-      testPages: [],
-    };
-    vi.mocked(getManagedSites).mockResolvedValue([site]);
-    vi.mocked(discoverPropertyIds).mockResolvedValue([{ ...site, ga4PropertyId: '123' }]);
-    vi.mocked(getSCUrl).mockReturnValue('sc-domain:example.com');
-    vi.mocked(getAuth).mockReturnValue('auth' as never);
-
-    const scQuery = vi.fn().mockResolvedValue({
-      data: {
-        rows: [{
-          keys: ['2026-04-01'],
-          clicks: 11,
-          impressions: 101,
-          ctr: 0.109,
-          position: 3.2,
-        }],
-      },
-    });
-    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function SearchconsoleMock() {
-      return {
-        searchanalytics: { query: scQuery },
-      };
-    } as never);
-
-    const runReport = vi.fn().mockResolvedValue([{
-      rows: [{
+    const { genesisRun } = mockDbState();
+    mockSites();
+    const { startCollector } = await loadCollectDailyModule();
+    const { scQuery, runReport } = mockClients({
+      scRows: [{
+        keys: ['2026-04-01'],
+        clicks: 11,
+        impressions: 101,
+        ctr: 0.109,
+        position: 3.2,
+      }],
+      ga4Rows: [{
         dimensionValues: [{ value: '20260402' }],
         metricValues: [
           { value: '7' },
@@ -143,10 +217,7 @@ describe('startCollector', () => {
           { value: '42.5' },
         ],
       }],
-    }]);
-    vi.mocked(BetaAnalyticsDataClient).mockImplementation(function BetaAnalyticsDataClientMock() {
-      return { runReport };
-    } as never);
+    });
 
     startCollector();
 
@@ -185,5 +256,96 @@ describe('startCollector', () => {
     expect(genesisRun).toHaveBeenCalledWith('site1', 'sc', '2026-04-01');
     expect(genesisRun).toHaveBeenCalledWith('site1', 'ga4', '2026-04-02');
     expect(vi.getTimerCount()).toBe(1);
+  });
+
+  it('only fetches dates after the latest collected date', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
+
+    mockDbState({
+      latest: {
+        site1: '2026-04-20',
+      },
+      existing: {
+        site1: ['2026-04-20'],
+      },
+    });
+    mockSites();
+    const { startCollector } = await loadCollectDailyModule();
+    const { scQuery, runReport } = mockClients();
+
+    startCollector();
+
+    await vi.waitFor(() => {
+      expect(scQuery).toHaveBeenCalled();
+      expect(runReport).toHaveBeenCalled();
+    });
+
+    expect(scQuery.mock.calls[0][0].requestBody).toMatchObject({
+      startDate: '2026-04-21',
+      endDate: '2026-04-30',
+    });
+    expect(runReport.mock.calls[0][0].dateRanges).toEqual([
+      { startDate: '2026-04-21', endDate: '2026-05-01' },
+    ]);
+  });
+
+  it('respects a later genesis cutoff when history predates first known data', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
+
+    mockDbState({
+      genesis: {
+        'sc:site1': '2026-03-15',
+        'ga4:site1': '2026-03-20',
+      },
+    });
+    mockSites();
+    const { startCollector } = await loadCollectDailyModule();
+    const { scQuery, runReport } = mockClients();
+
+    startCollector();
+
+    await vi.waitFor(() => {
+      expect(scQuery).toHaveBeenCalled();
+      expect(runReport).toHaveBeenCalled();
+    });
+
+    expect(scQuery.mock.calls[0][0].requestBody.startDate).toBe('2026-03-15');
+    expect(runReport.mock.calls[0][0].dateRanges[0].startDate).toBe('2026-03-20');
+  });
+
+  it('sets genesis to the day after the empty range when APIs return no rows', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
+
+    const { genesisRun } = mockDbState({
+      latest: {
+        site1: '2026-04-29',
+      },
+      existing: {
+        site1: ['2026-04-29'],
+      },
+    });
+    mockSites();
+    const { startCollector } = await loadCollectDailyModule();
+    const { scQuery, runReport } = mockClients();
+
+    startCollector();
+
+    await vi.waitFor(() => {
+      expect(upsertScDaily).toHaveBeenCalledWith('site1', []);
+      expect(upsertGa4Daily).toHaveBeenCalledWith('site1', []);
+    });
+
+    expect(scQuery.mock.calls[0][0].requestBody).toMatchObject({
+      startDate: '2026-04-30',
+      endDate: '2026-04-30',
+    });
+    expect(runReport.mock.calls[0][0].dateRanges).toEqual([
+      { startDate: '2026-04-30', endDate: '2026-05-01' },
+    ]);
+    expect(genesisRun).toHaveBeenCalledWith('site1', 'sc', '2026-05-01');
+    expect(genesisRun).toHaveBeenCalledWith('site1', 'ga4', '2026-05-02');
   });
 });
