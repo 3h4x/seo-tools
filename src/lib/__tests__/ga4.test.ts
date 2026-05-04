@@ -190,7 +190,7 @@ describe('cachedGetAnalytics', () => {
     expect(result!.trafficSources).toEqual([]);
   });
 
-  it('skips a malformed current-period row and uses the first row with metrics', async () => {
+  it('skips malformed rows without collapsing current and previous periods', async () => {
     const metricsRes = {
       rows: [
         { metricValues: [{}, { value: '999' }] },
@@ -212,12 +212,13 @@ describe('cachedGetAnalytics', () => {
       avgSessionDuration: 120,
     });
     expect(result!.previous).toEqual({
-      users: 100,
-      sessions: 80,
-      views: 300,
-      bounceRate: 0.4,
-      avgSessionDuration: 120,
+      users: 70,
+      sessions: 60,
+      views: 200,
+      bounceRate: 0.5,
+      avgSessionDuration: 90,
     });
+    expect(result!.current).not.toEqual(result!.previous);
   });
 
   it('returns null on API error', async () => {

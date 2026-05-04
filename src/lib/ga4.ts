@@ -120,8 +120,11 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
       avgSessionDuration: parseFloat(row?.metricValues?.[4]?.value || '0'),
     });
 
-    const currentRow = metricsRes[0].rows?.find(r => r.metricValues?.[0]?.value !== undefined) || metricsRes[0].rows?.[0];
-    const previousRow = metricsRes[0].rows?.[1];
+    // Skip malformed rows before assigning current/previous periods so the two
+    // period aggregates do not collapse onto the same source row.
+    const metricRows = metricsRes[0].rows || [];
+    const validMetricRows = metricRows.filter(row => row.metricValues?.[0]?.value !== undefined);
+    const [currentRow, previousRow] = validMetricRows.length > 0 ? validMetricRows : metricRows;
 
     const topPages: GA4TopPage[] = (topPagesRes[0].rows || []).map(row => ({
       path: row.dimensionValues?.[0]?.value || '/',
