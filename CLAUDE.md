@@ -229,7 +229,7 @@ Storage & charting:
 10. **Lint/format**: run `pnpm lint` and fix reported issues in source rather than disabling rules locally unless the existing file already establishes that exception.
 11. **Module exports**: only export what is consumed outside the module. Remove `export` from interfaces, types, and functions that are internal to a file — unexported symbols are easier to refactor and test.
 12. **Component size**: inline single-use React components (≤~40 lines, used in exactly one place) directly into the parent file. Only extract to a separate file when the component is reused in 2+ places or is large enough to warrant it. Extend existing flexible components with optional props rather than creating specialized one-off variants.
-13. **Imports and barrels**: prefer direct imports from the owning module (`@/lib/foo`, `@/app/components/Bar`) and avoid new barrel files or `export *` aggregators unless the pattern already exists in that folder.
+13. **Imports and barrels**: prefer direct imports from the owning module (`@/lib/foo`, `../components/Bar`) and avoid new barrel files or `export *` aggregators unless the pattern already exists in that folder.
 14. **Alias reality check**: `tsconfig.json` currently maps `@/*` only to `src/*`. Use `@/lib/...` for `src/lib/**`, but do not assume `@/app/**` resolves. Inside `app/**`, use relative imports for `app/components/**` until the alias config changes.
 15. **Lint baseline**: ESLint extends Next core-web-vitals + TypeScript rules. Repo-level exceptions already exist for `no-explicit-any`, `no-unused-vars`, `react/no-unescaped-entities`, and `react-hooks/set-state-in-effect`; do not add one-off disables when the existing config already defines the intended boundary.
 
