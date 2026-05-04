@@ -25,7 +25,8 @@ export default async function TrendsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await searchParams;
+  const sp = await searchParams;
+  const showKeywordsFirst = sp.tab === 'keywords';
 
   let snapshotCount: number;
   let keywordCount: number;
@@ -87,8 +88,17 @@ export default async function TrendsPage({
           {snapshotCount === 1 && ' · Run daily for trend data'}
         </p>
       </div>
-      <OverviewTab managedSites={managedSites} snapshotCount={snapshotCount} />
-      <KeywordsSection managedSites={managedSites} keywordCount={keywordCount} />
+      {showKeywordsFirst ? (
+        <>
+          <KeywordsSection managedSites={managedSites} keywordCount={keywordCount} />
+          <OverviewTab managedSites={managedSites} snapshotCount={snapshotCount} />
+        </>
+      ) : (
+        <>
+          <OverviewTab managedSites={managedSites} snapshotCount={snapshotCount} />
+          <KeywordsSection managedSites={managedSites} keywordCount={keywordCount} />
+        </>
+      )}
     </div>
   );
 }
