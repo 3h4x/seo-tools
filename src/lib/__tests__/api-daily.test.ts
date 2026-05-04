@@ -73,6 +73,36 @@ describe('GET /api/daily', () => {
     expect(entry).toMatchObject({ clicks: 5, impressions: 50, users: 20, views: 80 });
   });
 
+  it('filters out rows older than the requested window', async () => {
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 6);
+    const stale = new Date();
+    stale.setDate(stale.getDate() - 8);
+
+    const recentDate = recent.toISOString().split('T')[0];
+    const staleDate = stale.toISOString().split('T')[0];
+
+    vi.mocked(getScDaily).mockReturnValue([
+      { date: staleDate, clicks: 99, impressions: 999 },
+      { date: recentDate, clicks: 5, impressions: 50 },
+    ] as never);
+    vi.mocked(getGa4Daily).mockReturnValue([
+      { date: staleDate, users: 77, views: 777 },
+      { date: recentDate, users: 20, views: 80 },
+    ] as never);
+
+    const res = await GET(getReq(7));
+    const body = await res.json();
+
+    expect(body.data[staleDate]).toBeUndefined();
+    expect(body.data[recentDate]?.site1).toMatchObject({
+      clicks: 5,
+      impressions: 50,
+      users: 20,
+      views: 80,
+    });
+  });
+
   it('clamps days to 365 maximum', async () => {
     await GET(getReq(9999));
     expect(getScDaily).toHaveBeenCalledWith('site1', 365);

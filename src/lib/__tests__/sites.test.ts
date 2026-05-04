@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../db', () => ({ dbGetSites: vi.fn() }));
 
-import { getSCUrl } from '../sites';
+import { dbGetSites } from '../db';
+import { getSCUrl, getManagedSite, getManagedSites } from '../sites';
 import type { Site } from '../sites';
 
 function makeSite(overrides: Partial<Site> = {}): Site {
@@ -34,5 +35,36 @@ describe('getSCUrl', () => {
   it('uses URL-prefix scUrl for URL-prefix properties', () => {
     const site = makeSite({ scUrl: 'https://3h4x.github.io/', domain: '3h4x.github.io' });
     expect(getSCUrl(site)).toBe('https://3h4x.github.io/');
+  });
+});
+
+describe('managed site lookups', () => {
+  it('returns all managed sites from the database helper', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      makeSite(),
+      makeSite({ id: 'other', domain: 'other.test' }),
+    ] as never);
+
+    await expect(getManagedSites()).resolves.toEqual([
+      makeSite(),
+      makeSite({ id: 'other', domain: 'other.test' }),
+    ]);
+  });
+
+  it('returns a managed site by id', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      makeSite(),
+      makeSite({ id: 'other', domain: 'other.test' }),
+    ] as never);
+
+    await expect(getManagedSite('other')).resolves.toEqual(
+      makeSite({ id: 'other', domain: 'other.test' }),
+    );
+  });
+
+  it('returns null when the managed site id does not exist', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([makeSite()] as never);
+
+    await expect(getManagedSite('missing')).resolves.toBeNull();
   });
 });

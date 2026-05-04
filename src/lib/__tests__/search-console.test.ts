@@ -211,6 +211,21 @@ describe('cachedGetSearchConsoleQueries', () => {
     expect(result).toEqual([]);
   });
 
+  it('uses an empty string when a query row has no keys', async () => {
+    mockQuery.mockResolvedValue({
+      data: { rows: [{ clicks: 5, impressions: 10, ctr: 0.5, position: 1.2 }] },
+    });
+
+    const result = await cachedGetSearchConsoleQueries('example.com');
+    expect(result![0]).toEqual({
+      query: '',
+      clicks: 5,
+      impressions: 10,
+      ctr: 0.5,
+      position: 1.2,
+    });
+  });
+
   it('returns null on error', async () => {
     mockQuery.mockRejectedValue(new Error('500'));
 
@@ -311,5 +326,23 @@ describe('cachedGetSitemapSubmissions', () => {
     expect(typeof result![0].warnings).toBe('number');
     expect(result![0].warnings).toBe(3);
     expect(result![0].errors).toBe(1);
+  });
+
+  it('fills sitemap defaults when fields are omitted', async () => {
+    mockSitemapsList.mockResolvedValue({
+      data: {
+        sitemap: [{}],
+      },
+    });
+
+    const result = await cachedGetSitemapSubmissions('example.com');
+    expect(result![0]).toEqual({
+      path: '',
+      lastSubmitted: null,
+      lastDownloaded: null,
+      isPending: false,
+      warnings: 0,
+      errors: 0,
+    });
   });
 });

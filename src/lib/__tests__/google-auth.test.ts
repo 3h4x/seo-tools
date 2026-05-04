@@ -8,10 +8,12 @@ vi.mock('google-auth-library', () => ({
   GoogleAuth: vi.fn(),
 }));
 
-import { getCredentials } from '../google-auth';
+import { GoogleAuth } from 'google-auth-library';
+import { getCredentials, getAuth } from '../google-auth';
 import { getConfig } from '../db';
 
 const mockGetConfig = vi.mocked(getConfig);
+const MockGoogleAuth = vi.mocked(GoogleAuth);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -60,5 +62,30 @@ describe('getCredentials', () => {
     mockGetConfig.mockReturnValue(JSON.stringify(raw));
     const creds = getCredentials();
     expect(creds.private_key).toBe('KEY\nMORE\nDATA');
+  });
+
+  it('creates GoogleAuth with normalized credentials and required scopes', () => {
+    const raw = {
+      type: 'service_account',
+      client_email: 'bot@example.com',
+      private_key: 'KEY\\nMORE\\nDATA',
+    };
+    mockGetConfig.mockReturnValue(JSON.stringify(raw));
+
+    getAuth();
+
+    expect(MockGoogleAuth).toHaveBeenCalledWith({
+      credentials: {
+        type: 'service_account',
+        client_email: 'bot@example.com',
+        private_key: 'KEY\nMORE\nDATA',
+      },
+      scopes: expect.arrayContaining([
+        'https://www.googleapis.com/auth/webmasters',
+        'https://www.googleapis.com/auth/webmasters.readonly',
+        'https://www.googleapis.com/auth/analytics.readonly',
+        'https://www.googleapis.com/auth/analytics.edit',
+      ]),
+    });
   });
 });

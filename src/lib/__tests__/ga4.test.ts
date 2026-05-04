@@ -190,6 +190,36 @@ describe('cachedGetAnalytics', () => {
     expect(result!.trafficSources).toEqual([]);
   });
 
+  it('skips a malformed current-period row and uses the first row with metrics', async () => {
+    const metricsRes = {
+      rows: [
+        { metricValues: [{}, { value: '999' }] },
+        makeReportRow(['100', '80', '300', '0.4', '120']),
+        makeReportRow(['70', '60', '200', '0.5', '90']),
+      ],
+    };
+    mockRunReport
+      .mockResolvedValueOnce([metricsRes])
+      .mockResolvedValueOnce([{ rows: [] }])
+      .mockResolvedValueOnce([{ rows: [] }]);
+
+    const result = await cachedGetAnalytics('12345', 7);
+    expect(result!.current).toEqual({
+      users: 100,
+      sessions: 80,
+      views: 300,
+      bounceRate: 0.4,
+      avgSessionDuration: 120,
+    });
+    expect(result!.previous).toEqual({
+      users: 100,
+      sessions: 80,
+      views: 300,
+      bounceRate: 0.4,
+      avgSessionDuration: 120,
+    });
+  });
+
   it('returns null on API error', async () => {
     mockRunReport.mockRejectedValue(new Error('Quota exceeded'));
 
@@ -205,6 +235,21 @@ describe('cachedGetAnalytics', () => {
 
     const result = await cachedGetAnalytics('12345');
     expect(result!.topPages[0].path).toBe('/');
+  });
+
+  it('uses default source and medium when traffic dimensions are missing', async () => {
+    mockRunReport
+      .mockResolvedValueOnce([{ rows: [] }])
+      .mockResolvedValueOnce([{ rows: [] }])
+      .mockResolvedValueOnce([{ rows: [{ dimensionValues: [], metricValues: [{ value: '5' }, { value: '3' }] }] }]);
+
+    const result = await cachedGetAnalytics('12345');
+    expect(result!.trafficSources[0]).toEqual({
+      source: '(direct)',
+      medium: '(none)',
+      sessions: 5,
+      users: 3,
+    });
   });
 
   it('passes correct property format in API call', async () => {
