@@ -36,24 +36,17 @@ function metaTagsSummary(audit: SiteAuditResult): { status: CheckStatus; label: 
   return { status: 'warn', label: `${pages.length - issues.length}/${pages.length} pages pass` };
 }
 
-function imageSeoSummary(audit: SiteAuditResult): { status: CheckStatus; label: string } {
-  const checks = audit.imageSeo;
+function checksSummary(
+  checks: { status: CheckStatus }[],
+  labels: { fail: string; warn: string; pass: string },
+): { status: CheckStatus; label: string } {
   if (checks.length === 0) return { status: 'pass', label: 'No pages' };
   const fails = checks.filter(c => c.status === 'fail');
   const warns = checks.filter(c => c.status === 'warn');
-  if (fails.length > 0) return { status: 'fail', label: `${fails.length} page${fails.length > 1 ? 's' : ''} missing alt` };
-  if (warns.length > 0) return { status: 'warn', label: `${warns.length} page${warns.length > 1 ? 's' : ''} need alt` };
-  return { status: 'pass', label: 'All images have alt' };
-}
-
-function internalLinksSummary(audit: SiteAuditResult): { status: CheckStatus; label: string } {
-  const checks = audit.internalLinks;
-  if (checks.length === 0) return { status: 'pass', label: 'No pages' };
-  const fails = checks.filter(c => c.status === 'fail');
-  const warns = checks.filter(c => c.status === 'warn');
-  if (fails.length > 0) return { status: 'fail', label: `${fails.length} page${fails.length > 1 ? 's' : ''} no links` };
-  if (warns.length > 0) return { status: 'warn', label: `${warns.length} page${warns.length > 1 ? 's' : ''} low links` };
-  return { status: 'pass', label: 'Good linking' };
+  const n = (count: number) => `${count} page${count > 1 ? 's' : ''}`;
+  if (fails.length > 0) return { status: 'fail', label: `${n(fails.length)} ${labels.fail}` };
+  if (warns.length > 0) return { status: 'warn', label: `${n(warns.length)} ${labels.warn}` };
+  return { status: 'pass', label: labels.pass };
 }
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
@@ -161,8 +154,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         {audits.map((audit) => {
           const worst = worstStatus(audit);
           const meta = metaTagsSummary(audit);
-          const images = imageSeoSummary(audit);
-          const links = internalLinksSummary(audit);
+          const images = checksSummary(audit.imageSeo, { fail: 'missing alt', warn: 'need alt', pass: 'All images have alt' });
+          const links = checksSummary(audit.internalLinks, { fail: 'no links', warn: 'low links', pass: 'Good linking' });
           const site = managedSites.find(s => s.id === audit.siteId);
           const gapCount = gapCountBySite.get(audit.siteId) ?? 0;
           return (

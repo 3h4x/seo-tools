@@ -85,21 +85,17 @@ export default async function SiteDashboardPage({
         <TimeRange />
       </div>
       <div className="flex flex-wrap gap-6">
-        <div className="flex items-center gap-2">
-          <div className="size-2 rounded-full bg-emerald-500" />
-          <span className="text-emerald-400 font-mono text-sm font-bold">{audit.score.pass}</span>
-          <span className="text-neutral-500 text-xs">passed</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="size-2 rounded-full bg-amber-500" />
-          <span className="text-amber-400 font-mono text-sm font-bold">{audit.score.warn}</span>
-          <span className="text-neutral-500 text-xs">warnings</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="size-2 rounded-full bg-red-500" />
-          <span className="text-red-400 font-mono text-sm font-bold">{audit.score.fail + audit.score.error}</span>
-          <span className="text-neutral-500 text-xs">failures</span>
-        </div>
+        {([
+          { dot: 'bg-emerald-500', text: 'text-emerald-400', value: audit.score.pass, label: 'passed' },
+          { dot: 'bg-amber-500',   text: 'text-amber-400',   value: audit.score.warn, label: 'warnings' },
+          { dot: 'bg-red-500',     text: 'text-red-400',     value: audit.score.fail + audit.score.error, label: 'failures' },
+        ] as const).map(({ dot, text, value, label }) => (
+          <div key={label} className="flex items-center gap-2">
+            <div className={`size-2 rounded-full ${dot}`} />
+            <span className={`${text} font-mono text-sm font-bold`}>{value}</span>
+            <span className="text-neutral-500 text-xs">{label}</span>
+          </div>
+        ))}
         {totalGaps > 0 && (
           <div className="flex items-center gap-2 ml-auto">
             <span className="text-neutral-300 font-mono text-sm font-bold">{totalGaps}</span>
