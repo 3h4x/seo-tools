@@ -68,6 +68,8 @@ GOOGLE_SA_KEY_JSON='{"type":"service_account",...}'
 - GA4: service account email added as Viewer (or higher) in Property Access Management
 - The SA has Administrator access and can auto-discover GA4 properties via `listAccountSummaries()`
 
+**Current storage behavior in code:** the app can boot without credentials, the Config tab stores the key in SQLite under `config.google_sa_key`, and that DB value currently takes priority over `GOOGLE_SA_KEY_JSON`. Treat the env var as a bootstrap/fallback path, not the primary source of truth.
+
 ## Dashboard Pages
 
 - `/` — Overview: all sites summary (health score, key metrics, trend arrows)
@@ -228,6 +230,8 @@ Storage & charting:
 11. **Module exports**: only export what is consumed outside the module. Remove `export` from interfaces, types, and functions that are internal to a file — unexported symbols are easier to refactor and test.
 12. **Component size**: inline single-use React components (≤~40 lines, used in exactly one place) directly into the parent file. Only extract to a separate file when the component is reused in 2+ places or is large enough to warrant it. Extend existing flexible components with optional props rather than creating specialized one-off variants.
 13. **Imports and barrels**: prefer direct imports from the owning module (`@/lib/foo`, `@/app/components/Bar`) and avoid new barrel files or `export *` aggregators unless the pattern already exists in that folder.
+14. **Alias reality check**: `tsconfig.json` currently maps `@/*` only to `src/*`. Use `@/lib/...` for `src/lib/**`, but do not assume `@/app/**` resolves. Inside `app/**`, use relative imports for `app/components/**` until the alias config changes.
+15. **Lint baseline**: ESLint extends Next core-web-vitals + TypeScript rules. Repo-level exceptions already exist for `no-explicit-any`, `no-unused-vars`, `react/no-unescaped-entities`, and `react-hooks/set-state-in-effect`; do not add one-off disables when the existing config already defines the intended boundary.
 
 ## Architecture & Patterns
 
@@ -240,6 +244,8 @@ Storage & charting:
 7. **Styling**: use Tailwind v4 classes and the existing dark neutral dashboard style in `app/globals.css` and existing components. Keep operational pages dense and scannable rather than marketing-oriented.
 8. **Route handlers**: keep `app/api/**/route.ts` files thin. Parse the request, delegate business logic to `src/lib/**`, and keep response shaping or status-code branching in the handler.
 9. **State management**: load dashboard data on the server by default, pass serialized results into client components, and keep client state local to the page or component. Do not introduce a global client state library for fetched data.
+10. **Node runtime only**: this app depends on `better-sqlite3`, `node:fs`, `node:path`, and server-only Google clients. Do not move DB/auth/audit code to Edge runtime, client components, or browser bundles.
+11. **Page vs lib split**: when page or route code starts accumulating data-massaging logic, move that logic into `src/lib/**` first and test it there. Keep `app/**/page.tsx` focused on orchestration, layout, and rendering.
 
 ## Scope & Safety Rules
 
@@ -258,6 +264,8 @@ Storage & charting:
 3. **Unit tests**: live in `src/lib/__tests__/`, named `<module>.test.ts`. Test new lib functions, data transformations, and edge cases in audit/gap logic. Skip thin API route handlers with no logic of their own. Do test route handlers that contain non-trivial branching, auth validation, credential normalization, or cache management — import the handler directly and mock its dependencies.
 4. **Mocking**: mock external Google API clients in unit tests. Do not mock SQLite — use an in-memory or temp-file DB for tests that need persistence.
 5. **E2E tests**: Playwright (`pnpm test:e2e`), config in `playwright.config.ts`, tests in `e2e/`. Run manually for UI flow verification; not enforced in pre-commit.
+6. **API route tests**: keep route-handler coverage alongside the lib tests in `src/lib/__tests__/api-*.test.ts`, importing `app/api/**/route.ts` directly and asserting status codes plus JSON payloads. Do not create a parallel `app/api/**/__tests__` pattern unless the repo adopts it broadly.
+7. **Verification order**: after non-trivial changes, run the smallest relevant targeted test while iterating, then finish with `pnpm lint`, `pnpm type-check`, and `pnpm test` before commit so the husky path matches local verification.
 
 ## Commit Style
 
