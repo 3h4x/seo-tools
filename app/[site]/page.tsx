@@ -27,6 +27,40 @@ import { VALID_DAYS } from '@/lib/constants';
 
 export const revalidate = 300;
 
+const QUERY_BUCKETS = [
+  { label: 'Top 3', sublabel: 'pos 1–3', colorBar: 'bg-emerald-500', colorText: 'text-emerald-400', test: (position: number) => position <= 3 },
+  { label: '4–10', sublabel: 'first page', colorBar: 'bg-blue-500', colorText: 'text-blue-400', test: (position: number) => position > 3 && position <= 10 },
+  { label: '11–20', sublabel: 'second page', colorBar: 'bg-amber-500', colorText: 'text-amber-400', test: (position: number) => position > 10 && position <= 20 },
+  { label: '20+', sublabel: 'buried', colorBar: 'bg-neutral-600', colorText: 'text-neutral-500', test: (position: number) => position > 20 },
+] as const;
+
+type QueryBucketStat = (typeof QUERY_BUCKETS)[number] & {
+  count: number;
+  impressions: number;
+  clicks: number;
+};
+
+function getQueryBucketStats(
+  queries: Array<{ position: number; impressions: number; clicks: number }>,
+): QueryBucketStat[] {
+  const stats = QUERY_BUCKETS.map((bucket) => ({
+    ...bucket,
+    count: 0,
+    impressions: 0,
+    clicks: 0,
+  }));
+
+  for (const query of queries) {
+    const bucket = stats.find(({ test }) => test(query.position));
+    if (!bucket) continue;
+    bucket.count += 1;
+    bucket.impressions += query.impressions;
+    bucket.clicks += query.clicks;
+  }
+
+  return stats;
+}
+
 export default async function SiteDashboardPage({
   params,
   searchParams,
@@ -64,6 +98,7 @@ export default async function SiteDashboardPage({
   const sc = scComparison;
   const hasSc = sc && sc.current.clicks > 0;
   const hasGa4 = ga4Data && ga4Data.current.users > 0;
+  const queryBucketStats = scQueries ? getQueryBucketStats(scQueries) : [];
 
   let scDaily: ReturnType<typeof getScDaily> = [];
   let ga4DailyData: ReturnType<typeof getGa4Daily> = [];
@@ -157,63 +192,45 @@ export default async function SiteDashboardPage({
           </div>
         </div>
       )}
-      {scQueries && scQueries.length > 0 && (() => {
-        const buckets = [
-          { label: 'Top 3', sublabel: 'pos 1–3', colorBar: 'bg-emerald-500', colorText: 'text-emerald-400', test: (p: number) => p <= 3 },
-          { label: '4–10', sublabel: 'first page', colorBar: 'bg-blue-500', colorText: 'text-blue-400', test: (p: number) => p > 3 && p <= 10 },
-          { label: '11–20', sublabel: 'second page', colorBar: 'bg-amber-500', colorText: 'text-amber-400', test: (p: number) => p > 10 && p <= 20 },
-          { label: '20+', sublabel: 'buried', colorBar: 'bg-neutral-600', colorText: 'text-neutral-500', test: (p: number) => p > 20 },
-        ];
-        const stats = buckets.map(b => ({
-          ...b,
-          count: scQueries!.filter(q => b.test(q.position)).length,
-          impressions: scQueries!.filter(q => b.test(q.position)).reduce((s, q) => s + q.impressions, 0),
-          clicks: scQueries!.filter(q => b.test(q.position)).reduce((s, q) => s + q.clicks, 0),
-        }));
-        const total = scQueries!.length;
-
-        return (
-          <div>
-            <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">
-              Ranking Distribution &middot; top {total} queries
-            </h2>
-            <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4 space-y-4">
-              {/* Stacked bar */}
-              <div className="flex h-2.5 rounded-full overflow-hidden gap-px bg-neutral-800">
-                {stats.map(s => s.count > 0 && (
-                  <div
-                    key={s.label}
-                    className={`${s.colorBar} transition-all first:rounded-l-full last:rounded-r-full`}
-                    style={{ width: `${(s.count / total) * 100}%` }}
-                  />
-                ))}
-              </div>
-              {/* Legend + stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {stats.map(s => (
-                  <div key={s.label} className="space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <div className={`size-2 rounded-full shrink-0 ${s.colorBar}`} />
-                      <span className="text-neutral-400 text-xs font-semibold">{s.label}</span>
-                    </div>
-                    <div className="pl-3.5">
-                      <span className={`${s.colorText} text-lg font-mono font-bold leading-none`}>{s.count}</span>
-                      <span className="text-neutral-600 text-xs ml-1">queries</span>
-                    </div>
-                    {s.impressions > 0 && (
-                      <div className="pl-3.5 text-[10px] text-neutral-600 font-mono space-x-2">
-                        <span>{s.impressions.toLocaleString()} impr</span>
-                        {s.clicks > 0 && <span>{s.clicks.toLocaleString()} clicks</span>}
-                      </div>
-                    )}
-                    <div className="pl-3.5 text-[10px] text-neutral-700">{s.sublabel}</div>
+      {scQueries && scQueries.length > 0 && (
+        <div>
+          <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">
+            Ranking Distribution &middot; top {scQueries.length} queries
+          </h2>
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4 space-y-4">
+            <div className="flex h-2.5 rounded-full overflow-hidden gap-px bg-neutral-800">
+              {queryBucketStats.map((bucket) => bucket.count > 0 && (
+                <div
+                  key={bucket.label}
+                  className={`${bucket.colorBar} transition-all first:rounded-l-full last:rounded-r-full`}
+                  style={{ width: `${(bucket.count / scQueries.length) * 100}%` }}
+                />
+              ))}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {queryBucketStats.map((bucket) => (
+                <div key={bucket.label} className="space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`size-2 rounded-full shrink-0 ${bucket.colorBar}`} />
+                    <span className="text-neutral-400 text-xs font-semibold">{bucket.label}</span>
                   </div>
-                ))}
-              </div>
+                  <div className="pl-3.5">
+                    <span className={`${bucket.colorText} text-lg font-mono font-bold leading-none`}>{bucket.count}</span>
+                    <span className="text-neutral-600 text-xs ml-1">queries</span>
+                  </div>
+                  {bucket.impressions > 0 && (
+                    <div className="pl-3.5 text-[10px] text-neutral-600 font-mono space-x-2">
+                      <span>{bucket.impressions.toLocaleString()} impr</span>
+                      {bucket.clicks > 0 && <span>{bucket.clicks.toLocaleString()} clicks</span>}
+                    </div>
+                  )}
+                  <div className="pl-3.5 text-[10px] text-neutral-700">{bucket.sublabel}</div>
+                </div>
+              ))}
             </div>
           </div>
-        );
-      })()}
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ScTable
           heading="Top Queries"
