@@ -72,11 +72,6 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
     return true;
   });
 
-  const totalHigh   = filtered.filter(sg => sg.gap.severity === 'high').length;
-  const totalMedium = filtered.filter(sg => sg.gap.severity === 'medium').length;
-  const totalLow    = filtered.filter(sg => sg.gap.severity === 'low').length;
-
-  // Group filtered gaps by severity
   const grouped: Record<GapSeverity, SiteGap[]> = { high: [], medium: [], low: [] };
   for (const sg of filtered) {
     grouped[sg.gap.severity].push(sg);
@@ -181,21 +176,20 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
         </div>
       </div>
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-4">
-          <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">High Priority</div>
-          <div className="text-red-400 text-3xl font-mono font-bold">{totalHigh}</div>
-          <div className="text-neutral-600 text-xs mt-1">Fix immediately</div>
-        </div>
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-4">
-          <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Medium Priority</div>
-          <div className="text-amber-400 text-3xl font-mono font-bold">{totalMedium}</div>
-          <div className="text-neutral-600 text-xs mt-1">Plan for next sprint</div>
-        </div>
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-blue-500 p-4">
-          <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">Low Priority</div>
-          <div className="text-blue-400 text-3xl font-mono font-bold">{totalLow}</div>
-          <div className="text-neutral-600 text-xs mt-1">Nice to have</div>
-        </div>
+        {([
+          ['high', 'Fix immediately'],
+          ['medium', 'Plan for next sprint'],
+          ['low', 'Nice to have'],
+        ] as [GapSeverity, string][]).map(([sev, sublabel]) => {
+          const s = GAP_SEVERITY_STYLES[sev];
+          return (
+            <div key={sev} className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${s.accentBorder} p-4`}>
+              <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">{s.label} Priority</div>
+              <div className={`${s.text} text-3xl font-mono font-bold`}>{grouped[sev].length}</div>
+              <div className="text-neutral-600 text-xs mt-1">{sublabel}</div>
+            </div>
+          );
+        })}
       </div>
       {(['high', 'medium', 'low'] as GapSeverity[]).map((severity) => {
         const items = grouped[severity];

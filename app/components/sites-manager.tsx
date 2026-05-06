@@ -21,6 +21,9 @@ interface Props {
 
 type EditMode = 'none' | 'new' | string;
 
+const INPUT_CLS = 'w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-neutral-500';
+const MONO_INPUT_CLS = INPUT_CLS + ' font-mono';
+
 const EMPTY_SITE: Omit<Site, 'id'> = {
   name: '',
   domain: '',
@@ -268,7 +271,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">ID{editMode !== 'new' ? ' (locked)' : ' (auto from domain)'}</label>
               <input
-                className="w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-neutral-500 disabled:opacity-50"
+                className={MONO_INPUT_CLS + ' disabled:opacity-50'}
                 value={form.id}
                 onChange={e => setForm(f => ({ ...f, id: e.target.value }))}
                 disabled={editMode !== 'new'}
@@ -278,7 +281,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">Name *</label>
               <input
-                className="w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-neutral-500"
+                className={INPUT_CLS}
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="My Site"
@@ -287,7 +290,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">Domain *</label>
               <input
-                className="w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-neutral-500"
+                className={MONO_INPUT_CLS}
                 value={form.domain}
                 onChange={e => setForm(f => ({ ...f, domain: e.target.value }))}
                 placeholder="example.com"
@@ -296,7 +299,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">SC URL override</label>
               <input
-                className="w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-neutral-500"
+                className={MONO_INPUT_CLS}
                 value={form.scUrl ?? ''}
                 onChange={e => setForm(f => ({ ...f, scUrl: e.target.value }))}
                 placeholder="https://example.github.io/"
@@ -305,7 +308,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">GA4 Property ID</label>
               <input
-                className="w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-neutral-500"
+                className={MONO_INPUT_CLS}
                 value={form.ga4PropertyId ?? ''}
                 onChange={e => setForm(f => ({ ...f, ga4PropertyId: e.target.value }))}
                 placeholder="123456789"
@@ -334,7 +337,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             <div className="space-y-1 col-span-2">
               <label className="text-xs text-neutral-400">Test pages (one path per line)</label>
               <textarea
-                className="w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-neutral-500 resize-y"
+                className={MONO_INPUT_CLS + ' resize-y'}
                 rows={3}
                 value={form.testPages.join('\n')}
                 onChange={e => setForm(f => ({ ...f, testPages: e.target.value.split('\n').filter(Boolean) }))}
