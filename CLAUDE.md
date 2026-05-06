@@ -246,6 +246,7 @@ Storage & charting:
 9. **State management**: load dashboard data on the server by default, pass serialized results into client components, and keep client state local to the page or component. Do not introduce a global client state library for fetched data.
 10. **Node runtime only**: this app depends on `better-sqlite3`, `node:fs`, `node:path`, and server-only Google clients. Do not move DB/auth/audit code to Edge runtime, client components, or browser bundles.
 11. **Page vs lib split**: when page or route code starts accumulating data-massaging logic, move that logic into `src/lib/**` first and test it there. Keep `app/**/page.tsx` focused on orchestration, layout, and rendering.
+12. **Shared UI constants**: color palettes and valid parameter sets live in `src/lib/constants.ts` (`CHART_COLORS`, `METRIC_COLORS`, `VALID_DAYS`). Import from there rather than hardcoding hex strings or magic numbers in components or pages.
 
 ## Scope & Safety Rules
 
@@ -262,7 +263,7 @@ Storage & charting:
 1. **Runner**: vitest (`pnpm test`). Run after every non-trivial lib change.
 2. **Pre-commit hook** (husky) runs `pnpm lint && pnpm type-check && pnpm test` — all three must pass before commit.
 3. **Unit tests**: live in `src/lib/__tests__/`, named `<module>.test.ts`. Test new lib functions, data transformations, and edge cases in audit/gap logic. Skip thin API route handlers with no logic of their own. Do test route handlers that contain non-trivial branching, auth validation, credential normalization, or cache management — import the handler directly and mock its dependencies.
-4. **Mocking**: mock external Google API clients in unit tests. Do not mock SQLite — use an in-memory or temp-file DB for tests that need persistence.
+4. **Mocking**: mock external Google API clients in unit tests. Do not mock SQLite — use an in-memory or temp-file DB for tests that need persistence. When mocking a class constructor with `vi.mocked(...).mockImplementation(...)`, use a `function` keyword expression, not an arrow function — arrow functions cannot be called as constructors and vitest will throw at runtime.
 5. **E2E tests**: Playwright (`pnpm test:e2e`), config in `playwright.config.ts`, tests in `e2e/`. Run manually for UI flow verification; not enforced in pre-commit.
 6. **API route tests**: keep route-handler coverage alongside the lib tests in `src/lib/__tests__/api-*.test.ts`, importing `app/api/**/route.ts` directly and asserting status codes plus JSON payloads. Do not create a parallel `app/api/**/__tests__` pattern unless the repo adopts it broadly.
 7. **Verification order**: after non-trivial changes, run the smallest relevant targeted test while iterating, then finish with `pnpm lint`, `pnpm type-check`, and `pnpm test` before commit so the husky path matches local verification.
