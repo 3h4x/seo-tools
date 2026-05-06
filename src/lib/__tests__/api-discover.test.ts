@@ -124,6 +124,26 @@ describe('GET /api/sites/discover', () => {
     expect(body[0].ga4PropertyId).toBe('123456');
   });
 
+  it('matches GA4 property when SC returns a URL-prefix property', async () => {
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return {
+        sites: {
+          list: vi.fn().mockResolvedValue({
+            data: {
+              siteEntry: [{ siteUrl: 'https://blog.example.com/' }],
+            },
+          }),
+        },
+      };
+    } as never);
+    mockGa4([{ displayName: 'blog.example.com web', property: 'properties/654321' }]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body[0].domain).toBe('https://blog.example.com/');
+    expect(body[0].ga4PropertyId).toBe('654321');
+  });
+
   it('leaves ga4PropertyId undefined when no GA4 match', async () => {
     mockSc(['mysite.com']);
     mockGa4([{ displayName: 'unrelated project', property: 'properties/999' }]);
