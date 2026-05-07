@@ -1,29 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Use a real in-memory SQLite database instead of the file-backed one.
-// We intercept the `better-sqlite3` constructor and redirect every DB path
-// to ':memory:' so no files are created on disk.
 vi.mock('node:fs', async () => {
   const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
   return { ...actual, existsSync: () => true, mkdirSync: () => undefined };
 });
 
-vi.mock('better-sqlite3', async () => {
-  // better-sqlite3 is a CJS module with `module.exports = Database`. When loaded
-  // via ESM interop the actual value may land on `.default` or be the constructor
-  // itself — handle both shapes.
-  const actual = await vi.importActual('better-sqlite3');
-  const Ctor: new (path: string, opts?: object) => object = (actual as any).default ?? actual;
+vi.mock('../sqlite-driver.js', async () => {
+  const actual = await vi.importActual<typeof import('../sqlite-driver.js')>('../sqlite-driver.js');
   return {
-    default: class {
-      constructor(_path: string, opts?: object) {
-        return new Ctor(':memory:', opts);
-      }
-    },
+    openDatabase: () => actual.openDatabase(':memory:'),
   };
 });
 
-// Import after mocks are registered so the singleton picks up the in-memory DB.
 import {
   getCached,
   setCache,
@@ -39,11 +27,10 @@ import {
 /** Wipe volatile tables between tests so state never leaks. */
 function resetDb() {
   const db = getDb();
-  db.exec('DELETE FROM api_cache; DELETE FROM sc_daily; DELETE FROM ga4_daily;');
+  db.exec('DELETE FROM api_cache; DELETE FROM sc_daily; DELETE FROM ga4_daily; DELETE FROM config;');
 }
 
 beforeEach(resetDb);
-afterEach(resetDb);
 
 // ---------------------------------------------------------------------------
 // getCached / setCache
@@ -141,10 +128,6 @@ describe('clearCache', () => {
 });
 
 describe('config helpers', () => {
-  beforeEach(() => {
-    getDb().prepare('DELETE FROM config').run();
-  });
-
   it('returns null for missing key', () => {
     expect(getConfig('missing')).toBeNull();
   });

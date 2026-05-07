@@ -10,15 +10,15 @@
  */
 import { GoogleAuth } from 'google-auth-library';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
-import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
+import { openDatabase } from '../src/lib/sqlite-driver.js';
 
 // Init DB
 const dbDir = path.join(process.cwd(), 'data');
 if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 
-const db = new Database(path.join(dbDir, 'seo-tools.db'));
+const db = openDatabase(path.join(dbDir, 'seo-tools.db'));
 db.pragma('journal_mode = WAL');
 
 db.exec(`

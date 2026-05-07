@@ -1,18 +1,32 @@
-import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 import { computeKeywordDeltas, type KeywordDelta } from './keyword-history';
+import { openDatabase } from './sqlite-driver.js';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'seo-tools.db');
 
-let _db: Database.Database | null = null;
+interface SqliteStatement<Result = unknown> {
+  get(...params: unknown[]): Result;
+  all(...params: unknown[]): Result[];
+  run(...params: unknown[]): unknown;
+}
 
-export function getDb(): Database.Database {
+export interface SqliteDatabase {
+  pragma(value: string): void;
+  exec(sql: string): void;
+  prepare<Result = unknown>(sql: string): SqliteStatement<Result>;
+  transaction<TArgs extends unknown[], TResult>(fn: (...args: TArgs) => TResult): (...args: TArgs) => TResult;
+  close?(): void;
+}
+
+let _db: SqliteDatabase | null = null;
+
+export function getDb(): SqliteDatabase {
   if (!_db) {
     const dir = path.dirname(DB_PATH);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-    _db = new Database(DB_PATH);
+    _db = openDatabase(DB_PATH) as SqliteDatabase;
     _db.pragma('journal_mode = WAL');
     _db.pragma('foreign_keys = ON');
     initSchema(_db);
@@ -20,7 +34,7 @@ export function getDb(): Database.Database {
   return _db;
 }
 
-function initSchema(db: Database.Database): void {
+function initSchema(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS sc_snapshots (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

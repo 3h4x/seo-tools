@@ -16,9 +16,9 @@
 import { createHash } from 'node:crypto';
 import { GoogleAuth } from 'google-auth-library';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
-import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
+import { openDatabase } from '../src/lib/sqlite-driver.js';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 const MIN_SUBMIT_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -27,7 +27,7 @@ const MIN_SUBMIT_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const dbDir = path.join(process.cwd(), 'data');
 if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 
-const db = new Database(path.join(dbDir, 'seo-tools.db'));
+const db = openDatabase(path.join(dbDir, 'seo-tools.db'));
 db.pragma('journal_mode = WAL');
 
 db.exec(`
