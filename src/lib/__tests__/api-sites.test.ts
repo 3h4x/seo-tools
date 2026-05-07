@@ -102,4 +102,12 @@ describe('DELETE /api/sites', () => {
     expect(data.ok).toBe(false);
     expect(dbDeleteSite).not.toHaveBeenCalled();
   });
+
+  it('returns 400 when id query param is empty', async () => {
+    const res = await DELETE(deleteReq(''));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(dbDeleteSite).not.toHaveBeenCalled();
+  });
 });

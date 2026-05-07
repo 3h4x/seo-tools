@@ -128,6 +128,15 @@ describe('POST /api/config', () => {
     expect(clearCache).toHaveBeenCalledTimes(1);
   });
 
+  it('saves key when testOnly is omitted', async () => {
+    const res = await POST(postReq({ key: VALID_KEY }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(setConfig).toHaveBeenCalledWith('google_sa_key', VALID_KEY);
+    expect(clearCache).toHaveBeenCalledTimes(1);
+  });
+
   it('normalizes escaped newlines in private_key before validation', async () => {
     const keyWithEscaped = JSON.stringify({
       type: 'service_account',

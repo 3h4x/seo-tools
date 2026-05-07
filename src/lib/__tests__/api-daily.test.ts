@@ -14,6 +14,7 @@ import { getScDaily, getGa4Daily } from '../db';
 import { getManagedSites } from '../sites';
 import { GET } from '../../../app/api/daily/route';
 import { NextRequest } from 'next/server';
+import { CHART_COLORS } from '../constants';
 
 function getReq(days?: number): NextRequest {
   const url = days !== undefined ? `http://localhost/api/daily?days=${days}` : 'http://localhost/api/daily';
@@ -136,5 +137,39 @@ describe('GET /api/daily', () => {
     const res = await GET(getReq());
     const body = await res.json();
     expect(body.sites[0].color).toBe('#ff0000');
+  });
+
+  it('aggregates rows independently for multiple sites on the same date', async () => {
+    const today = new Date().toISOString().split('T')[0];
+    vi.mocked(getManagedSites).mockResolvedValue([
+      SITE,
+      { id: 'site2', name: 'Site Two', domain: 'site2.com', testPages: [] },
+    ] as never);
+    vi.mocked(getScDaily)
+      .mockReturnValueOnce([{ date: today, clicks: 10, impressions: 100 }] as never)
+      .mockReturnValueOnce([{ date: today, clicks: 20, impressions: 200 }] as never);
+    vi.mocked(getGa4Daily)
+      .mockReturnValueOnce([{ date: today, users: 30, views: 300 }] as never)
+      .mockReturnValueOnce([{ date: today, users: 40, views: 400 }] as never);
+
+    const res = await GET(getReq(7));
+    const body = await res.json();
+
+    expect(body.data[today]?.site1).toMatchObject({
+      clicks: 10,
+      impressions: 100,
+      users: 30,
+      views: 300,
+    });
+    expect(body.data[today]?.site2).toMatchObject({
+      clicks: 20,
+      impressions: 200,
+      users: 40,
+      views: 400,
+    });
+    expect(body.sites).toEqual([
+      { id: 'site1', name: 'Site One', color: CHART_COLORS[0] },
+      { id: 'site2', name: 'Site Two', color: CHART_COLORS[1] },
+    ]);
   });
 });

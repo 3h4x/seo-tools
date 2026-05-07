@@ -217,4 +217,37 @@ describe('GET /api/sites/discover', () => {
     const body = await res.json();
     expect(body).toEqual([]);
   });
+
+  it('filters blank SC site URLs from the proposed site list', async () => {
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return {
+        sites: {
+          list: vi.fn().mockResolvedValue({
+            data: {
+              siteEntry: [{ siteUrl: '' }, { siteUrl: 'sc-domain:valid-site.com' }],
+            },
+          }),
+        },
+      };
+    } as never);
+    mockGa4([]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0].domain).toBe('valid-site.com');
+  });
+
+  it('ignores GA4 properties without a parsed property id', async () => {
+    mockSc(['mysite.com']);
+    mockGa4([
+      { displayName: 'mysite.com', property: 'properties/' },
+      { displayName: 'mysite.com analytics', property: 'properties/321' },
+    ]);
+
+    const res = await GET(getReq('http://localhost/api/sites/discover?ga4debug'));
+    const body = await res.json();
+    expect(body).not.toHaveProperty('mysite.com');
+    expect(body).toHaveProperty('mysite.com analytics', '321');
+  });
 });
