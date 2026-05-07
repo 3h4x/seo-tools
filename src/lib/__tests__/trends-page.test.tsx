@@ -14,6 +14,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 const {
+  mockTrendsTable,
   mockGetManagedSites,
   mockGetManagedSite,
   mockGetSCUrl,
@@ -27,6 +28,7 @@ const {
   mockGetScDaily,
   mockGetGa4Daily,
 } = vi.hoisted(() => ({
+  mockTrendsTable: vi.fn(({ title }: { title: string }) => <div>{title}</div>),
   mockGetManagedSites: vi.fn(),
   mockGetManagedSite: vi.fn(),
   mockGetSCUrl: vi.fn(),
@@ -92,7 +94,7 @@ vi.mock('../../../app/components/trend-badge', () => ({
 }));
 
 vi.mock('../../../app/components/trends-table', () => ({
-  TrendsTable: ({ title }: { title: string }) => <div>{title}</div>,
+  TrendsTable: mockTrendsTable,
 }));
 
 vi.mock('../../../app/components/keyword-rank-table', () => ({
@@ -243,6 +245,7 @@ const managedSite = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockTrendsTable.mockImplementation(({ title }: { title: string }) => <div>{title}</div>);
 
   mockGetManagedSites.mockResolvedValue([managedSite]);
   mockGetManagedSite.mockResolvedValue(managedSite);
@@ -284,6 +287,43 @@ describe('TrendsPage', () => {
     expect(html).toContain('Per-Site Data');
     expect(html).toContain('Keyword History');
     expect(html.indexOf('Per-Site Data')).toBeLessThan(html.indexOf('Keyword History'));
+  });
+
+  it('wires site trend tables through TrendsTable for the sticky-header views', async () => {
+    renderToStaticMarkup(await TrendsPage({
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(mockTrendsTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'GA4 Data',
+        columns: expect.arrayContaining([
+          expect.objectContaining({ label: 'Date' }),
+          expect.objectContaining({ label: 'Users', align: 'right' }),
+        ]),
+      }),
+      undefined
+    );
+    expect(mockTrendsTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'SC Data',
+        columns: expect.arrayContaining([
+          expect.objectContaining({ label: 'CTR', align: 'right' }),
+          expect.objectContaining({ label: 'Position', align: 'right' }),
+        ]),
+      }),
+      undefined
+    );
+    expect(mockTrendsTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Audit Score',
+        columns: expect.arrayContaining([
+          expect.objectContaining({ label: 'Pass', align: 'right' }),
+          expect.objectContaining({ label: 'Fail', align: 'right' }),
+        ]),
+      }),
+      undefined
+    );
   });
 
   it('renders the keyword section first for legacy tab=keywords links', async () => {

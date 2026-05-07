@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PositionBadge } from './position-badge';
+import { DataTable, type DataTableColumn } from './data-table';
 
 type Row = Record<string, string | number | null | undefined>;
 
@@ -93,6 +94,16 @@ interface ScTableProps {
 
 export function ScTable({ heading, columnLabel, rows, emptyMessage, exportData, filename }: ScTableProps) {
   const showCtr = rows.some(r => r.ctr !== undefined);
+  const columns: DataTableColumn[] = [
+    { label: columnLabel, className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-300 text-xs truncate max-w-[200px]' },
+    { label: 'Clicks', align: 'right', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-300' },
+    { label: 'Impr', align: 'right', className: 'px-4 py-3 font-semibold hidden md:table-cell', cellClassName: 'px-4 py-2.5 text-neutral-400 hidden md:table-cell' },
+    ...(showCtr
+      ? [{ label: 'CTR', align: 'right', className: 'px-4 py-3 font-semibold hidden md:table-cell', cellClassName: 'px-4 py-2.5 text-neutral-400 hidden md:table-cell' } satisfies DataTableColumn]
+      : []),
+    { label: 'Pos', align: 'right', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5' },
+  ];
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -102,30 +113,20 @@ export function ScTable({ heading, columnLabel, rows, emptyMessage, exportData, 
         )}
       </div>
       {rows.length > 0 ? (
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-neutral-800 text-neutral-500 text-left text-xs uppercase tracking-wider">
-                <th className="px-4 py-3 font-semibold">{columnLabel}</th>
-                <th className="px-4 py-3 font-semibold text-right">Clicks</th>
-                <th className="px-4 py-3 font-semibold text-right hidden md:table-cell">Impr</th>
-                {showCtr && <th className="px-4 py-3 font-semibold text-right hidden md:table-cell">CTR</th>}
-                <th className="px-4 py-3 font-semibold text-right">Pos</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-800">
-              {rows.map((row, i) => (
-                <tr key={i} className="hover:bg-neutral-800/30 transition-colors">
-                  <td className="px-4 py-2.5 text-neutral-300 font-mono text-xs truncate max-w-[200px]" title={row.title}>{row.label}</td>
-                  <td className="px-4 py-2.5 text-right text-neutral-300 font-mono">{row.clicks.toLocaleString()}</td>
-                  <td className="px-4 py-2.5 text-right text-neutral-400 font-mono hidden md:table-cell">{row.impressions.toLocaleString()}</td>
-                  {showCtr && <td className="px-4 py-2.5 text-right text-neutral-400 font-mono hidden md:table-cell">{row.ctr !== undefined ? `${(row.ctr * 100).toFixed(1)}%` : '—'}</td>}
-                  <td className="px-4 py-2.5 text-right"><PositionBadge position={row.position} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={columns}
+          rows={rows.map((row) => [
+            <span key="label" title={row.title}>{row.label}</span>,
+            <span key="clicks">{row.clicks.toLocaleString()}</span>,
+            <span key="impressions">{row.impressions.toLocaleString()}</span>,
+            ...(showCtr ? [<span key="ctr">{row.ctr !== undefined ? `${(row.ctr * 100).toFixed(1)}%` : '—'}</span>] : []),
+            <PositionBadge key="position" position={row.position} />,
+          ])}
+          containerClassName="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden"
+          tableClassName="w-full text-sm"
+          headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
+          rowClassName="hover:bg-neutral-800/30 transition-colors"
+        />
       ) : (
         <p className="text-neutral-600 text-sm">{emptyMessage}</p>
       )}
