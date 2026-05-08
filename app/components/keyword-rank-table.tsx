@@ -1,4 +1,5 @@
 import type { KeywordDelta } from '@/lib/keyword-history';
+import { DataTable, type DataTableColumn } from './data-table';
 
 function KwDeltaCell({ delta }: { delta: number | null }) {
   if (delta === null) return <span className="text-neutral-700">—</span>;
@@ -19,30 +20,32 @@ function KwTrendArrow({ trend }: { trend: KeywordDelta['trend'] }) {
 }
 
 export function KeywordRankTable({ deltas, limit = 20 }: { deltas: KeywordDelta[]; limit?: number }) {
+  const visibleDeltas = deltas.slice(0, limit);
+  const columns: DataTableColumn[] = [
+    { label: 'Query', className: 'text-left py-2 pr-4 font-medium', cellClassName: 'py-1.5 pr-4 text-neutral-300 font-mono truncate max-w-xs' },
+    { label: 'Position', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono text-neutral-300' },
+    { label: '7d Δ', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono' },
+    { label: '30d Δ', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono' },
+    { label: 'Trend', align: 'right', className: 'py-2 pl-3 font-medium', cellClassName: 'py-1.5 pl-3 text-right' },
+  ];
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="text-neutral-600 border-b border-neutral-800">
-            <th className="text-left py-2 pr-4 font-medium">Query</th>
-            <th className="text-right py-2 px-3 font-medium">Position</th>
-            <th className="text-right py-2 px-3 font-medium">7d Δ</th>
-            <th className="text-right py-2 px-3 font-medium">30d Δ</th>
-            <th className="text-right py-2 pl-3 font-medium">Trend</th>
-          </tr>
-        </thead>
-        <tbody>
-          {deltas.slice(0, limit).map((kw) => (
-            <tr key={kw.query} className="border-b border-neutral-800/50 hover:bg-neutral-800/30">
-              <td className="py-1.5 pr-4 text-neutral-300 font-mono truncate max-w-xs">{kw.query}</td>
-              <td className="py-1.5 px-3 text-right font-mono text-neutral-300">{kw.currentPosition.toFixed(1)}</td>
-              <td className="py-1.5 px-3 text-right font-mono"><KwDeltaCell delta={kw.delta7d} /></td>
-              <td className="py-1.5 px-3 text-right font-mono"><KwDeltaCell delta={kw.delta30d} /></td>
-              <td className="py-1.5 pl-3 text-right"><KwTrendArrow trend={kw.trend} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      rows={visibleDeltas.map((kw) => [
+        <span key="query">{kw.query}</span>,
+        <span key="position">{kw.currentPosition.toFixed(1)}</span>,
+        <KwDeltaCell key="delta7d" delta={kw.delta7d} />,
+        <KwDeltaCell key="delta30d" delta={kw.delta30d} />,
+        <KwTrendArrow key="trend" trend={kw.trend} />,
+      ])}
+      rowKeys={visibleDeltas.map((kw) => kw.query)}
+      monospaceCells={false}
+      containerClassName="overflow-x-auto"
+      tableClassName="w-full text-xs"
+      headRowClassName="text-neutral-600 border-b border-neutral-800"
+      bodyClassName=""
+      rowClassName="border-b border-neutral-800/50 hover:bg-neutral-800/30"
+    />
   );
 }
