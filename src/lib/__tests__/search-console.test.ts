@@ -292,6 +292,14 @@ describe('cachedGetSitemapSubmissions', () => {
     });
   });
 
+  it('formats bare domains as sc-domain properties for sitemap lookups', async () => {
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+
+    await cachedGetSitemapSubmissions('example.com');
+
+    expect(mockSitemapsList).toHaveBeenCalledWith({ siteUrl: 'sc-domain:example.com' });
+  });
+
   it('returns empty array on API error', async () => {
     mockSitemapsList.mockRejectedValue(new Error('Unauthorized'));
 
@@ -344,5 +352,13 @@ describe('cachedGetSitemapSubmissions', () => {
       warnings: 0,
       errors: 0,
     });
+  });
+
+  it('preserves HTTP URL-prefix properties for sitemap lookups', async () => {
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+
+    await cachedGetSitemapSubmissions('https://example.com/');
+
+    expect(mockSitemapsList).toHaveBeenCalledWith({ siteUrl: 'https://example.com/' });
   });
 });

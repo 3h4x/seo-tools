@@ -99,6 +99,30 @@ describe('discoverPropertyIds', () => {
     const result = await discoverPropertyIds();
     expect(result[0].ga4PropertyId).toBe('55555');
   });
+
+  it('matches when site domain contains the property displayName', async () => {
+    vi.mocked(getManagedSites).mockResolvedValue([
+      { id: 's1', name: 'Site1', domain: 'www.bonker.wtf', testPages: [] },
+    ] as never);
+    mockListAccountSummaries.mockResolvedValue([
+      [{ propertySummaries: [{ displayName: 'bonker.wtf', property: 'properties/22222' }] }],
+    ]);
+
+    const result = await discoverPropertyIds();
+    expect(result[0].ga4PropertyId).toBe('22222');
+  });
+
+  it('ignores properties without a displayName match', async () => {
+    vi.mocked(getManagedSites).mockResolvedValue([
+      { id: 's1', name: 'Site1', domain: 'example.com', testPages: [] },
+    ] as never);
+    mockListAccountSummaries.mockResolvedValue([
+      [{ propertySummaries: [{ property: 'properties/12345' }] }],
+    ]);
+
+    const result = await discoverPropertyIds();
+    expect(result[0].ga4PropertyId).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -221,6 +245,35 @@ describe('cachedGetAnalytics', () => {
     expect(result!.current).not.toEqual(result!.previous);
   });
 
+  it('uses zeroed previous metrics when only one valid metrics row remains', async () => {
+    const metricsRes = {
+      rows: [
+        { metricValues: [{}, { value: '999' }] },
+        makeReportRow(['100', '80', '300', '0.4', '120']),
+      ],
+    };
+    mockRunReport
+      .mockResolvedValueOnce([metricsRes])
+      .mockResolvedValueOnce([{ rows: [] }])
+      .mockResolvedValueOnce([{ rows: [] }]);
+
+    const result = await cachedGetAnalytics('12345', 7);
+    expect(result!.current).toEqual({
+      users: 100,
+      sessions: 80,
+      views: 300,
+      bounceRate: 0.4,
+      avgSessionDuration: 120,
+    });
+    expect(result!.previous).toEqual({
+      users: 0,
+      sessions: 0,
+      views: 0,
+      bounceRate: 0,
+      avgSessionDuration: 0,
+    });
+  });
+
   it('returns null on API error', async () => {
     mockRunReport.mockRejectedValue(new Error('Quota exceeded'));
 
@@ -250,6 +303,22 @@ describe('cachedGetAnalytics', () => {
       medium: '(none)',
       sessions: 5,
       users: 3,
+    });
+  });
+
+  it('falls back to zero metrics for top pages and traffic rows with missing metricValues', async () => {
+    mockRunReport
+      .mockResolvedValueOnce([{ rows: [] }])
+      .mockResolvedValueOnce([{ rows: [{ dimensionValues: [{ value: '/pricing' }] }] }])
+      .mockResolvedValueOnce([{ rows: [{ dimensionValues: [{ value: 'newsletter' }, { value: 'email' }] }] }]);
+
+    const result = await cachedGetAnalytics('12345');
+    expect(result!.topPages[0]).toEqual({ path: '/pricing', views: 0, users: 0 });
+    expect(result!.trafficSources[0]).toEqual({
+      source: 'newsletter',
+      medium: 'email',
+      sessions: 0,
+      users: 0,
     });
   });
 

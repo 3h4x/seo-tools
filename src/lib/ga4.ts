@@ -18,10 +18,13 @@ export async function discoverPropertyIds() {
     const properties = summaries.flatMap((account) => account.propertySummaries || []);
 
     return sites.map((site) => {
-      const property = properties.find((p) =>
-        p.displayName?.toLowerCase().includes(site.domain.toLowerCase()) ||
-        site.domain.toLowerCase().includes(p.displayName?.toLowerCase() || '')
-      );
+      const property = properties.find((p) => {
+        const displayName = p.displayName?.toLowerCase();
+        if (!displayName) return false;
+
+        const domain = site.domain.toLowerCase();
+        return displayName.includes(domain) || domain.includes(displayName);
+      });
 
       return {
         ...site,
