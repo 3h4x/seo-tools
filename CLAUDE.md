@@ -233,6 +233,7 @@ Storage & charting:
 14. **Alias reality check**: `tsconfig.json` currently maps `@/*` only to `src/*`. Use `@/lib/...` for `src/lib/**`, but do not assume `@/app/**` resolves. Inside `app/**`, use relative imports for `app/components/**` until the alias config changes.
 15. **Lint baseline**: ESLint extends Next core-web-vitals + TypeScript rules. Repo-level exceptions already exist for `no-explicit-any`, `no-unused-vars`, `react/no-unescaped-entities`, and `react-hooks/set-state-in-effect`; do not add one-off disables when the existing config already defines the intended boundary.
 16. **Next 16 request props**: in App Router pages and layouts, treat `searchParams` (and similar request props when typed as promises) as async values and `await` them before reading fields. Follow the existing page patterns instead of accessing them synchronously.
+17. **ESM scripts**: this repo uses `"type": "module"`. New Node entrypoints belong in `scripts/*.mjs`, should use ESM `import` syntax, and should not introduce CommonJS `require`/`module.exports` patterns.
 
 ## Architecture & Patterns
 
@@ -250,6 +251,7 @@ Storage & charting:
 12. **Shared UI constants**: color palettes and valid parameter sets live in `src/lib/constants.ts` (`CHART_COLORS`, `METRIC_COLORS`, `VALID_DAYS`). Import from there rather than hardcoding hex strings or magic numbers in components or pages.
 13. **Domain logic boundaries**: keep audit parsing/scoring in `src/lib/audit.ts`, recommendation generation in `src/lib/gaps.ts`, decay detection in `src/lib/decay.ts`, keyword history math in `src/lib/keyword-history.ts`, and display formatting helpers in `src/lib/format.ts`. Reuse those modules instead of re-implementing the same transformations in pages or components.
 14. **Revalidation defaults**: dashboard pages that aggregate cached Google/API data currently use `export const revalidate = 300`. Preserve that five-minute ISR cadence by default and only change it with an explicit freshness or load reason, since manual refresh already exists for forced invalidation.
+15. **CLI boundaries**: keep `scripts/*.mjs` focused on argument parsing and orchestration. Put reusable business logic, API calls, and data transforms in `src/lib/**`, then import them into the script instead of duplicating logic across CLI entrypoints.
 
 ## Scope & Safety Rules
 
@@ -271,6 +273,7 @@ Storage & charting:
 6. **API route tests**: keep route-handler coverage alongside the lib tests in `src/lib/__tests__/api-*.test.ts`, importing `app/api/**/route.ts` directly and asserting status codes plus JSON payloads. Do not create a parallel `app/api/**/__tests__` pattern unless the repo adopts it broadly.
 7. **Verification order**: after non-trivial changes, run the smallest relevant targeted test while iterating, then finish with `pnpm lint`, `pnpm type-check`, and `pnpm test` before commit so the husky path matches local verification.
 8. **Page orchestration tests**: when changing server-page query parsing, tab/day fallbacks, or data wiring, add or update a direct page test (for example the existing trends-page style tests) so Next 16 request-prop handling and default-state rendering stay covered without requiring full E2E runs.
+9. **React test placement**: direct component and page tests follow the same `src/lib/__tests__/` convention as lib tests, using `*.test.tsx` when JSX is involved (for example `data-table.test.tsx` and `trends-page.test.tsx`).
 
 ## Commit Style
 
