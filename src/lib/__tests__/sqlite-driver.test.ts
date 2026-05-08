@@ -12,21 +12,20 @@ describe('openDatabase', () => {
     const exec = vi.fn();
     const prepare = vi.fn(() => ({ get: vi.fn(), all: vi.fn(), run: vi.fn() }));
     const close = vi.fn();
-    const requireMock = vi.fn(() => {
-      throw new Error('native module unavailable');
-    });
     const DatabaseSync = vi.fn(function DatabaseSync(this: { exec: typeof exec; prepare: typeof prepare; close: typeof close }, filename: string) {
       expect(filename).toBe(':memory:');
       this.exec = exec;
       this.prepare = prepare;
       this.close = close;
     });
+    const requireMock = vi.fn((id: string) => {
+      if (id === 'better-sqlite3') throw new Error('native module unavailable');
+      if (id === 'node:sqlite') return { DatabaseSync };
+      throw new Error(`unexpected require: ${id}`);
+    });
 
     vi.doMock('node:module', () => ({
       createRequire: () => requireMock,
-    }));
-    vi.doMock('node:sqlite', () => ({
-      DatabaseSync,
     }));
 
     const { openDatabase } = await import('../sqlite-driver.js');

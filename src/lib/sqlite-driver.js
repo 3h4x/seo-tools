@@ -1,7 +1,10 @@
 import { createRequire } from 'node:module';
-import { DatabaseSync } from 'node:sqlite';
+import path from 'node:path';
 
-const require = createRequire(import.meta.url);
+// createRequire(import.meta.url) breaks under Turbopack because import.meta.url
+// resolves to a chunk URL, not a file path. Anchor to the project root instead
+// so module resolution works in dev (Turbopack), production, and tests.
+const require = createRequire(path.join(process.cwd(), 'package.json'));
 
 class NodeSqliteStatement {
   constructor(statement) {
@@ -23,6 +26,8 @@ class NodeSqliteStatement {
 
 class NodeSqliteDatabase {
   constructor(filename) {
+    // Deferred so Turbopack instrumentation does not eagerly resolve node:sqlite.
+    const { DatabaseSync } = require('node:sqlite');
     this.db = new DatabaseSync(filename);
   }
 

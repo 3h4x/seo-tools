@@ -10,3 +10,31 @@ export const METRIC_COLORS: Record<string, string> = {
   impressions: '#06b6d4',
   position: '#f59e0b',
 };
+
+export type CwvMetricName = 'LCP' | 'INP' | 'CLS' | 'FCP' | 'TTFB';
+export type CwvRating = 'good' | 'ni' | 'poor';
+
+// Standard web-vitals thresholds. `good` is the upper bound for the good range,
+// `poor` is the lower bound for the poor range. Values between are "needs improvement".
+export const CWV_THRESHOLDS: Record<CwvMetricName, { good: number; poor: number; unit: 'ms' | 'score' }> = {
+  LCP:  { good: 2500, poor: 4000, unit: 'ms' },
+  INP:  { good: 200,  poor: 500,  unit: 'ms' },
+  CLS:  { good: 0.1,  poor: 0.25, unit: 'score' },
+  FCP:  { good: 1800, poor: 3000, unit: 'ms' },
+  TTFB: { good: 800,  poor: 1800, unit: 'ms' },
+};
+
+export const CWV_METRIC_ORDER: CwvMetricName[] = ['LCP', 'INP', 'CLS', 'FCP', 'TTFB'];
+
+export const CWV_RATING_COLORS: Record<CwvRating, { text: string; bg: string; border: string; label: string }> = {
+  good: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500', label: 'Good' },
+  ni:   { text: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500',   label: 'Needs improvement' },
+  poor: { text: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500',     label: 'Poor' },
+};
+
+export function rateCwv(name: CwvMetricName, value: number): CwvRating {
+  const t = CWV_THRESHOLDS[name];
+  if (value <= t.good) return 'good';
+  if (value <= t.poor) return 'ni';
+  return 'poor';
+}

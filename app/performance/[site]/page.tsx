@@ -1,0 +1,272 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { getManagedSite } from '@/lib/sites';
+import { discoverPropertyIds } from '@/lib/ga4';
+import {
+  cachedGetRumCoreWebVitals,
+  cachedGetRumCwvByPage,
+  cachedGetRumCwvTrend,
+  cachedGetCwvEventCount,
+  type CwvMetricMap,
+} from '@/lib/performance';
+import { cachedGetPagespeed } from '@/lib/pagespeed';
+import {
+  CWV_METRIC_ORDER,
+  CWV_RATING_COLORS,
+  CWV_THRESHOLDS,
+  rateCwv,
+  type CwvMetricName,
+} from '@/lib/constants';
+import TimeRange from '../../components/time-range';
+import TrendChart from '../../components/trend-chart';
+import CwvSetupGuide from '../../components/cwv-setup-guide';
+import { CwvCell, formatCwv } from '../../components/cwv-cell';
+
+export const revalidate = 300;
+
+const VALID_DAYS = [7, 28];
+
+function MetricsCards({ metrics, source }: { metrics: CwvMetricMap; source: string }) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      {CWV_METRIC_ORDER.map((name) => {
+        const m = metrics[name];
+        const accent = m ? CWV_RATING_COLORS[m.rating].border : 'border-neutral-700';
+        return (
+          <div key={name} className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accent} p-4`}>
+            <div className="flex items-center gap-2 text-neutral-500 mb-2">
+              <span className="text-xs uppercase tracking-wider">{name}</span>
+              {m && <span className={`text-[10px] ${CWV_RATING_COLORS[m.rating].text}`}>{CWV_RATING_COLORS[m.rating].label}</span>}
+            </div>
+            <div className="text-2xl font-mono font-bold text-white">
+              {m ? formatCwv(name, m.value) : '—'}
+            </div>
+            <div className="text-[10px] text-neutral-500 mt-1">
+              {m && m.sampleCount > 0 ? `${m.sampleCount.toLocaleString()} samples · ${source}` : source}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default async function PerfSiteDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ site: string }>;
+  searchParams: Promise<{ days?: string }>;
+}) {
+  const { site: siteId } = await params;
+  const site = await getManagedSite(siteId);
+  if (!site) notFound();
+
+  const sp = await searchParams;
+  const rawDays = parseInt(sp.days || '7');
+  const days = VALID_DAYS.includes(rawDays) ? rawDays : 7;
+
+  const discovered = await discoverPropertyIds();
+  const propertyId = discovered.find(s => s.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
+  const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
+
+  const [rum, byPage, trend, eventCount, psiMobile, psiDesktop] = await Promise.all([
+    propertyId ? cachedGetRumCoreWebVitals(propertyId, days) : Promise.resolve(null),
+    propertyId ? cachedGetRumCwvByPage(propertyId, days, 20) : Promise.resolve(null),
+    propertyId ? cachedGetRumCwvTrend(propertyId, Math.max(days, 30)) : Promise.resolve(null),
+    propertyId ? cachedGetCwvEventCount(propertyId, days) : Promise.resolve(null),
+    cachedGetPagespeed(url, 'mobile'),
+    cachedGetPagespeed(url, 'desktop'),
+  ]);
+
+  const hasRum = !!rum?.hasData;
+  // GTM is wired (events flowing) but the Data API can't query the custom
+  // dimensions yet — typical 24–48h propagation lag after registering them.
+  const propagating = !hasRum && (eventCount ?? 0) > 0;
+
+  // Hero metrics: RUM > PSI field > PSI lab.
+  let heroMetrics: CwvMetricMap = {};
+  let heroSource = 'no data';
+  if (hasRum) {
+    heroMetrics = rum!.overall;
+    heroSource = 'RUM (GA4)';
+  } else if (psiMobile?.field) {
+    heroMetrics = Object.fromEntries(
+      CWV_METRIC_ORDER.flatMap((n) => {
+        const m = psiMobile.field![n];
+        return m ? [[n, { value: m.value, rating: m.rating, sampleCount: 0 }]] : [];
+      }),
+    );
+    heroSource = 'CrUX field (mobile)';
+  } else if (psiMobile) {
+    heroMetrics = Object.fromEntries(
+      CWV_METRIC_ORDER.flatMap((n) => {
+        const v = psiMobile.lab[n];
+        return typeof v === 'number' ? [[n, { value: v, rating: rateCwv(n, v), sampleCount: 0 }]] : [];
+      }),
+    );
+    heroSource = 'Lighthouse lab (mobile)';
+  }
+
+  // Trend chart data — pick the most-sampled metric or all five together (LCP, INP, CLS).
+  const trendData = (trend ?? []).map((p) => ({
+    date: p.date.length === 8 ? `${p.date.slice(0, 4)}-${p.date.slice(4, 6)}-${p.date.slice(6, 8)}` : p.date,
+    LCP: p.metrics.LCP?.value ?? null,
+    INP: p.metrics.INP?.value ?? null,
+    CLS: p.metrics.CLS ? p.metrics.CLS.value * 1000 : null, // scale for comparable axis
+  }));
+
+  const psiNeedsKey = psiMobile?.needsKey || psiDesktop?.needsKey;
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-neutral-500">
+            <Link href="/performance" className="hover:text-white">Performance</Link>
+            <span>/</span>
+            <span>{site.name}</span>
+          </div>
+          <h1 className="text-2xl font-bold text-white mt-1">{site.name}</h1>
+          <p className="text-neutral-500 text-sm mt-1 font-mono">{site.domain}</p>
+        </div>
+        <TimeRange options={[{ value: '7', label: '7d' }, { value: '28', label: '28d' }]} defaultValue="7" />
+      </div>
+
+      {psiNeedsKey && (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
+          PageSpeed Insights rate-limited. Add a free API key in <Link href="/config" className="underline">Config</Link>.
+        </div>
+      )}
+
+      {propagating && (
+        <div className="rounded-md border border-blue-500/40 bg-blue-500/10 px-4 py-3 text-sm text-blue-200 space-y-1">
+          <div className="font-semibold">GTM wired · RUM data propagating</div>
+          <div className="text-blue-300/80 text-xs">
+            {eventCount?.toLocaleString()} <span className="font-mono">core_web_vitals</span> events received
+            in the last {days} days, but custom dimensions/metrics are still propagating to the GA4 Data API.
+            This typically takes 24–48 hours after registering them. Showing PSI fallback until then.
+          </div>
+        </div>
+      )}
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Overall ({heroSource})</h2>
+          {psiMobile?.performanceScore != null && (
+            <span className="text-xs text-neutral-500">Lighthouse mobile: <span className="text-white font-mono">{psiMobile.performanceScore}</span></span>
+          )}
+        </div>
+        <MetricsCards metrics={heroMetrics} source={heroSource} />
+      </section>
+
+      {hasRum && rum && (
+        <section className="space-y-3">
+          <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Mobile vs Desktop (RUM)</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-sm text-neutral-300 mb-2">Mobile</h3>
+              <MetricsCards metrics={rum.byDevice.mobile} source="RUM" />
+            </div>
+            <div>
+              <h3 className="text-sm text-neutral-300 mb-2">Desktop</h3>
+              <MetricsCards metrics={rum.byDevice.desktop} source="RUM" />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!hasRum && psiMobile && psiDesktop && (
+        <section className="space-y-3">
+          <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Mobile vs Desktop (PSI)</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-sm text-neutral-300 mb-2">Mobile · score {psiMobile.performanceScore ?? '—'}</h3>
+              <MetricsCards
+                metrics={Object.fromEntries(
+                  CWV_METRIC_ORDER.flatMap((n) => {
+                    const f = psiMobile.field?.[n];
+                    if (f) return [[n, { value: f.value, rating: f.rating, sampleCount: 0 }]];
+                    const lab = psiMobile.lab[n];
+                    return typeof lab === 'number' ? [[n, { value: lab, rating: rateCwv(n, lab), sampleCount: 0 }]] : [];
+                  }),
+                )}
+                source={psiMobile.field ? 'CrUX' : 'Lab'}
+              />
+            </div>
+            <div>
+              <h3 className="text-sm text-neutral-300 mb-2">Desktop · score {psiDesktop.performanceScore ?? '—'}</h3>
+              <MetricsCards
+                metrics={Object.fromEntries(
+                  CWV_METRIC_ORDER.flatMap((n) => {
+                    const f = psiDesktop.field?.[n];
+                    if (f) return [[n, { value: f.value, rating: f.rating, sampleCount: 0 }]];
+                    const lab = psiDesktop.lab[n];
+                    return typeof lab === 'number' ? [[n, { value: lab, rating: rateCwv(n, lab), sampleCount: 0 }]] : [];
+                  }),
+                )}
+                source={psiDesktop.field ? 'CrUX' : 'Lab'}
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {byPage && byPage.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Slowest pages</h2>
+          <div className="overflow-hidden rounded border border-neutral-800">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-neutral-800 text-neutral-500">
+                  <th className="px-3 py-2 text-left font-semibold">Path</th>
+                  <th className="px-3 py-2 text-right font-semibold">Samples</th>
+                  {CWV_METRIC_ORDER.map(n => (
+                    <th key={n} className="px-3 py-2 text-right font-semibold">{n}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800">
+                {byPage.map((row) => (
+                  <tr key={row.path} className="hover:bg-neutral-800/30">
+                    <td className="px-3 py-2 font-mono text-xs text-neutral-300">{row.path}</td>
+                    <td className="px-3 py-2 text-right font-mono text-neutral-400">{row.totalSamples.toLocaleString()}</td>
+                    {CWV_METRIC_ORDER.map((name) => {
+                      const m = row.metrics[name];
+                      return (
+                        <td key={name} className="px-3 py-2 text-right">
+                          <CwvCell name={name} value={m?.value} rating={m?.rating} />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {trendData.length >= 2 && (
+        <section className="space-y-3">
+          <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Trend (RUM)</h2>
+          <p className="text-xs text-neutral-500">CLS is scaled ×1000 for comparable axis. LCP/INP shown in ms.</p>
+          <TrendChart
+            data={trendData}
+            lines={[
+              { key: 'LCP', color: '#3b82f6', label: `LCP (good ≤${CWV_THRESHOLDS.LCP.good}ms)` },
+              { key: 'INP', color: '#8b5cf6', label: `INP (good ≤${CWV_THRESHOLDS.INP.good}ms)` },
+              { key: 'CLS', color: '#f59e0b', label: 'CLS ×1000' },
+            ]}
+            height={240}
+            formatValue={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          />
+        </section>
+      )}
+
+      {!hasRum && !propagating && (
+        <CwvSetupGuide defaultOpen />
+      )}
+    </div>
+  );
+}

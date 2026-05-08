@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ConfigForm from '../components/config-form';
+import PagespeedKeyForm from '../components/pagespeed-key-form';
 import SitesManager from '../components/sites-manager';
 import type { Site } from '@/lib/sites';
 
@@ -34,6 +35,8 @@ export default function ConfigPage() {
   return (
     <div className="p-6 space-y-10">
       <ConfigForm source={source} />
+      <hr className="border-neutral-800" />
+      <PagespeedKeyForm />
       <hr className="border-neutral-800" />
       <SitesManager initialSites={sites} hasAuth={hasAuth} />
     </div>
