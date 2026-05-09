@@ -348,4 +348,151 @@ describe('startCollector', () => {
     expect(genesisRun).toHaveBeenCalledWith('site1', 'sc', '2026-05-01');
     expect(genesisRun).toHaveBeenCalledWith('site1', 'ga4', '2026-05-02');
   });
+
+  it('startCollector is idempotent — second call does not add a second interval', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
+
+    mockDbState();
+    mockSites();
+    mockClients();
+
+    const { startCollector } = await loadCollectDailyModule();
+
+    startCollector();
+    startCollector(); // second call should be a no-op
+
+    // Only one interval should have been created
+    expect(vi.getTimerCount()).toBe(1);
+  });
+
+  it('logs and continues when SC query throws for one site', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
+
+    mockDbState();
+    mockSites();
+
+    const scQuery = vi.fn().mockRejectedValue(new Error('SC API error'));
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function SearchconsoleMock() {
+      return { searchanalytics: { query: scQuery } };
+    } as never);
+
+    const runReport = vi.fn().mockResolvedValue([{ rows: [] }]);
+    vi.mocked(BetaAnalyticsDataClient).mockImplementation(function BetaAnalyticsDataClientMock() {
+      return { runReport };
+    } as never);
+
+    const { startCollector } = await loadCollectDailyModule();
+    startCollector();
+
+    // GA4 still collected despite SC error
+    await vi.waitFor(() => {
+      expect(upsertGa4Daily).toHaveBeenCalled();
+    });
+    // SC upsert never called when the query throws
+    expect(upsertScDaily).not.toHaveBeenCalled();
+  });
+
+  it('logs and continues when GA4 runReport throws for one site', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
+
+    mockDbState();
+    mockSites();
+
+    const scQuery = vi.fn().mockResolvedValue({ data: { rows: [] } });
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function SearchconsoleMock() {
+      return { searchanalytics: { query: scQuery } };
+    } as never);
+
+    const runReport = vi.fn().mockRejectedValue(new Error('GA4 API error'));
+    vi.mocked(BetaAnalyticsDataClient).mockImplementation(function BetaAnalyticsDataClientMock() {
+      return { runReport };
+    } as never);
+
+    const { startCollector } = await loadCollectDailyModule();
+    startCollector();
+
+    // SC still collected despite GA4 error
+    await vi.waitFor(() => {
+      expect(upsertScDaily).toHaveBeenCalled();
+    });
+    expect(upsertGa4Daily).not.toHaveBeenCalled();
+  });
+
+  it('skips SC collection for sites with searchConsole=false', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
+
+    mockDbState();
+
+    // Site with searchConsole disabled
+    vi.mocked(getManagedSites).mockResolvedValue([{
+      id: 'site1',
+      name: 'Site One',
+      domain: 'example.com',
+      searchConsole: false,
+      testPages: [],
+    }]);
+    vi.mocked(discoverPropertyIds).mockResolvedValue([{
+      id: 'site1',
+      name: 'Site One',
+      domain: 'example.com',
+      searchConsole: false,
+      testPages: [],
+      ga4PropertyId: '123',
+    }]);
+    vi.mocked(getSCUrl).mockReturnValue('sc-domain:example.com');
+    vi.mocked(getAuth).mockReturnValue('auth' as never);
+
+    const { scQuery, runReport } = mockClients();
+    const { startCollector } = await loadCollectDailyModule();
+    startCollector();
+
+    await vi.waitFor(() => {
+      expect(upsertGa4Daily).toHaveBeenCalled();
+    });
+
+    // SC query skipped for this site
+    expect(scQuery).not.toHaveBeenCalled();
+    expect(runReport).toHaveBeenCalled();
+  });
+
+  it('skips GA4 collection for sites without a ga4PropertyId', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
+
+    mockDbState();
+
+    vi.mocked(getManagedSites).mockResolvedValue([{
+      id: 'site1',
+      name: 'Site One',
+      domain: 'example.com',
+      searchConsole: true,
+      testPages: [],
+    }]);
+    // discoverPropertyIds returns site without ga4PropertyId
+    vi.mocked(discoverPropertyIds).mockResolvedValue([{
+      id: 'site1',
+      name: 'Site One',
+      domain: 'example.com',
+      searchConsole: true,
+      testPages: [],
+    }]);
+    vi.mocked(getSCUrl).mockReturnValue('sc-domain:example.com');
+    vi.mocked(getAuth).mockReturnValue('auth' as never);
+
+    const { scQuery, runReport } = mockClients();
+    const { startCollector } = await loadCollectDailyModule();
+    startCollector();
+
+    await vi.waitFor(() => {
+      expect(upsertScDaily).toHaveBeenCalled();
+    });
+
+    // GA4 runReport skipped when no propertyId
+    expect(runReport).not.toHaveBeenCalled();
+    expect(scQuery).toHaveBeenCalled();
+  });
 });

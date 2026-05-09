@@ -16,6 +16,7 @@ import {
   cachedGetRumCoreWebVitals,
   cachedGetRumCwvByPage,
   cachedGetRumCwvTrend,
+  cachedGetCwvEventCount,
 } from '../performance';
 
 beforeEach(() => {
@@ -145,5 +146,99 @@ describe('cachedGetRumCwvTrend', () => {
     expect(result![0].date).toBe('20260301');
     expect(result![0].metrics.LCP!.value).toBe(2000);
     expect(result![1].metrics.LCP!.value).toBe(3000);
+  });
+
+  it('returns null for empty propertyId', async () => {
+    expect(await cachedGetRumCwvTrend('', 30)).toBeNull();
+    expect(mockRunReport).not.toHaveBeenCalled();
+  });
+
+  it('returns empty array on INVALID_ARGUMENT error', async () => {
+    mockRunReport.mockRejectedValueOnce(new Error('3 INVALID_ARGUMENT: customEvent:metric_name not found'));
+    const result = await cachedGetRumCwvTrend('123', 30);
+    expect(result).toEqual([]);
+  });
+
+  it('returns null on transient API error', async () => {
+    mockRunReport.mockRejectedValueOnce(new Error('UNAVAILABLE: backend down'));
+    const result = await cachedGetRumCwvTrend('123', 30);
+    expect(result).toBeNull();
+  });
+
+  it('skips rows with missing date or unknown metric', async () => {
+    mockRunReport.mockResolvedValueOnce([{
+      rows: [
+        { dimensionValues: [{ value: '' }, { value: 'LCP' }], metricValues: [{ value: '10' }, { value: '20000' }] },
+        { dimensionValues: [{ value: '20260301' }, { value: 'UNKNOWN' }], metricValues: [{ value: '10' }, { value: '500' }] },
+        { dimensionValues: [{ value: '20260301' }, { value: 'LCP' }], metricValues: [{ value: '0' }, { value: '0' }] },
+      ],
+    }]);
+    const result = await cachedGetRumCwvTrend('123', 30);
+    expect(result).toEqual([]);
+  });
+});
+
+describe('cachedGetRumCwvByPage', () => {
+  it('returns empty array on INVALID_ARGUMENT error', async () => {
+    mockRunReport.mockRejectedValueOnce(new Error('3 INVALID_ARGUMENT: customEvent:metric_name not found'));
+    const result = await cachedGetRumCwvByPage('123', 7);
+    expect(result).toEqual([]);
+  });
+
+  it('returns null on transient API error', async () => {
+    mockRunReport.mockRejectedValueOnce(new Error('UNAVAILABLE: backend down'));
+    const result = await cachedGetRumCwvByPage('123', 7);
+    expect(result).toBeNull();
+  });
+
+  it('respects limit parameter', async () => {
+    const rows = Array.from({ length: 5 }, (_, i) => ({
+      dimensionValues: [{ value: `/page${i}` }, { value: 'LCP' }],
+      metricValues: [{ value: String((5 - i) * 10) }, { value: String((5 - i) * 10000) }],
+    }));
+    mockRunReport.mockResolvedValueOnce([{ rows }]);
+    const result = await cachedGetRumCwvByPage('123', 7, 3);
+    expect(result).toHaveLength(3);
+  });
+});
+
+describe('cachedGetCwvEventCount', () => {
+  it('returns null for empty propertyId', async () => {
+    expect(await cachedGetCwvEventCount('', 7)).toBeNull();
+    expect(mockRunReport).not.toHaveBeenCalled();
+  });
+
+  it('returns event count from first row', async () => {
+    mockRunReport.mockResolvedValueOnce([{
+      rows: [{ dimensionValues: [{ value: 'core_web_vitals' }], metricValues: [{ value: '42' }] }],
+    }]);
+    const result = await cachedGetCwvEventCount('555', 7);
+    expect(result).toBe(42);
+  });
+
+  it('returns 0 when no rows returned', async () => {
+    mockRunReport.mockResolvedValueOnce([{ rows: [] }]);
+    const result = await cachedGetCwvEventCount('555', 7);
+    expect(result).toBe(0);
+  });
+
+  it('returns null on API error', async () => {
+    mockRunReport.mockRejectedValueOnce(new Error('network error'));
+    const result = await cachedGetCwvEventCount('555', 7);
+    expect(result).toBeNull();
+  });
+
+  it('passes correct property and eventName filter', async () => {
+    mockRunReport.mockResolvedValueOnce([{ rows: [] }]);
+    await cachedGetCwvEventCount('999', 14);
+    expect(mockRunReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        property: 'properties/999',
+        dateRanges: [{ startDate: '14daysAgo', endDate: 'today' }],
+        dimensionFilter: expect.objectContaining({
+          filter: expect.objectContaining({ fieldName: 'eventName' }),
+        }),
+      }),
+    );
   });
 });

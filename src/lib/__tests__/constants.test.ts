@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CHART_COLORS, METRIC_COLORS, VALID_DAYS } from '../constants';
+import { CHART_COLORS, METRIC_COLORS, VALID_DAYS, rateCwv, CWV_THRESHOLDS, CWV_METRIC_ORDER } from '../constants';
 
 describe('constants', () => {
   it('exports the supported day windows in ascending order', () => {
@@ -23,5 +23,57 @@ describe('constants', () => {
       impressions: '#06b6d4',
       position: '#f59e0b',
     });
+  });
+});
+
+describe('rateCwv', () => {
+  it('covers all metrics in CWV_METRIC_ORDER', () => {
+    expect(CWV_METRIC_ORDER).toEqual(['LCP', 'INP', 'CLS', 'FCP', 'TTFB']);
+  });
+
+  it('rates LCP at boundary values', () => {
+    const { good, poor } = CWV_THRESHOLDS.LCP;
+    expect(rateCwv('LCP', good)).toBe('good');
+    expect(rateCwv('LCP', good + 1)).toBe('ni');
+    expect(rateCwv('LCP', poor)).toBe('ni');
+    expect(rateCwv('LCP', poor + 1)).toBe('poor');
+  });
+
+  it('rates INP at boundary values', () => {
+    const { good, poor } = CWV_THRESHOLDS.INP;
+    expect(rateCwv('INP', good)).toBe('good');
+    expect(rateCwv('INP', good + 1)).toBe('ni');
+    expect(rateCwv('INP', poor)).toBe('ni');
+    expect(rateCwv('INP', poor + 1)).toBe('poor');
+  });
+
+  it('rates CLS at boundary values', () => {
+    const { good, poor } = CWV_THRESHOLDS.CLS;
+    expect(rateCwv('CLS', good)).toBe('good');
+    expect(rateCwv('CLS', good + 0.01)).toBe('ni');
+    expect(rateCwv('CLS', poor)).toBe('ni');
+    expect(rateCwv('CLS', poor + 0.01)).toBe('poor');
+  });
+
+  it('rates FCP at boundary values', () => {
+    const { good, poor } = CWV_THRESHOLDS.FCP;
+    expect(rateCwv('FCP', good)).toBe('good');
+    expect(rateCwv('FCP', good + 1)).toBe('ni');
+    expect(rateCwv('FCP', poor)).toBe('ni');
+    expect(rateCwv('FCP', poor + 1)).toBe('poor');
+  });
+
+  it('rates TTFB at boundary values', () => {
+    const { good, poor } = CWV_THRESHOLDS.TTFB;
+    expect(rateCwv('TTFB', good)).toBe('good');
+    expect(rateCwv('TTFB', good + 1)).toBe('ni');
+    expect(rateCwv('TTFB', poor)).toBe('ni');
+    expect(rateCwv('TTFB', poor + 1)).toBe('poor');
+  });
+
+  it('rates zero as good for all metrics', () => {
+    for (const name of CWV_METRIC_ORDER) {
+      expect(rateCwv(name, 0)).toBe('good');
+    }
   });
 });
