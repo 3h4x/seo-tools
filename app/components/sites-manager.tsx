@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { applyImportResults, buildImportSummary, getImportResult, type DiscoverySite, type ImportResult, type ImportSummary } from '@/lib/discovery-import';
 
 interface Site {
   id: string;
@@ -41,8 +42,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   const [form, setForm] = useState<Site>({ id: '', ...EMPTY_SITE });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [discovering, setDiscovering] = useState(false);
-  const [discovered, setDiscovered] = useState<Site[] | null>(null);
+  const [discovered, setDiscovered] = useState<DiscoverySite<Site>[] | null>(null);
   const [discoverError, setDiscoverError] = useState('');
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -119,6 +121,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   async function handleDiscover() {
     setDiscovering(true);
     setDiscoverError('');
+    setImportSummary(null);
     setDiscovered(null);
     setSelected(new Set());
     try {
@@ -157,18 +160,40 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   async function handleImport() {
     if (!discovered) return;
     setImporting(true);
+    setDiscoverError('');
+    setImportSummary(null);
     const toImport = discovered.filter(s => selected.has(s.id));
     try {
-      await Promise.all(toImport.map(site =>
-        fetch('/api/sites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(site),
-        })
-      ));
-      await reloadSites();
-      setDiscovered(null);
-      setSelected(new Set());
+      const results = await Promise.all(toImport.map(async (site): Promise<ImportResult> => {
+        try {
+          const { importError: _importError, ...siteToSave } = site;
+          const res = await fetch('/api/sites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(siteToSave),
+          });
+          return {
+            id: site.id,
+            ...(await getImportResult(res)),
+          };
+        } catch {
+          return {
+            id: site.id,
+            ok: false,
+            error: 'Request failed',
+          };
+        }
+      }));
+
+      const nextState = applyImportResults(discovered, selected, results);
+      setDiscovered(nextState.remaining);
+      setSelected(nextState.selected);
+
+      if (nextState.successCount > 0) {
+        await reloadSites();
+      }
+
+      setImportSummary(buildImportSummary(nextState.successCount, nextState.failureCount));
     } catch {
       setDiscoverError('Import failed');
     } finally {
@@ -413,6 +438,11 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           </div>
 
           {discoverError && <p className="text-sm text-red-400">{discoverError}</p>}
+          {importSummary && (
+            <p className={`text-sm ${importSummary.tone === 'warning' ? 'text-amber-300' : 'text-emerald-300'}`}>
+              {importSummary.message}
+            </p>
+          )}
 
           {discovered !== null && (
             discovered.length === 0 ? (
@@ -430,18 +460,23 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                 </div>
                 <div className="space-y-2">
                   {discovered.map(site => (
-                    <label key={site.id} className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(site.id)}
-                        onChange={() => toggleSelect(site.id)}
-                        className="rounded border-neutral-600"
-                      />
-                      <span className="text-sm text-white">{site.domain}</span>
-                      {site.ga4PropertyId && (
-                        <span className="text-xs text-neutral-500">GA4: {site.ga4PropertyId}</span>
+                    <div key={site.id} className="space-y-1">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(site.id)}
+                          onChange={() => toggleSelect(site.id)}
+                          className="rounded border-neutral-600"
+                        />
+                        <span className="text-sm text-white">{site.domain}</span>
+                        {site.ga4PropertyId && (
+                          <span className="text-xs text-neutral-500">GA4: {site.ga4PropertyId}</span>
+                        )}
+                      </label>
+                      {site.importError && (
+                        <p className="pl-6 text-xs text-red-400">{site.importError}</p>
                       )}
-                    </label>
+                    </div>
                   ))}
                 </div>
                 <button
