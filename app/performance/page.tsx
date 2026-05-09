@@ -5,6 +5,7 @@ import { cachedGetPagespeed, type PsiData } from '@/lib/pagespeed';
 import {
   CWV_METRIC_ORDER,
   CWV_RATING_COLORS,
+  PERF_VALID_DAYS,
   rateCwv,
   type CwvMetricName,
   type CwvRating,
@@ -14,8 +15,6 @@ import CwvSetupGuide from '../components/cwv-setup-guide';
 import { CwvCell, formatCwv } from '../components/cwv-cell';
 
 export const revalidate = 300;
-
-const VALID_DAYS = [7, 28];
 
 interface SiteRow {
   id: string;
@@ -107,7 +106,7 @@ const SOURCE_BADGE: Record<SiteRow['source'], { label: string; cls: string; tip:
 export default async function PerformancePage({ searchParams }: { searchParams: Promise<{ days?: string; guide?: string }> }) {
   const params = await searchParams;
   const rawDays = parseInt(params.days || '7');
-  const days = VALID_DAYS.includes(rawDays) ? rawDays : 7;
+  const days = (PERF_VALID_DAYS as readonly number[]).includes(rawDays) ? rawDays : 7;
   const rows = await getRows(days);
 
   const overallAgg: Record<CwvMetricName, { sum: number; count: number }> = {

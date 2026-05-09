@@ -14,6 +14,7 @@ import {
   CWV_METRIC_ORDER,
   CWV_RATING_COLORS,
   CWV_THRESHOLDS,
+  PERF_VALID_DAYS,
   rateCwv,
   type CwvMetricName,
 } from '@/lib/constants';
@@ -23,8 +24,6 @@ import CwvSetupGuide from '../../components/cwv-setup-guide';
 import { CwvCell, formatCwv } from '../../components/cwv-cell';
 
 export const revalidate = 300;
-
-const VALID_DAYS = [7, 28];
 
 function MetricsCards({ metrics, source }: { metrics: CwvMetricMap; source: string }) {
   return (
@@ -64,7 +63,7 @@ export default async function PerfSiteDetail({
 
   const sp = await searchParams;
   const rawDays = parseInt(sp.days || '7');
-  const days = VALID_DAYS.includes(rawDays) ? rawDays : 7;
+  const days = (PERF_VALID_DAYS as readonly number[]).includes(rawDays) ? rawDays : 7;
 
   const discovered = await discoverPropertyIds();
   const propertyId = discovered.find(s => s.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';

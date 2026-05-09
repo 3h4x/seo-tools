@@ -26,6 +26,8 @@ export const CWV_THRESHOLDS: Record<CwvMetricName, { good: number; poor: number;
 
 export const CWV_METRIC_ORDER: CwvMetricName[] = ['LCP', 'INP', 'CLS', 'FCP', 'TTFB'];
 
+export const PERF_VALID_DAYS = [7, 28] as const;
+
 export const CWV_RATING_COLORS: Record<CwvRating, { text: string; bg: string; border: string; label: string }> = {
   good: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500', label: 'Good' },
   ni:   { text: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500',   label: 'Needs improvement' },
