@@ -8,6 +8,7 @@ import { statusDots, accentBorder, StatusBadge } from '../components/audit/check
 import { MetricCard } from '../components/metric-card';
 import { CopyButton } from '../components/copy-button';
 import { GapsClient, type SiteGap } from '../components/gaps-client';
+import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
 
 export const revalidate = 300;
@@ -17,6 +18,15 @@ const DECAY_SEVERITY_COLORS: Record<DecaySeverity, { badge: string; badgeBg: str
   moderate: { badge: 'text-amber-400', badgeBg: 'bg-amber-500/10' },
   mild: { badge: 'text-blue-400', badgeBg: 'bg-blue-500/10' },
 };
+
+const DECAY_TABLE_COLUMNS: DataTableColumn[] = [
+  { label: 'Site', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-400 text-xs' },
+  { label: 'Page', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-300 text-xs truncate max-w-[200px]' },
+  { label: 'Clicks', align: 'right', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-right' },
+  { label: 'Impressions', align: 'right', className: 'px-4 py-3 font-semibold hidden md:table-cell', cellClassName: 'px-4 py-2.5 text-right hidden md:table-cell' },
+  { label: 'Position', align: 'right', className: 'px-4 py-3 font-semibold hidden md:table-cell', cellClassName: 'px-4 py-2.5 text-right hidden md:table-cell' },
+  { label: 'Severity', align: 'right', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-right' },
+];
 
 function worstStatus(audit: SiteAuditResult): CheckStatus {
   const passRate = audit.score.total > 0 ? audit.score.pass / audit.score.total : 0;
@@ -241,50 +251,38 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             </p>
           </div>
         ) : (
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-neutral-800 text-neutral-500 text-left text-xs uppercase tracking-wider">
-                  <th className="px-4 py-3 font-semibold">Site</th>
-                  <th className="px-4 py-3 font-semibold">Page</th>
-                  <th className="px-4 py-3 font-semibold text-right">Clicks</th>
-                  <th className="px-4 py-3 font-semibold text-right hidden md:table-cell">Impressions</th>
-                  <th className="px-4 py-3 font-semibold text-right hidden md:table-cell">Position</th>
-                  <th className="px-4 py-3 font-semibold text-right">Severity</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-800">
-                {allDecaying.map((page, i) => {
-                  let shortPage = page.page;
-                  try { shortPage = new URL(page.page).pathname; } catch {}
-                  const colors = DECAY_SEVERITY_COLORS[page.severity];
-                  return (
-                    <tr key={i} className="hover:bg-neutral-800/30 transition-colors">
-                      <td className="px-4 py-2.5 text-neutral-400 text-xs">{page.domain}</td>
-                      <td className="px-4 py-2.5 text-neutral-300 font-mono text-xs truncate max-w-[200px]" title={page.page}>{shortPage}</td>
-                      <td className="px-4 py-2.5 text-right font-mono">
-                        <span className="text-neutral-300">{page.currentClicks}</span>
-                        <span className="text-red-400 text-[10px] ml-1">{page.clicksDelta}%</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-right font-mono hidden md:table-cell">
-                        <span className="text-neutral-400">{page.currentImpressions}</span>
-                        <span className="text-red-400 text-[10px] ml-1">{page.impressionsDelta}%</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-right font-mono hidden md:table-cell">
-                        <span className="text-neutral-400">{page.currentPosition.toFixed(1)}</span>
-                        {page.positionDelta > 0 && <span className="text-red-400 text-[10px] ml-1">+{page.positionDelta}</span>}
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <span className={`${colors.badgeBg} ${colors.badge} text-[10px] px-2 py-0.5 rounded-full font-medium uppercase`}>
-                          {page.severity}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={DECAY_TABLE_COLUMNS}
+            rows={allDecaying.map((page) => {
+              let shortPage = page.page;
+              try { shortPage = new URL(page.page).pathname; } catch {}
+              const colors = DECAY_SEVERITY_COLORS[page.severity];
+              return [
+                <span key="site">{page.domain}</span>,
+                <span key="page" title={page.page}>{shortPage}</span>,
+                <span key="clicks">
+                  <span className="text-neutral-300">{page.currentClicks}</span>
+                  <span className="text-red-400 text-[10px] ml-1">{page.clicksDelta}%</span>
+                </span>,
+                <span key="impressions">
+                  <span className="text-neutral-400">{page.currentImpressions}</span>
+                  <span className="text-red-400 text-[10px] ml-1">{page.impressionsDelta}%</span>
+                </span>,
+                <span key="position">
+                  <span className="text-neutral-400">{page.currentPosition.toFixed(1)}</span>
+                  {page.positionDelta > 0 && <span className="text-red-400 text-[10px] ml-1">+{page.positionDelta}</span>}
+                </span>,
+                <span key="severity" className={`${colors.badgeBg} ${colors.badge} inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium uppercase`}>
+                  {page.severity}
+                </span>,
+              ];
+            })}
+            rowKeys={allDecaying.map((page) => `${page.siteId}:${page.page}`)}
+            containerClassName="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden"
+            tableClassName="w-full text-sm"
+            headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
+            rowClassName="hover:bg-neutral-800/30 transition-colors"
+          />
         )}
       </div>
     </div>

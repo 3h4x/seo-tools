@@ -137,4 +137,23 @@ describe('DataTable', () => {
 
     expect(html).toContain('<td class="px-3 py-2 font-mono text-right">');
   });
+
+  it('preserves caller-provided responsive column classes and row styling', () => {
+    const html = renderToStaticMarkup(
+      <DataTable
+        columns={[
+          { label: 'Page', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-xs' },
+          { label: 'Impressions', align: 'right', className: 'px-4 py-3 font-semibold hidden md:table-cell', cellClassName: 'px-4 py-2.5 text-right hidden md:table-cell' },
+        ]}
+        rows={[[<span key="page">/docs</span>, <span key="impressions">120</span>]]}
+        containerClassName="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden"
+        rowClassName="hover:bg-neutral-800/30 transition-colors"
+      />
+    );
+
+    expect(html).toContain('<div class="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">');
+    expect(html).toContain('<th class="px-4 py-3 font-semibold hidden md:table-cell text-right">Impressions</th>');
+    expect(html).toContain('<td class="px-4 py-2.5 text-right hidden md:table-cell font-mono"><span>120</span></td>');
+    expect(html).toContain('<tr class="hover:bg-neutral-800/30 transition-colors">');
+  });
 });
