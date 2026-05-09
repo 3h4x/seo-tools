@@ -47,6 +47,7 @@ Each site record stores: id, name, domain, SC URL override, GA4 property ID, sta
 - [x] SQLite Caching (30-min TTL for audit, SC, GA4 data via `api_cache` table)
 - [x] Refresh Button (global nav, clears cache + refreshes page)
 - [x] DB-Managed Sites (sites stored in SQLite, Config UI for CRUD + discovery, no hardcoded domains)
+- [x] Performance Tab (Core Web Vitals via GA4 RUM with PSI/CrUX fallback, mobile vs desktop, slowest-pages, trend chart)
 
 ## Google Service Account
 
@@ -79,6 +80,8 @@ GOOGLE_SA_KEY_JSON='{"type":"service_account",...}'
 - `/report/[site]` — Per-site analytics detail with daily trends
 - `/decay` — Content decay detection (declining pages across all sites, 7d/30d toggle)
 - `/trends` — Historical trend data from SQLite snapshots (SC + GA4 + audit scores)
+- `/performance` — Core Web Vitals overview (RUM via GA4 with PSI fallback per site)
+- `/performance/[site]` — Per-site CWV detail (mobile vs desktop, slowest pages, RUM trend chart)
 
 ## Audit Checks
 
@@ -131,6 +134,42 @@ Compares each site against best practices and outputs recommendations:
 - Missing image alt text -> "Add alt text to all images"
 - Low internal linking -> "Improve internal linking"
 
+## Performance Tab (Core Web Vitals)
+
+`/performance` aggregates CWV (LCP, INP, CLS, FCP, TTFB) across all sites. Two data sources, in priority order:
+
+1. **RUM via GA4** (`src/lib/performance.ts`) — queries `customEvent:metric_name` + `customEvent:metric_value` filtered by `eventName='core_web_vitals'`. Requires GTM wired per project (see in-app setup guide).
+2. **PageSpeed Insights** (`src/lib/pagespeed.ts`) — CrUX field data + Lighthouse lab scores (mobile + desktop strategies). Runs for every site as a uniform fallback.
+
+**Auto-detect**: no per-site flag. If a property has CWV events, RUM populates; otherwise the page falls back to PSI. The overview shows a source badge per row:
+- `RUM` — events flowing and Data API can query custom dimensions
+- `RUM 24h` — events flowing but custom dimensions still propagating to the Data API (typical 24–48h after registration in GA4 Admin → Custom definitions)
+- `CrUX` / `Lab` — PSI fallback (field data preferred, lab synthesized otherwise)
+- `No data` — no events and PSI returned nothing; setup guide opens automatically
+
+**Per-site detail page (`/performance/[site]`)** — hero metrics with rating colors (good/needs-improvement/poor per standard web-vitals thresholds in `src/lib/constants.ts`), mobile vs desktop split, slowest pages by sample count, and 30-day RUM trend chart (LCP/INP/CLS).
+
+### GTM → GA4 wiring (per project)
+
+Required to populate the RUM source. The in-app `CwvSetupGuide` component (`app/components/cwv-setup-guide.tsx`) renders the full step-by-step on `/performance` itself. Summary:
+
+1. Push `core_web_vitals` events to `dataLayer` from the site (web-vitals package: `onLCP/onINP/onCLS/onFCP/onTTFB`) with params `vitals_name`, `vitals_value`, `vitals_id`, `vitals_rating`.
+2. GTM: Data Layer Variables (`vitals_name`, `vitals_value`, `vitals_id`), Custom Event trigger on `core_web_vitals`, GA4 Event tag forwarding `metric_name` / `metric_value` / `metric_id` (+ optional `metric_rating`).
+3. GA4 Admin → Custom definitions: register `Metric Name` (event-scoped dimension, param `metric_name`), `Metric Rating` (dimension, param `metric_rating`), and `Metric Value` (event-scoped custom **metric**, param `metric_value`, unit Milliseconds). Names/params must match exactly — `performance.ts` queries them via `customEvent:metric_name` and `customEvent:metric_value`.
+
+After publishing, expect 24–48h before custom-dimension data is queryable via the Data API (the `RUM 24h` badge surfaces this state).
+
+### PageSpeed Insights API key (optional)
+
+PSI works unauthenticated but is rate-limited (~1 QPS per IP). For 6+ sites, add a free key:
+
+- Get one at `console.cloud.google.com` → enable **PageSpeed Insights API** → Credentials.
+- Configure via **Config tab → PageSpeed Insights API Key** (stored in SQLite under `config.pagespeed_api_key`, validated against the live API on save).
+- Env var fallback: `PAGESPEED_API_KEY` in `.env.local` / Synology `.env`. DB takes priority.
+- 429 responses surface a yellow "rate-limited" banner on the Performance pages.
+
+PSI cache TTL is 6 hours (PSI is rate-limited and CrUX field data updates slowly); RUM queries use the standard 30-min `withCache` TTL.
+
 ## Project Paths
 
 Managed site local paths are specific to each deployment. This project lives at `~/workspace/seo-tools`.
@@ -176,6 +215,7 @@ pnpm type-check     # TypeScript type checking (preferred over pnpm build for qu
 - The service account private key in `.env.local` has double-escaped `\n` characters. `google-auth.ts` normalizes these to real newlines before passing to GoogleAuth (required for Node 22 / OpenSSL 3).
 - Search Console sites use domain properties (`sc-domain:example.com`), not URL-prefix (`https://example.com/`). The `search-console.ts` lib defaults to `sc-domain:` format.
 - Service account email is stored in `data/seo-tools.db` (gitignored) — configure via the Config tab.
+- `src/lib/sqlite-driver.js` anchors `createRequire` to `path.join(process.cwd(), 'package.json')`, **not** `import.meta.url`. Under Turbopack (Next 16 dev) `import.meta.url` resolves to a chunk URL, breaking native module resolution for `better-sqlite3`. The `node:sqlite` fallback is also lazily required inside the constructor for the same reason — do not re-introduce a top-level `import { DatabaseSync } from 'node:sqlite'`.
 
 ## Dependencies
 
@@ -241,7 +281,7 @@ Storage & charting:
 2. **Site config**: use `src/lib/sites.ts` as the boundary for managed site CRUD and normalization. UI and route handlers should call that module instead of reading the `sites` table directly.
 3. **Google clients**: keep Search Console logic in `src/lib/search-console.ts`, GA4 logic in `src/lib/ga4.ts`, and service account parsing/auth in `src/lib/google-auth.ts`. Do not expose credentials to client components.
 4. **Server/client split**: prefer server components for data loading and small client components only for interaction, sorting, charts, form state, refresh state, and clipboard behavior.
-5. **Caching strategy**: all Search Console, GA4, and audit fetches should use the SQLite `api_cache` table through `withCache()` unless they are explicit refresh, mutation, or health-check paths.
+5. **Caching strategy**: all Search Console, GA4, RUM CWV, PSI, and audit fetches should use the SQLite `api_cache` table through `withCache()` unless they are explicit refresh, mutation, or health-check paths. Default TTL is 30 min; PSI uses 6h via the `ttlMs` arg in `cachedGetPagespeed`. The cache PK is `(cache_key, site_id)` — for non-site keys (e.g. PSI by URL), pass the URL as the `site_id` slot. The nav refresh button hits `DELETE /api/cache` which truncates the table; per-namespace clears use `clearCache('psi-')`-style prefix matching.
 6. **Background jobs**: long-running recurring work belongs in `src/lib/sitemap-sync.ts` or `src/lib/collect-daily.ts` with CLI wrappers in `scripts/`; keep startup hooks idempotent.
 7. **Styling**: use Tailwind v4 classes and the existing dark neutral dashboard style in `app/globals.css` and existing components. Keep operational pages dense and scannable rather than marketing-oriented.
 8. **Route handlers**: keep `app/api/**/route.ts` files thin. Parse the request, delegate business logic to `src/lib/**`, and keep response shaping or status-code branching in the handler.
@@ -249,7 +289,7 @@ Storage & charting:
 10. **Node runtime only**: this app depends on `better-sqlite3`, `node:fs`, `node:path`, and server-only Google clients. Do not move DB/auth/audit code to Edge runtime, client components, or browser bundles.
 11. **Page vs lib split**: when page or route code starts accumulating data-massaging logic, move that logic into `src/lib/**` first and test it there. Keep `app/**/page.tsx` focused on orchestration, layout, and rendering.
 12. **Shared UI constants**: color palettes and valid parameter sets live in `src/lib/constants.ts` (`CHART_COLORS`, `METRIC_COLORS`, `VALID_DAYS`). Import from there rather than hardcoding hex strings or magic numbers in components or pages.
-13. **Domain logic boundaries**: keep audit parsing/scoring in `src/lib/audit.ts`, recommendation generation in `src/lib/gaps.ts`, decay detection in `src/lib/decay.ts`, keyword history math in `src/lib/keyword-history.ts`, and display formatting helpers in `src/lib/format.ts`. Reuse those modules instead of re-implementing the same transformations in pages or components.
+13. **Domain logic boundaries**: keep audit parsing/scoring in `src/lib/audit.ts`, recommendation generation in `src/lib/gaps.ts`, decay detection in `src/lib/decay.ts`, keyword history math in `src/lib/keyword-history.ts`, GA4 RUM Core Web Vitals aggregation in `src/lib/performance.ts`, PageSpeed Insights / CrUX field + lab parsing in `src/lib/pagespeed.ts`, and display formatting helpers in `src/lib/format.ts`. CWV thresholds + rating colors live in `src/lib/constants.ts` (`CWV_THRESHOLDS`, `CWV_RATING_COLORS`, `rateCwv()`). Reuse those modules instead of re-implementing the same transformations in pages or components.
 14. **Revalidation defaults**: dashboard pages that aggregate cached Google/API data currently use `export const revalidate = 300`. Preserve that five-minute ISR cadence by default and only change it with an explicit freshness or load reason, since manual refresh already exists for forced invalidation.
 15. **CLI boundaries**: keep `scripts/*.mjs` focused on argument parsing and orchestration. Put reusable business logic, API calls, and data transforms in `src/lib/**`, then import them into the script instead of duplicating logic across CLI entrypoints.
 
@@ -288,5 +328,6 @@ Conventional commits (matching this repo's history): `type: description`. Types 
 | `/report` | 1615ms | 1656ms | 1677ms | 14KB | Slowest — SC comparison + GA4 x6 |
 | `/decay` | 686ms | 720ms | 731ms | 6KB | SC page queries x2 periods x6 |
 | `/trends` | 97ms | 132ms | 131ms | 10KB | SQLite reads, instant |
+| `/performance` | ~2s | — | ~2s | ~76KB | Cold: GA4 RUM + PSI mobile fan-out x6. Subsequent hits <150ms (RUM 30m cache, PSI 6h cache). |
 
-**Bottleneck:** `/report` and `/decay` are slow on first load due to Google API calls (SC + GA4 for all 6 sites). After caching, all pages serve in <150ms. The 30-min cache TTL balances freshness vs API load.
+**Bottleneck:** `/report`, `/decay`, and cold `/performance` are slow on first load due to Google API calls (SC + GA4 + PSI for all 6 sites). After caching, all pages serve in <150ms. RUM/SC/GA4 use a 30-min `withCache` TTL; PSI uses 6h (rate-limited and CrUX field data updates slowly).
