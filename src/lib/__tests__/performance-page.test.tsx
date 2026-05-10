@@ -15,40 +15,13 @@ vi.mock('next/navigation', () => ({
 }));
 
 const {
-  mockGetManagedSite,
-  mockDiscoverPropertyIds,
-  mockCachedGetRumCoreWebVitals,
-  mockCachedGetRumCwvByPage,
-  mockCachedGetRumCwvTrend,
-  mockCachedGetCwvEventCount,
-  mockCachedGetPagespeed,
+  mockGetPerformanceSiteData,
 } = vi.hoisted(() => ({
-  mockGetManagedSite: vi.fn(),
-  mockDiscoverPropertyIds: vi.fn(),
-  mockCachedGetRumCoreWebVitals: vi.fn(),
-  mockCachedGetRumCwvByPage: vi.fn(),
-  mockCachedGetRumCwvTrend: vi.fn(),
-  mockCachedGetCwvEventCount: vi.fn(),
-  mockCachedGetPagespeed: vi.fn(),
+  mockGetPerformanceSiteData: vi.fn(),
 }));
 
-vi.mock('@/lib/sites', () => ({
-  getManagedSite: mockGetManagedSite,
-}));
-
-vi.mock('@/lib/ga4', () => ({
-  discoverPropertyIds: mockDiscoverPropertyIds,
-}));
-
-vi.mock('@/lib/performance', () => ({
-  cachedGetRumCoreWebVitals: mockCachedGetRumCoreWebVitals,
-  cachedGetRumCwvByPage: mockCachedGetRumCwvByPage,
-  cachedGetRumCwvTrend: mockCachedGetRumCwvTrend,
-  cachedGetCwvEventCount: mockCachedGetCwvEventCount,
-}));
-
-vi.mock('@/lib/pagespeed', () => ({
-  cachedGetPagespeed: mockCachedGetPagespeed,
+vi.mock('@/lib/performance-site', () => ({
+  getPerformanceSiteData: mockGetPerformanceSiteData,
 }));
 
 vi.mock('../../../app/components/time-range', () => ({
@@ -70,40 +43,44 @@ vi.mock('../../../app/components/trend-chart', () => ({
 
 import PerfSiteDetail from '../../../app/performance/[site]/page';
 
-const site = {
-  id: 'borged-io',
-  name: 'Borged',
-  domain: 'borged.io',
-  ga4PropertyId: 'prop-1',
-  testPages: [],
-  skipChecks: [],
-};
-
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetManagedSite.mockResolvedValue(site);
-  mockDiscoverPropertyIds.mockResolvedValue([{ ...site, ga4PropertyId: 'prop-1' }]);
-  mockCachedGetRumCoreWebVitals.mockResolvedValue({
-    hasData: true,
+  mockGetPerformanceSiteData.mockResolvedValue({
+    site: {
+      id: 'borged-io',
+      name: 'Borged',
+      domain: 'borged.io',
+    },
+    days: 7,
+    propertyId: 'prop-1',
+    url: 'https://borged.io',
+    source: 'rum',
+    heroSource: 'RUM (GA4)',
+    hasRum: true,
+    propagating: false,
+    eventCount: 10,
+    needsKey: false,
     overall: {
       LCP: { value: 1200, rating: 'good', sampleCount: 10 },
       INP: { value: 100, rating: 'good', sampleCount: 10 },
     },
     byDevice: { mobile: {}, desktop: {}, tablet: {} },
-  });
-  mockCachedGetRumCwvByPage.mockResolvedValue([]);
-  mockCachedGetRumCwvTrend.mockResolvedValue([
-    { date: '20260508', metrics: { LCP: { value: 1200, rating: 'good', sampleCount: 2 } } },
-    { date: '20260509', metrics: { LCP: { value: 1400, rating: 'good', sampleCount: 2 } } },
-  ]);
-  mockCachedGetCwvEventCount.mockResolvedValue(10);
-  mockCachedGetPagespeed.mockResolvedValue({
-    url: 'https://borged.io',
-    strategy: 'mobile',
-    performanceScore: 90,
-    field: null,
-    lab: {},
-    fetchedAt: Date.now(),
+    slowestPages: [],
+    trend: [
+      { date: '2026-05-08', metrics: { LCP: { value: 1200, rating: 'good', sampleCount: 2 } } },
+      { date: '2026-05-09', metrics: { LCP: { value: 1400, rating: 'good', sampleCount: 2 } } },
+    ],
+    psi: {
+      mobile: {
+        url: 'https://borged.io',
+        strategy: 'mobile',
+        performanceScore: 90,
+        field: null,
+        lab: {},
+        fetchedAt: Date.now(),
+      },
+      desktop: null,
+    },
   });
 });
 
@@ -120,7 +97,7 @@ describe('Performance site detail page', () => {
   });
 
   it('throws notFound for unknown sites', async () => {
-    mockGetManagedSite.mockResolvedValueOnce(null);
+    mockGetPerformanceSiteData.mockResolvedValueOnce(null);
 
     await expect(PerfSiteDetail({
       params: Promise.resolve({ site: 'missing' }),

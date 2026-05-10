@@ -1,22 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getManagedSite } from '@/lib/sites';
-import { discoverPropertyIds } from '@/lib/ga4';
-import {
-  cachedGetRumCoreWebVitals,
-  cachedGetRumCwvByPage,
-  cachedGetRumCwvTrend,
-  cachedGetCwvEventCount,
-  type CwvMetricMap,
-} from '@/lib/performance';
-import { cachedGetPagespeed } from '@/lib/pagespeed';
+import { getPerformanceSiteData, type PerformanceMetricMap } from '@/lib/performance-site';
 import {
   CWV_METRIC_ORDER,
   CWV_RATING_COLORS,
   CWV_THRESHOLDS,
-  PERF_VALID_DAYS,
   rateCwv,
-  type CwvMetricName,
 } from '@/lib/constants';
 import TimeRange from '../../components/time-range';
 import TrendChart from '../../components/trend-chart';
@@ -25,7 +14,7 @@ import { CwvCell, formatCwv } from '../../components/cwv-cell';
 
 export const revalidate = 300;
 
-function MetricsCards({ metrics, source }: { metrics: CwvMetricMap; source: string }) {
+function MetricsCards({ metrics, source }: { metrics: PerformanceMetricMap; source: string }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {CWV_METRIC_ORDER.map((name) => {
@@ -58,64 +47,20 @@ export default async function PerfSiteDetail({
   searchParams: Promise<{ days?: string }>;
 }) {
   const { site: siteId } = await params;
-  const site = await getManagedSite(siteId);
-  if (!site) notFound();
-
   const sp = await searchParams;
-  const rawDays = parseInt(sp.days || '7');
-  const days = (PERF_VALID_DAYS as readonly number[]).includes(rawDays) ? rawDays : 7;
+  const perf = await getPerformanceSiteData(siteId, parseInt(sp.days || '7'));
+  if (!perf) notFound();
 
-  const discovered = await discoverPropertyIds();
-  const propertyId = discovered.find(s => s.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
-  const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
-
-  const [rum, byPage, trend, eventCount, psiMobile, psiDesktop] = await Promise.all([
-    propertyId ? cachedGetRumCoreWebVitals(propertyId, days) : Promise.resolve(null),
-    propertyId ? cachedGetRumCwvByPage(propertyId, days, 20) : Promise.resolve(null),
-    propertyId ? cachedGetRumCwvTrend(propertyId, Math.max(days, 30)) : Promise.resolve(null),
-    propertyId ? cachedGetCwvEventCount(propertyId, days) : Promise.resolve(null),
-    cachedGetPagespeed(url, 'mobile'),
-    cachedGetPagespeed(url, 'desktop'),
-  ]);
-
-  const hasRum = !!rum?.hasData;
-  // GTM is wired (events flowing) but the Data API can't query the custom
-  // dimensions yet — typical 24–48h propagation lag after registering them.
-  const propagating = !hasRum && (eventCount ?? 0) > 0;
-
-  // Hero metrics: RUM > PSI field > PSI lab.
-  let heroMetrics: CwvMetricMap = {};
-  let heroSource = 'no data';
-  if (hasRum) {
-    heroMetrics = rum!.overall;
-    heroSource = 'RUM (GA4)';
-  } else if (psiMobile?.field) {
-    heroMetrics = Object.fromEntries(
-      CWV_METRIC_ORDER.flatMap((n) => {
-        const m = psiMobile.field![n];
-        return m ? [[n, { value: m.value, rating: m.rating, sampleCount: 0 }]] : [];
-      }),
-    );
-    heroSource = 'CrUX field (mobile)';
-  } else if (psiMobile) {
-    heroMetrics = Object.fromEntries(
-      CWV_METRIC_ORDER.flatMap((n) => {
-        const v = psiMobile.lab[n];
-        return typeof v === 'number' ? [[n, { value: v, rating: rateCwv(n, v), sampleCount: 0 }]] : [];
-      }),
-    );
-    heroSource = 'Lighthouse lab (mobile)';
-  }
-
-  // Trend chart data — pick the most-sampled metric or all five together (LCP, INP, CLS).
-  const trendData = (trend ?? []).map((p) => ({
-    date: p.date.length === 8 ? `${p.date.slice(0, 4)}-${p.date.slice(4, 6)}-${p.date.slice(6, 8)}` : p.date,
-    LCP: p.metrics.LCP?.value ?? null,
-    INP: p.metrics.INP?.value ?? null,
-    CLS: p.metrics.CLS ? p.metrics.CLS.value * 1000 : null, // scale for comparable axis
+  const { site, days, hasRum, propagating, eventCount, heroSource, overall, byDevice, slowestPages, trend, psi } = perf;
+  const trendData = trend.map((point) => ({
+    date: point.date,
+    LCP: point.metrics.LCP?.value ?? null,
+    INP: point.metrics.INP?.value ?? null,
+    CLS: point.metrics.CLS ? point.metrics.CLS.value * 1000 : null,
   }));
-
-  const psiNeedsKey = psiMobile?.needsKey || psiDesktop?.needsKey;
+  const psiNeedsKey = perf.needsKey;
+  const psiMobile = psi.mobile;
+  const psiDesktop = psi.desktop;
 
   return (
     <div className="space-y-8">
@@ -142,7 +87,7 @@ export default async function PerfSiteDetail({
         <div className="rounded-md border border-blue-500/40 bg-blue-500/10 px-4 py-3 text-sm text-blue-200 space-y-1">
           <div className="font-semibold">GTM wired · RUM data propagating</div>
           <div className="text-blue-300/80 text-xs">
-            {eventCount?.toLocaleString()} <span className="font-mono">core_web_vitals</span> events received
+            {eventCount.toLocaleString()} <span className="font-mono">core_web_vitals</span> events received
             in the last {days} days, but custom dimensions/metrics are still propagating to the GA4 Data API.
             This typically takes 24–48 hours after registering them. Showing PSI fallback until then.
           </div>
@@ -156,20 +101,20 @@ export default async function PerfSiteDetail({
             <span className="text-xs text-neutral-500">Lighthouse mobile: <span className="text-white font-mono">{psiMobile.performanceScore}</span></span>
           )}
         </div>
-        <MetricsCards metrics={heroMetrics} source={heroSource} />
+        <MetricsCards metrics={overall} source={heroSource} />
       </section>
 
-      {hasRum && rum && (
+      {hasRum && byDevice && (
         <section className="space-y-3">
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Mobile vs Desktop (RUM)</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-sm text-neutral-300 mb-2">Mobile</h3>
-              <MetricsCards metrics={rum.byDevice.mobile} source="RUM" />
+              <MetricsCards metrics={byDevice.mobile} source="RUM" />
             </div>
             <div>
               <h3 className="text-sm text-neutral-300 mb-2">Desktop</h3>
-              <MetricsCards metrics={rum.byDevice.desktop} source="RUM" />
+              <MetricsCards metrics={byDevice.desktop} source="RUM" />
             </div>
           </div>
         </section>
@@ -211,7 +156,7 @@ export default async function PerfSiteDetail({
         </section>
       )}
 
-      {byPage && byPage.length > 0 && (
+      {slowestPages.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Slowest pages</h2>
           <div className="overflow-hidden rounded border border-neutral-800">
@@ -226,7 +171,7 @@ export default async function PerfSiteDetail({
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800">
-                {byPage.map((row) => (
+                {slowestPages.map((row) => (
                   <tr key={row.path} className="hover:bg-neutral-800/30">
                     <td className="px-3 py-2 font-mono text-xs text-neutral-300">{row.path}</td>
                     <td className="px-3 py-2 text-right font-mono text-neutral-400">{row.totalSamples.toLocaleString()}</td>
