@@ -4,7 +4,6 @@ import { cachedGetRumCoreWebVitals, cachedGetCwvEventCount, type CwvMetricMap } 
 import { cachedGetPagespeed, type PsiData } from '@/lib/pagespeed';
 import {
   CWV_METRIC_ORDER,
-  CWV_RATING_COLORS,
   PERF_VALID_DAYS,
   rateCwv,
   type CwvMetricName,
@@ -12,7 +11,8 @@ import {
 } from '@/lib/constants';
 import TimeRange from '../components/time-range';
 import CwvSetupGuide from '../components/cwv-setup-guide';
-import { CwvCell, formatCwv } from '../components/cwv-cell';
+import { CwvCell } from '../components/cwv-cell';
+import { CwvMetricsCards } from '../components/cwv-metrics-cards';
 
 export const revalidate = 300;
 
@@ -124,6 +124,12 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
   const needsKey = rows.some(r => r.needsKey);
   const guideOpen = params.guide === '1' || rows.every(r => r.source === 'none');
 
+  const overallMetrics: Partial<Record<CwvMetricName, { value: number; rating: CwvRating }>> = {};
+  for (const name of CWV_METRIC_ORDER) {
+    const a = overallAgg[name];
+    if (a.count > 0) overallMetrics[name] = { value: a.sum / a.count, rating: rateCwv(name, a.sum / a.count) };
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-start justify-between">
@@ -143,28 +149,13 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {CWV_METRIC_ORDER.map((name) => {
+      <CwvMetricsCards
+        metrics={overallMetrics}
+        getFooter={(name) => {
           const a = overallAgg[name];
-          const value = a.count > 0 ? a.sum / a.count : null;
-          const rating = value != null ? rateCwv(name, value) : null;
-          const accent = rating ? CWV_RATING_COLORS[rating].border : 'border-neutral-700';
-          return (
-            <div key={name} className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accent} p-4`}>
-              <div className="flex items-center gap-2 text-neutral-500 mb-2">
-                <span className="text-xs uppercase tracking-wider">{name}</span>
-                {rating && <span className={`text-[10px] ${CWV_RATING_COLORS[rating].text}`}>{CWV_RATING_COLORS[rating].label}</span>}
-              </div>
-              <div className="text-2xl font-mono font-bold text-white">
-                {value == null ? '—' : formatCwv(name, value)}
-              </div>
-              <div className="text-[10px] text-neutral-500 mt-1">
-                {a.count > 0 ? `avg across ${a.count} site${a.count === 1 ? '' : 's'}` : 'no RUM data yet'}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+          return a.count > 0 ? `avg across ${a.count} site${a.count === 1 ? '' : 's'}` : 'no RUM data yet';
+        }}
+      />
 
       <div>
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Per-site Core Web Vitals</h2>

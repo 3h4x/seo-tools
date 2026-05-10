@@ -1,43 +1,18 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getPerformanceSiteData, type PerformanceMetricMap } from '@/lib/performance-site';
+import { getPerformanceSiteData } from '@/lib/performance-site';
 import {
   CWV_METRIC_ORDER,
-  CWV_RATING_COLORS,
   CWV_THRESHOLDS,
   rateCwv,
 } from '@/lib/constants';
 import TimeRange from '../../components/time-range';
 import TrendChart from '../../components/trend-chart';
 import CwvSetupGuide from '../../components/cwv-setup-guide';
-import { CwvCell, formatCwv } from '../../components/cwv-cell';
+import { CwvCell } from '../../components/cwv-cell';
+import { CwvMetricsCards } from '../../components/cwv-metrics-cards';
 
 export const revalidate = 300;
-
-function MetricsCards({ metrics, source }: { metrics: PerformanceMetricMap; source: string }) {
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      {CWV_METRIC_ORDER.map((name) => {
-        const m = metrics[name];
-        const accent = m ? CWV_RATING_COLORS[m.rating].border : 'border-neutral-700';
-        return (
-          <div key={name} className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accent} p-4`}>
-            <div className="flex items-center gap-2 text-neutral-500 mb-2">
-              <span className="text-xs uppercase tracking-wider">{name}</span>
-              {m && <span className={`text-[10px] ${CWV_RATING_COLORS[m.rating].text}`}>{CWV_RATING_COLORS[m.rating].label}</span>}
-            </div>
-            <div className="text-2xl font-mono font-bold text-white">
-              {m ? formatCwv(name, m.value) : '—'}
-            </div>
-            <div className="text-[10px] text-neutral-500 mt-1">
-              {m && m.sampleCount > 0 ? `${m.sampleCount.toLocaleString()} samples · ${source}` : source}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export default async function PerfSiteDetail({
   params,
@@ -101,7 +76,7 @@ export default async function PerfSiteDetail({
             <span className="text-xs text-neutral-500">Lighthouse mobile: <span className="text-white font-mono">{psiMobile.performanceScore}</span></span>
           )}
         </div>
-        <MetricsCards metrics={overall} source={heroSource} />
+        <CwvMetricsCards metrics={overall} source={heroSource} />
       </section>
 
       {hasRum && byDevice && (
@@ -110,11 +85,11 @@ export default async function PerfSiteDetail({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-sm text-neutral-300 mb-2">Mobile</h3>
-              <MetricsCards metrics={byDevice.mobile} source="RUM" />
+              <CwvMetricsCards metrics={byDevice.mobile} source="RUM" />
             </div>
             <div>
               <h3 className="text-sm text-neutral-300 mb-2">Desktop</h3>
-              <MetricsCards metrics={byDevice.desktop} source="RUM" />
+              <CwvMetricsCards metrics={byDevice.desktop} source="RUM" />
             </div>
           </div>
         </section>
@@ -126,7 +101,7 @@ export default async function PerfSiteDetail({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-sm text-neutral-300 mb-2">Mobile · score {psiMobile.performanceScore ?? '—'}</h3>
-              <MetricsCards
+              <CwvMetricsCards
                 metrics={Object.fromEntries(
                   CWV_METRIC_ORDER.flatMap((n) => {
                     const f = psiMobile.field?.[n];
@@ -140,7 +115,7 @@ export default async function PerfSiteDetail({
             </div>
             <div>
               <h3 className="text-sm text-neutral-300 mb-2">Desktop · score {psiDesktop.performanceScore ?? '—'}</h3>
-              <MetricsCards
+              <CwvMetricsCards
                 metrics={Object.fromEntries(
                   CWV_METRIC_ORDER.flatMap((n) => {
                     const f = psiDesktop.field?.[n];
