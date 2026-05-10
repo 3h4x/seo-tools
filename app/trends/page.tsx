@@ -349,7 +349,7 @@ function KeywordsSection({
                       data={chartData as Parameters<typeof TrendChart>[0]['data']}
                       lines={chartLines}
                       yAxisReversed
-                      formatValue={(v) => v.toFixed(1)}
+                      valueFormat="fixed1"
                       height={220}
                       yAxisWidth={30}
                     />

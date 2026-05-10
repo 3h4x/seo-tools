@@ -258,7 +258,7 @@ export default async function PerfSiteDetail({
               { key: 'CLS', color: '#f59e0b', label: 'CLS ×1000' },
             ]}
             height={240}
-            formatValue={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            valueFormat="integer"
           />
         </section>
       )}

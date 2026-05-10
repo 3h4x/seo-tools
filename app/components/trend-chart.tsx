@@ -24,18 +24,29 @@ interface TrendChartProps {
     label: string;
   }>;
   height?: number;
-  formatValue?: (value: number) => string;
+  valueFormat?: 'default' | 'integer' | 'fixed1';
   formatDate?: (date: string) => string;
   xDataKey?: string;
   yAxisWidth?: number;
   yAxisReversed?: boolean;
 }
 
+function formatTrendValue(value: number, valueFormat: NonNullable<TrendChartProps['valueFormat']>): string {
+  switch (valueFormat) {
+    case 'integer':
+      return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    case 'fixed1':
+      return value.toFixed(1);
+    default:
+      return value.toLocaleString();
+  }
+}
+
 export default function TrendChart({
   data,
   lines,
   height = 200,
-  formatValue = (v) => v.toLocaleString(),
+  valueFormat = 'default',
   formatDate = formatDateShort,
   xDataKey,
   yAxisWidth = 40,
@@ -97,7 +108,7 @@ export default function TrendChart({
           itemStyle={{ padding: 0 }}
           formatter={(value, name) => {
             const line = lines.find((l) => l.key === name);
-            return [formatValue(Number(value)), line?.label || String(name)];
+            return [formatTrendValue(Number(value), valueFormat), line?.label || String(name)];
           }}
         />
         {lines.map((line) => (
