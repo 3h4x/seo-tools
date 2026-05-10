@@ -9,7 +9,12 @@ const LOOKBACK_DAYS = 90;
 const COLLECT_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 function dateStr(d: Date): string {
-  return d.toISOString().split('T')[0];
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function parseDateOnly(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day, 12);
 }
 
 function daysBack(n: number): Date {
@@ -57,8 +62,8 @@ function getMissingDates(table: string, siteId: string, source: string, startDat
   const existingSet = new Set(existing.map(r => r.date));
 
   const missing: string[] = [];
-  const cur = new Date(fetchFrom);
-  const end = new Date(endDate);
+  const cur = parseDateOnly(fetchFrom);
+  const end = parseDateOnly(endDate);
   while (cur <= end) {
     const d = dateStr(cur);
     if (!existingSet.has(d)) missing.push(d);
@@ -75,7 +80,7 @@ export function batchRanges(dates: string[]): Array<{ start: string; end: string
   let prev = sorted[0];
 
   for (let i = 1; i < sorted.length; i++) {
-    const expected = new Date(prev);
+    const expected = parseDateOnly(prev);
     expected.setDate(expected.getDate() + 1);
     if (sorted[i] !== dateStr(expected)) {
       ranges.push({ start: rangeStart, end: prev });
@@ -131,7 +136,7 @@ async function collectDaily(): Promise<void> {
 
         if (rows.length === 0 && !getGenesis(site.id, 'sc')) {
           // No data for this entire range — set genesis to day after end so we skip it next time
-          const nextDay = new Date(range.end);
+          const nextDay = parseDateOnly(range.end);
           nextDay.setDate(nextDay.getDate() + 1);
           setGenesis(site.id, 'sc', dateStr(nextDay));
         } else if (rows.length > 0 && !getGenesis(site.id, 'sc')) {
@@ -200,7 +205,7 @@ async function collectDaily(): Promise<void> {
         });
 
         if (rows.length === 0 && !getGenesis(site.id, 'ga4')) {
-          const nextDay = new Date(range.end);
+          const nextDay = parseDateOnly(range.end);
           nextDay.setDate(nextDay.getDate() + 1);
           setGenesis(site.id, 'ga4', dateStr(nextDay));
         } else if (rows.length > 0 && !getGenesis(site.id, 'ga4')) {

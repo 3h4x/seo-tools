@@ -290,6 +290,40 @@ describe('startCollector', () => {
     ]);
   });
 
+  it('keeps a single continuous fetch range across the spring DST boundary', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-02T12:00:00Z'));
+
+    mockDbState({
+      latest: {
+        site1: '2026-03-27',
+      },
+      existing: {
+        site1: ['2026-03-27'],
+      },
+    });
+    mockSites();
+    const { startCollector } = await loadCollectDailyModule();
+    const { scQuery, runReport } = mockClients();
+
+    startCollector();
+
+    await vi.waitFor(() => {
+      expect(scQuery).toHaveBeenCalled();
+      expect(runReport).toHaveBeenCalled();
+    });
+
+    expect(scQuery).toHaveBeenCalledTimes(1);
+    expect(scQuery.mock.calls[0][0].requestBody).toMatchObject({
+      startDate: '2026-03-28',
+      endDate: '2026-03-31',
+    });
+    expect(runReport).toHaveBeenCalledTimes(1);
+    expect(runReport.mock.calls[0][0].dateRanges).toEqual([
+      { startDate: '2026-03-28', endDate: '2026-04-01' },
+    ]);
+  });
+
   it('respects a later genesis cutoff when history predates first known data', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
