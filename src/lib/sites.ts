@@ -12,6 +12,20 @@ export interface Site {
   skipChecks?: string[];
 }
 
+export interface SiteFieldErrors {
+  id?: string;
+  name?: string;
+  domain?: string;
+  scUrl?: string;
+  ga4PropertyId?: string;
+  testPages?: string;
+}
+
+export interface NormalizedSiteInput {
+  site: Site;
+  sortOrder?: number;
+}
+
 /** Returns the URL to use for Search Console API calls for a given site. */
 export function getSCUrl(site: Site): string {
   const url = site.scUrl ?? site.domain;
@@ -20,6 +34,73 @@ export function getSCUrl(site: Site): string {
 }
 
 import { dbGetSites } from './db';
+import { normalizeSiteDomain, isValidSiteId, getSiteScUrlOverride } from './site-domain';
+
+const GA4_PROPERTY_RE = /^properties\/\d+$/;
+
+export function validateAndNormalizeSiteInput(
+  raw: unknown,
+  existingSites: Site[],
+): { errors: SiteFieldErrors; normalized: null } | { errors: null; normalized: NormalizedSiteInput } {
+  const body = raw as Record<string, unknown>;
+  const errors: SiteFieldErrors = {};
+
+  const id = typeof body.id === 'string' ? body.id.trim() : '';
+  if (!id) {
+    errors.id = 'id is required';
+  } else if (!isValidSiteId(id)) {
+    errors.id = 'id must contain only letters, digits, hyphens, underscores, or dots and must not start with a special character';
+  }
+
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  if (!name) errors.name = 'name is required';
+
+  const rawDomain = typeof body.domain === 'string' ? body.domain.trim() : '';
+  const normalizedDomain = rawDomain ? normalizeSiteDomain(rawDomain) : null;
+  if (!rawDomain) {
+    errors.domain = 'domain is required';
+  } else if (!normalizedDomain) {
+    errors.domain = 'domain must be a valid hostname or URL (e.g. example.com or https://example.com)';
+  } else {
+    const duplicate = existingSites.find(s => s.domain === normalizedDomain && s.id !== id);
+    if (duplicate) errors.domain = `domain is already used by site "${duplicate.id}"`;
+  }
+
+  const rawScUrl = typeof body.scUrl === 'string' ? body.scUrl.trim() : '';
+  if (rawScUrl && !rawScUrl.startsWith('sc-domain:') && !/^https?:\/\//i.test(rawScUrl)) {
+    errors.scUrl = 'scUrl must be a valid URL (https://…) or use the sc-domain: prefix';
+  }
+
+  const rawGa4 = typeof body.ga4PropertyId === 'string' ? body.ga4PropertyId.trim() : '';
+  if (rawGa4 && !GA4_PROPERTY_RE.test(rawGa4)) {
+    errors.ga4PropertyId = 'ga4PropertyId must be in the format properties/NNNNNN';
+  }
+
+  const rawTestPages = Array.isArray(body.testPages) ? body.testPages : [];
+  const badPage = rawTestPages.find(p => typeof p !== 'string' || !String(p).trim().startsWith('/'));
+  if (badPage !== undefined) {
+    errors.testPages = 'each testPages entry must be an absolute path starting with /';
+  }
+
+  if (Object.keys(errors).length > 0) return { errors, normalized: null };
+
+  const scUrl = getSiteScUrlOverride(rawDomain, rawScUrl || undefined);
+  const site: Site = {
+    ...(raw as Site),
+    id,
+    name,
+    domain: normalizedDomain!,
+    testPages: rawTestPages.map(p => String(p).trim()).filter(Boolean),
+  };
+  if (scUrl) site.scUrl = scUrl; else delete site.scUrl;
+  if (rawGa4) site.ga4PropertyId = rawGa4; else delete site.ga4PropertyId;
+  if (!Array.isArray(body.skipChecks)) delete site.skipChecks;
+
+  const sortOrder = typeof body.sortOrder === 'number' ? body.sortOrder : undefined;
+  delete (site as unknown as Record<string, unknown>).sortOrder;
+
+  return { errors: null, normalized: { site, sortOrder } };
+}
 
 export async function getManagedSites(): Promise<Site[]> {
   return dbGetSites();

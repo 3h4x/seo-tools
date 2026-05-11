@@ -118,7 +118,7 @@ describe('DELETE /api/sites integration', () => {
       name: 'Site A',
       domain: 'new.example.com',
       scUrl: 'sc-domain:new.example.com',
-      ga4PropertyId: 'ga4-new',
+      ga4PropertyId: 'properties/999',
       testPages: ['/fresh'],
     }));
 
@@ -130,7 +130,7 @@ describe('DELETE /api/sites integration', () => {
     ).toEqual({
       domain: 'new.example.com',
       sc_url: 'sc-domain:new.example.com',
-      ga4_property_id: 'ga4-new',
+      ga4_property_id: 'properties/999',
       test_pages: '["/fresh"]',
     });
 

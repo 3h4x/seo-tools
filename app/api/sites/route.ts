@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbGetSites, dbUpsertSite, dbDeleteSite } from '@/lib/db';
 import { invalidateManagedSiteCache } from '@/lib/site-cache';
-import { getSiteScUrlOverride, isValidSiteId, normalizeSiteDomain } from '@/lib/site-domain';
-import type { Site } from '@/lib/sites';
+import { validateAndNormalizeSiteInput } from '@/lib/sites';
 
 export async function GET() {
   const sites = dbGetSites();
@@ -10,32 +9,17 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json() as Site & { sortOrder?: number };
-  const { sortOrder, ...site } = body;
-  const id = typeof site.id === 'string' ? site.id.trim() : '';
-  const name = typeof site.name === 'string' ? site.name.trim() : '';
-  const rawDomain = typeof site.domain === 'string' ? site.domain.trim() : '';
-  const domain = rawDomain ? normalizeSiteDomain(rawDomain) : null;
-
-  if (!id || !isValidSiteId(id) || !name || !domain) {
-    return NextResponse.json({ ok: false, error: 'id, name, and valid domain are required' }, { status: 400 });
+  const body = await req.json();
+  const existingSites = dbGetSites();
+  const result = validateAndNormalizeSiteInput(body, existingSites);
+  if (result.errors) {
+    const error = Object.values(result.errors).filter(Boolean).join('; ');
+    return NextResponse.json({ ok: false, error, errors: result.errors }, { status: 400 });
   }
-
-  const scUrl = getSiteScUrlOverride(rawDomain, typeof site.scUrl === 'string' ? site.scUrl : undefined);
-  const normalizedSite: Site = {
-    ...site,
-    id,
-    name,
-    domain,
-    testPages: Array.isArray(site.testPages) ? site.testPages.map(page => page.trim()).filter(Boolean) : [],
-  };
-  if (scUrl) normalizedSite.scUrl = scUrl;
-  if (typeof site.ga4PropertyId === 'string') normalizedSite.ga4PropertyId = site.ga4PropertyId.trim() || undefined;
-  if (Array.isArray(site.skipChecks)) normalizedSite.skipChecks = site.skipChecks;
-
-  const previousSite = dbGetSites().find((managedSite) => managedSite.id === normalizedSite.id) ?? null;
-  dbUpsertSite(normalizedSite, sortOrder);
-  invalidateManagedSiteCache(previousSite, normalizedSite);
+  const { site, sortOrder } = result.normalized;
+  const previousSite = existingSites.find(s => s.id === site.id) ?? null;
+  dbUpsertSite(site, sortOrder);
+  invalidateManagedSiteCache(previousSite, site);
   return NextResponse.json({ ok: true });
 }
 
