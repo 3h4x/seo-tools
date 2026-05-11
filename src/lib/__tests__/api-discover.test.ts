@@ -6,19 +6,19 @@ vi.mock('../google-auth', () => ({
 vi.mock('../db', () => ({
   dbGetSites: vi.fn(),
 }));
+vi.mock('../ga4', () => ({
+  cachedGetDiscoveredGa4Properties: vi.fn(),
+}));
 vi.mock('@googleapis/searchconsole', () => ({
   searchconsole_v1: {
     Searchconsole: vi.fn(),
   },
 }));
-vi.mock('@google-analytics/admin', () => ({
-  AnalyticsAdminServiceClient: vi.fn(),
-}));
 
 import { getAuth } from '../google-auth';
 import { dbGetSites } from '../db';
+import { cachedGetDiscoveredGa4Properties } from '../ga4';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
-import { AnalyticsAdminServiceClient } from '@google-analytics/admin';
 import { GET } from '../../../app/api/sites/discover/route';
 import { NextRequest } from 'next/server';
 
@@ -48,13 +48,12 @@ function mockSc(domains: string[]) {
 }
 
 function mockGa4(properties: Array<{ displayName: string; property: string }>) {
-  vi.mocked(AnalyticsAdminServiceClient).mockImplementation(function () {
-    return {
-      listAccountSummaries: vi.fn().mockResolvedValue([
-        [{ propertySummaries: properties }],
-      ]),
-    };
-  } as never);
+  vi.mocked(cachedGetDiscoveredGa4Properties).mockResolvedValue(
+    properties.map(({ displayName, property }) => ({
+      displayName,
+      propertyId: property.replace(/^properties\//, ''),
+    })) as never,
+  );
 }
 
 describe('GET /api/sites/discover', () => {
@@ -300,11 +299,7 @@ describe('GET /api/sites/discover', () => {
 
   it('proceeds without GA4 when admin API throws', async () => {
     mockSc(['mysite.com']);
-    vi.mocked(AnalyticsAdminServiceClient).mockImplementation(function () {
-      return {
-        listAccountSummaries: vi.fn().mockRejectedValue(new Error('Admin API failed')),
-      };
-    } as never);
+    vi.mocked(cachedGetDiscoveredGa4Properties).mockRejectedValue(new Error('Admin API failed') as never);
 
     const res = await GET(getReq());
     expect(res.status).toBe(200);

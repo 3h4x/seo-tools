@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbGetSites, dbUpsertSite, dbDeleteSite } from '@/lib/db';
+import { clearGa4DiscoveryCache } from '@/lib/ga4';
 import { invalidateManagedSiteCache } from '@/lib/site-cache';
 import { validateAndNormalizeSiteInput } from '@/lib/sites';
 
@@ -20,6 +21,7 @@ export async function POST(req: NextRequest) {
   const previousSite = existingSites.find(s => s.id === site.id) ?? null;
   dbUpsertSite(site, sortOrder);
   invalidateManagedSiteCache(previousSite, site);
+  clearGa4DiscoveryCache();
   return NextResponse.json({ ok: true });
 }
 
@@ -33,5 +35,6 @@ export async function DELETE(req: NextRequest) {
   if (previousSite) {
     invalidateManagedSiteCache(previousSite, null);
   }
+  clearGa4DiscoveryCache();
   return NextResponse.json({ ok: true });
 }

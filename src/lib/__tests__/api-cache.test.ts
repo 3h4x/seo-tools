@@ -4,7 +4,12 @@ vi.mock('../db', () => ({
   clearCache: vi.fn(),
 }));
 
+vi.mock('../ga4', () => ({
+  clearGa4DiscoveryCache: vi.fn(),
+}));
+
 import { clearCache } from '../db';
+import { clearGa4DiscoveryCache } from '../ga4';
 import { DELETE } from '../../../app/api/cache/route';
 
 beforeEach(() => {
@@ -17,6 +22,7 @@ describe('DELETE /api/cache', () => {
     const data = await res.json();
     expect(data).toEqual({ cleared: true });
     expect(clearCache).toHaveBeenCalledTimes(1);
+    expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
   });
 
   it('returns 200 status', async () => {

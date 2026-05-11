@@ -7,6 +7,10 @@ vi.mock('../db', () => ({
   clearCache: vi.fn(),
 }));
 
+vi.mock('../ga4', () => ({
+  clearGa4DiscoveryCache: vi.fn(),
+}));
+
 vi.mock('google-auth-library', () => ({
   GoogleAuth: vi.fn(),
 }));
@@ -18,6 +22,7 @@ vi.mock('@googleapis/searchconsole', () => ({
 }));
 
 import { getConfig, setConfig, deleteConfig, clearCache } from '../db';
+import { clearGa4DiscoveryCache } from '../ga4';
 import { GoogleAuth } from 'google-auth-library';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { GET, POST, DELETE } from '../../../app/api/config/route';
@@ -117,6 +122,7 @@ describe('POST /api/config', () => {
     expect(body.ok).toBe(true);
     expect(setConfig).not.toHaveBeenCalled();
     expect(clearCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('saves key and clears cache when testOnly=false', async () => {
@@ -126,6 +132,7 @@ describe('POST /api/config', () => {
     expect(body.ok).toBe(true);
     expect(setConfig).toHaveBeenCalledWith('google_sa_key', VALID_KEY);
     expect(clearCache).toHaveBeenCalledTimes(1);
+    expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
   });
 
   it('saves key when testOnly is omitted', async () => {
@@ -135,6 +142,7 @@ describe('POST /api/config', () => {
     expect(body.ok).toBe(true);
     expect(setConfig).toHaveBeenCalledWith('google_sa_key', VALID_KEY);
     expect(clearCache).toHaveBeenCalledTimes(1);
+    expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
   });
 
   it('normalizes escaped newlines in private_key before validation', async () => {
@@ -164,5 +172,6 @@ describe('DELETE /api/config', () => {
     expect(body).toEqual({ ok: true });
     expect(deleteConfig).toHaveBeenCalledWith('google_sa_key');
     expect(clearCache).toHaveBeenCalledTimes(1);
+    expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
   });
 });

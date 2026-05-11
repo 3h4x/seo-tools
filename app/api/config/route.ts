@@ -1,6 +1,7 @@
 import { GoogleAuth } from 'google-auth-library';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { createConfigRouteHandlers } from '@/lib/config-route';
+import { clearGa4DiscoveryCache } from '@/lib/ga4';
 
 const SCOPES = [
   'https://www.googleapis.com/auth/webmasters',
@@ -36,5 +37,6 @@ async function validateKey(raw: string): Promise<string> {
 export const { GET, POST, DELETE } = createConfigRouteHandlers({
   configKey: 'google_sa_key',
   envKey: 'GOOGLE_SA_KEY_JSON',
+  afterMutate: clearGa4DiscoveryCache,
   validateAndNormalize: validateKey,
 });

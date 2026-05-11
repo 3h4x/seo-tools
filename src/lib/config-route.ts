@@ -7,6 +7,7 @@ type ConfigRouteOptions = {
   configKey: string;
   envKey?: string;
   clearCachePrefix?: string;
+  afterMutate?: () => void;
   validateAndNormalize: (raw: string) => Promise<string>;
 };
 
@@ -25,6 +26,7 @@ export function createConfigRouteHandlers({
   configKey,
   envKey,
   clearCachePrefix,
+  afterMutate,
   validateAndNormalize,
 }: ConfigRouteOptions) {
   return {
@@ -41,6 +43,7 @@ export function createConfigRouteHandlers({
         if (!testOnly) {
           setConfig(configKey, normalizedKey);
           clearCache(clearCachePrefix);
+          afterMutate?.();
         }
 
         return NextResponse.json({ ok: true });
@@ -52,6 +55,7 @@ export function createConfigRouteHandlers({
     DELETE() {
       deleteConfig(configKey);
       clearCache(clearCachePrefix);
+      afterMutate?.();
       return NextResponse.json({ ok: true });
     },
   };

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/google-auth';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
-import { AnalyticsAdminServiceClient } from '@google-analytics/admin';
 import { dbGetSites } from '@/lib/db';
+import { cachedGetDiscoveredGa4Properties } from '@/lib/ga4';
 import { normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import { getSCUrl, type Site } from '@/lib/sites';
 
@@ -96,17 +96,14 @@ export async function GET(req: Request) {
   // Fetch GA4 properties (best-effort)
   const ga4Map = new Map<string, string>(); // display name → propertyId
   try {
-    const adminClient = new AnalyticsAdminServiceClient({ auth });
-    const [summaries] = await adminClient.listAccountSummaries({});
-    for (const account of summaries) {
-      for (const prop of account.propertySummaries ?? []) {
-        const name = (prop.displayName ?? '').toLowerCase();
-        const propId = prop.property?.split('/')[1] ?? '';
-        if (propId) ga4Map.set(name, propId);
-      }
+    const properties = await cachedGetDiscoveredGa4Properties();
+    for (const property of properties ?? []) {
+      const displayName = property.displayName.trim().toLowerCase();
+      const propertyId = property.propertyId.trim();
+      if (displayName && propertyId) ga4Map.set(displayName, propertyId);
     }
   } catch {
-    // GA4 discovery is best-effort; proceed without it
+    // GA4 discovery is best-effort; proceed without it.
   }
 
   // Debug: return raw GA4 property names
