@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('../db', () => ({ dbGetSites: vi.fn() }));
 
 import { dbGetSites } from '../db';
+import { isValidSiteId } from '../site-domain';
 import { getSCUrl, getManagedSite, getManagedSites } from '../sites';
 import type { Site } from '../sites';
 
@@ -66,5 +67,19 @@ describe('managed site lookups', () => {
     vi.mocked(dbGetSites).mockReturnValue([makeSite()] as never);
 
     await expect(getManagedSite('missing')).resolves.toBeNull();
+  });
+});
+
+describe('isValidSiteId', () => {
+  it('accepts IDs that are safe to use as one route segment', () => {
+    expect(isValidSiteId('site-1')).toBe(true);
+    expect(isValidSiteId('site_1')).toBe(true);
+    expect(isValidSiteId('site.one')).toBe(true);
+  });
+
+  it('rejects IDs that could escape a route segment', () => {
+    expect(isValidSiteId('//evil.example')).toBe(false);
+    expect(isValidSiteId('site/one')).toBe(false);
+    expect(isValidSiteId(' site ')).toBe(false);
   });
 });

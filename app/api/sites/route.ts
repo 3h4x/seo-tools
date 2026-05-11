@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbGetSites, dbUpsertSite, dbDeleteSite } from '@/lib/db';
 import { invalidateManagedSiteCache } from '@/lib/site-cache';
-import { getSiteScUrlOverride, normalizeSiteDomain } from '@/lib/site-domain';
+import { getSiteScUrlOverride, isValidSiteId, normalizeSiteDomain } from '@/lib/site-domain';
 import type { Site } from '@/lib/sites';
 
 export async function GET() {
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const rawDomain = typeof site.domain === 'string' ? site.domain.trim() : '';
   const domain = rawDomain ? normalizeSiteDomain(rawDomain) : null;
 
-  if (!id || !name || !domain) {
+  if (!id || !isValidSiteId(id) || !name || !domain) {
     return NextResponse.json({ ok: false, error: 'id, name, and valid domain are required' }, { status: 400 });
   }
 

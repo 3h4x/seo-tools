@@ -171,7 +171,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           return (
             <Link
               key={audit.siteId}
-              href={`/${audit.siteId}`}
+              href={`/${encodeURIComponent(audit.siteId)}`}
               className={`block bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accentBorder[worst]} p-5 hover:bg-neutral-800/50 transition-colors`}
             >
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">

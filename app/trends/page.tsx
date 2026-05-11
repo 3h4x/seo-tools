@@ -335,7 +335,7 @@ function KeywordsSection({
             return (
               <div key={site.id} className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 space-y-5">
                 <div className="flex items-center gap-3">
-                  <Link href={`/${site.id}`} className="text-white font-semibold hover:underline">{site.name}</Link>
+                  <Link href={`/${encodeURIComponent(site.id)}`} className="text-white font-semibold hover:underline">{site.name}</Link>
                   <span className="text-neutral-600 text-xs">{site.domain}</span>
                   <span className="text-neutral-700 text-[10px] ml-auto">{deltas.length} tracked queries</span>
                 </div>

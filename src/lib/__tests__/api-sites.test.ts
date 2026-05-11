@@ -152,6 +152,15 @@ describe('POST /api/sites', () => {
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
   });
 
+  it('returns 400 when id is not a safe route segment', async () => {
+    const res = await POST(postReq({ id: '//evil.example', name: 'Site', domain: 'site.com' }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when name is missing', async () => {
     const res = await POST(postReq({ id: 'site1', domain: 'site.com' }));
     expect(res.status).toBe(400);

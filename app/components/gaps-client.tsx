@@ -41,7 +41,7 @@ function GapRow({ sg }: { sg: SiteGap }) {
           </details>
         </div>
         <Link
-          href={`/${siteId}`}
+          href={`/${encodeURIComponent(siteId)}`}
           className="shrink-0 bg-neutral-800 hover:bg-neutral-700 rounded-md px-3 py-1.5 transition-colors text-right"
           title={`View ${domain} full audit`}
         >

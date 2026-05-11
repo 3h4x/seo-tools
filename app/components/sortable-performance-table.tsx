@@ -114,7 +114,7 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
               className={`transition-colors ${row.hasData ? 'hover:bg-neutral-800/30 cursor-pointer' : 'opacity-40'} ${idx === 0 && row.hasData ? 'border-l-2 border-l-emerald-500' : ''}`}
             >
               <td className="px-5 py-3.5">
-                <Link href={`/${row.id}`} className="flex flex-col gap-1">
+                <Link href={`/${encodeURIComponent(row.id)}`} className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <span className="text-white font-medium">{row.name}</span>
                     <div className="flex items-center gap-1.5">

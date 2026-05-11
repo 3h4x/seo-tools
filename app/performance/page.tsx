@@ -177,7 +177,7 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
                 return (
                   <tr key={row.id} className="hover:bg-neutral-800/30">
                     <td className="px-3 py-2">
-                      <Link href={`/performance/${row.id}`} className="text-white hover:underline">{row.name}</Link>
+                      <Link href={`/performance/${encodeURIComponent(row.id)}`} className="text-white hover:underline">{row.name}</Link>
                       <div className="text-xs text-neutral-500 font-mono">{row.domain}</div>
                     </td>
                     <td className="px-3 py-2">

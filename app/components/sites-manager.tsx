@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { applyImportResults, buildImportSummary, getImportResult, type DiscoverySite, type ImportResult, type ImportSummary } from '@/lib/discovery-import';
-import { getSiteScUrlOverride, isValidSiteDomain, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
+import { getSiteScUrlOverride, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 
 interface Site {
   id: string;
@@ -82,11 +82,17 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       return;
     }
 
+    const siteId = editMode === 'new' ? (form.id.trim() || slugifySiteDomain(normalizedDomain)) : form.id;
+    if (!isValidSiteId(siteId)) {
+      setError('Site ID can only contain letters, numbers, dots, underscores, and hyphens');
+      return;
+    }
+
     setSaving(true);
     setError('');
     const siteToSave: Site = {
       ...form,
-      id: editMode === 'new' ? (form.id.trim() || slugifySiteDomain(normalizedDomain)) : form.id,
+      id: siteId,
       name: trimmedName,
       domain: normalizedDomain,
       scUrl: getSiteScUrlOverride(form.domain, form.scUrl),

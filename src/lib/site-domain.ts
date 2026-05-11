@@ -1,4 +1,5 @@
 const DOMAIN_RE = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
+const SITE_ID_RE = /^[a-z0-9][a-z0-9_.-]*$/i;
 
 export function normalizeSiteDomain(value: string): string | null {
   const input = value.trim();
@@ -32,4 +33,8 @@ export function getSiteScUrlOverride(domainInput: string, explicitScUrl?: string
 
 export function slugifySiteDomain(domain: string): string {
   return domain.replace(/\./g, '-').replace(/[^a-z0-9-]/gi, '').toLowerCase();
+}
+
+export function isValidSiteId(value: string): boolean {
+  return value === value.trim() && SITE_ID_RE.test(value);
 }
