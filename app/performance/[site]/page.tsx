@@ -54,7 +54,8 @@ export default async function PerfSiteDetail({
 
       {psiNeedsKey && (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
-          PageSpeed Insights rate-limited. Add a free API key in <Link href="/config" className="underline">Config</Link>.
+          PageSpeed Insights rate-limited. Add a free API key in{' '}
+          <Link href="/config" className="underline">Config</Link> to lift the per-IP cap.
         </div>
       )}
 

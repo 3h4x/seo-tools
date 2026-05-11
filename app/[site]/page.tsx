@@ -216,7 +216,8 @@ export default async function SiteDashboardPage({
                   </div>
                   <div className="pl-3.5">
                     <span className={`${bucket.colorText} text-lg font-mono font-bold leading-none`}>{bucket.count}</span>
-                    <span className="text-neutral-600 text-xs ml-1">queries</span>
+                    {' '}
+                    <span className="text-neutral-600 text-xs">queries</span>
                   </div>
                   {bucket.impressions > 0 && (
                     <div className="pl-3.5 text-[10px] text-neutral-600 font-mono space-x-2">
