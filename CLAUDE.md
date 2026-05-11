@@ -274,6 +274,7 @@ Storage & charting:
 15. **Lint baseline**: ESLint extends Next core-web-vitals + TypeScript rules. Repo-level exceptions already exist for `no-explicit-any`, `no-unused-vars`, `react/no-unescaped-entities`, and `react-hooks/set-state-in-effect`; do not add one-off disables when the existing config already defines the intended boundary.
 16. **Next 16 request props**: in App Router pages and layouts, treat `searchParams` (and similar request props when typed as promises) as async values and `await` them before reading fields. Follow the existing page patterns instead of accessing them synchronously.
 17. **ESM scripts**: this repo uses `"type": "module"`. New Node entrypoints belong in `scripts/*.mjs`, should use ESM `import` syntax, and should not introduce CommonJS `require`/`module.exports` patterns.
+18. **Date-only math**: for `YYYY-MM-DD` reporting windows and backfills, do not rely on raw UTC ISO conversions alone in code paths that care about calendar days. Reuse local date helpers like the noon-anchored parsing in `src/lib/collect-daily.ts` (`parseDateOnly()`, `dateStr()`) or an equivalent local-calendar approach so DST shifts do not skip or duplicate days.
 
 ## Architecture & Patterns
 
@@ -315,6 +316,7 @@ Storage & charting:
 7. **Verification order**: after non-trivial changes, run the smallest relevant targeted test while iterating, then finish with `pnpm lint`, `pnpm type-check`, and `pnpm test` before commit so the husky path matches local verification.
 8. **Page orchestration tests**: when changing server-page query parsing, tab/day fallbacks, or data wiring, add or update a direct page test (for example the existing trends-page style tests) so Next 16 request-prop handling and default-state rendering stay covered without requiring full E2E runs.
 9. **React test placement**: direct component and page tests follow the same `src/lib/__tests__/` convention as lib tests, using `*.test.tsx` when JSX is involved (for example `data-table.test.tsx` and `trends-page.test.tsx`).
+10. **Date-range regressions**: when changing daily collection, snapshotting, or any date-window helper, add or update tests that cover DST and `YYYY-MM-DD` boundary behavior explicitly. Use fixed dates in assertions so off-by-one regressions are visible.
 
 ## Commit Style
 
