@@ -46,23 +46,14 @@ function getMissingDates(table: string, siteId: string, source: string, startDat
   const genesis = getGenesis(siteId, source);
   const effectiveStart = genesis && genesis > startDate ? genesis : startDate;
 
-  // Find the latest date we already have — only fetch after that
-  const latestRow = db.prepare(
-    `SELECT MAX(date) as latest FROM ${table} WHERE site_id = ?`,
-  ).get(siteId) as { latest: string | null } | undefined;
-  const latest = latestRow?.latest;
-
-  // If we have data, only look for dates after the latest collected date
-  // (don't try to backfill old gaps)
-  const fetchFrom = latest && latest >= effectiveStart ? latest : effectiveStart;
-
+  // Scan the full bounded window to find all absent dates, including middle gaps
   const existing = db.prepare(
     `SELECT date FROM ${table} WHERE site_id = ? AND date >= ? AND date <= ?`,
-  ).all(siteId, fetchFrom, endDate) as Array<{ date: string }>;
+  ).all(siteId, effectiveStart, endDate) as Array<{ date: string }>;
   const existingSet = new Set(existing.map(r => r.date));
 
   const missing: string[] = [];
-  const cur = parseDateOnly(fetchFrom);
+  const cur = parseDateOnly(effectiveStart);
   const end = parseDateOnly(endDate);
   while (cur <= end) {
     const d = dateStr(cur);

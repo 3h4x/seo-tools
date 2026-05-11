@@ -258,16 +258,18 @@ describe('startCollector', () => {
     expect(vi.getTimerCount()).toBe(1);
   });
 
-  it('only fetches dates after the latest collected date', async () => {
+  it('backfills from the full window when some dates exist at the end', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
 
     mockDbState({
-      latest: {
-        site1: '2026-04-20',
+      genesis: {
+        'sc:site1': '2026-04-01',
+        'ga4:site1': '2026-04-01',
       },
       existing: {
-        site1: ['2026-04-20'],
+        // Only the last day is present — all earlier dates should be backfilled
+        site1: ['2026-04-30'],
       },
     });
     mockSites();
@@ -281,13 +283,45 @@ describe('startCollector', () => {
       expect(runReport).toHaveBeenCalled();
     });
 
+    // Backfill should start from genesis, not from after MAX(date)
     expect(scQuery.mock.calls[0][0].requestBody).toMatchObject({
-      startDate: '2026-04-21',
-      endDate: '2026-04-30',
+      startDate: '2026-04-01',
     });
-    expect(runReport.mock.calls[0][0].dateRanges).toEqual([
-      { startDate: '2026-04-21', endDate: '2026-05-01' },
-    ]);
+    expect(runReport.mock.calls[0][0].dateRanges[0]).toMatchObject({
+      startDate: '2026-04-01',
+    });
+  });
+
+  it('backfills a missing middle date when endpoints are already stored', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-10T12:00:00Z'));
+
+    mockDbState({
+      genesis: {
+        'sc:site1': '2026-04-01',
+        'ga4:site1': '2026-04-01',
+      },
+      existing: {
+        // 2026-04-02 is missing between 04-01 and 04-03
+        site1: ['2026-04-01', '2026-04-03', '2026-04-04', '2026-04-05', '2026-04-06', '2026-04-07', '2026-04-08'],
+      },
+    });
+    mockSites();
+    const { startCollector } = await loadCollectDailyModule();
+    const { scQuery, runReport } = mockClients();
+
+    startCollector();
+
+    await vi.waitFor(() => {
+      expect(scQuery).toHaveBeenCalled();
+      expect(runReport).toHaveBeenCalled();
+    });
+
+    // The first batch should be the isolated middle gap (2026-04-02)
+    expect(scQuery.mock.calls[0][0].requestBody).toMatchObject({
+      startDate: '2026-04-02',
+      endDate: '2026-04-02',
+    });
   });
 
   it('keeps a single continuous fetch range across the spring DST boundary', async () => {
@@ -295,8 +329,9 @@ describe('startCollector', () => {
     vi.setSystemTime(new Date('2026-04-02T12:00:00Z'));
 
     mockDbState({
-      latest: {
-        site1: '2026-03-27',
+      genesis: {
+        'sc:site1': '2026-03-27',
+        'ga4:site1': '2026-03-27',
       },
       existing: {
         site1: ['2026-03-27'],
@@ -353,17 +388,11 @@ describe('startCollector', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
 
-    const { genesisRun } = mockDbState({
-      latest: {
-        site1: '2026-04-29',
-      },
-      existing: {
-        site1: ['2026-04-29'],
-      },
-    });
+    // No existing data, no genesis — full window is scanned, API returns 0 rows
+    const { genesisRun } = mockDbState();
     mockSites();
     const { startCollector } = await loadCollectDailyModule();
-    const { scQuery, runReport } = mockClients();
+    mockClients(); // default: returns empty rows
 
     startCollector();
 
@@ -372,13 +401,7 @@ describe('startCollector', () => {
       expect(upsertGa4Daily).toHaveBeenCalledWith('site1', []);
     });
 
-    expect(scQuery.mock.calls[0][0].requestBody).toMatchObject({
-      startDate: '2026-04-30',
-      endDate: '2026-04-30',
-    });
-    expect(runReport.mock.calls[0][0].dateRanges).toEqual([
-      { startDate: '2026-04-30', endDate: '2026-05-01' },
-    ]);
+    // Genesis set to the day after each source's end-of-window
     expect(genesisRun).toHaveBeenCalledWith('site1', 'sc', '2026-05-01');
     expect(genesisRun).toHaveBeenCalledWith('site1', 'ga4', '2026-05-02');
   });
