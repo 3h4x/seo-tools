@@ -222,6 +222,33 @@ export function clearCache(keyPattern?: string): void {
   }
 }
 
+export function clearCacheEntry(cacheKey: string, siteId: string): void {
+  try {
+    const db = getDb();
+    db.prepare('DELETE FROM api_cache WHERE cache_key = ? AND site_id = ?').run(cacheKey, siteId);
+  } catch {
+    // silently fail
+  }
+}
+
+export function clearCacheEntriesByPrefix(cacheKeyPrefix: string, siteId: string): void {
+  try {
+    const db = getDb();
+    db.prepare('DELETE FROM api_cache WHERE cache_key LIKE ? AND site_id = ?').run(`${cacheKeyPrefix}%`, siteId);
+  } catch {
+    // silently fail
+  }
+}
+
+export function clearSitemapSyncState(siteId: string): void {
+  try {
+    const db = getDb();
+    db.prepare('DELETE FROM sitemap_state WHERE site_id = ?').run(siteId);
+  } catch {
+    // silently fail
+  }
+}
+
 // --- Query helpers ---
 
 interface ScTrendPoint {
