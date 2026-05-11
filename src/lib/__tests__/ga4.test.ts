@@ -15,13 +15,15 @@ vi.mock('@google-analytics/data', () => ({
   },
 }));
 vi.mock('../db', () => ({
+  clearCacheEntry: vi.fn(),
   withCache: vi.fn((_key: string, _id: string, fn: () => unknown) => fn()),
 }));
 vi.mock('../sites', () => ({
   getManagedSites: vi.fn(),
 }));
 
-import { discoverPropertyIds, cachedGetAnalytics } from '../ga4';
+import { clearCacheEntry, withCache } from '../db';
+import { cachedGetDiscoveredGa4Properties, clearGa4DiscoveryCache, discoverPropertyIds, cachedGetAnalytics } from '../ga4';
 import { getManagedSites } from '../sites';
 
 beforeEach(() => {
@@ -31,6 +33,22 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 // discoverPropertyIds
 // ---------------------------------------------------------------------------
+
+describe('cachedGetDiscoveredGa4Properties', () => {
+  it('uses the dedicated discovery cache key', async () => {
+    mockListAccountSummaries.mockResolvedValue([
+      [{ propertySummaries: [{ displayName: 'example.com', property: 'properties/12345' }] }],
+    ]);
+
+    await cachedGetDiscoveredGa4Properties();
+
+    expect(withCache).toHaveBeenCalledWith(
+      'ga4-discovery',
+      'managed-sites',
+      expect.any(Function),
+    );
+  });
+});
 
 describe('discoverPropertyIds', () => {
   it('matches property by domain name substring', async () => {
@@ -78,6 +96,27 @@ describe('discoverPropertyIds', () => {
     expect(result).toEqual(sites);
   });
 
+  it('returns sites unchanged when cached property discovery misses', async () => {
+    const sites = [{ id: 's1', name: 'Site1', domain: 'example.com', testPages: [] }];
+    vi.mocked(getManagedSites).mockResolvedValue(sites as never);
+    vi.mocked(withCache).mockResolvedValueOnce(null as never);
+
+    const result = await discoverPropertyIds();
+
+    expect(result).toEqual(sites);
+    expect(mockListAccountSummaries).not.toHaveBeenCalled();
+  });
+
+  it('returns sites unchanged when cached property discovery throws', async () => {
+    const sites = [{ id: 's1', name: 'Site1', domain: 'example.com', testPages: [] }];
+    vi.mocked(getManagedSites).mockResolvedValue(sites as never);
+    vi.mocked(withCache).mockRejectedValueOnce(new Error('cache failure') as never);
+
+    const result = await discoverPropertyIds();
+
+    expect(result).toEqual(sites);
+  });
+
   it('handles accounts with no propertySummaries', async () => {
     vi.mocked(getManagedSites).mockResolvedValue([
       { id: 's1', name: 'Site1', domain: 'example.com', testPages: [] },
@@ -122,6 +161,13 @@ describe('discoverPropertyIds', () => {
 
     const result = await discoverPropertyIds();
     expect(result[0].ga4PropertyId).toBeUndefined();
+  });
+});
+
+describe('clearGa4DiscoveryCache', () => {
+  it('clears the dedicated GA4 discovery cache entry', () => {
+    clearGa4DiscoveryCache();
+    expect(clearCacheEntry).toHaveBeenCalledWith('ga4-discovery', 'managed-sites');
   });
 });
 

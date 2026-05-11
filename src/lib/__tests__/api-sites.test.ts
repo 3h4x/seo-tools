@@ -10,8 +10,13 @@ vi.mock('../site-cache', () => ({
   invalidateManagedSiteCache: vi.fn(),
 }));
 
+vi.mock('../ga4', () => ({
+  clearGa4DiscoveryCache: vi.fn(),
+}));
+
 // site-domain is used by sites.ts; do not mock it so validation logic runs for real
 import { dbGetSites, dbUpsertSite, dbDeleteSite } from '../db';
+import { clearGa4DiscoveryCache } from '../ga4';
 import { invalidateManagedSiteCache } from '../site-cache';
 import { GET, POST, DELETE } from '../../../app/api/sites/route';
 import { NextRequest } from 'next/server';
@@ -60,6 +65,7 @@ describe('POST /api/sites', () => {
     expect(data).toEqual({ ok: true });
     expect(dbUpsertSite).toHaveBeenCalledWith({ ...site, testPages: [] }, undefined);
     expect(invalidateManagedSiteCache).toHaveBeenCalledWith(null, { ...site, testPages: [] });
+    expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
   });
 
   it('normalizes URL domains before saving', async () => {
@@ -124,6 +130,7 @@ describe('POST /api/sites', () => {
     expect(res.status).toBe(200);
     expect(dbUpsertSite).toHaveBeenCalledWith(updatedSite, undefined);
     expect(invalidateManagedSiteCache).toHaveBeenCalledWith(existingSite, updatedSite);
+    expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
   });
 
   it('returns 400 for URL values without a valid hostname', async () => {
@@ -136,6 +143,7 @@ describe('POST /api/sites', () => {
     expect(data.error).toContain(data.errors.domain);
     expect(dbUpsertSite).not.toHaveBeenCalled();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('returns 400 for malformed bare domains', async () => {
@@ -146,6 +154,7 @@ describe('POST /api/sites', () => {
     expect(data.errors.domain).toBeTruthy();
     expect(dbUpsertSite).not.toHaveBeenCalled();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('returns 400 when id is missing', async () => {
@@ -156,6 +165,7 @@ describe('POST /api/sites', () => {
     expect(data.errors.id).toBeTruthy();
     expect(dbUpsertSite).not.toHaveBeenCalled();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('returns 400 when id is not a safe route segment', async () => {
@@ -175,6 +185,7 @@ describe('POST /api/sites', () => {
     expect(data.ok).toBe(false);
     expect(data.errors.name).toBeTruthy();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('returns 400 when domain is missing', async () => {
@@ -184,6 +195,7 @@ describe('POST /api/sites', () => {
     expect(data.ok).toBe(false);
     expect(data.errors.domain).toBeTruthy();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('returns 400 when domain is a duplicate of an existing site with a different id', async () => {
@@ -196,6 +208,7 @@ describe('POST /api/sites', () => {
     expect(data.ok).toBe(false);
     expect(data.errors.domain).toMatch(/other/);
     expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('allows saving a site whose domain matches its own existing record (update)', async () => {
@@ -214,6 +227,7 @@ describe('POST /api/sites', () => {
     expect(data.ok).toBe(false);
     expect(data.errors.scUrl).toBeTruthy();
     expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('accepts a scUrl with sc-domain: prefix', async () => {
@@ -229,6 +243,7 @@ describe('POST /api/sites', () => {
     expect(data.ok).toBe(false);
     expect(data.errors.ga4PropertyId).toBeTruthy();
     expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('accepts a valid ga4PropertyId', async () => {
@@ -244,6 +259,7 @@ describe('POST /api/sites', () => {
     expect(data.ok).toBe(false);
     expect(data.errors.testPages).toBeTruthy();
     expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('accepts valid testPages entries', async () => {
@@ -263,6 +279,7 @@ describe('DELETE /api/sites', () => {
     expect(data).toEqual({ ok: true });
     expect(dbDeleteSite).toHaveBeenCalledWith('site1');
     expect(invalidateManagedSiteCache).toHaveBeenCalledWith(existingSite, null);
+    expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
   });
 
   it('returns 400 when id query param is missing', async () => {
@@ -273,6 +290,7 @@ describe('DELETE /api/sites', () => {
     expect(data.ok).toBe(false);
     expect(dbDeleteSite).not.toHaveBeenCalled();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('returns 400 when id query param is empty', async () => {
@@ -282,5 +300,6 @@ describe('DELETE /api/sites', () => {
     expect(data.ok).toBe(false);
     expect(dbDeleteSite).not.toHaveBeenCalled();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 });
