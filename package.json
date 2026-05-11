@@ -3,7 +3,7 @@
   "name": "seo-tools",
   "version": "1.0.0",
   "scripts": {
-    "dev": "next dev --turbopack -p 3031",
+    "dev": "docker compose -f docker-compose.dev.yml up --build",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

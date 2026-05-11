@@ -1,0 +1,25 @@
+services:
+  seo-tools-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: seo-tools-dev
+    command: pnpm next dev --turbopack -p 3031
+    ports:
+      - "3031:3031"
+    volumes:
+      - .:/app
+      # Named volume keeps node_modules isolated from the host bind-mount.
+      # After changing deps, run: docker compose -f docker-compose.dev.yml down -v
+      # then pnpm dev again so the image is rebuilt with the updated lockfile.
+      - seo-tools-dev-node-modules:/app/node_modules
+      - seo-tools-dev-next:/app/.next
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
+
+volumes:
+  seo-tools-dev-node-modules:
+  seo-tools-dev-next:

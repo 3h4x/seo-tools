@@ -8,10 +8,13 @@ pipeline:
   auto_push_enabled: true
   auto_pr_merge_enabled: false
   release_after_run: true
-
+actions:
+  custom_actions:
+    - name: Dev
+      command: pnpm dev
+      color: "#2563eb"
 schedule:
   test_cron_enabled: true
-
 gates:
   tests_disabled: false
   review_disabled: false

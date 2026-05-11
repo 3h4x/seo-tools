@@ -194,7 +194,7 @@ GHA auto-builds on every push to `main` that triggers a semantic-release version
 
 ```bash
 pnpm install
-pnpm dev            # Next.js dev server on port 3031
+pnpm dev            # Start dev environment via Docker Compose (builds image, mounts source, runs on port 3031)
 pnpm seo stats      # CLI: 7-day Search Console stats
 pnpm seo sitemaps   # CLI: list submitted sitemaps
 pnpm seo sites      # CLI: list all SC sites
