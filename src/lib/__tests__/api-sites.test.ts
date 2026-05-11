@@ -57,15 +57,42 @@ describe('POST /api/sites', () => {
     const res = await POST(postReq(site));
     const data = await res.json();
     expect(data).toEqual({ ok: true });
-    expect(dbUpsertSite).toHaveBeenCalledWith(site, undefined);
-    expect(invalidateManagedSiteCache).toHaveBeenCalledWith(null, site);
+    expect(dbUpsertSite).toHaveBeenCalledWith({ ...site, testPages: [] }, undefined);
+    expect(invalidateManagedSiteCache).toHaveBeenCalledWith(null, { ...site, testPages: [] });
+  });
+
+  it('normalizes URL domains before saving', async () => {
+    const site = { id: 'site1', name: 'Site 1', domain: 'https://Example.COM/path?x=1' };
+    const res = await POST(postReq(site));
+    const data = await res.json();
+    expect(data).toEqual({ ok: true });
+    expect(dbUpsertSite).toHaveBeenCalledWith(
+      { id: 'site1', name: 'Site 1', domain: 'example.com', scUrl: 'https://Example.COM/path?x=1', testPages: [] },
+      undefined,
+    );
+  });
+
+  it('preserves explicit SC URL when normalizing a URL domain', async () => {
+    const site = {
+      id: 'site1',
+      name: 'Site 1',
+      domain: 'https://Example.COM/path?x=1',
+      scUrl: 'sc-domain:example.com',
+    };
+    const res = await POST(postReq(site));
+    const data = await res.json();
+    expect(data).toEqual({ ok: true });
+    expect(dbUpsertSite).toHaveBeenCalledWith(
+      { id: 'site1', name: 'Site 1', domain: 'example.com', scUrl: 'sc-domain:example.com', testPages: [] },
+      undefined,
+    );
   });
 
   it('passes sortOrder to dbUpsertSite when provided', async () => {
     const body = { id: 'site1', name: 'Site 1', domain: 'site1.com', sortOrder: 3 };
     await POST(postReq(body));
     expect(dbUpsertSite).toHaveBeenCalledWith(
-      { id: 'site1', name: 'Site 1', domain: 'site1.com' },
+      { id: 'site1', name: 'Site 1', domain: 'site1.com', testPages: [] },
       3,
     );
   });
@@ -96,6 +123,24 @@ describe('POST /api/sites', () => {
     expect(res.status).toBe(200);
     expect(dbUpsertSite).toHaveBeenCalledWith(updatedSite, undefined);
     expect(invalidateManagedSiteCache).toHaveBeenCalledWith(existingSite, updatedSite);
+  });
+
+  it('returns 400 for URL values without a valid hostname', async () => {
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'https://localhost/path' }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for malformed bare domains', async () => {
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'bad..example.com' }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
   });
 
   it('returns 400 when id is missing', async () => {

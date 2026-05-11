@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
@@ -23,8 +22,7 @@ export function TrafficSourcesChart({ data }: { data: SourceData[] }) {
       <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-4 font-semibold">Traffic Sources</h2>
       <div className="flex items-center gap-6">
         <div className="w-48 h-48 shrink-0">
-          <ClientChart><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-            <PieChart>
+          <ClientChart><PieChart width={192} height={192}>
               <Pie
                 data={data}
                 dataKey="sessions"
@@ -45,7 +43,7 @@ export function TrafficSourcesChart({ data }: { data: SourceData[] }) {
                 formatter={(value) => [`${value} sessions (${total > 0 ? ((Number(value) / total) * 100).toFixed(0) : 0}%)`, '']}
               />
             </PieChart>
-          </ResponsiveContainer></ClientChart>
+          </ClientChart>
         </div>
         <div className="flex-1 space-y-2">
           {data.map((d, i) => (
@@ -65,4 +63,3 @@ export function TrafficSourcesChart({ data }: { data: SourceData[] }) {
     </div>
   );
 }
-

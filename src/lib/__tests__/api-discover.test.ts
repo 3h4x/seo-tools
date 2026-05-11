@@ -140,8 +140,153 @@ describe('GET /api/sites/discover', () => {
 
     const res = await GET(getReq());
     const body = await res.json();
-    expect(body[0].domain).toBe('https://blog.example.com/');
+    expect(body[0].domain).toBe('blog.example.com');
+    expect(body[0].scUrl).toBe('https://blog.example.com/');
     expect(body[0].ga4PropertyId).toBe('654321');
+  });
+
+  it('dedupes domain and URL-prefix properties for the same hostname', async () => {
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return {
+        sites: {
+          list: vi.fn().mockResolvedValue({
+            data: {
+              siteEntry: [
+                { siteUrl: 'https://example.com/' },
+                { siteUrl: 'sc-domain:example.com' },
+              ],
+            },
+          }),
+        },
+      };
+    } as never);
+    mockGa4([{ displayName: 'example.com GA4', property: 'properties/123' }]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({
+      id: 'example-com',
+      domain: 'example.com',
+      ga4PropertyId: '123',
+    });
+    expect(body[0].scUrl).toBeUndefined();
+  });
+
+  it('excludes URL-prefix properties when the normalized hostname already exists', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'blog-example-com', name: 'Blog', domain: 'blog.example.com', testPages: [] },
+    ] as never);
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return {
+        sites: {
+          list: vi.fn().mockResolvedValue({
+            data: {
+              siteEntry: [{ siteUrl: 'https://blog.example.com/' }],
+            },
+          }),
+        },
+      };
+    } as never);
+    mockGa4([]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toEqual([]);
+  });
+
+  it('excludes URL-prefix properties when the SC URL already exists', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'blog', name: 'Blog', domain: 'other.example.com', scUrl: 'https://blog.example.com/', testPages: [] },
+    ] as never);
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return {
+        sites: {
+          list: vi.fn().mockResolvedValue({
+            data: {
+              siteEntry: [{ siteUrl: 'https://blog.example.com/' }],
+            },
+          }),
+        },
+      };
+    } as never);
+    mockGa4([]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toEqual([]);
+  });
+
+  it('excludes a hostname when any deduped SC identity already exists', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'blog', name: 'Blog', domain: 'other.example.com', scUrl: 'https://blog.example.com/', testPages: [] },
+    ] as never);
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return {
+        sites: {
+          list: vi.fn().mockResolvedValue({
+            data: {
+              siteEntry: [
+                { siteUrl: 'https://blog.example.com/' },
+                { siteUrl: 'sc-domain:blog.example.com' },
+              ],
+            },
+          }),
+        },
+      };
+    } as never);
+    mockGa4([]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toEqual([]);
+  });
+
+  it('excludes URL-prefix properties when a legacy URL domain already exists', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'blog', name: 'Blog', domain: 'https://blog.example.com/', testPages: [] },
+    ] as never);
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return {
+        sites: {
+          list: vi.fn().mockResolvedValue({
+            data: {
+              siteEntry: [{ siteUrl: 'https://blog.example.com/' }],
+            },
+          }),
+        },
+      };
+    } as never);
+    mockGa4([]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toEqual([]);
+  });
+
+  it('excludes a hostname when a legacy URL domain matches any deduped SC identity', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'blog', name: 'Blog', domain: 'https://blog.example.com/', testPages: [] },
+    ] as never);
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return {
+        sites: {
+          list: vi.fn().mockResolvedValue({
+            data: {
+              siteEntry: [
+                { siteUrl: 'https://blog.example.com/' },
+                { siteUrl: 'sc-domain:blog.example.com' },
+              ],
+            },
+          }),
+        },
+      };
+    } as never);
+    mockGa4([]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toEqual([]);
   });
 
   it('leaves ga4PropertyId undefined when no GA4 match', async () => {

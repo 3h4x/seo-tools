@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { applyImportResults, buildImportSummary, getImportResult, type DiscoverySite, type ImportResult, type ImportSummary } from '@/lib/discovery-import';
+import { getSiteScUrlOverride, isValidSiteDomain, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 
 interface Site {
   id: string;
@@ -50,10 +51,6 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  function slugify(domain: string): string {
-    return domain.replace(/\./g, '-').replace(/[^a-z0-9-]/gi, '').toLowerCase();
-  }
-
   function startNew() {
     setForm({ id: '', ...EMPTY_SITE });
     setEditMode('new');
@@ -78,13 +75,23 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   }
 
   async function handleSave() {
+    const trimmedName = form.name.trim();
+    const normalizedDomain = normalizeSiteDomain(form.domain);
+    if (!trimmedName || !normalizedDomain) {
+      setError('Enter a valid site name and domain');
+      return;
+    }
+
     setSaving(true);
     setError('');
     const siteToSave: Site = {
       ...form,
-      id: editMode === 'new' ? (form.id || slugify(form.domain)) : form.id,
-      scUrl: form.scUrl?.trim() || undefined,
+      id: editMode === 'new' ? (form.id.trim() || slugifySiteDomain(normalizedDomain)) : form.id,
+      name: trimmedName,
+      domain: normalizedDomain,
+      scUrl: getSiteScUrlOverride(form.domain, form.scUrl),
       ga4PropertyId: form.ga4PropertyId?.trim() || undefined,
+      testPages: form.testPages.map(page => page.trim()).filter(Boolean),
     };
 
     try {
@@ -202,6 +209,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   }
 
   const isEditing = editMode !== 'none';
+  const canSave = !saving && form.name.trim().length > 0 && isValidSiteDomain(form.domain);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -320,6 +328,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                 onChange={e => setForm(f => ({ ...f, domain: e.target.value }))}
                 placeholder="example.com"
               />
+              {form.domain.trim() && !isValidSiteDomain(form.domain) && (
+                <p className="text-xs text-amber-300">Use a bare domain or an `http(s)` site URL.</p>
+              )}
             </div>
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">SC URL override</label>
@@ -410,7 +421,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              disabled={saving || !form.name || !form.domain}
+              disabled={!canSave}
               className="px-4 py-2 rounded-md text-sm bg-white text-black hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {saving ? 'Saving…' : 'Save'}

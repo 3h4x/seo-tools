@@ -78,8 +78,8 @@ export default function PagespeedKeyForm() {
       </div>
       <p className="text-xs text-neutral-500">
         Optional. Lifts the unauthenticated rate limit for the Performance tab&apos;s lab + CrUX field
-        data. Get one free at <span className="font-mono">console.cloud.google.com</span> → enable
-        &quot;PageSpeed Insights API&quot; → Credentials.
+        data. Get one free at <span className="font-mono">console.cloud.google.com</span> {'\u2192'} enable
+        {' '}&quot;PageSpeed Insights API&quot; {'\u2192'} Credentials.
       </p>
 
       {hasKey && !input && (

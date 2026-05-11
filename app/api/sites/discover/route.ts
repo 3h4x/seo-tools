@@ -3,10 +3,63 @@ import { getAuth } from '@/lib/google-auth';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { AnalyticsAdminServiceClient } from '@google-analytics/admin';
 import { dbGetSites } from '@/lib/db';
-import type { Site } from '@/lib/sites';
+import { normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
+import { getSCUrl, type Site } from '@/lib/sites';
 
-function slugify(domain: string): string {
-  return domain.replace(/\./g, '-').replace(/[^a-z0-9-]/gi, '').toLowerCase();
+type DiscoveredScSite = {
+  scUrl: string;
+  domain: string;
+};
+
+type DedupeScSite = DiscoveredScSite & {
+  scUrls: string[];
+};
+
+function normalizeScIdentity(value: string): string {
+  return value.trim().toLowerCase().replace(/\/$/, '');
+}
+
+function isDomainProperty(scUrl: string): boolean {
+  return scUrl.toLowerCase().startsWith('sc-domain:');
+}
+
+function getScSiteRank(site: DiscoveredScSite): number {
+  if (isDomainProperty(site.scUrl)) return 2;
+  try {
+    const url = new URL(site.scUrl);
+    return url.pathname === '/' && !url.search && !url.hash ? 1 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function shouldPreferScSite(candidate: DiscoveredScSite, current: DiscoveredScSite): boolean {
+  const candidateRank = getScSiteRank(candidate);
+  const currentRank = getScSiteRank(current);
+  if (candidateRank !== currentRank) return candidateRank > currentRank;
+  return normalizeScIdentity(candidate.scUrl) < normalizeScIdentity(current.scUrl);
+}
+
+function dedupeScSites(scSites: DiscoveredScSite[]): DedupeScSite[] {
+  const byDomain = new Map<string, DedupeScSite>();
+  for (const site of scSites) {
+    const key = site.domain.toLowerCase();
+    const current = byDomain.get(key);
+    if (!current) {
+      byDomain.set(key, { ...site, scUrls: [site.scUrl] });
+      continue;
+    }
+
+    current.scUrls.push(site.scUrl);
+    if (shouldPreferScSite(site, current)) {
+      byDomain.set(key, { ...site, scUrls: current.scUrls });
+    }
+  }
+  return [...byDomain.values()];
+}
+
+function getExistingDomainIdentity(domain: string): string {
+  return normalizeSiteDomain(domain) ?? domain.trim().toLowerCase();
 }
 
 export async function GET(req: Request) {
@@ -18,19 +71,24 @@ export async function GET(req: Request) {
   }
 
   const existingSites = dbGetSites();
-  const existingDomains = new Set(existingSites.map(s => s.domain.toLowerCase()));
+  const existingDomains = new Set(existingSites.map(s => getExistingDomainIdentity(s.domain)));
+  const existingScIdentities = new Set(existingSites.map(s => normalizeScIdentity(getSCUrl(s))));
 
   // Fetch SC sites
-  let scDomains: string[] = [];
+  let scSites: DedupeScSite[] = [];
   try {
     const sc = new searchconsole_v1.Searchconsole({ auth });
     const res = await sc.sites.list();
-    scDomains = (res.data.siteEntry ?? [])
+    const rawScSites = (res.data.siteEntry ?? [])
       .map(entry => {
-        const url = entry.siteUrl ?? '';
-        return url.startsWith('sc-domain:') ? url.slice('sc-domain:'.length) : url;
+        const scUrl = (entry.siteUrl ?? '').trim();
+        const domain = isDomainProperty(scUrl)
+          ? normalizeSiteDomain(scUrl.slice('sc-domain:'.length))
+          : normalizeSiteDomain(scUrl);
+        return domain ? { scUrl, domain } : null;
       })
-      .filter(Boolean);
+      .filter((site): site is { scUrl: string; domain: string } => site !== null);
+    scSites = dedupeScSites(rawScSites);
   } catch (err) {
     return NextResponse.json({ error: `SC API error: ${(err as Error).message}` }, { status: 500 });
   }
@@ -57,24 +115,26 @@ export async function GET(req: Request) {
   }
 
   // Build proposed sites from SC domains not already in DB
-  const proposed: Site[] = scDomains
-    .filter(domain => !existingDomains.has(domain.toLowerCase()))
-    .map(domain => {
+  const proposed: Site[] = scSites
+    .filter(({ domain, scUrls }) => (
+      !existingDomains.has(domain.toLowerCase()) &&
+      scUrls.every(scUrl => !existingScIdentities.has(normalizeScIdentity(scUrl)))
+    ))
+    .map(({ domain, scUrl }) => {
       const domainLower = domain.toLowerCase();
-      // Strip protocol and trailing slash for matching URL-prefix SC properties
-      const domainStripped = domainLower.replace(/^https?:\/\//, '').replace(/\/$/, '');
       let ga4PropertyId: string | undefined;
       for (const [name, propId] of ga4Map.entries()) {
-        if (name.includes(domainStripped) || domainStripped.includes(name)) {
+        if (name.includes(domainLower) || domainLower.includes(name)) {
           ga4PropertyId = propId;
           break;
         }
       }
 
       return {
-        id: slugify(domain),
+        id: slugifySiteDomain(domain),
         name: domain,
         domain,
+        scUrl: /^https?:\/\//i.test(scUrl) ? scUrl : undefined,
         searchConsole: true,
         testPages: ['/'],
         ga4PropertyId,
