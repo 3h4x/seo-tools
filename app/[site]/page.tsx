@@ -162,12 +162,12 @@ export default async function SiteDashboardPage({
       </div>
       {(scDaily.length >= 2 || ga4DailyData.length >= 2) && (
         <div>
-          <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">
-            Daily Trends
-            <span className="text-neutral-600 font-normal ml-2">
+          <div className="mb-3">
+            <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Daily Trends</h2>
+            <p className="text-xs text-neutral-600 mt-1">
               {Math.max(scDaily.length, ga4DailyData.length)} days of data
-            </span>
-          </h2>
+            </p>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {scDaily.length >= 2 && (
               <>
