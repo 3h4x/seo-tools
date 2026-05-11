@@ -550,13 +550,15 @@ async function checkIndexingCoverage(site: Site, sitemapUrlCount?: number): Prom
       };
     }
 
-    const coveragePct = Math.round((indexedPages / sitemapUrlCount) * 100);
+    const indexedSitemapUrls = Math.min(indexedPages, sitemapUrlCount);
+    const coveragePct = Math.round((indexedSitemapUrls / sitemapUrlCount) * 100);
+    const unindexedPages = Math.max(sitemapUrlCount - indexedSitemapUrls, 0);
 
     if (coveragePct < 30) {
       return {
         status: 'fail', label: 'Indexing',
-        message: `${indexedPages}/${sitemapUrlCount} sitemap URLs indexed (${coveragePct}%)`,
-        details: `${sitemapUrlCount - indexedPages} pages submitted but not appearing in search results`,
+        message: `${indexedSitemapUrls}/${sitemapUrlCount} sitemap URLs indexed (${coveragePct}%)`,
+        details: `${unindexedPages} pages submitted but not appearing in search results`,
         sitemapUrls: sitemapUrlCount, indexedPages, coveragePct,
       };
     }
@@ -564,15 +566,15 @@ async function checkIndexingCoverage(site: Site, sitemapUrlCount?: number): Prom
     if (coveragePct < 60) {
       return {
         status: 'warn', label: 'Indexing',
-        message: `${indexedPages}/${sitemapUrlCount} sitemap URLs indexed (${coveragePct}%)`,
-        details: `${sitemapUrlCount - indexedPages} pages not appearing in search results`,
+        message: `${indexedSitemapUrls}/${sitemapUrlCount} sitemap URLs indexed (${coveragePct}%)`,
+        details: `${unindexedPages} pages not appearing in search results`,
         sitemapUrls: sitemapUrlCount, indexedPages, coveragePct,
       };
     }
 
     return {
       status: 'pass', label: 'Indexing',
-      message: `${indexedPages}/${sitemapUrlCount} sitemap URLs indexed (${coveragePct}%)`,
+      message: `${indexedSitemapUrls}/${sitemapUrlCount} sitemap URLs indexed (${coveragePct}%)`,
       sitemapUrls: sitemapUrlCount, indexedPages, coveragePct,
     };
   } catch (e) {

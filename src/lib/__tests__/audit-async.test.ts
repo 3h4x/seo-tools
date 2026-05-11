@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const mockSitemapsList = vi.fn().mockResolvedValue({ data: { sitemap: [] } });
+const mockSearchAnalyticsQuery = vi.fn().mockResolvedValue({ data: { rows: [] } });
+
 // Mock all external dependencies so audit.ts can be imported without credentials
 vi.mock('../google-auth', () => ({ getAuth: () => ({}) }));
 vi.mock('@googleapis/searchconsole', () => ({
   searchconsole_v1: {
     Searchconsole: class {
-      sitemaps = { list: vi.fn().mockResolvedValue({ data: { sitemap: [] } }) };
-      searchanalytics = { query: vi.fn().mockResolvedValue({ data: { rows: [] } }) };
+      sitemaps = { list: mockSitemapsList };
+      searchanalytics = { query: mockSearchAnalyticsQuery };
     },
   },
 }));
@@ -50,6 +53,8 @@ function makeResponse(
 describe('auditSite — robots.txt', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+    mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [] } });
   });
 
   it('reports pass when robots.txt has Sitemap directive', async () => {
@@ -115,7 +120,11 @@ describe('auditSite — robots.txt', () => {
 // ---------------------------------------------------------------------------
 
 describe('auditSite — sitemap', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+    mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [] } });
+  });
 
   it('reports pass for valid sitemap with URLs and recent lastmod', async () => {
     const recentDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -199,7 +208,11 @@ describe('auditSite — sitemap', () => {
 // ---------------------------------------------------------------------------
 
 describe('auditSite — TTFB', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+    mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [] } });
+  });
 
   it('reports pass for fast responses (<800ms)', async () => {
     vi.stubGlobal(
@@ -229,7 +242,11 @@ describe('auditSite — TTFB', () => {
 // ---------------------------------------------------------------------------
 
 describe('auditSite — security', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+    mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [] } });
+  });
 
   it('reports HTTPS pass when HTTP redirects to HTTPS', async () => {
     vi.stubGlobal(
@@ -287,7 +304,11 @@ describe('auditSite — security', () => {
 // ---------------------------------------------------------------------------
 
 describe('auditSite — skipChecks', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+    mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [] } });
+  });
 
   it('marks skipped checks as pass with N/A prefix', async () => {
     vi.stubGlobal(
@@ -308,7 +329,11 @@ describe('auditSite — skipChecks', () => {
 // ---------------------------------------------------------------------------
 
 describe('auditSite — score', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+    mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [] } });
+  });
 
   it('score total equals sum of pass + warn + fail + error', async () => {
     vi.stubGlobal(
@@ -320,5 +345,39 @@ describe('auditSite — score', () => {
     const { pass, warn, fail, error, total } = result.score;
     expect(pass + warn + fail + error).toBe(total);
     expect(total).toBeGreaterThan(0);
+  });
+});
+
+describe('auditSite — indexing coverage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+    mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [{}, {}, {}] } });
+  });
+
+  it('caps coverage at 100% when indexed pages exceed sitemap URLs', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, opts?: { redirect?: string }) => {
+        const u = String(url);
+        if (u.includes('robots.txt')) {
+          return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+        }
+        if (u.includes('sitemap.xml')) {
+          return makeResponse({
+            body: '<urlset><url><loc>https://example.com/1</loc></url><url><loc>https://example.com/2</loc></url></urlset>',
+          });
+        }
+        if (u.startsWith('http://') && opts?.redirect === 'manual') {
+          return Promise.resolve(new Response('', { status: 301, headers: { location: 'https://example.com/' } }));
+        }
+        return makeResponse({ body: '<html><title>Test</title></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite({ testPages: [] }));
+    expect(result.indexingCoverage.coveragePct).toBe(100);
+    expect(result.indexingCoverage.indexedPages).toBe(3);
+    expect(result.indexingCoverage.message).toContain('2/2 sitemap URLs indexed (100%)');
   });
 });

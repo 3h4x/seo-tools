@@ -1,6 +1,6 @@
 ---
 model: normal
-schedule: 24h
+schedule: 30m
 skillIds: ["agent-qa"]
 prerequisiteCommand: "pnpm dev"
 ---

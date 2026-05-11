@@ -348,7 +348,7 @@ export default async function SiteDashboardPage({
                 <div className="flex items-center gap-4 text-xs text-neutral-400 mb-2">
                   <span>Sitemap: <span className="text-white font-mono">{audit.indexingCoverage.sitemapUrls}</span> URLs</span>
                   <span>Indexed: <span className="text-white font-mono">{audit.indexingCoverage.indexedPages}</span> pages</span>
-                  <span>Gap: <span className="text-red-400 font-mono">{audit.indexingCoverage.sitemapUrls - audit.indexingCoverage.indexedPages}</span> not indexed</span>
+                  <span>Gap: <span className="text-red-400 font-mono">{Math.max(audit.indexingCoverage.sitemapUrls - audit.indexingCoverage.indexedPages, 0)}</span> not indexed</span>
                 </div>
                 <div className="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
                   <div
