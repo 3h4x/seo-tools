@@ -460,6 +460,18 @@ interface SiteRecord {
   skipChecks?: string[];
 }
 
+const SITE_OWNED_TABLES = [
+  'sc_daily',
+  'ga4_daily',
+  'sc_snapshots',
+  'ga4_snapshots',
+  'audit_snapshots',
+  'keyword_history',
+  'api_cache',
+  'daily_genesis',
+  'sitemap_state',
+] as const;
+
 function rowToSite(row: SiteRow): SiteRecord {
   return {
     id: row.id,
@@ -514,7 +526,13 @@ export function dbUpsertSite(site: SiteRecord, sortOrder?: number): void {
 
 export function dbDeleteSite(id: string): void {
   const db = getDb();
-  db.prepare('DELETE FROM sites WHERE id = ?').run(id);
+  const deleteSite = db.transaction((siteId: string) => {
+    for (const table of SITE_OWNED_TABLES) {
+      db.prepare(`DELETE FROM ${table} WHERE site_id = ?`).run(siteId);
+    }
+    db.prepare('DELETE FROM sites WHERE id = ?').run(siteId);
+  });
+  deleteSite(id);
 }
 
 // --- Keyword history ---
