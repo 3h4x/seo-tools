@@ -19,6 +19,8 @@ import {
   clearCacheEntry,
   clearCacheEntriesByPrefix,
   clearSitemapSyncState,
+  dbDeleteSite,
+  dbUpsertSite,
   upsertScDaily,
   upsertGa4Daily,
   getDb,
@@ -30,7 +32,19 @@ import {
 /** Wipe volatile tables between tests so state never leaks. */
 function resetDb() {
   const db = getDb();
-  db.exec('DELETE FROM api_cache; DELETE FROM sitemap_state; DELETE FROM sc_daily; DELETE FROM ga4_daily; DELETE FROM config;');
+  db.exec(`
+    DELETE FROM keyword_history;
+    DELETE FROM daily_genesis;
+    DELETE FROM sites;
+    DELETE FROM api_cache;
+    DELETE FROM sitemap_state;
+    DELETE FROM sc_daily;
+    DELETE FROM ga4_daily;
+    DELETE FROM sc_snapshots;
+    DELETE FROM ga4_snapshots;
+    DELETE FROM audit_snapshots;
+    DELETE FROM config;
+  `);
 }
 
 beforeEach(resetDb);
@@ -168,6 +182,48 @@ describe('targeted cache clearing', () => {
 
     expect(db.prepare('SELECT site_id FROM sitemap_state WHERE site_id = ?').get('site-a')).toBeUndefined();
     expect(db.prepare('SELECT site_id FROM sitemap_state WHERE site_id = ?').get('site-b')).toEqual({ site_id: 'site-b' });
+  });
+});
+
+describe('dbDeleteSite', () => {
+  it('deletes a site and all site-owned dependent rows in one call', () => {
+    const db = getDb();
+    dbUpsertSite({ id: 'site-a', name: 'Site A', domain: 'a.example', testPages: ['/'] });
+    dbUpsertSite({ id: 'site-b', name: 'Site B', domain: 'b.example', testPages: ['/'] });
+
+    db.prepare('INSERT INTO sc_daily (site_id, date, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?)').run('site-a', '2026-05-10', 1, 2, 0.5, 3);
+    db.prepare('INSERT INTO ga4_daily (site_id, date, users, sessions, views, bounce_rate, avg_duration) VALUES (?, ?, ?, ?, ?, ?, ?)').run('site-a', '2026-05-10', 1, 2, 3, 4, 5);
+    db.prepare('INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)').run('site-a', '2026-05-10', 'https://a.example/', 1, 2, 0.5, 3);
+    db.prepare('INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration) VALUES (?, ?, ?, ?, ?, ?, ?)').run('site-a', '2026-05-10', 1, 2, 3, 4, 5);
+    db.prepare('INSERT INTO audit_snapshots (site_id, date, pass_count, warn_count, fail_count, checks_json) VALUES (?, ?, ?, ?, ?, ?)').run('site-a', '2026-05-10', 1, 2, 3, '{}');
+    db.prepare('INSERT INTO keyword_history (site_id, date, query, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)').run('site-a', '2026-05-10', 'seo', 1, 2, 0.5, 3);
+    db.prepare('INSERT INTO api_cache (cache_key, site_id, data_json, fetched_at) VALUES (?, ?, ?, ?)').run('audit', 'site-a', '{}', Date.now());
+    db.prepare('INSERT INTO daily_genesis (site_id, source, genesis_date) VALUES (?, ?, ?)').run('site-a', 'sc', '2026-05-01');
+    db.prepare('INSERT INTO sitemap_state (site_id, sitemap_url, content_hash, url_count, latest_lastmod, last_submitted_at, last_checked_at, submit_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run('site-a', 'https://a.example/sitemap.xml', 'hash', 1, null, null, 0, 0);
+    db.prepare('INSERT INTO api_cache (cache_key, site_id, data_json, fetched_at) VALUES (?, ?, ?, ?)').run('audit', 'site-b', '{}', Date.now());
+
+    dbDeleteSite('site-a');
+
+    const siteOwnedTables = [
+      'sc_daily',
+      'ga4_daily',
+      'sc_snapshots',
+      'ga4_snapshots',
+      'audit_snapshots',
+      'keyword_history',
+      'api_cache',
+      'daily_genesis',
+      'sitemap_state',
+    ] as const;
+
+    for (const table of siteOwnedTables) {
+      const deletedRow = db.prepare(`SELECT 1 AS present FROM ${table} WHERE site_id = ? LIMIT 1`).get('site-a');
+      expect(deletedRow).toBeUndefined();
+    }
+
+    expect(db.prepare('SELECT 1 AS present FROM sites WHERE id = ?').get('site-a')).toBeUndefined();
+    expect(db.prepare('SELECT 1 AS present FROM sites WHERE id = ?').get('site-b')).toEqual({ present: 1 });
+    expect(db.prepare('SELECT 1 AS present FROM api_cache WHERE site_id = ?').get('site-b')).toEqual({ present: 1 });
   });
 });
 
