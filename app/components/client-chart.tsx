@@ -8,8 +8,12 @@ export default function ClientChart({ children, height = '100%' }: { children: R
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    return <div style={{ width: '100%', height }} />;
+    return <div style={{ width: '100%', height, minWidth: 0, minHeight: 0 }} />;
   }
 
-  return <>{children}</>;
+  return (
+    <div style={{ width: '100%', height, minWidth: 0, minHeight: 0 }}>
+      {children}
+    </div>
+  );
 }

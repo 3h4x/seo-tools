@@ -76,9 +76,6 @@ GOOGLE_SA_KEY_JSON='{"type":"service_account",...}'
 - `/` — Overview: all sites summary (health score, key metrics, trend arrows)
 - `/audit` — SEO health audit results per site (with "Last checked" timestamps)
 - `/audit/[site]` — Redirects to `/{site}` for detailed audit and analytics
-- `/report` — Combined Search Console + GA4 analytics
-- `/report/[site]` — Per-site analytics detail with daily trends
-- `/decay` — Content decay detection (declining pages across all sites, 7d/30d toggle)
 - `/trends` — Historical trend data from SQLite snapshots (SC + GA4 + audit scores)
 - `/performance` — Core Web Vitals overview (RUM via GA4 with PSI fallback per site)
 - `/performance/[site]` — Per-site CWV detail (mobile vs desktop, slowest pages, RUM trend chart)
@@ -328,9 +325,7 @@ Conventional commits (matching this repo's history): `type: description`. Types 
 |------|------|-----|-----------|----------|-------|
 | `/` (Overview) | 694ms | 728ms | 732ms | 18KB | GA4 + SC for 6 sites |
 | `/audit` | 77ms | 108ms | 112ms | 12KB | Cached after first load |
-| `/report` | 1615ms | 1656ms | 1677ms | 14KB | Slowest — SC comparison + GA4 x6 |
-| `/decay` | 686ms | 720ms | 731ms | 6KB | SC page queries x2 periods x6 |
 | `/trends` | 97ms | 132ms | 131ms | 10KB | SQLite reads, instant |
 | `/performance` | ~2s | — | ~2s | ~76KB | Cold: GA4 RUM + PSI mobile fan-out x6. Subsequent hits <150ms (RUM 30m cache, PSI 6h cache). |
 
-**Bottleneck:** `/report`, `/decay`, and cold `/performance` are slow on first load due to Google API calls (SC + GA4 + PSI for all 6 sites). After caching, all pages serve in <150ms. RUM/SC/GA4 use a 30-min `withCache` TTL; PSI uses 6h (rate-limited and CrUX field data updates slowly).
+**Bottleneck:** cold `/performance` is the slowest first load due to GA4 RUM + PSI fan-out across all sites. After caching, pages serve in <150ms. RUM/SC/GA4 use a 30-min `withCache` TTL; PSI uses 6h (rate-limited and CrUX field data updates slowly).

@@ -69,9 +69,6 @@ Alternatively, set `GOOGLE_SA_KEY_JSON` as an environment variable (Config tab D
 - `/` — Overview: all sites summary (health score, key metrics, trend arrows)
 - `/audit` — SEO health audit results per site (with "Last checked" timestamps)
 - `/audit/[site]` — Redirects to `/{site}` for detailed audit and analytics
-- `/report` — Combined Search Console + GA4 analytics
-- `/report/[site]` — Per-site analytics detail with daily trends
-- `/decay` — Content decay detection (declining pages across all sites, 7d/30d toggle)
 - `/trends` — Historical trend data from SQLite snapshots (SC + GA4 + audit scores)
 - `/config` — Service account key management + managed sites CRUD
 
