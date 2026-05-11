@@ -16,6 +16,9 @@ import {
   getCached,
   setCache,
   clearCache,
+  clearCacheEntry,
+  clearCacheEntriesByPrefix,
+  clearSitemapSyncState,
   upsertScDaily,
   upsertGa4Daily,
   getDb,
@@ -27,7 +30,7 @@ import {
 /** Wipe volatile tables between tests so state never leaks. */
 function resetDb() {
   const db = getDb();
-  db.exec('DELETE FROM api_cache; DELETE FROM sc_daily; DELETE FROM ga4_daily; DELETE FROM config;');
+  db.exec('DELETE FROM api_cache; DELETE FROM sitemap_state; DELETE FROM sc_daily; DELETE FROM ga4_daily; DELETE FROM config;');
 }
 
 beforeEach(resetDb);
@@ -124,6 +127,47 @@ describe('clearCache', () => {
 
   it('is idempotent — calling twice does not throw', () => {
     expect(() => { clearCache(); clearCache(); }).not.toThrow();
+  });
+});
+
+describe('targeted cache clearing', () => {
+  it('removes one exact cache entry', () => {
+    setCache('audit', 'site-a', { a: 1 });
+    setCache('audit', 'site-b', { b: 2 });
+
+    clearCacheEntry('audit', 'site-a');
+
+    expect(getCached('audit', 'site-a')).toBeNull();
+    expect(getCached('audit', 'site-b')).toEqual({ b: 2 });
+  });
+
+  it('removes cache entries by key prefix for one site', () => {
+    setCache('sc-data-7', 'sc-domain:example.com', { clicks: 1 });
+    setCache('sc-pages-7', 'sc-domain:example.com', { pages: [] });
+    setCache('sc-data-7', 'sc-domain:other.com', { clicks: 2 });
+
+    clearCacheEntriesByPrefix('sc-', 'sc-domain:example.com');
+
+    expect(getCached('sc-data-7', 'sc-domain:example.com')).toBeNull();
+    expect(getCached('sc-pages-7', 'sc-domain:example.com')).toBeNull();
+    expect(getCached('sc-data-7', 'sc-domain:other.com')).toEqual({ clicks: 2 });
+  });
+
+  it('removes only the requested sitemap sync state row', () => {
+    const db = getDb();
+    const insertState = db.prepare(`
+      INSERT INTO sitemap_state (
+        site_id, sitemap_url, content_hash, url_count, latest_lastmod,
+        last_submitted_at, last_checked_at, submit_count
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    insertState.run('site-a', 'https://a.example/sitemap.xml', 'same-hash', 1, null, 100, 100, 1);
+    insertState.run('site-b', 'https://b.example/sitemap.xml', 'same-hash', 1, null, 100, 100, 1);
+
+    clearSitemapSyncState('site-a');
+
+    expect(db.prepare('SELECT site_id FROM sitemap_state WHERE site_id = ?').get('site-a')).toBeUndefined();
+    expect(db.prepare('SELECT site_id FROM sitemap_state WHERE site_id = ?').get('site-b')).toEqual({ site_id: 'site-b' });
   });
 });
 

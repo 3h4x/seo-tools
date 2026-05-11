@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbGetSites, dbUpsertSite, dbDeleteSite } from '@/lib/db';
+import { invalidateManagedSiteCache } from '@/lib/site-cache';
 import type { Site } from '@/lib/sites';
 
 export async function GET() {
@@ -15,7 +16,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'id, name, and domain are required' }, { status: 400 });
   }
 
+  const previousSite = dbGetSites().find((managedSite) => managedSite.id === site.id) ?? null;
   dbUpsertSite(site, sortOrder);
+  invalidateManagedSiteCache(previousSite, site);
   return NextResponse.json({ ok: true });
 }
 
@@ -24,6 +27,10 @@ export async function DELETE(req: NextRequest) {
   if (!id) {
     return NextResponse.json({ ok: false, error: 'id query param required' }, { status: 400 });
   }
+  const previousSite = dbGetSites().find((managedSite) => managedSite.id === id) ?? null;
   dbDeleteSite(id);
+  if (previousSite) {
+    invalidateManagedSiteCache(previousSite, null);
+  }
   return NextResponse.json({ ok: true });
 }
