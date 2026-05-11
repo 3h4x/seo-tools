@@ -40,6 +40,22 @@ describe('getImportResult', () => {
       error: 'Validation failed',
     });
   });
+
+  it('surfaces the joined error string from a 400 with field-level errors payload', async () => {
+    const res = new Response(
+      JSON.stringify({
+        ok: false,
+        error: 'domain is already used by site "other"; id is required',
+        errors: { domain: 'domain is already used by site "other"', id: 'id is required' },
+      }),
+      { status: 400, headers: { 'content-type': 'application/json' } },
+    );
+
+    await expect(getImportResult(res)).resolves.toEqual({
+      ok: false,
+      error: 'domain is already used by site "other"; id is required',
+    });
+  });
 });
 
 describe('applyImportResults', () => {

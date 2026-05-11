@@ -10,6 +10,7 @@ vi.mock('../site-cache', () => ({
   invalidateManagedSiteCache: vi.fn(),
 }));
 
+// site-domain is used by sites.ts; do not mock it so validation logic runs for real
 import { dbGetSites, dbUpsertSite, dbDeleteSite } from '../db';
 import { invalidateManagedSiteCache } from '../site-cache';
 import { GET, POST, DELETE } from '../../../app/api/sites/route';
@@ -112,7 +113,7 @@ describe('POST /api/sites', () => {
       name: 'Site 1',
       domain: 'new.example.com',
       scUrl: 'sc-domain:new.example.com',
-      ga4PropertyId: '5678',
+      ga4PropertyId: 'properties/5678',
       testPages: ['/landing'],
       skipChecks: ['internalLinks'],
     };
@@ -130,6 +131,9 @@ describe('POST /api/sites', () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.ok).toBe(false);
+    expect(data.errors.domain).toBeTruthy();
+    expect(typeof data.error).toBe('string');
+    expect(data.error).toContain(data.errors.domain);
     expect(dbUpsertSite).not.toHaveBeenCalled();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
   });
@@ -139,6 +143,7 @@ describe('POST /api/sites', () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.ok).toBe(false);
+    expect(data.errors.domain).toBeTruthy();
     expect(dbUpsertSite).not.toHaveBeenCalled();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
   });
@@ -148,6 +153,7 @@ describe('POST /api/sites', () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.ok).toBe(false);
+    expect(data.errors.id).toBeTruthy();
     expect(dbUpsertSite).not.toHaveBeenCalled();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
   });
@@ -157,6 +163,7 @@ describe('POST /api/sites', () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.ok).toBe(false);
+    expect(data.errors.id).toBeTruthy();
     expect(dbUpsertSite).not.toHaveBeenCalled();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
   });
@@ -166,6 +173,7 @@ describe('POST /api/sites', () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.ok).toBe(false);
+    expect(data.errors.name).toBeTruthy();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
   });
 
@@ -174,7 +182,74 @@ describe('POST /api/sites', () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.ok).toBe(false);
+    expect(data.errors.domain).toBeTruthy();
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when domain is a duplicate of an existing site with a different id', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'other', name: 'Other', domain: 'site1.com', testPages: [] },
+    ] as never);
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com' }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(data.errors.domain).toMatch(/other/);
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+  });
+
+  it('allows saving a site whose domain matches its own existing record (update)', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'site1', name: 'Site 1', domain: 'site1.com', testPages: [] },
+    ] as never);
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1 Updated', domain: 'site1.com' }));
+    expect(res.status).toBe(200);
+    expect(dbUpsertSite).toHaveBeenCalled();
+  });
+
+  it('returns 400 for invalid scUrl format', async () => {
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', scUrl: 'not-a-valid-url' }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(data.errors.scUrl).toBeTruthy();
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+  });
+
+  it('accepts a scUrl with sc-domain: prefix', async () => {
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', scUrl: 'sc-domain:site1.com' }));
+    expect(res.status).toBe(200);
+    expect(dbUpsertSite).toHaveBeenCalled();
+  });
+
+  it('returns 400 for ga4PropertyId not in properties/NNNNNN format', async () => {
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', ga4PropertyId: '123456' }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(data.errors.ga4PropertyId).toBeTruthy();
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+  });
+
+  it('accepts a valid ga4PropertyId', async () => {
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', ga4PropertyId: 'properties/123456' }));
+    expect(res.status).toBe(200);
+    expect(dbUpsertSite).toHaveBeenCalled();
+  });
+
+  it('returns 400 when a testPage entry does not start with /', async () => {
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', testPages: ['noslash'] }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(data.errors.testPages).toBeTruthy();
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+  });
+
+  it('accepts valid testPages entries', async () => {
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', testPages: ['/', '/about'] }));
+    expect(res.status).toBe(200);
+    expect(dbUpsertSite).toHaveBeenCalled();
   });
 });
 
