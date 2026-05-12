@@ -3,14 +3,12 @@ import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getAuth } from './google-auth';
 import { getManagedSites } from './sites';
 import { clearCacheEntry, withCache, type ProviderResult } from './db';
-
-const GA4_DISCOVERY_CACHE_KEY = 'ga4-discovery';
-const GA4_DISCOVERY_CACHE_SITE_ID = 'managed-sites';
-
-type DiscoveredGa4Property = {
-  displayName: string;
-  propertyId: string;
-};
+import {
+  GA4_DISCOVERY_CACHE_KEY,
+  GA4_DISCOVERY_CACHE_SITE_ID,
+  resolveSiteGa4PropertyId,
+  type DiscoveredGa4Property,
+} from './ga4-discovery';
 
 function getAdminClient() {
   return new AnalyticsAdminServiceClient({ auth: getAuth() });
@@ -57,17 +55,11 @@ export async function discoverPropertyIds() {
   if (!properties) return sites;
 
   return sites.map((site) => {
-      const domain = site.domain.toLowerCase();
-      const property = properties.find((p) => {
-        const displayName = p.displayName.toLowerCase();
-        return displayName.includes(domain) || domain.includes(displayName);
-      });
-
       return {
         ...site,
-        ga4PropertyId: site.ga4PropertyId || property?.propertyId,
+        ga4PropertyId: resolveSiteGa4PropertyId(site, properties),
       };
-    });
+  });
 }
 
 interface GA4Metrics {
