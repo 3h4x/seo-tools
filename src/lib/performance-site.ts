@@ -182,6 +182,32 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
   };
 }
 
+export interface CwvAuditSummary {
+  metrics: PerformanceMetricMap;
+  source: PerformanceSource;
+}
+
+export async function getCwvAuditSummary(siteId: string): Promise<CwvAuditSummary | null> {
+  const site = await getManagedSite(siteId);
+  if (!site) return null;
+
+  const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
+  const discovered = await discoverPropertyIds();
+  const propertyId = discovered.find(c => c.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
+
+  const [rum, psiMobile] = await Promise.all([
+    propertyId ? cachedGetRumCoreWebVitals(propertyId, 7) : Promise.resolve(null),
+    cachedGetPagespeed(url, 'mobile'),
+  ]);
+
+  if (rum?.hasData) {
+    return { metrics: cloneRumMetrics(rum.overall), source: 'rum' };
+  }
+
+  const fallback = fromPsi(psiMobile);
+  return { metrics: fallback.metrics, source: fallback.source };
+}
+
 export type {
   PerformanceByPageRow,
   PerformanceMetric,

@@ -27,7 +27,7 @@ import {
   cachedGetRumCwvByPage,
   cachedGetRumCwvTrend,
 } from '../performance';
-import { getPerformanceSiteData } from '../performance-site';
+import { getPerformanceSiteData, getCwvAuditSummary } from '../performance-site';
 import { getManagedSite } from '../sites';
 
 const site = {
@@ -142,5 +142,58 @@ describe('getPerformanceSiteData', () => {
       { date: '2026-05-08', metrics: { LCP: { value: 1200, rating: 'good', sampleCount: 2 } } },
       { date: '2026-05-09', metrics: { INP: { value: 180, rating: 'good', sampleCount: 3 } } },
     ]);
+  });
+});
+
+describe('getCwvAuditSummary', () => {
+  it('returns RUM overall metrics when RUM data exists', async () => {
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce({
+      hasData: true,
+      overall: {
+        LCP: { value: 1500, rating: 'good', sampleCount: 20 },
+        INP: { value: 210, rating: 'ni', sampleCount: 20 },
+        CLS: { value: 0.05, rating: 'good', sampleCount: 20 },
+      },
+      byDevice: { mobile: {}, desktop: {}, tablet: {} },
+    });
+
+    const result = await getCwvAuditSummary('borged-io');
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('rum');
+    expect(result!.metrics.LCP).toEqual({ value: 1500, rating: 'good', sampleCount: 20 });
+    expect(result!.metrics.INP).toEqual({ value: 210, rating: 'ni', sampleCount: 20 });
+    expect(vi.mocked(cachedGetRumCwvByPage)).not.toHaveBeenCalled();
+    expect(vi.mocked(cachedGetRumCwvTrend)).not.toHaveBeenCalled();
+  });
+
+  it('falls back to PSI field data when no RUM', async () => {
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce(null);
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => ({
+      url: 'https://borged.io',
+      strategy,
+      performanceScore: null,
+      field: {
+        LCP: { value: 3200, rating: 'poor' },
+        CLS: { value: 0.08, rating: 'good' },
+      },
+      lab: {},
+      fetchedAt: 123,
+    }));
+
+    const result = await getCwvAuditSummary('borged-io');
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('psi-field');
+    expect(result!.metrics.LCP).toEqual({ value: 3200, rating: 'poor', sampleCount: 0 });
+    expect(result!.metrics.CLS).toEqual({ value: 0.08, rating: 'good', sampleCount: 0 });
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'mobile');
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns null for unknown site', async () => {
+    vi.mocked(getManagedSite).mockResolvedValueOnce(null);
+    const result = await getCwvAuditSummary('nonexistent');
+    expect(result).toBeNull();
   });
 });

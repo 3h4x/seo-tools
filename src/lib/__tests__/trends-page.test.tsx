@@ -133,6 +133,10 @@ vi.mock('@/lib/audit', () => ({
   cachedAuditSite: vi.fn(async () => makeAuditResult()),
 }));
 
+vi.mock('@/lib/performance-site', () => ({
+  getCwvAuditSummary: vi.fn(async () => null),
+}));
+
 vi.mock('@/lib/gaps', () => ({
   analyzeSiteGaps: vi.fn(() => ({
     gaps: [],

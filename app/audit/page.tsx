@@ -4,6 +4,8 @@ import { getManagedSites } from '@/lib/sites';
 import { analyzeSiteGaps, type GapSeverity, type GapCategory } from '@/lib/gaps';
 import { detectAllDecay } from '@/lib/decay';
 import { formatRelativeTime } from '@/lib/format';
+import { getCwvAuditSummary, type CwvAuditSummary } from '@/lib/performance-site';
+import { CWV_RATING_COLORS, CWV_THRESHOLDS, type CwvMetricName } from '@/lib/constants';
 import { statusDots, accentBorder, StatusBadge } from '../components/audit/check-card';
 import { MetricCard } from '../components/metric-card';
 import { CopyButton } from '../components/copy-button';
@@ -53,6 +55,12 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     getManagedSites(),
     detectAllDecay(period as 7 | 30),
   ]);
+
+  const cwvSummaries = Object.fromEntries(
+    await Promise.all(
+      managedSites.map(async (s) => [s.id, await getCwvAuditSummary(s.id)] as [string, CwvAuditSummary | null])
+    )
+  );
 
   const totalPass = audits.reduce((s, a) => s + a.score.pass, 0);
   const totalWarn = audits.reduce((s, a) => s + a.score.warn, 0);
@@ -149,6 +157,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           const links = checksSummary(audit.internalLinks, { fail: 'no links', warn: 'low links', pass: 'Good linking' });
           const site = managedSites.find(s => s.id === audit.siteId);
           const gapCount = gapCountBySite.get(audit.siteId) ?? 0;
+          const cwv = cwvSummaries[audit.siteId] ?? null;
           return (
             <Link
               key={audit.siteId}
@@ -187,6 +196,25 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                 <CheckItem label="Int. Links" status={links.status} sublabel={links.label} />
                 <CheckItem label="TTFB" status={audit.ttfb.status} sublabel={audit.ttfb.ms ? `${audit.ttfb.ms}ms` : undefined} />
               </div>
+              {cwv && Object.keys(cwv.metrics).length > 0 && (
+                <div className="mt-3 pt-3 border-t border-neutral-800 flex items-center gap-4 flex-wrap">
+                  <span className="text-neutral-600 text-[10px] uppercase tracking-wider font-medium shrink-0">CWV</span>
+                  {(['LCP', 'INP', 'CLS'] as CwvMetricName[]).map(name => {
+                    const metric = cwv.metrics[name];
+                    if (!metric) return null;
+                    const colors = CWV_RATING_COLORS[metric.rating];
+                    const t = CWV_THRESHOLDS[name];
+                    const display = t.unit === 'ms' ? `${Math.round(metric.value)}ms` : metric.value.toFixed(3);
+                    return (
+                      <div key={name} className="flex items-center gap-1.5">
+                        <span className="text-neutral-500 text-[10px]">{name}</span>
+                        <span className={`text-[10px] font-mono font-semibold ${colors.text}`}>{display}</span>
+                      </div>
+                    );
+                  })}
+                  <span className="text-neutral-700 text-[10px] ml-auto">{cwv.source === 'rum' ? 'RUM' : cwv.source === 'psi-field' ? 'CrUX' : 'Lab'}</span>
+                </div>
+              )}
             </Link>
           );
         })}
