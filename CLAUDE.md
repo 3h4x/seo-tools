@@ -14,7 +14,7 @@ A multi-project SEO manager that:
 - **Framework:** Next.js (App Router)
 - **Styling:** Tailwind v4
 - **APIs:** Google Search Console API, GA4 Data API, GA4 Admin API
-- **Auth:** Google service account (key stored via bioenv — Touch ID protected)
+- **Auth:** Google service account (stored in SQLite via Config tab, with `GOOGLE_SA_KEY_JSON` env fallback)
 
 ## Managed Sites
 
@@ -51,10 +51,10 @@ Each site record stores: id, name, domain, SC URL override, GA4 property ID, sta
 
 ## Google Service Account
 
-One service account manages all sites. Key stored in `.env.local` as a single-line JSON string.
+One service account manages all sites. Paste the JSON key in the **Config tab** to store it in SQLite.
 
 ```bash
-# .env.local format
+# Optional .env.local bootstrap / fallback
 GOOGLE_SA_KEY_JSON='{"type":"service_account",...}'
 ```
 
