@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPerformanceSiteData } from '@/lib/performance-site';
+import { parseIntegerParam } from '@/lib/days';
 
 export async function GET(
   req: NextRequest,
@@ -7,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { site } = await context.params;
-    const rawDays = parseInt(req.nextUrl.searchParams.get('days') || '7');
+    const rawDays = parseIntegerParam(req.nextUrl.searchParams.get('days'), 7);
 
     const data = await getPerformanceSiteData(site, rawDays);
     if (!data) {

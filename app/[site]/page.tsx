@@ -26,6 +26,7 @@ import { gapsBySection } from '@/lib/gaps';
 import { ScTable } from '../components/sc-table';
 import { PageQueriesTable } from '../components/page-queries-table';
 import { VALID_DAYS } from '@/lib/constants';
+import { parseAllowedIntegerParam } from '@/lib/days';
 
 export const revalidate = 300;
 
@@ -75,8 +76,7 @@ export default async function SiteDashboardPage({
   if (!site) notFound();
 
   const sp = await searchParams;
-  const rawDays = parseInt(sp.days || '7');
-  const days = VALID_DAYS.includes(rawDays) ? rawDays : 7;
+  const days = parseAllowedIntegerParam(sp.days, VALID_DAYS, 7);
 
   // Discover GA4 property ID
   const discovered = await discoverPropertyIds();

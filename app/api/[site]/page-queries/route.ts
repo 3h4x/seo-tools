@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getManagedSite, getSCUrl } from '@/lib/sites';
 import { cachedGetTopPagesWithQueries } from '@/lib/search-console';
 import { VALID_DAYS } from '@/lib/constants';
+import { parseAllowedIntegerParam } from '@/lib/days';
 
 export async function GET(
   req: NextRequest,
@@ -9,8 +10,7 @@ export async function GET(
 ) {
   try {
     const { site } = await context.params;
-    const rawDays = parseInt(req.nextUrl.searchParams.get('days') || '7');
-    const days = VALID_DAYS.includes(rawDays) ? rawDays : 7;
+    const days = parseAllowedIntegerParam(req.nextUrl.searchParams.get('days'), VALID_DAYS, 7);
 
     const siteConfig = await getManagedSite(site);
     if (!siteConfig) {

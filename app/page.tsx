@@ -3,6 +3,7 @@ import { cachedGetSearchConsoleData } from '@/lib/search-console';
 import { getSCUrl } from '@/lib/sites';
 import { formatSource } from '@/lib/format';
 import { VALID_DAYS } from '@/lib/constants';
+import { parseAllowedIntegerParam } from '@/lib/days';
 import TimeRange from './components/time-range';
 import { MetricCard } from './components/metric-card';
 import { Icons } from './components/icons';
@@ -35,8 +36,7 @@ async function getSiteData(days: number) {
 
 export default async function Overview({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
   const params = await searchParams;
-  const rawDays = parseInt(params.days || '7');
-  const days = VALID_DAYS.includes(rawDays) ? rawDays : 7;
+  const days = parseAllowedIntegerParam(params.days, VALID_DAYS, 7);
   const sites = await getSiteData(days);
 
   const totals = sites.reduce(

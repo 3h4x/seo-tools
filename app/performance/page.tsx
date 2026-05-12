@@ -9,6 +9,7 @@ import {
   type CwvMetricName,
   type CwvRating,
 } from '@/lib/constants';
+import { parseAllowedIntegerParam } from '@/lib/days';
 import TimeRange from '../components/time-range';
 import CwvSetupGuide from '../components/cwv-setup-guide';
 import { CwvCell } from '../components/cwv-cell';
@@ -105,8 +106,7 @@ const SOURCE_BADGE: Record<SiteRow['source'], { label: string; cls: string; tip:
 
 export default async function PerformancePage({ searchParams }: { searchParams: Promise<{ days?: string; guide?: string }> }) {
   const params = await searchParams;
-  const rawDays = parseInt(params.days || '7');
-  const days = (PERF_VALID_DAYS as readonly number[]).includes(rawDays) ? rawDays : 7;
+  const days = parseAllowedIntegerParam(params.days, PERF_VALID_DAYS, 7);
   const rows = await getRows(days);
 
   const overallAgg: Record<CwvMetricName, { sum: number; count: number }> = {

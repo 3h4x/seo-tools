@@ -9,6 +9,7 @@ import {
 } from './performance';
 import { getManagedSite } from './sites';
 import { CWV_METRIC_ORDER, PERF_VALID_DAYS, rateCwv, type CwvMetricName } from './constants';
+import { normalizeAllowedNumber } from './days';
 
 type PerformanceSource = 'rum' | 'rum-pending' | 'psi-field' | 'psi-lab' | 'none';
 
@@ -62,7 +63,7 @@ interface PerformanceSiteData {
 
 function normalizeDays(days?: number): number {
   const candidate = Number.isFinite(days) ? Number(days) : 7;
-  return (PERF_VALID_DAYS as readonly number[]).includes(candidate) ? candidate : 7;
+  return normalizeAllowedNumber(candidate, PERF_VALID_DAYS, 7);
 }
 
 function cloneRumMetrics(map: CwvMetricMap): PerformanceMetricMap {
