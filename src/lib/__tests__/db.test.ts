@@ -1,9 +1,29 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+const {
+  mockListAccountSummaries,
+  mockGetAuth,
+} = vi.hoisted(() => ({
+  mockListAccountSummaries: vi.fn(),
+  mockGetAuth: vi.fn(),
+}));
 
 vi.mock('node:fs', async () => {
   const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
   return { ...actual, existsSync: () => true, mkdirSync: () => undefined };
 });
+
+vi.mock('@google-analytics/admin', () => ({
+  AnalyticsAdminServiceClient: function AnalyticsAdminServiceClient() {
+    return {
+      listAccountSummaries: mockListAccountSummaries,
+    };
+  },
+}));
+
+vi.mock('../google-auth', () => ({
+  getAuth: mockGetAuth,
+}));
 
 vi.mock('../sqlite-driver.js', async () => {
   const actual = await vi.importActual<typeof import('../sqlite-driver.js')>('../sqlite-driver.js');
@@ -27,6 +47,11 @@ import {
   getConfig,
   setConfig,
   deleteConfig,
+  getOperationalStatuses,
+  getScDailyOperationalStatus,
+  getGa4DailyOperationalStatus,
+  getSitemapSyncOperationalStatus,
+  getSnapshotOperationalStatus,
 } from '../db';
 
 /** Wipe volatile tables between tests so state never leaks. */
@@ -48,6 +73,10 @@ function resetDb() {
 }
 
 beforeEach(resetDb);
+afterEach(() => {
+  vi.useRealTimers();
+  vi.clearAllMocks();
+});
 
 // ---------------------------------------------------------------------------
 // getCached / setCache
@@ -251,5 +280,179 @@ describe('config helpers', () => {
 
   it('delete is a no-op for missing key', () => {
     expect(() => deleteConfig('missing')).not.toThrow();
+  });
+});
+
+describe('operational status helpers', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-12T12:00:00Z'));
+  });
+
+  function insertSite(overrides: Partial<Parameters<typeof dbUpsertSite>[0]> = {}) {
+    const site = {
+      id: overrides.id ?? 'site-a',
+      name: overrides.name ?? 'Site A',
+      domain: overrides.domain ?? 'a.example',
+      testPages: overrides.testPages ?? ['/'],
+      ...overrides,
+    };
+    dbUpsertSite(site);
+  }
+
+  it('returns never states when no operational rows exist yet', async () => {
+    mockListAccountSummaries.mockResolvedValue([[]]);
+
+    const statuses = await getOperationalStatuses();
+    expect(statuses.map((status) => status.state)).toEqual(['never', 'never', 'never', 'never']);
+  });
+
+  it('returns fresh states when all managed-site rows are current', async () => {
+    const db = getDb();
+    insertSite({ id: 'site-a', domain: 'a.example', ga4PropertyId: 'properties/123' });
+    mockListAccountSummaries.mockResolvedValue([[]]);
+
+    db.prepare(
+      'INSERT INTO sc_daily (site_id, date, clicks, impressions, ctr, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-10', 10, 100, 0.1, 4.2, '2026-05-12 11:00:00');
+    db.prepare(
+      'INSERT INTO ga4_daily (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 11:00:00');
+    db.prepare(
+      'INSERT INTO sitemap_state (site_id, sitemap_url, content_hash, url_count, latest_lastmod, last_submitted_at, last_checked_at, submit_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', 'https://example.com/sitemap.xml', 'hash', 10, '2026-05-11', Date.parse('2026-05-12T09:00:00Z'), Date.parse('2026-05-12T10:00:00Z'), 2);
+    db.prepare(
+      'INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-11', 'https://example.com/', 10, 100, 0.1, 4.2, '2026-05-12 06:00:00');
+    db.prepare(
+      'INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 06:00:00');
+
+    expect(getScDailyOperationalStatus().state).toBe('fresh');
+    expect((await getGa4DailyOperationalStatus()).state).toBe('fresh');
+    expect(getSitemapSyncOperationalStatus().state).toBe('fresh');
+    expect((await getSnapshotOperationalStatus()).state).toBe('fresh');
+    expect((await getSnapshotOperationalStatus()).details).toContain('SC and GA4');
+  });
+
+  it('returns stale states when configured sites are missing rows', async () => {
+    const db = getDb();
+    insertSite({ id: 'site-a', domain: 'a.example', ga4PropertyId: 'properties/123' });
+    insertSite({ id: 'site-b', name: 'Site B', domain: 'b.example', ga4PropertyId: 'properties/456' });
+    mockListAccountSummaries.mockResolvedValue([[]]);
+
+    db.prepare(
+      'INSERT INTO sc_daily (site_id, date, clicks, impressions, ctr, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-10', 10, 100, 0.1, 4.2, '2026-05-12 11:00:00');
+    db.prepare(
+      'INSERT INTO ga4_daily (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 11:00:00');
+    db.prepare(
+      'INSERT INTO sitemap_state (site_id, sitemap_url, content_hash, url_count, latest_lastmod, last_submitted_at, last_checked_at, submit_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', 'https://a.example/sitemap.xml', 'hash', 10, '2026-05-11', Date.parse('2026-05-12T09:00:00Z'), Date.parse('2026-05-12T10:00:00Z'), 2);
+    db.prepare(
+      'INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-11', 'https://a.example/', 10, 100, 0.1, 4.2, '2026-05-12 06:00:00');
+    db.prepare(
+      'INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 06:00:00');
+
+    expect(getScDailyOperationalStatus().state).toBe('stale');
+    expect(getScDailyOperationalStatus().details).toContain('site-b');
+    expect((await getGa4DailyOperationalStatus()).state).toBe('stale');
+    expect((await getGa4DailyOperationalStatus()).details).toContain('site-b');
+    expect(getSitemapSyncOperationalStatus().state).toBe('stale');
+    expect(getSitemapSyncOperationalStatus().details).toContain('site-b');
+    expect((await getSnapshotOperationalStatus()).state).toBe('stale');
+    expect((await getSnapshotOperationalStatus()).details).toContain('SC');
+    expect((await getSnapshotOperationalStatus()).details).toContain('GA4');
+  });
+
+  it('returns stale states when freshness windows are missed for existing rows', async () => {
+    const db = getDb();
+    insertSite({ id: 'site-a', domain: 'a.example', ga4PropertyId: 'properties/123' });
+    mockListAccountSummaries.mockResolvedValue([[]]);
+
+    db.prepare(
+      'INSERT INTO sc_daily (site_id, date, clicks, impressions, ctr, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-07', 10, 100, 0.1, 4.2, '2026-05-08 00:00:00');
+    db.prepare(
+      'INSERT INTO ga4_daily (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-09', 20, 30, 40, 0.4, 12, '2026-05-10 00:00:00');
+    db.prepare(
+      'INSERT INTO sitemap_state (site_id, sitemap_url, content_hash, url_count, latest_lastmod, last_submitted_at, last_checked_at, submit_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', 'https://a.example/sitemap.xml', 'hash', 10, '2026-05-11', Date.parse('2026-05-10T07:00:00Z'), Date.parse('2026-05-10T08:00:00Z'), 2);
+    db.prepare(
+      'INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-09', 'https://a.example/', 10, 100, 0.1, 4.2, '2026-05-09 06:00:00');
+    db.prepare(
+      'INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-09', 20, 30, 40, 0.4, 12, '2026-05-09 06:00:00');
+
+    expect(getScDailyOperationalStatus().state).toBe('stale');
+    expect((await getGa4DailyOperationalStatus()).state).toBe('stale');
+    expect(getSitemapSyncOperationalStatus().state).toBe('stale');
+    expect((await getSnapshotOperationalStatus()).state).toBe('stale');
+    expect((await getSnapshotOperationalStatus()).details).not.toContain('audit');
+  });
+
+  it('treats auto-discovered GA4 sites as in-scope for daily and snapshot status', async () => {
+    const db = getDb();
+    insertSite({ id: 'site-a', domain: 'a.example' });
+    insertSite({ id: 'site-b', name: 'Site B', domain: 'b.example', ga4PropertyId: 'properties/456' });
+    mockListAccountSummaries.mockResolvedValue([[
+      {
+        propertySummaries: [
+          { displayName: 'a.example', property: 'properties/123' },
+        ],
+      },
+    ]]);
+
+    db.prepare(
+      'INSERT INTO ga4_daily (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-b', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 11:00:00');
+    db.prepare(
+      'INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-b', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 06:00:00');
+
+    const ga4DailyStatus = await getGa4DailyOperationalStatus();
+    const snapshotStatus = await getSnapshotOperationalStatus();
+
+    expect(ga4DailyStatus.state).toBe('stale');
+    expect(ga4DailyStatus.details).toContain('site-a');
+    expect(snapshotStatus.state).toBe('stale');
+    expect(snapshotStatus.details).toContain('GA4');
+  });
+
+  it('surfaces configured-only fallback details when GA4 discovery is unavailable', async () => {
+    const db = getDb();
+    insertSite({ id: 'site-a', domain: 'a.example', searchConsole: false });
+    insertSite({ id: 'site-b', name: 'Site B', domain: 'b.example', ga4PropertyId: 'properties/456', searchConsole: false });
+    mockListAccountSummaries.mockRejectedValue(new Error('admin unavailable'));
+
+    db.prepare(
+      'INSERT INTO ga4_daily (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-b', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 11:00:00');
+    db.prepare(
+      'INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-b', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 06:00:00');
+
+    const statuses = await getOperationalStatuses();
+    const ga4DailyStatus = statuses.find((status) => status.key === 'ga4-daily');
+    const snapshotStatus = statuses.find((status) => status.key === 'snapshots');
+
+    expect(ga4DailyStatus).toMatchObject({
+      state: 'fresh',
+      reason: 'Collected 1 site through 2026-05-11',
+    });
+    expect(ga4DailyStatus?.details).toContain('GA4 discovery unavailable');
+    expect(ga4DailyStatus?.details).toContain('site-a');
+
+    expect(snapshotStatus).toMatchObject({
+      state: 'fresh',
+      reason: 'Latest snapshot date 2026-05-11',
+    });
+    expect(snapshotStatus?.details).toContain('GA4 discovery unavailable');
+    expect(snapshotStatus?.details).toContain('site-a');
   });
 });

@@ -1,6 +1,14 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import { AnalyticsAdminServiceClient } from '@google-analytics/admin';
 import { computeKeywordDeltas, type KeywordDelta } from './keyword-history';
+import {
+  GA4_DISCOVERY_CACHE_KEY,
+  GA4_DISCOVERY_CACHE_SITE_ID,
+  resolveSiteGa4PropertyId,
+  type DiscoveredGa4Property,
+} from './ga4-discovery';
+import { getAuth } from './google-auth';
 import { openDatabase } from './sqlite-driver.js';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'seo-tools.db');
@@ -410,6 +418,525 @@ export function getSnapshotCount(): number {
   const db = getDb();
   const row = db.prepare('SELECT COUNT(DISTINCT date) as count FROM sc_snapshots').get() as { count: number };
   return row.count;
+}
+
+export type OperationalStatusState = 'fresh' | 'stale' | 'never';
+
+export interface OperationalStatus {
+  key: 'sc-daily' | 'ga4-daily' | 'sitemap-sync' | 'snapshots';
+  label: string;
+  state: OperationalStatusState;
+  timestamp: number | null;
+  reason: string;
+  details?: string;
+}
+
+interface SiteIdRow {
+  id: string;
+}
+
+interface PerSiteDateFreshnessRow {
+  site_id: string;
+  latest_date: string | null;
+  latest_created_at: string | null;
+}
+
+interface SitemapStateRow {
+  site_id: string;
+  last_checked_at: number;
+  last_submitted_at: number | null;
+}
+
+interface SourceOperationalSummary {
+  label: string;
+  missingSites: string[];
+  staleSites: string[];
+  latestDate: string | null;
+  latestTimestamp: number | null;
+  hasData: boolean;
+}
+
+interface ResolvedGa4SiteScope {
+  siteIds: string[];
+  discoveryState: 'resolved' | 'configured-only';
+  excludedSiteIds: string[];
+}
+
+const HOUR_MS = 60 * 60 * 1000;
+const DAILY_STATUS_MAX_AGE_MS = 26 * HOUR_MS;
+const SITEMAP_STATUS_MAX_AGE_MS = 8 * HOUR_MS;
+const SNAPSHOT_STATUS_MAX_AGE_MS = 36 * HOUR_MS;
+
+function localDateStr(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function localDaysBack(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return localDateStr(date);
+}
+
+function parseSqliteTimestamp(value: string | null): number | null {
+  if (!value) return null;
+  const ms = Date.parse(value.replace(' ', 'T') + 'Z');
+  return Number.isNaN(ms) ? null : ms;
+}
+
+function ageHours(timestamp: number | null): number | null {
+  if (timestamp === null) return null;
+  return Math.floor((Date.now() - timestamp) / HOUR_MS);
+}
+
+function buildNeverStatus(
+  key: OperationalStatus['key'],
+  label: string,
+  reason: string,
+): OperationalStatus {
+  return { key, label, state: 'never', timestamp: null, reason };
+}
+
+function pluralizeSites(count: number): string {
+  return `${count} site${count === 1 ? '' : 's'}`;
+}
+
+function summarizeSites(siteIds: string[]): string {
+  if (siteIds.length === 0) return '';
+  if (siteIds.length <= 3) return siteIds.join(', ');
+  return `${siteIds.slice(0, 3).join(', ')} +${siteIds.length - 3} more`;
+}
+
+function getManagedSiteIds(filter: 'all' | 'search-console' | 'ga4'): string[] {
+  const db = getDb();
+  let sql = 'SELECT id FROM sites';
+  if (filter === 'search-console') {
+    sql += ' WHERE search_console = 1';
+  } else if (filter === 'ga4') {
+    sql += " WHERE ga4_property_id IS NOT NULL AND ga4_property_id != ''";
+  }
+  sql += ' ORDER BY sort_order ASC, id ASC';
+  return (db.prepare(sql).all() as SiteIdRow[]).map((row) => row.id);
+}
+
+async function fetchDiscoveredGa4Properties(): Promise<DiscoveredGa4Property[] | null> {
+  try {
+    const client = new AnalyticsAdminServiceClient({ auth: getAuth() });
+    const [summaries] = await client.listAccountSummaries({});
+    return summaries.flatMap((account) => (
+      (account.propertySummaries ?? []).flatMap((property) => {
+        const displayName = property.displayName?.trim();
+        const propertyId = property.property?.split('/')[1]?.trim();
+        if (!displayName || !propertyId) return [];
+        return [{ displayName, propertyId }];
+      })
+    ));
+  } catch (error) {
+    console.error('[getOperationalStatuses] failed to discover GA4 properties:', error);
+    return null;
+  }
+}
+
+async function getResolvedGa4SiteScope(): Promise<ResolvedGa4SiteScope> {
+  const sites = dbGetSites();
+  const configuredSiteIds = sites
+    .filter((site) => typeof site.ga4PropertyId === 'string' && site.ga4PropertyId.trim() !== '')
+    .map((site) => site.id);
+  const properties = await withCache<DiscoveredGa4Property[]>(
+    GA4_DISCOVERY_CACHE_KEY,
+    GA4_DISCOVERY_CACHE_SITE_ID,
+    fetchDiscoveredGa4Properties,
+  );
+  if (!properties) {
+    return {
+      siteIds: configuredSiteIds,
+      discoveryState: 'configured-only',
+      excludedSiteIds: sites
+        .filter((site) => !(typeof site.ga4PropertyId === 'string' && site.ga4PropertyId.trim() !== ''))
+        .map((site) => site.id),
+    };
+  }
+
+  return {
+    siteIds: sites.flatMap((site) => (
+      resolveSiteGa4PropertyId(site, properties) ? [site.id] : []
+    )),
+    discoveryState: 'resolved',
+    excludedSiteIds: [],
+  };
+}
+
+function getPerSiteDateFreshness(
+  table: 'sc_daily' | 'ga4_daily' | 'sc_snapshots' | 'ga4_snapshots',
+): Map<string, PerSiteDateFreshnessRow> {
+  const db = getDb();
+  const rows = db.prepare(
+    `SELECT site_id, MAX(date) as latest_date, MAX(created_at) as latest_created_at
+     FROM ${table}
+     GROUP BY site_id`,
+  ).all() as PerSiteDateFreshnessRow[];
+  return new Map(rows.map((row) => [row.site_id, row]));
+}
+
+function getLatestTimestamp(timestamps: Array<number | null>): number | null {
+  return timestamps.reduce<number | null>((max, timestamp) => {
+    if (timestamp === null) return max;
+    if (max === null || timestamp > max) return timestamp;
+    return max;
+  }, null);
+}
+
+function getLatestDate(dates: Array<string | null>): string | null {
+  return dates.reduce<string | null>((max, date) => {
+    if (!date) return max;
+    if (max === null || date > max) return date;
+    return max;
+  }, null);
+}
+
+function collectCoverageDetails(missingSites: string[], staleSites: string[]): string[] {
+  const details: string[] = [];
+  if (missingSites.length > 0) {
+    details.push(`Missing: ${summarizeSites(missingSites)}`);
+  }
+  if (staleSites.length > 0) {
+    details.push(`Stale: ${summarizeSites(staleSites)}`);
+  }
+  return details;
+}
+
+function getGa4DiscoveryFallbackDetail(scope: ResolvedGa4SiteScope): string | null {
+  if (scope.discoveryState !== 'configured-only' || scope.excludedSiteIds.length === 0) {
+    return null;
+  }
+
+  return `GA4 discovery unavailable; excluding sites without saved GA4 property IDs: ${summarizeSites(scope.excludedSiteIds)}`;
+}
+
+function appendStatusDetail(details: string | undefined, extraDetail: string | null): string | undefined {
+  if (!extraDetail) return details;
+  if (!details) return extraDetail;
+  return `${details} · ${extraDetail}`;
+}
+
+function getDailyCollectorStatus(
+  table: 'sc_daily' | 'ga4_daily',
+  key: OperationalStatus['key'],
+  label: string,
+  expectedLagDays: number,
+  managedSiteFilter: 'search-console' | 'ga4',
+): OperationalStatus {
+  const expectedSiteIds = getManagedSiteIds(managedSiteFilter);
+  if (expectedSiteIds.length === 0) {
+    return buildNeverStatus(key, label, `No configured ${label.toLowerCase()} sites yet`);
+  }
+
+  const latestExpectedDate = localDaysBack(expectedLagDays);
+  const perSiteRows = getPerSiteDateFreshness(table);
+  const missingSites: string[] = [];
+  const staleSites: string[] = [];
+  const populatedRows: PerSiteDateFreshnessRow[] = [];
+
+  for (const siteId of expectedSiteIds) {
+    const row = perSiteRows.get(siteId);
+    if (!row || !row.latest_date) {
+      missingSites.push(siteId);
+      continue;
+    }
+
+    populatedRows.push(row);
+    const timestamp = parseSqliteTimestamp(row.latest_created_at);
+    const dateFresh = row.latest_date >= latestExpectedDate;
+    const writeFresh = timestamp !== null && Date.now() - timestamp <= DAILY_STATUS_MAX_AGE_MS;
+    if (!dateFresh || !writeFresh) {
+      staleSites.push(siteId);
+    }
+  }
+
+  if (populatedRows.length === 0) {
+    return buildNeverStatus(
+      key,
+      label,
+      `No daily rows collected yet for ${pluralizeSites(expectedSiteIds.length)}`,
+    );
+  }
+
+  const latestDate = getLatestDate(populatedRows.map((row) => row.latest_date));
+  const latestTimestamp = getLatestTimestamp(
+    populatedRows.map((row) => parseSqliteTimestamp(row.latest_created_at)),
+  );
+
+  if (missingSites.length === 0 && staleSites.length === 0) {
+    return {
+      key,
+      label,
+      state: 'fresh',
+      timestamp: latestTimestamp,
+      reason: `Collected ${pluralizeSites(expectedSiteIds.length)} through ${latestDate}`,
+      details: 'Collector writes are current',
+    };
+  }
+
+  const detailParts = collectCoverageDetails(missingSites, staleSites);
+  return {
+    key,
+    label,
+    state: 'stale',
+    timestamp: latestTimestamp,
+    reason: `Expected ${pluralizeSites(expectedSiteIds.length)} through at least ${latestExpectedDate}`,
+    details: detailParts.join(' · '),
+  };
+}
+
+export function getScDailyOperationalStatus(): OperationalStatus {
+  return getDailyCollectorStatus('sc_daily', 'sc-daily', 'Daily Search Console', 2, 'search-console');
+}
+
+export async function getGa4DailyOperationalStatus(): Promise<OperationalStatus> {
+  const scope = await getResolvedGa4SiteScope();
+  const expectedSiteIds = scope.siteIds;
+  const fallbackDetail = getGa4DiscoveryFallbackDetail(scope);
+  if (expectedSiteIds.length === 0) {
+    return {
+      ...buildNeverStatus('ga4-daily', 'Daily GA4', 'No GA4 sites could be resolved for status checks'),
+      details: fallbackDetail ?? undefined,
+    };
+  }
+
+  const latestExpectedDate = localDaysBack(1);
+  const perSiteRows = getPerSiteDateFreshness('ga4_daily');
+  const missingSites: string[] = [];
+  const staleSites: string[] = [];
+  const populatedRows: PerSiteDateFreshnessRow[] = [];
+
+  for (const siteId of expectedSiteIds) {
+    const row = perSiteRows.get(siteId);
+    if (!row || !row.latest_date) {
+      missingSites.push(siteId);
+      continue;
+    }
+
+    populatedRows.push(row);
+    const timestamp = parseSqliteTimestamp(row.latest_created_at);
+    const dateFresh = row.latest_date >= latestExpectedDate;
+    const writeFresh = timestamp !== null && Date.now() - timestamp <= DAILY_STATUS_MAX_AGE_MS;
+    if (!dateFresh || !writeFresh) {
+      staleSites.push(siteId);
+    }
+  }
+
+  if (populatedRows.length === 0) {
+    return {
+      ...buildNeverStatus(
+        'ga4-daily',
+        'Daily GA4',
+        `No daily rows collected yet for ${pluralizeSites(expectedSiteIds.length)}`,
+      ),
+      details: fallbackDetail ?? undefined,
+    };
+  }
+
+  const latestDate = getLatestDate(populatedRows.map((row) => row.latest_date));
+  const latestTimestamp = getLatestTimestamp(
+    populatedRows.map((row) => parseSqliteTimestamp(row.latest_created_at)),
+  );
+
+  if (missingSites.length === 0 && staleSites.length === 0) {
+    return {
+      key: 'ga4-daily',
+      label: 'Daily GA4',
+      state: 'fresh',
+      timestamp: latestTimestamp,
+      reason: `Collected ${pluralizeSites(expectedSiteIds.length)} through ${latestDate}`,
+      details: appendStatusDetail('Collector writes are current', fallbackDetail),
+    };
+  }
+
+  const detailParts = collectCoverageDetails(missingSites, staleSites);
+  return {
+    key: 'ga4-daily',
+    label: 'Daily GA4',
+    state: 'stale',
+    timestamp: latestTimestamp,
+    reason: `Expected ${pluralizeSites(expectedSiteIds.length)} through at least ${latestExpectedDate}`,
+    details: appendStatusDetail(detailParts.join(' · '), fallbackDetail),
+  };
+}
+
+export function getSitemapSyncOperationalStatus(): OperationalStatus {
+  const db = getDb();
+  const expectedSiteIds = getManagedSiteIds('all');
+  if (expectedSiteIds.length === 0) {
+    return buildNeverStatus('sitemap-sync', 'Sitemap Sync', 'No managed sites configured yet');
+  }
+
+  const staleCutoff = Date.now() - SITEMAP_STATUS_MAX_AGE_MS;
+  const rows = db.prepare(
+    'SELECT site_id, last_checked_at, last_submitted_at FROM sitemap_state',
+  ).all() as SitemapStateRow[];
+  const rowMap = new Map(rows.map((row) => [row.site_id, row]));
+  const missingSites: string[] = [];
+  const staleSites: string[] = [];
+  const presentRows: SitemapStateRow[] = [];
+
+  for (const siteId of expectedSiteIds) {
+    const row = rowMap.get(siteId);
+    if (!row || row.last_checked_at === 0) {
+      missingSites.push(siteId);
+      continue;
+    }
+
+    presentRows.push(row);
+    if (row.last_checked_at < staleCutoff) {
+      staleSites.push(siteId);
+    }
+  }
+
+  if (presentRows.length === 0) {
+    return buildNeverStatus(
+      'sitemap-sync',
+      'Sitemap Sync',
+      `No sitemap sync state recorded yet for ${pluralizeSites(expectedSiteIds.length)}`,
+    );
+  }
+
+  const latestCheckedAt = getLatestTimestamp(presentRows.map((row) => row.last_checked_at));
+  const latestSubmittedAt = getLatestTimestamp(presentRows.map((row) => row.last_submitted_at));
+  const detailParts = collectCoverageDetails(missingSites, staleSites);
+  detailParts.unshift(
+    latestSubmittedAt === null
+      ? 'No sitemap submissions recorded yet'
+      : `Last submit ${ageHours(latestSubmittedAt)}h ago`,
+  );
+
+  if (missingSites.length === 0 && staleSites.length === 0) {
+    return {
+      key: 'sitemap-sync',
+      label: 'Sitemap Sync',
+      state: 'fresh',
+      timestamp: latestCheckedAt,
+      reason: `Checked all ${pluralizeSites(expectedSiteIds.length)} within 8h`,
+      details: detailParts[0],
+    };
+  }
+
+  return {
+    key: 'sitemap-sync',
+    label: 'Sitemap Sync',
+    state: 'stale',
+    timestamp: latestCheckedAt,
+    reason: `${missingSites.length + staleSites.length}/${expectedSiteIds.length} sites missing or overdue`,
+    details: detailParts.join(' · '),
+  };
+}
+
+export async function getSnapshotOperationalStatus(): Promise<OperationalStatus> {
+  const expectedDate = localDaysBack(1);
+  const ga4Scope = await getResolvedGa4SiteScope();
+  const fallbackDetail = getGa4DiscoveryFallbackDetail(ga4Scope);
+  const sources: Array<{
+    label: string;
+    expectedSiteIds: string[];
+    rows: Map<string, PerSiteDateFreshnessRow>;
+  }> = [
+    {
+      label: 'SC',
+      expectedSiteIds: getManagedSiteIds('search-console'),
+      rows: getPerSiteDateFreshness('sc_snapshots'),
+    },
+    {
+      label: 'GA4',
+      expectedSiteIds: ga4Scope.siteIds,
+      rows: getPerSiteDateFreshness('ga4_snapshots'),
+    },
+  ].filter((source) => source.expectedSiteIds.length > 0);
+
+  if (sources.length === 0) {
+    return {
+      ...buildNeverStatus('snapshots', 'Snapshots', 'No managed snapshot sources configured yet'),
+      details: fallbackDetail ?? undefined,
+    };
+  }
+
+  const summaries: SourceOperationalSummary[] = sources.map((source) => {
+    const missingSites: string[] = [];
+    const staleSites: string[] = [];
+    const presentRows: PerSiteDateFreshnessRow[] = [];
+
+    for (const siteId of source.expectedSiteIds) {
+      const row = source.rows.get(siteId);
+      if (!row || !row.latest_date) {
+        missingSites.push(siteId);
+        continue;
+      }
+
+      presentRows.push(row);
+      const timestamp = parseSqliteTimestamp(row.latest_created_at);
+      if (
+        row.latest_date < expectedDate
+        || timestamp === null
+        || Date.now() - timestamp > SNAPSHOT_STATUS_MAX_AGE_MS
+      ) {
+        staleSites.push(siteId);
+      }
+    }
+
+    return {
+      label: source.label,
+      missingSites,
+      staleSites,
+      latestDate: getLatestDate(presentRows.map((row) => row.latest_date)),
+      latestTimestamp: getLatestTimestamp(
+        presentRows.map((row) => parseSqliteTimestamp(row.latest_created_at)),
+      ),
+      hasData: presentRows.length > 0,
+    };
+  });
+
+  const populated = summaries.filter((summary) => summary.hasData);
+  if (populated.length === 0) {
+    return {
+      ...buildNeverStatus('snapshots', 'Snapshots', 'No snapshot history recorded yet'),
+      details: fallbackDetail ?? undefined,
+    };
+  }
+
+  const latestTimestamp = getLatestTimestamp(populated.map((summary) => summary.latestTimestamp));
+  const latestDate = getLatestDate(populated.map((summary) => summary.latestDate));
+  const staleSources = summaries.filter(
+    (summary) => summary.missingSites.length > 0 || summary.staleSites.length > 0,
+  );
+
+  if (staleSources.length === 0) {
+    return {
+      key: 'snapshots',
+      label: 'Snapshots',
+      state: 'fresh',
+      timestamp: latestTimestamp,
+      reason: `Latest snapshot date ${latestDate}`,
+      details: appendStatusDetail('SC and GA4 snapshots are current', fallbackDetail),
+    };
+  }
+
+  return {
+    key: 'snapshots',
+    label: 'Snapshots',
+    state: 'stale',
+    timestamp: latestTimestamp,
+    reason: `Latest snapshot date ${latestDate}`,
+    details: appendStatusDetail(
+      `Stale or missing sources: ${staleSources.map((summary) => summary.label).join(', ')}`,
+      fallbackDetail,
+    ),
+  };
+}
+
+export async function getOperationalStatuses(): Promise<OperationalStatus[]> {
+  return [
+    getScDailyOperationalStatus(),
+    await getGa4DailyOperationalStatus(),
+    getSitemapSyncOperationalStatus(),
+    await getSnapshotOperationalStatus(),
+  ];
 }
 
 // --- Config helpers ---
