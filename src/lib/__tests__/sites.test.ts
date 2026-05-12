@@ -115,13 +115,12 @@ describe('validateAndNormalizeSiteInput', () => {
     expect(result.normalized?.site.domain).toBe('mysite.com');
   });
 
-  it('extracts sortOrder without including it in the site record', () => {
+  it('strips sortOrder from the site record', () => {
     const result = validateAndNormalizeSiteInput(
       { id: 's', name: 'S', domain: 'site.com', sortOrder: 5 },
       [],
     );
     expect(result.errors).toBeNull();
-    expect(result.normalized!.sortOrder).toBe(5);
     expect((result.normalized!.site as unknown as Record<string, unknown>).sortOrder).toBeUndefined();
   });
 

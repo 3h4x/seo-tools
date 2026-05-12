@@ -13,8 +13,9 @@ vi.mock('../sqlite-driver.js', async () => {
 });
 
 import { NextRequest } from 'next/server';
-import { getDb } from '../db';
+import { dbGetSites, getDb } from '../db';
 import { DELETE, POST } from '../../../app/api/sites/route';
+import { PUT as PUT_ORDER } from '../../../app/api/sites/order/route';
 
 function postReq(body: object): NextRequest {
   return new NextRequest('http://localhost/api/sites', {
@@ -26,6 +27,14 @@ function postReq(body: object): NextRequest {
 
 function deleteReq(id: string): NextRequest {
   return new NextRequest(`http://localhost/api/sites?id=${id}`, { method: 'DELETE' });
+}
+
+function putOrderReq(body: object): NextRequest {
+  return new NextRequest('http://localhost/api/sites/order', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 
 function resetDb() {
@@ -149,6 +158,91 @@ describe('DELETE /api/sites integration', () => {
     for (const table of siteOwnedTables) {
       const row = db.prepare(`SELECT 1 AS present FROM ${table} WHERE site_id = ? LIMIT 1`).get(siteId);
       expect(row).toBeUndefined();
+    }
+  });
+});
+
+describe('PUT /api/sites/order integration', () => {
+  it('returns sites in persisted sort order after an atomic reorder', async () => {
+    await POST(postReq({
+      id: 'site-a',
+      name: 'Site A',
+      domain: 'a.example.com',
+      testPages: ['/'],
+    }));
+    await POST(postReq({
+      id: 'site-b',
+      name: 'Site B',
+      domain: 'b.example.com',
+      testPages: ['/'],
+    }));
+    await POST(postReq({
+      id: 'site-c',
+      name: 'Site C',
+      domain: 'c.example.com',
+      testPages: ['/'],
+    }));
+
+    const res = await PUT_ORDER(putOrderReq({ orderedIds: ['site-c', 'site-a', 'site-b'] }));
+
+    expect(res.status).toBe(200);
+    expect(dbGetSites().map(site => site.id)).toEqual(['site-c', 'site-a', 'site-b']);
+  });
+
+  it('rejects unknown, missing, and duplicate ids without partially updating order', async () => {
+    for (const site of [
+      { id: 'site-a', name: 'Site A', domain: 'a.example.com', testPages: ['/'] },
+      { id: 'site-b', name: 'Site B', domain: 'b.example.com', testPages: ['/'] },
+      { id: 'site-c', name: 'Site C', domain: 'c.example.com', testPages: ['/'] },
+    ]) {
+      await POST(postReq(site));
+    }
+
+    const attempts = [
+      ['site-c', 'site-a', 'unknown-site'],
+      ['site-c', 'site-a'],
+      ['site-c', 'site-a', 'site-a'],
+    ];
+
+    for (const orderedIds of attempts) {
+      const res = await PUT_ORDER(putOrderReq({ orderedIds }));
+      expect(res.status).toBe(400);
+      expect(dbGetSites().map(site => site.id)).toEqual(['site-a', 'site-b', 'site-c']);
+    }
+  });
+
+  it('updates only sort order and preserves all existing site fields', async () => {
+    await POST(postReq({
+      id: 'site-a',
+      name: 'Site A',
+      domain: 'a.example.com',
+      scUrl: 'sc-domain:a.example.com',
+      ga4PropertyId: 'properties/111',
+      searchConsole: false,
+      color: '#ff0000',
+      testPages: ['/', '/pricing'],
+      skipChecks: ['ogImage'],
+    }));
+    await POST(postReq({
+      id: 'site-b',
+      name: 'Site B',
+      domain: 'b.example.com',
+      scUrl: 'sc-domain:b.example.com',
+      ga4PropertyId: 'properties/222',
+      searchConsole: true,
+      color: '#00ff00',
+      testPages: ['/', '/docs'],
+      skipChecks: ['internalLinks'],
+    }));
+
+    const beforeById = new Map(dbGetSites().map(site => [site.id, site]));
+    const res = await PUT_ORDER(putOrderReq({ orderedIds: ['site-b', 'site-a'] }));
+    const after = dbGetSites();
+
+    expect(res.status).toBe(200);
+    expect(after.map(site => site.id)).toEqual(['site-b', 'site-a']);
+    for (const site of after) {
+      expect(site).toEqual(beforeById.get(site.id));
     }
   });
 });

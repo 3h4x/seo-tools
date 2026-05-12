@@ -38,6 +38,13 @@ const EMPTY_SITE: Omit<Site, 'id'> = {
   skipChecks: [],
 };
 
+function moveItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+  const next = [...items];
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item);
+  return next;
+}
+
 export default function SitesManager({ initialSites, hasAuth }: Props) {
   const [sites, setSites] = useState<Site[]>(initialSites);
   const [editMode, setEditMode] = useState<EditMode>('none');
@@ -73,6 +80,31 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     const res = await fetch('/api/sites');
     const data = await res.json() as Site[];
     setSites(data);
+  }
+
+  async function persistSiteOrder(nextSites: Site[]) {
+    const previousSites = sites;
+    setSites(nextSites);
+    setSaving(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/sites/order', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds: nextSites.map(site => site.id) }),
+      });
+      const data = await res.json() as { ok: boolean; error?: string };
+      if (!data.ok) {
+        throw new Error(data.error ?? 'Failed to reorder sites');
+      }
+      await reloadSites();
+    } catch (err) {
+      setSites(previousSites);
+      setError(err instanceof Error ? err.message : 'Reorder failed');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSave() {
@@ -130,6 +162,12 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     } catch {
       setError('Delete failed');
     }
+  }
+
+  async function handleMoveSite(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= sites.length) return;
+    await persistSiteOrder(moveItem(sites, index, nextIndex));
   }
 
   async function handleDiscover() {
@@ -221,10 +259,15 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">Managed Sites</h2>
+        <div>
+          <h2 className="text-lg font-semibold text-white">Managed Sites</h2>
+          {sites.length > 1 && (
+            <p className="mt-1 text-xs text-neutral-500">Dashboards use this order across the app.</p>
+          )}
+        </div>
         <button
           onClick={startNew}
-          disabled={isEditing}
+          disabled={isEditing || saving}
           className="px-3 py-1.5 rounded-md text-sm bg-white text-black hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           + Add Site
@@ -241,6 +284,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           <table className="w-full text-sm text-left">
             <thead>
               <tr className="text-neutral-500 border-b border-neutral-800">
+                <th className="py-2 pr-4 font-medium">Order</th>
                 <th className="py-2 pr-4 font-medium">Name</th>
                 <th className="py-2 pr-4 font-medium">Domain</th>
                 <th className="py-2 pr-4 font-medium">Search Console</th>
@@ -249,8 +293,27 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               </tr>
             </thead>
             <tbody>
-              {sites.map(site => (
+              {sites.map((site, index) => (
                 <tr key={site.id} className="border-b border-neutral-900 hover:bg-neutral-900/40">
+                  <td className="py-2 pr-4 text-neutral-400">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 text-xs font-mono">{index + 1}</span>
+                      <button
+                        onClick={() => handleMoveSite(index, -1)}
+                        disabled={isEditing || saving || index === 0}
+                        className="text-[11px] text-neutral-500 hover:text-white disabled:opacity-30 transition-colors"
+                      >
+                        Up
+                      </button>
+                      <button
+                        onClick={() => handleMoveSite(index, 1)}
+                        disabled={isEditing || saving || index === sites.length - 1}
+                        className="text-[11px] text-neutral-500 hover:text-white disabled:opacity-30 transition-colors"
+                      >
+                        Down
+                      </button>
+                    </div>
+                  </td>
                   <td className="py-2 pr-4 text-white">
                     <div className="flex items-center gap-2">
                       {site.color && (
@@ -265,7 +328,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   <td className="py-2 flex gap-2">
                     <button
                       onClick={() => startEdit(site)}
-                      disabled={isEditing}
+                      disabled={isEditing || saving}
                       className="text-xs text-neutral-400 hover:text-white disabled:opacity-40 transition-colors"
                     >
                       Edit
@@ -288,7 +351,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                     ) : (
                       <button
                         onClick={() => setDeleteConfirm(site.id)}
-                        disabled={isEditing}
+                        disabled={isEditing || saving}
                         className="text-xs text-neutral-600 hover:text-red-400 disabled:opacity-40 transition-colors"
                       >
                         Delete

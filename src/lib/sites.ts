@@ -23,7 +23,6 @@ export interface SiteFieldErrors {
 
 export interface NormalizedSiteInput {
   site: Site;
-  sortOrder?: number;
 }
 
 /** Returns the URL to use for Search Console API calls for a given site. */
@@ -96,10 +95,9 @@ export function validateAndNormalizeSiteInput(
   if (rawGa4) site.ga4PropertyId = rawGa4; else delete site.ga4PropertyId;
   if (!Array.isArray(body.skipChecks)) delete site.skipChecks;
 
-  const sortOrder = typeof body.sortOrder === 'number' ? body.sortOrder : undefined;
   delete (site as unknown as Record<string, unknown>).sortOrder;
 
-  return { errors: null, normalized: { site, sortOrder } };
+  return { errors: null, normalized: { site } };
 }
 
 export async function getManagedSites(): Promise<Site[]> {
@@ -110,4 +108,3 @@ export async function getManagedSite(id: string): Promise<Site | null> {
   const sites = await getManagedSites();
   return sites.find(s => s.id === id) ?? null;
 }
-
