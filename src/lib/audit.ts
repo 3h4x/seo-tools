@@ -10,6 +10,8 @@ export interface CheckResult {
   label: string;
   message: string;
   details?: string;
+  rawLength?: number;
+  rawValue?: string;
 }
 
 interface RobotsTxtResult extends CheckResult {
@@ -310,8 +312,8 @@ export function extractMeta(html: string, property: string, attr: string = 'prop
 
 export function makeCheck(label: string, value: string | null, minLen: number = 1): CheckResult {
   if (!value) return { status: 'fail', label, message: 'Not found' };
-  if (value.length < minLen) return { status: 'warn', label, message: `Found but too short: "${value}"` };
-  return { status: 'pass', label, message: value.length > 80 ? value.slice(0, 77) + '...' : value };
+  if (value.length < minLen) return { status: 'warn', label, message: `Found but too short: "${value}"`, rawLength: value.length, rawValue: value };
+  return { status: 'pass', label, message: value.length > 80 ? value.slice(0, 77) + '...' : value, rawLength: value.length, rawValue: value };
 }
 
 const GENERIC_TITLES = ['react app', 'vite app', 'document', 'untitled', 'home', 'index'];
@@ -338,8 +340,8 @@ export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
   const titleCheck: CheckResult = !titleVal
     ? { status: 'fail', label: 'title', message: 'Not found' }
     : GENERIC_TITLES.includes(titleVal.toLowerCase())
-      ? { status: 'warn', label: 'title', message: `Generic title: "${titleVal}"` }
-      : { status: 'pass', label: 'title', message: titleVal.length > 80 ? titleVal.slice(0, 77) + '...' : titleVal };
+      ? { status: 'warn', label: 'title', message: `Generic title: "${titleVal}"`, rawLength: titleVal.length, rawValue: titleVal }
+      : { status: 'pass', label: 'title', message: titleVal.length > 80 ? titleVal.slice(0, 77) + '...' : titleVal, rawLength: titleVal.length, rawValue: titleVal };
 
   const desc = extractMeta(html, 'description', 'name');
   const ogTitle = extractMeta(html, 'og:title');
