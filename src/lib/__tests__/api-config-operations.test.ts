@@ -17,8 +17,8 @@ beforeEach(() => {
 });
 
 describe('GET /api/config/operations', () => {
-  it('returns the operational statuses from the DB helper', async () => {
-    mockGetOperationalStatuses.mockResolvedValue([
+  it('returns operational statuses from SQLite without calling live APIs', async () => {
+    mockGetOperationalStatuses.mockReturnValue([
       {
         key: 'sc-daily',
         label: 'Daily Search Console',
@@ -33,11 +33,11 @@ describe('GET /api/config/operations', () => {
         state: 'fresh',
         timestamp: 456,
         reason: 'Collected 1 site through 2026-05-11',
-        details: 'GA4 discovery unavailable; excluding sites without saved GA4 property IDs: site-a',
+        details: 'Collector writes are current',
       },
     ]);
 
-    const res = await GET();
+    const res = GET();
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
@@ -56,16 +56,43 @@ describe('GET /api/config/operations', () => {
           state: 'fresh',
           timestamp: 456,
           reason: 'Collected 1 site through 2026-05-11',
-          details: 'GA4 discovery unavailable; excluding sites without saved GA4 property IDs: site-a',
+          details: 'Collector writes are current',
+        },
+      ],
+    });
+  });
+
+  it('returns ga4-daily as never when no GA4 property IDs are configured', async () => {
+    mockGetOperationalStatuses.mockReturnValue([
+      {
+        key: 'ga4-daily',
+        label: 'Daily GA4',
+        state: 'never',
+        timestamp: null,
+        reason: 'No GA4 property IDs configured',
+      },
+    ]);
+
+    const res = GET();
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      statuses: [
+        {
+          key: 'ga4-daily',
+          label: 'Daily GA4',
+          state: 'never',
+          timestamp: null,
+          reason: 'No GA4 property IDs configured',
         },
       ],
     });
   });
 
   it('returns 500 when the helper throws', async () => {
-    mockGetOperationalStatuses.mockRejectedValue(new Error('boom'));
+    mockGetOperationalStatuses.mockImplementation(() => { throw new Error('boom'); });
 
-    const res = await GET();
+    const res = GET();
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: 'failed_to_load_operational_status' });

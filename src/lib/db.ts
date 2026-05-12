@@ -1,14 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { AnalyticsAdminServiceClient } from '@google-analytics/admin';
 import { computeKeywordDeltas, type KeywordDelta } from './keyword-history';
-import {
-  GA4_DISCOVERY_CACHE_KEY,
-  GA4_DISCOVERY_CACHE_SITE_ID,
-  resolveSiteGa4PropertyId,
-  type DiscoveredGa4Property,
-} from './ga4-discovery';
-import { getAuth } from './google-auth';
 import { openDatabase } from './sqlite-driver.js';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'seo-tools.db');
@@ -456,11 +448,6 @@ interface SourceOperationalSummary {
   hasData: boolean;
 }
 
-interface ResolvedGa4SiteScope {
-  siteIds: string[];
-  discoveryState: 'resolved' | 'configured-only';
-  excludedSiteIds: string[];
-}
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAILY_STATUS_MAX_AGE_MS = 26 * HOUR_MS;
@@ -518,53 +505,6 @@ function getManagedSiteIds(filter: 'all' | 'search-console' | 'ga4'): string[] {
   return (db.prepare(sql).all() as SiteIdRow[]).map((row) => row.id);
 }
 
-async function fetchDiscoveredGa4Properties(): Promise<DiscoveredGa4Property[] | null> {
-  try {
-    const client = new AnalyticsAdminServiceClient({ auth: getAuth() });
-    const [summaries] = await client.listAccountSummaries({});
-    return summaries.flatMap((account) => (
-      (account.propertySummaries ?? []).flatMap((property) => {
-        const displayName = property.displayName?.trim();
-        const propertyId = property.property?.split('/')[1]?.trim();
-        if (!displayName || !propertyId) return [];
-        return [{ displayName, propertyId }];
-      })
-    ));
-  } catch (error) {
-    console.error('[getOperationalStatuses] failed to discover GA4 properties:', error);
-    return null;
-  }
-}
-
-async function getResolvedGa4SiteScope(): Promise<ResolvedGa4SiteScope> {
-  const sites = dbGetSites();
-  const configuredSiteIds = sites
-    .filter((site) => typeof site.ga4PropertyId === 'string' && site.ga4PropertyId.trim() !== '')
-    .map((site) => site.id);
-  const properties = await withCache<DiscoveredGa4Property[]>(
-    GA4_DISCOVERY_CACHE_KEY,
-    GA4_DISCOVERY_CACHE_SITE_ID,
-    fetchDiscoveredGa4Properties,
-  );
-  if (!properties) {
-    return {
-      siteIds: configuredSiteIds,
-      discoveryState: 'configured-only',
-      excludedSiteIds: sites
-        .filter((site) => !(typeof site.ga4PropertyId === 'string' && site.ga4PropertyId.trim() !== ''))
-        .map((site) => site.id),
-    };
-  }
-
-  return {
-    siteIds: sites.flatMap((site) => (
-      resolveSiteGa4PropertyId(site, properties) ? [site.id] : []
-    )),
-    discoveryState: 'resolved',
-    excludedSiteIds: [],
-  };
-}
-
 function getPerSiteDateFreshness(
   table: 'sc_daily' | 'ga4_daily' | 'sc_snapshots' | 'ga4_snapshots',
 ): Map<string, PerSiteDateFreshnessRow> {
@@ -602,20 +542,6 @@ function collectCoverageDetails(missingSites: string[], staleSites: string[]): s
     details.push(`Stale: ${summarizeSites(staleSites)}`);
   }
   return details;
-}
-
-function getGa4DiscoveryFallbackDetail(scope: ResolvedGa4SiteScope): string | null {
-  if (scope.discoveryState !== 'configured-only' || scope.excludedSiteIds.length === 0) {
-    return null;
-  }
-
-  return `GA4 discovery unavailable; excluding sites without saved GA4 property IDs: ${summarizeSites(scope.excludedSiteIds)}`;
-}
-
-function appendStatusDetail(details: string | undefined, extraDetail: string | null): string | undefined {
-  if (!extraDetail) return details;
-  if (!details) return extraDetail;
-  return `${details} · ${extraDetail}`;
 }
 
 function getDailyCollectorStatus(
@@ -691,15 +617,10 @@ export function getScDailyOperationalStatus(): OperationalStatus {
   return getDailyCollectorStatus('sc_daily', 'sc-daily', 'Daily Search Console', 2, 'search-console');
 }
 
-export async function getGa4DailyOperationalStatus(): Promise<OperationalStatus> {
-  const scope = await getResolvedGa4SiteScope();
-  const expectedSiteIds = scope.siteIds;
-  const fallbackDetail = getGa4DiscoveryFallbackDetail(scope);
+export function getGa4DailyOperationalStatus(): OperationalStatus {
+  const expectedSiteIds = getManagedSiteIds('ga4');
   if (expectedSiteIds.length === 0) {
-    return {
-      ...buildNeverStatus('ga4-daily', 'Daily GA4', 'No GA4 sites could be resolved for status checks'),
-      details: fallbackDetail ?? undefined,
-    };
+    return buildNeverStatus('ga4-daily', 'Daily GA4', 'No GA4 property IDs configured');
   }
 
   const latestExpectedDate = localDaysBack(1);
@@ -725,14 +646,11 @@ export async function getGa4DailyOperationalStatus(): Promise<OperationalStatus>
   }
 
   if (populatedRows.length === 0) {
-    return {
-      ...buildNeverStatus(
-        'ga4-daily',
-        'Daily GA4',
-        `No daily rows collected yet for ${pluralizeSites(expectedSiteIds.length)}`,
-      ),
-      details: fallbackDetail ?? undefined,
-    };
+    return buildNeverStatus(
+      'ga4-daily',
+      'Daily GA4',
+      `No daily rows collected yet for ${pluralizeSites(expectedSiteIds.length)}`,
+    );
   }
 
   const latestDate = getLatestDate(populatedRows.map((row) => row.latest_date));
@@ -747,7 +665,7 @@ export async function getGa4DailyOperationalStatus(): Promise<OperationalStatus>
       state: 'fresh',
       timestamp: latestTimestamp,
       reason: `Collected ${pluralizeSites(expectedSiteIds.length)} through ${latestDate}`,
-      details: appendStatusDetail('Collector writes are current', fallbackDetail),
+      details: 'Collector writes are current',
     };
   }
 
@@ -758,7 +676,7 @@ export async function getGa4DailyOperationalStatus(): Promise<OperationalStatus>
     state: 'stale',
     timestamp: latestTimestamp,
     reason: `Expected ${pluralizeSites(expectedSiteIds.length)} through at least ${latestExpectedDate}`,
-    details: appendStatusDetail(detailParts.join(' · '), fallbackDetail),
+    details: detailParts.join(' · '),
   };
 }
 
@@ -829,10 +747,8 @@ export function getSitemapSyncOperationalStatus(): OperationalStatus {
   };
 }
 
-export async function getSnapshotOperationalStatus(): Promise<OperationalStatus> {
+export function getSnapshotOperationalStatus(): OperationalStatus {
   const expectedDate = localDaysBack(1);
-  const ga4Scope = await getResolvedGa4SiteScope();
-  const fallbackDetail = getGa4DiscoveryFallbackDetail(ga4Scope);
   const sources: Array<{
     label: string;
     expectedSiteIds: string[];
@@ -845,16 +761,13 @@ export async function getSnapshotOperationalStatus(): Promise<OperationalStatus>
     },
     {
       label: 'GA4',
-      expectedSiteIds: ga4Scope.siteIds,
+      expectedSiteIds: getManagedSiteIds('ga4'),
       rows: getPerSiteDateFreshness('ga4_snapshots'),
     },
   ].filter((source) => source.expectedSiteIds.length > 0);
 
   if (sources.length === 0) {
-    return {
-      ...buildNeverStatus('snapshots', 'Snapshots', 'No managed snapshot sources configured yet'),
-      details: fallbackDetail ?? undefined,
-    };
+    return buildNeverStatus('snapshots', 'Snapshots', 'No managed snapshot sources configured yet');
   }
 
   const summaries: SourceOperationalSummary[] = sources.map((source) => {
@@ -894,10 +807,7 @@ export async function getSnapshotOperationalStatus(): Promise<OperationalStatus>
 
   const populated = summaries.filter((summary) => summary.hasData);
   if (populated.length === 0) {
-    return {
-      ...buildNeverStatus('snapshots', 'Snapshots', 'No snapshot history recorded yet'),
-      details: fallbackDetail ?? undefined,
-    };
+    return buildNeverStatus('snapshots', 'Snapshots', 'No snapshot history recorded yet');
   }
 
   const latestTimestamp = getLatestTimestamp(populated.map((summary) => summary.latestTimestamp));
@@ -913,7 +823,7 @@ export async function getSnapshotOperationalStatus(): Promise<OperationalStatus>
       state: 'fresh',
       timestamp: latestTimestamp,
       reason: `Latest snapshot date ${latestDate}`,
-      details: appendStatusDetail('SC and GA4 snapshots are current', fallbackDetail),
+      details: 'SC and GA4 snapshots are current',
     };
   }
 
@@ -923,19 +833,16 @@ export async function getSnapshotOperationalStatus(): Promise<OperationalStatus>
     state: 'stale',
     timestamp: latestTimestamp,
     reason: `Latest snapshot date ${latestDate}`,
-    details: appendStatusDetail(
-      `Stale or missing sources: ${staleSources.map((summary) => summary.label).join(', ')}`,
-      fallbackDetail,
-    ),
+    details: `Stale or missing sources: ${staleSources.map((summary) => summary.label).join(', ')}`,
   };
 }
 
-export async function getOperationalStatuses(): Promise<OperationalStatus[]> {
+export function getOperationalStatuses(): OperationalStatus[] {
   return [
     getScDailyOperationalStatus(),
-    await getGa4DailyOperationalStatus(),
+    getGa4DailyOperationalStatus(),
     getSitemapSyncOperationalStatus(),
-    await getSnapshotOperationalStatus(),
+    getSnapshotOperationalStatus(),
   ];
 }
 
