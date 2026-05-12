@@ -24,6 +24,7 @@ interface SitemapResult extends CheckResult {
   isIndex?: boolean;
   hasLastmod?: boolean;
   lastmodSample?: string;
+  locs?: string[];
 }
 
 interface MetaTagResult {
@@ -116,6 +117,60 @@ export interface SiteAuditResult {
   internalLinks: InternalLinkResult[];
   security: SecurityResult;
   score: { pass: number; warn: number; fail: number; error: number; total: number };
+  sampledPages: string[];
+}
+
+export const MAX_SAMPLED_PAGES = 10;
+const SITEMAP_SAMPLE_LIMIT = 5;
+const SC_SAMPLE_LIMIT = 5;
+
+export function extractLocsFromSitemap(xml: string): string[] {
+  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/gi)].map(m => m[1].trim());
+}
+
+export function sampleAuditPages(
+  testPages: string[],
+  sitemapLocs: string[],
+  scPageUrls: string[],
+  domain: string,
+): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  const addPath = (path: string) => {
+    if (seen.has(path) || result.length >= MAX_SAMPLED_PAGES) return false;
+    seen.add(path);
+    result.push(path);
+    return true;
+  };
+
+  for (const p of testPages) {
+    addPath(p.startsWith('/') ? p : `/${p}`);
+  }
+
+  let sitemapAdded = 0;
+  for (const loc of sitemapLocs) {
+    if (sitemapAdded >= SITEMAP_SAMPLE_LIMIT || result.length >= MAX_SAMPLED_PAGES) break;
+    try {
+      const url = new URL(loc);
+      if (url.hostname !== domain) continue;
+      const path = url.pathname + (url.search || '');
+      if (addPath(path)) sitemapAdded++;
+    } catch { /* skip invalid URLs */ }
+  }
+
+  let scAdded = 0;
+  for (const page of scPageUrls) {
+    if (scAdded >= SC_SAMPLE_LIMIT || result.length >= MAX_SAMPLED_PAGES) break;
+    try {
+      const url = new URL(page);
+      if (url.hostname !== domain) continue;
+      const path = url.pathname + (url.search || '');
+      if (addPath(path)) scAdded++;
+    } catch { /* skip invalid URLs */ }
+  }
+
+  return result;
 }
 
 function getSc() {
@@ -227,17 +282,18 @@ async function checkSitemap(domain: string, sitemapUrl?: string): Promise<Sitema
       fresh = Date.now() - d.getTime() < 30 * 24 * 60 * 60 * 1000;
     }
 
+    const locs = isIndex ? [] : extractLocsFromSitemap(res.text);
     const countLabel = isIndex ? `${urlCount} child sitemaps` : `${urlCount} URLs`;
     const lastmodMsg = hasLastmod ? (fresh ? `, latest: ${mostRecent}` : `, stale lastmod: ${mostRecent}`) : ', no lastmod';
 
     if (urlCount === 0) {
-      return { status: 'warn', label: 'Sitemap', message: `Found at ${url} but empty`, url, urlCount: 0, isIndex };
+      return { status: 'warn', label: 'Sitemap', message: `Found at ${url} but empty`, url, urlCount: 0, isIndex, locs: [] };
     }
 
     return {
       status: hasLastmod && !fresh ? 'warn' : 'pass',
       label: 'Sitemap', message: `${countLabel}${lastmodMsg}`,
-      url, urlCount, isIndex, hasLastmod, lastmodSample: mostRecent,
+      url, urlCount, isIndex, hasLastmod, lastmodSample: mostRecent, locs,
     };
   }
 
@@ -709,22 +765,54 @@ async function checkIndexingCoverage(site: Site, sitemapUrlCount?: number): Prom
   }
 }
 
+async function fetchScTopPageUrls(site: Site): Promise<string[]> {
+  if (!site.searchConsole) return [];
+  try {
+    const scUrl = getSCUrl(site);
+    const formattedUrl = scUrl.startsWith('sc-domain:') || scUrl.startsWith('http') ? scUrl : `sc-domain:${scUrl}`;
+    const end = new Date();
+    end.setDate(end.getDate() - 1);
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    const res = await getSc().searchanalytics.query({
+      siteUrl: formattedUrl,
+      requestBody: {
+        startDate: start.toISOString().split('T')[0],
+        endDate: end.toISOString().split('T')[0],
+        dimensions: ['page'],
+        rowLimit: SC_SAMPLE_LIMIT * 2,
+      },
+    });
+    return (res.data.rows || []).map(r => r.keys?.[0] || '').filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 async function auditSite(site: Site): Promise<SiteAuditResult> {
   const robotsTxt = await checkRobotsTxt(site.domain);
 
-  const [sitemap, ttfb, security, scSitemapFreshness] = await Promise.all([
+  const [sitemap, ttfb, security, scSitemapFreshness, scTopPageUrls] = await Promise.all([
     checkSitemap(site.domain, robotsTxt.sitemapUrl),
     checkTtfb(site.domain),
     checkSecurity(site.domain),
     checkScSitemapFreshness(site),
+    fetchScTopPageUrls(site),
   ]);
+
+  const sampledPages = sampleAuditPages(
+    site.testPages,
+    sitemap.locs ?? [],
+    scTopPageUrls,
+    site.domain,
+  );
 
   // Indexing coverage: compare sitemap URLs vs pages in search results
   const indexingCoverage = await checkIndexingCoverage(site, sitemap.urlCount);
 
-  // Fetch test pages sequentially to avoid rate-limiting
+  // Fetch sampled pages sequentially to avoid rate-limiting
   const pageResults: { meta: MetaTagResult; images: ImageSeoResult; links: InternalLinkResult }[] = [];
-  for (const page of site.testPages) {
+  for (const page of sampledPages) {
     const res = await safeFetch(`https://${site.domain}${page}`, { ua: GOOGLEBOT_UA });
     const meta = parseMetaTags(res, page);
     if (res.ok) {
@@ -810,6 +898,7 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
     internalLinks: skippedInternalLinks,
     security: skippedSecurity,
     score,
+    sampledPages,
   };
 }
 

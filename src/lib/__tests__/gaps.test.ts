@@ -45,6 +45,7 @@ function makeAudit(overrides: Partial<SiteAuditResult> = {}): SiteAuditResult {
       favicon: makeCheckResult('pass', 'Favicon'),
     },
     score: { pass: 20, warn: 0, fail: 0, error: 0, total: 20 },
+    sampledPages: ['/'],
     ...overrides,
   };
 }

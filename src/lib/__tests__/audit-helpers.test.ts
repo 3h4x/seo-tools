@@ -24,6 +24,9 @@ import {
   parseMetaTags,
   checkImageSeo,
   checkInternalLinks,
+  extractLocsFromSitemap,
+  sampleAuditPages,
+  MAX_SAMPLED_PAGES,
   type FetchResult,
 } from '../audit';
 
@@ -306,5 +309,93 @@ describe('checkInternalLinks', () => {
     const result = checkInternalLinks('<a href="/a">A</a><a href="/b">B</a><a href="/c">C</a>', domain, '/test');
     expect(result.page).toBe('/test');
     expect(result.label).toBe('Internal Links');
+  });
+});
+
+describe('extractLocsFromSitemap', () => {
+  it('extracts loc URLs from urlset sitemap', () => {
+    const xml = `<?xml version="1.0"?><urlset><url><loc>https://example.com/</loc></url><url><loc>https://example.com/about</loc></url></urlset>`;
+    expect(extractLocsFromSitemap(xml)).toEqual(['https://example.com/', 'https://example.com/about']);
+  });
+
+  it('returns empty array for sitemap with no locs', () => {
+    expect(extractLocsFromSitemap('<urlset></urlset>')).toEqual([]);
+  });
+
+  it('trims whitespace from loc values', () => {
+    const xml = `<urlset><url><loc>  https://example.com/page  </loc></url></urlset>`;
+    expect(extractLocsFromSitemap(xml)).toEqual(['https://example.com/page']);
+  });
+});
+
+describe('sampleAuditPages', () => {
+  const domain = 'example.com';
+
+  it('includes testPages in output', () => {
+    const result = sampleAuditPages(['/'], [], [], domain);
+    expect(result).toContain('/');
+  });
+
+  it('deduplicates pages from all sources', () => {
+    const result = sampleAuditPages(
+      ['/'],
+      ['https://example.com/'],
+      ['https://example.com/'],
+      domain,
+    );
+    expect(result).toEqual(['/']);
+  });
+
+  it('adds sitemap locs as paths', () => {
+    const result = sampleAuditPages([], ['https://example.com/about', 'https://example.com/blog'], [], domain);
+    expect(result).toContain('/about');
+    expect(result).toContain('/blog');
+  });
+
+  it('adds SC page paths', () => {
+    const result = sampleAuditPages([], [], ['https://example.com/sc-page'], domain);
+    expect(result).toContain('/sc-page');
+  });
+
+  it('skips locs from other domains', () => {
+    const result = sampleAuditPages([], ['https://other.com/page'], [], domain);
+    expect(result).toEqual([]);
+  });
+
+  it('skips SC pages from other domains', () => {
+    const result = sampleAuditPages([], [], ['https://other.com/page'], domain);
+    expect(result).toEqual([]);
+  });
+
+  it('enforces MAX_SAMPLED_PAGES hard cap', () => {
+    const locs = Array.from({ length: 20 }, (_, i) => `https://example.com/page-${i}`);
+    const result = sampleAuditPages(['/'], locs, [], domain);
+    expect(result.length).toBeLessThanOrEqual(MAX_SAMPLED_PAGES);
+  });
+
+  it('testPages always appear before sitemap/SC pages', () => {
+    const result = sampleAuditPages(
+      ['/manual'],
+      ['https://example.com/sitemap-page'],
+      ['https://example.com/sc-page'],
+      domain,
+    );
+    expect(result[0]).toBe('/manual');
+  });
+
+  it('caps sitemap sample to 5 pages', () => {
+    const locs = Array.from({ length: 10 }, (_, i) => `https://example.com/s-${i}`);
+    const result = sampleAuditPages([], locs, [], domain);
+    expect(result.length).toBeLessThanOrEqual(5);
+  });
+
+  it('caps SC sample to 5 pages', () => {
+    const scUrls = Array.from({ length: 10 }, (_, i) => `https://example.com/sc-${i}`);
+    const result = sampleAuditPages([], [], scUrls, domain);
+    expect(result.length).toBeLessThanOrEqual(5);
+  });
+
+  it('handles invalid URLs gracefully', () => {
+    expect(() => sampleAuditPages([], ['not-a-url'], ['also-bad'], domain)).not.toThrow();
   });
 });
