@@ -230,6 +230,28 @@ describe('runSitemapSync', () => {
     expect(submit).toHaveBeenCalledOnce();
   });
 
+  it('treats a cleared sitemap state as a forced resubmit after site identity changes', async () => {
+    const db = makeDb([{ id: 'site1', domain: 'new-example.com', sc_url: 'sc-domain:new-example.com' }], undefined);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(true, SAMPLE_XML);
+
+    const submit = vi.fn().mockResolvedValue({});
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return { sitemaps: { submit } };
+    } as never);
+
+    await runSitemapSync();
+
+    expect(submit).toHaveBeenCalledWith({
+      siteUrl: 'sc-domain:new-example.com',
+      feedpath: 'https://new-example.com/sitemap.xml',
+    });
+    const callArgs = db._stmtRun.run.mock.calls[0][0] as Record<string, unknown>;
+    expect(callArgs.content_hash).toBe(hashContent(SAMPLE_XML));
+    expect(callArgs.submit_count).toBe(1);
+    expect(typeof callArgs.last_submitted_at).toBe('number');
+  });
+
   it('records error and saves state without submitting when SC submit throws', async () => {
     const prevState = {
       content_hash: 'old-hash',
