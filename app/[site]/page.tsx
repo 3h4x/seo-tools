@@ -379,6 +379,14 @@ export default async function SiteDashboardPage({
                   <MetaChecksTable
                     checks={[meta.title, meta.description, meta.ogTitle, meta.ogImage, meta.ogDescription, meta.twitterCard, meta.canonical, meta.jsonLd]}
                   />
+                  <SerpSnippetPreview
+                    page={meta.page}
+                    domain={site.domain}
+                    titleRaw={meta.title.rawValue}
+                    titleLen={meta.title.rawLength}
+                    descRaw={meta.description.rawValue}
+                    descLen={meta.description.rawLength}
+                  />
                 </div>
               ))}
             </div>
@@ -566,6 +574,61 @@ function AuditPanel({ title, children }: { title: string; children: ReactNode })
     <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
       <h2 className="text-white font-semibold text-sm mb-4">{title}</h2>
       {children}
+    </div>
+  );
+}
+
+function SerpSnippetPreview({ page, domain, titleRaw, titleLen, descRaw, descLen }: {
+  page: string;
+  domain: string;
+  titleRaw: string | undefined;
+  titleLen: number | undefined;
+  descRaw: string | undefined;
+  descLen: number | undefined;
+}) {
+  const TITLE_LIMIT = 60;
+  const DESC_LIMIT = 160;
+  const breadcrumb = `${domain}${page === '/' ? '' : page}`;
+  return (
+    <div className="mt-3 border border-neutral-700/40 rounded bg-neutral-800/20 p-3">
+      <div className="text-[10px] text-neutral-500 uppercase tracking-wider mb-2 font-semibold">SERP Preview</div>
+      <div className="max-w-xl">
+        <div className="text-[11px] text-green-700 font-mono mb-0.5 truncate">{breadcrumb}</div>
+        <div className="text-[15px] leading-snug mb-1">
+          {titleRaw ? (
+            <>
+              <span className="text-blue-400">{titleRaw.slice(0, TITLE_LIMIT)}</span>
+              {(titleLen ?? 0) > TITLE_LIMIT && (
+                <span className="text-red-400/50 line-through">{titleRaw.slice(TITLE_LIMIT, TITLE_LIMIT + 15)}&hellip;</span>
+              )}
+            </>
+          ) : (
+            <span className="text-neutral-600 italic text-sm">No title</span>
+          )}
+        </div>
+        <div className="text-[12px] text-neutral-400 leading-relaxed">
+          {descRaw ? (
+            <>
+              <span>{descRaw.slice(0, DESC_LIMIT)}</span>
+              {(descLen ?? 0) > DESC_LIMIT && <span className="text-amber-400/60">&hellip;</span>}
+            </>
+          ) : (
+            <span className="text-neutral-600 italic">No meta description</span>
+          )}
+        </div>
+        <div className="flex gap-4 mt-1.5 text-[10px] font-mono text-neutral-600">
+          {titleLen !== undefined && (
+            <span className={titleLen > TITLE_LIMIT ? 'text-red-400' : titleLen > 50 ? 'text-amber-400' : ''}>
+              title {titleLen}/{TITLE_LIMIT}
+            </span>
+          )}
+          {descLen !== undefined && (
+            <span className={descLen < 70 ? 'text-red-400' : descLen < 120 ? 'text-amber-400' : descLen > DESC_LIMIT ? 'text-red-400' : ''}>
+              desc {descLen}/{DESC_LIMIT}
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
