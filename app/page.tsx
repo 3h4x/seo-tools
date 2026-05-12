@@ -17,20 +17,20 @@ async function getSiteData(days: number) {
 
   const enrichedSites = await Promise.all(
     sites.map(async (site) => {
-      const [scData, ga4Data] = await Promise.all([
+      const [scResult, ga4Result] = await Promise.all([
         site.searchConsole ? cachedGetSearchConsoleData(getSCUrl(site), days) : null,
         cachedGetAnalytics(site.ga4PropertyId || '', days),
       ]);
 
       return {
         ...site,
-        sc: scData || { clicks: 0, impressions: 0, ctr: '0%', position: '0' },
-        ga4: ga4Data,
+        sc: scResult,
+        ga4: ga4Result,
       };
     })
   );
 
-  return enrichedSites.sort((a, b) => (b.ga4?.current.users ?? 0) - (a.ga4?.current.users ?? 0));
+  return enrichedSites.sort((a, b) => (b.ga4?.data?.current.users ?? 0) - (a.ga4?.data?.current.users ?? 0));
 }
 
 export default async function Overview({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
@@ -41,16 +41,18 @@ export default async function Overview({ searchParams }: { searchParams: Promise
 
   const totals = sites.reduce(
     (acc, s) => {
-      if (s.ga4) {
-        acc.users += s.ga4.current.users;
-        acc.sessions += s.ga4.current.sessions;
-        acc.views += s.ga4.current.views;
-        acc.prevUsers += s.ga4.previous.users;
-        acc.prevSessions += s.ga4.previous.sessions;
-        acc.prevViews += s.ga4.previous.views;
+      if (s.ga4?.data) {
+        acc.users += s.ga4.data.current.users;
+        acc.sessions += s.ga4.data.current.sessions;
+        acc.views += s.ga4.data.current.views;
+        acc.prevUsers += s.ga4.data.previous.users;
+        acc.prevSessions += s.ga4.data.previous.sessions;
+        acc.prevViews += s.ga4.data.previous.views;
       }
-      acc.clicks += Number(s.sc.clicks);
-      acc.impressions += Number(s.sc.impressions);
+      if (s.sc?.data) {
+        acc.clicks += Number(s.sc.data.clicks);
+        acc.impressions += Number(s.sc.data.impressions);
+      }
       return acc;
     },
     { users: 0, sessions: 0, views: 0, clicks: 0, impressions: 0, prevUsers: 0, prevSessions: 0, prevViews: 0 }
@@ -60,21 +62,21 @@ export default async function Overview({ searchParams }: { searchParams: Promise
     id: site.id,
     name: site.name,
     domain: site.domain,
-    users: site.ga4?.current.users ?? 0,
-    prevUsers: site.ga4?.previous.users ?? 0,
-    sessions: site.ga4?.current.sessions ?? 0,
-    views: site.ga4?.current.views ?? 0,
-    bounceRate: site.ga4 ? site.ga4.current.bounceRate : null,
-    avgSessionDuration: site.ga4 ? site.ga4.current.avgSessionDuration : null,
-    scClicks: Number(site.sc.clicks),
-    scPosition: Number(site.sc.position),
-    hasData: !!(site.ga4 && site.ga4.current.users > 0),
+    users: site.ga4?.data?.current.users ?? 0,
+    prevUsers: site.ga4?.data?.previous.users ?? 0,
+    sessions: site.ga4?.data?.current.sessions ?? 0,
+    views: site.ga4?.data?.current.views ?? 0,
+    bounceRate: site.ga4?.data ? site.ga4.data.current.bounceRate : null,
+    avgSessionDuration: site.ga4?.data ? site.ga4.data.current.avgSessionDuration : null,
+    scClicks: site.sc === null ? 0 : site.sc.error ? null : Number(site.sc.data?.clicks ?? 0),
+    scPosition: site.sc === null ? 0 : site.sc.error ? null : Number(site.sc.data?.position ?? 0),
+    hasData: !!(site.ga4?.data && site.ga4.data.current.users > 0),
   }));
 
   const sourceMap = new Map<string, number>();
   for (const site of sites) {
-    if (site.ga4?.trafficSources) {
-      for (const src of site.ga4.trafficSources) {
+    if (site.ga4?.data?.trafficSources) {
+      for (const src of site.ga4.data.trafficSources) {
         const name = formatSource(src.source, src.medium);
         sourceMap.set(name, (sourceMap.get(name) || 0) + src.sessions);
       }

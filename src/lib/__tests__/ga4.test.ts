@@ -194,9 +194,9 @@ function makeSourceRow(source: string, medium: string, sessions: string, users: 
 }
 
 describe('cachedGetAnalytics', () => {
-  it('returns null for empty propertyId', async () => {
+  it('returns no-error result with null data for empty propertyId (not configured)', async () => {
     const result = await cachedGetAnalytics('');
-    expect(result).toBeNull();
+    expect(result).toEqual({ data: null, error: false });
     expect(mockRunReport).not.toHaveBeenCalled();
   });
 
@@ -220,15 +220,16 @@ describe('cachedGetAnalytics', () => {
       .mockResolvedValueOnce([trafficRes]);
 
     const result = await cachedGetAnalytics('12345', 7);
-    expect(result).not.toBeNull();
-    expect(result!.current.users).toBe(100);
-    expect(result!.current.sessions).toBe(80);
-    expect(result!.current.views).toBe(300);
-    expect(result!.current.bounceRate).toBeCloseTo(0.4);
-    expect(result!.current.avgSessionDuration).toBeCloseTo(120.5);
-    expect(result!.topPages).toHaveLength(2);
-    expect(result!.topPages[0]).toEqual({ path: '/home', views: 150, users: 90 });
-    expect(result!.trafficSources[0]).toEqual({ source: 'google', medium: 'organic', sessions: 60, users: 50 });
+    expect(result.error).toBe(false);
+    expect(result.data).not.toBeNull();
+    expect(result.data!.current.users).toBe(100);
+    expect(result.data!.current.sessions).toBe(80);
+    expect(result.data!.current.views).toBe(300);
+    expect(result.data!.current.bounceRate).toBeCloseTo(0.4);
+    expect(result.data!.current.avgSessionDuration).toBeCloseTo(120.5);
+    expect(result.data!.topPages).toHaveLength(2);
+    expect(result.data!.topPages[0]).toEqual({ path: '/home', views: 150, users: 90 });
+    expect(result.data!.trafficSources[0]).toEqual({ source: 'google', medium: 'organic', sessions: 60, users: 50 });
   });
 
   it('parses previous period from second row', async () => {
@@ -244,20 +245,21 @@ describe('cachedGetAnalytics', () => {
       .mockResolvedValueOnce([{ rows: [] }]);
 
     const result = await cachedGetAnalytics('12345', 7);
-    expect(result!.previous.users).toBe(70);
-    expect(result!.previous.sessions).toBe(60);
+    expect(result.data!.previous.users).toBe(70);
+    expect(result.data!.previous.sessions).toBe(60);
   });
 
-  it('returns zeros when metrics rows are empty', async () => {
+  it('returns zeros (not an error) when metrics rows are empty', async () => {
     mockRunReport
       .mockResolvedValueOnce([{ rows: [] }])
       .mockResolvedValueOnce([{ rows: [] }])
       .mockResolvedValueOnce([{ rows: [] }]);
 
     const result = await cachedGetAnalytics('12345');
-    expect(result!.current).toEqual({ users: 0, sessions: 0, views: 0, bounceRate: 0, avgSessionDuration: 0 });
-    expect(result!.topPages).toEqual([]);
-    expect(result!.trafficSources).toEqual([]);
+    expect(result.error).toBe(false);
+    expect(result.data!.current).toEqual({ users: 0, sessions: 0, views: 0, bounceRate: 0, avgSessionDuration: 0 });
+    expect(result.data!.topPages).toEqual([]);
+    expect(result.data!.trafficSources).toEqual([]);
   });
 
   it('skips malformed rows without collapsing current and previous periods', async () => {
@@ -274,21 +276,21 @@ describe('cachedGetAnalytics', () => {
       .mockResolvedValueOnce([{ rows: [] }]);
 
     const result = await cachedGetAnalytics('12345', 7);
-    expect(result!.current).toEqual({
+    expect(result.data!.current).toEqual({
       users: 100,
       sessions: 80,
       views: 300,
       bounceRate: 0.4,
       avgSessionDuration: 120,
     });
-    expect(result!.previous).toEqual({
+    expect(result.data!.previous).toEqual({
       users: 70,
       sessions: 60,
       views: 200,
       bounceRate: 0.5,
       avgSessionDuration: 90,
     });
-    expect(result!.current).not.toEqual(result!.previous);
+    expect(result.data!.current).not.toEqual(result.data!.previous);
   });
 
   it('uses zeroed previous metrics when only one valid metrics row remains', async () => {
@@ -304,14 +306,14 @@ describe('cachedGetAnalytics', () => {
       .mockResolvedValueOnce([{ rows: [] }]);
 
     const result = await cachedGetAnalytics('12345', 7);
-    expect(result!.current).toEqual({
+    expect(result.data!.current).toEqual({
       users: 100,
       sessions: 80,
       views: 300,
       bounceRate: 0.4,
       avgSessionDuration: 120,
     });
-    expect(result!.previous).toEqual({
+    expect(result.data!.previous).toEqual({
       users: 0,
       sessions: 0,
       views: 0,
@@ -320,11 +322,12 @@ describe('cachedGetAnalytics', () => {
     });
   });
 
-  it('returns null on API error', async () => {
+  it('returns error state on API failure, distinct from real zero data', async () => {
     mockRunReport.mockRejectedValue(new Error('Quota exceeded'));
 
     const result = await cachedGetAnalytics('12345');
-    expect(result).toBeNull();
+    expect(result.error).toBe(true);
+    expect(result.data).toBeNull();
   });
 
   it('uses default path for top pages when dimensionValues missing', async () => {
@@ -334,7 +337,7 @@ describe('cachedGetAnalytics', () => {
       .mockResolvedValueOnce([{ rows: [] }]);
 
     const result = await cachedGetAnalytics('12345');
-    expect(result!.topPages[0].path).toBe('/');
+    expect(result.data!.topPages[0].path).toBe('/');
   });
 
   it('uses default source and medium when traffic dimensions are missing', async () => {
@@ -344,7 +347,7 @@ describe('cachedGetAnalytics', () => {
       .mockResolvedValueOnce([{ rows: [{ dimensionValues: [], metricValues: [{ value: '5' }, { value: '3' }] }] }]);
 
     const result = await cachedGetAnalytics('12345');
-    expect(result!.trafficSources[0]).toEqual({
+    expect(result.data!.trafficSources[0]).toEqual({
       source: '(direct)',
       medium: '(none)',
       sessions: 5,
@@ -359,8 +362,8 @@ describe('cachedGetAnalytics', () => {
       .mockResolvedValueOnce([{ rows: [{ dimensionValues: [{ value: 'newsletter' }, { value: 'email' }] }] }]);
 
     const result = await cachedGetAnalytics('12345');
-    expect(result!.topPages[0]).toEqual({ path: '/pricing', views: 0, users: 0 });
-    expect(result!.trafficSources[0]).toEqual({
+    expect(result.data!.topPages[0]).toEqual({ path: '/pricing', views: 0, users: 0 });
+    expect(result.data!.trafficSources[0]).toEqual({
       source: 'newsletter',
       medium: 'email',
       sessions: 0,

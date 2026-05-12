@@ -196,6 +196,8 @@ export function setCache(key: string, siteId: string, data: unknown): void {
   }
 }
 
+export type ProviderResult<T> = { data: T | null; error: boolean };
+
 export async function withCache<T>(
   key: string,
   id: string,

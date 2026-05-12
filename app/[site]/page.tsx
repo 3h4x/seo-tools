@@ -95,9 +95,12 @@ export default async function SiteDashboardPage({
   const sections = gapsBySection(gapAnalysis.gaps);
   const totalGaps = gapAnalysis.gaps.length;
 
-  const sc = scComparison;
+  const sc = scComparison?.data ?? null;
+  const scError = scComparison?.error ?? false;
   const hasSc = sc && sc.current.clicks > 0;
-  const hasGa4 = ga4Data && ga4Data.current.users > 0;
+  const ga4 = ga4Data.data;
+  const ga4Error = ga4Data.error;
+  const hasGa4 = ga4 && ga4.current.users > 0;
   const queryBucketStats = scQueries ? getQueryBucketStats(scQueries) : [];
 
   let scDaily: ReturnType<typeof getScDaily> = [];
@@ -142,7 +145,10 @@ export default async function SiteDashboardPage({
         )}
       </div>
       <div>
-        <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Search Console</h2>
+        <div className="flex items-center gap-3 mb-3">
+          <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Search Console</h2>
+          {scError && <span className="text-xs text-red-400">data unavailable</span>}
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <MetricCard icon={Icons.clicks} label="Clicks" current={sc?.current.clicks ?? 0} previous={sc?.previous.clicks} accent="border-emerald-500" />
           <MetricCard icon={Icons.impressions} label="Impressions" current={sc?.current.impressions ?? 0} previous={sc?.previous.impressions} accent="border-cyan-500" />
@@ -151,13 +157,16 @@ export default async function SiteDashboardPage({
         </div>
       </div>
       <div>
-        <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">GA4 Analytics</h2>
+        <div className="flex items-center gap-3 mb-3">
+          <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">GA4 Analytics</h2>
+          {ga4Error && <span className="text-xs text-red-400">data unavailable</span>}
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <MetricCard icon={Icons.users} label="Users" current={ga4Data?.current.users ?? 0} previous={ga4Data?.previous.users} accent="border-blue-500" />
-          <MetricCard icon={Icons.sessions} label="Sessions" current={ga4Data?.current.sessions ?? 0} previous={ga4Data?.previous.sessions} accent="border-pink-500" />
-          <MetricCard icon={Icons.views} label="Page Views" current={ga4Data?.current.views ?? 0} previous={ga4Data?.previous.views} accent="border-amber-500" />
-          <MetricCard label="Bounce Rate" value={hasGa4 ? formatBounce(ga4Data!.current.bounceRate) : '\u2014'} current={hasGa4 ? ga4Data!.current.bounceRate * 100 : 0} previous={hasGa4 ? ga4Data!.previous.bounceRate * 100 : 0} accent="border-red-500" icon={Icons.bounce} invert />
-          <MetricCard label="Avg Duration" value={hasGa4 ? formatDuration(ga4Data!.current.avgSessionDuration) : '\u2014'} current={hasGa4 ? ga4Data!.current.avgSessionDuration : 0} previous={hasGa4 ? ga4Data!.previous.avgSessionDuration : 0} accent="border-teal-500" icon={Icons.duration} />
+          <MetricCard icon={Icons.users} label="Users" current={ga4?.current.users ?? 0} previous={ga4?.previous.users} accent="border-blue-500" />
+          <MetricCard icon={Icons.sessions} label="Sessions" current={ga4?.current.sessions ?? 0} previous={ga4?.previous.sessions} accent="border-pink-500" />
+          <MetricCard icon={Icons.views} label="Page Views" current={ga4?.current.views ?? 0} previous={ga4?.previous.views} accent="border-amber-500" />
+          <MetricCard label="Bounce Rate" value={hasGa4 ? formatBounce(ga4!.current.bounceRate) : '\u2014'} current={hasGa4 ? ga4!.current.bounceRate * 100 : 0} previous={hasGa4 ? ga4!.previous.bounceRate * 100 : 0} accent="border-red-500" icon={Icons.bounce} invert />
+          <MetricCard label="Avg Duration" value={hasGa4 ? formatDuration(ga4!.current.avgSessionDuration) : '\u2014'} current={hasGa4 ? ga4!.current.avgSessionDuration : 0} previous={hasGa4 ? ga4!.previous.avgSessionDuration : 0} accent="border-teal-500" icon={Icons.duration} />
         </div>
       </div>
       {(scDaily.length >= 2 || ga4DailyData.length >= 2) && (
@@ -268,11 +277,11 @@ export default async function SiteDashboardPage({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Top Pages (GA4)</h2>
-          {ga4Data && ga4Data.topPages.length > 0 ? (
+          {ga4 && ga4.topPages.length > 0 ? (
             <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
               <div className="space-y-1.5">
-                {ga4Data.topPages.map((page, i) => {
-                  const maxViews = ga4Data.topPages[0].views || 1;
+                {ga4.topPages.map((page, i) => {
+                  const maxViews = ga4.topPages[0].views || 1;
                   return (
                     <div key={i} className="flex items-center gap-3 text-xs">
                       <span className="text-neutral-400 font-mono truncate min-w-0 flex-1">{page.path}</span>
@@ -291,12 +300,12 @@ export default async function SiteDashboardPage({
         </div>
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Traffic Sources</h2>
-          {(ga4Data?.trafficSources ?? []).length === 0 ? (
+          {(ga4?.trafficSources ?? []).length === 0 ? (
             <p className="text-neutral-600 text-sm">No traffic source data available.</p>
           ) : (
             <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
               <div className="space-y-1.5">
-                {(ga4Data?.trafficSources ?? []).map((src, i) => (
+                {(ga4?.trafficSources ?? []).map((src, i) => (
                   <div key={i} className="flex items-center justify-between text-xs">
                     <span className="text-neutral-400 font-mono">{formatSource(src.source, src.medium)}</span>
                     <span className="text-neutral-500 font-mono">{pluralize(src.sessions, 'session')}</span>

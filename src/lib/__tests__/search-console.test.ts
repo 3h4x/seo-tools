@@ -127,7 +127,8 @@ describe('cachedGetSearchConsoleData', () => {
     });
 
     const result = await cachedGetSearchConsoleData('example.com', 7);
-    expect(result).toEqual({
+    expect(result.error).toBe(false);
+    expect(result.data).toEqual({
       clicks: 20,
       impressions: 400,
       ctr: '5.00%',
@@ -135,18 +136,20 @@ describe('cachedGetSearchConsoleData', () => {
     });
   });
 
-  it('returns zeros when rows is empty', async () => {
+  it('returns zeros when rows is empty (real zero, not an error)', async () => {
     mockQuery.mockResolvedValue({ data: { rows: [] } });
 
     const result = await cachedGetSearchConsoleData('example.com');
-    expect(result).toEqual({ clicks: 0, impressions: 0, ctr: '0.00%', position: '0.0' });
+    expect(result.error).toBe(false);
+    expect(result.data).toEqual({ clicks: 0, impressions: 0, ctr: '0.00%', position: '0.0' });
   });
 
-  it('returns null on API error', async () => {
+  it('returns error state on API failure', async () => {
     mockQuery.mockRejectedValue(new Error('Network failure'));
 
     const result = await cachedGetSearchConsoleData('example.com');
-    expect(result).toBeNull();
+    expect(result.error).toBe(true);
+    expect(result.data).toBeNull();
   });
 });
 
@@ -165,23 +168,26 @@ describe('cachedGetSearchConsoleDataWithComparison', () => {
       });
 
     const result = await cachedGetSearchConsoleDataWithComparison('example.com', 7);
-    expect(result?.current).toEqual({ clicks: 100, impressions: 2000, ctr: 0.05, position: 3.0 });
-    expect(result?.previous).toEqual({ clicks: 80, impressions: 1600, ctr: 0.05, position: 3.5 });
+    expect(result.error).toBe(false);
+    expect(result.data?.current).toEqual({ clicks: 100, impressions: 2000, ctr: 0.05, position: 3.0 });
+    expect(result.data?.previous).toEqual({ clicks: 80, impressions: 1600, ctr: 0.05, position: 3.5 });
   });
 
-  it('returns zero aggregates when rows are missing', async () => {
+  it('returns zero aggregates (not an error) when rows are missing', async () => {
     mockQuery.mockResolvedValue({ data: {} });
 
     const result = await cachedGetSearchConsoleDataWithComparison('example.com', 7);
-    expect(result?.current).toEqual({ clicks: 0, impressions: 0, ctr: 0, position: 0 });
-    expect(result?.previous).toEqual({ clicks: 0, impressions: 0, ctr: 0, position: 0 });
+    expect(result.error).toBe(false);
+    expect(result.data?.current).toEqual({ clicks: 0, impressions: 0, ctr: 0, position: 0 });
+    expect(result.data?.previous).toEqual({ clicks: 0, impressions: 0, ctr: 0, position: 0 });
   });
 
-  it('returns null on API error', async () => {
+  it('returns error state on API failure', async () => {
     mockQuery.mockRejectedValue(new Error('Auth failed'));
 
     const result = await cachedGetSearchConsoleDataWithComparison('example.com');
-    expect(result).toBeNull();
+    expect(result.error).toBe(true);
+    expect(result.data).toBeNull();
   });
 });
 

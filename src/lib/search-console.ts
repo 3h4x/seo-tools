@@ -1,7 +1,7 @@
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { getAuth } from './google-auth';
 import { daysAgo } from './format';
-import { withCache } from './db';
+import { withCache, type ProviderResult } from './db';
 
 function getSc() {
   return new searchconsole_v1.Searchconsole({ auth: getAuth() });
@@ -209,11 +209,12 @@ export async function cachedGetSitemapSubmissions(siteUrl: string) {
 export async function cachedGetSearchConsoleDataWithComparison(
   siteUrl: string,
   days: number = 7,
-) {
-  return withCache<{ current: SCAggregates; previous: SCAggregates }>(
+): Promise<ProviderResult<{ current: SCAggregates; previous: SCAggregates }>> {
+  const data = await withCache<{ current: SCAggregates; previous: SCAggregates }>(
     `sc-comparison-${days}`, siteUrl,
     () => getSearchConsoleDataWithComparison(siteUrl, days),
   );
+  return data !== null ? { data, error: false } : { data: null, error: true };
 }
 
 export async function cachedGetSearchConsoleQueries(
@@ -239,9 +240,10 @@ export async function cachedGetSearchConsolePages(
 export async function cachedGetSearchConsoleData(
   siteUrl: string,
   days: number = 7,
-) {
-  return withCache<{ clicks: number; impressions: number; ctr: string; position: string }>(
+): Promise<ProviderResult<{ clicks: number; impressions: number; ctr: string; position: string }>> {
+  const data = await withCache<{ clicks: number; impressions: number; ctr: string; position: string }>(
     `sc-data-${days}`, siteUrl,
     () => getSearchConsoleData(siteUrl, days),
   );
+  return data !== null ? { data, error: false } : { data: null, error: true };
 }

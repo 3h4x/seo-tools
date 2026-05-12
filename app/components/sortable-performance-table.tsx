@@ -16,8 +16,8 @@ export type PerformanceRow = {
   views: number;
   bounceRate: number | null;   // fraction 0-1
   avgSessionDuration: number | null;  // seconds
-  scClicks: number;
-  scPosition: number;
+  scClicks: number | null;
+  scPosition: number | null;
   hasData: boolean;
 };
 
@@ -160,20 +160,24 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
                   : <span className="text-neutral-600">—</span>}
               </td>
               <td className="px-5 py-3.5 text-right font-mono text-neutral-300">
-                {row.scClicks > 0 ? row.scClicks.toLocaleString() : <span className="text-neutral-600">—</span>}
+                {row.scClicks === null
+                  ? <span className="text-red-400/60 text-xs">error</span>
+                  : row.scClicks > 0 ? row.scClicks.toLocaleString() : <span className="text-neutral-600">—</span>}
               </td>
               <td className="px-5 py-3.5 text-right font-mono hidden md:table-cell">
-                {row.scPosition > 0 ? (
-                  <span className={
-                    row.scPosition <= 3 ? 'text-emerald-400' :
-                    row.scPosition <= 10 ? 'text-amber-400' :
-                    'text-neutral-300'
-                  }>
-                    {row.scPosition}
-                  </span>
-                ) : (
-                  <span className="text-neutral-600">—</span>
-                )}
+                {row.scPosition === null
+                  ? <span className="text-red-400/60 text-xs">error</span>
+                  : row.scPosition > 0 ? (
+                    <span className={
+                      row.scPosition <= 3 ? 'text-emerald-400' :
+                      row.scPosition <= 10 ? 'text-amber-400' :
+                      'text-neutral-300'
+                    }>
+                      {row.scPosition}
+                    </span>
+                  ) : (
+                    <span className="text-neutral-600">—</span>
+                  )}
               </td>
             </tr>
           ))}
