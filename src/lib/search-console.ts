@@ -48,12 +48,21 @@ interface SCAggregates {
   position: number;
 }
 
-interface SCQueryRow {
+export interface SCQueryRow {
   query: string;
   clicks: number;
   impressions: number;
   ctr: number;
   position: number;
+}
+
+export interface PageQueryResult {
+  page: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+  queries: SCQueryRow[];
 }
 
 export interface SCPageRow {
@@ -172,6 +181,73 @@ export async function getSearchConsolePagesForPeriod(
   rowLimit: number = 100,
 ): Promise<SCPageRow[] | null> {
   return queryScPages(siteUrl, startDate, endDate, rowLimit);
+}
+
+// --- Per-page query breakdown ---
+
+async function getQueriesForPage(
+  siteUrl: string,
+  pageUrl: string,
+  days: number,
+): Promise<SCQueryRow[]> {
+  try {
+    const response = await getSc().searchanalytics.query({
+      siteUrl: formatSiteUrl(siteUrl),
+      requestBody: {
+        startDate: daysAgo(days),
+        endDate: daysAgo(1),
+        dimensions: ['query'],
+        rowLimit: 5,
+        dimensionFilterGroups: [{
+          filters: [{
+            dimension: 'page',
+            operator: 'equals',
+            expression: pageUrl,
+          }],
+        }],
+      },
+    });
+    return (response.data.rows || []).map((row) => ({
+      query: row.keys?.[0] || '',
+      clicks: row.clicks || 0,
+      impressions: row.impressions || 0,
+      ctr: row.ctr || 0,
+      position: row.position || 0,
+    }));
+  } catch (error) {
+    console.error(`Error fetching SC queries for page ${pageUrl}:`, error);
+    return [];
+  }
+}
+
+async function getTopPagesWithQueries(
+  siteUrl: string,
+  days: number = 7,
+): Promise<PageQueryResult[] | null> {
+  const pages = await getSearchConsolePages(siteUrl, days);
+  if (!pages) return null;
+  const top = pages.slice(0, 10);
+  const results = await Promise.all(
+    top.map(async (p) => ({
+      page: p.page,
+      clicks: p.clicks,
+      impressions: p.impressions,
+      ctr: p.ctr,
+      position: p.position,
+      queries: await getQueriesForPage(siteUrl, p.page, days),
+    })),
+  );
+  return results;
+}
+
+export async function cachedGetTopPagesWithQueries(
+  siteUrl: string,
+  days: number = 7,
+) {
+  return withCache<PageQueryResult[]>(
+    `sc-page-queries-${days}`, siteUrl,
+    () => getTopPagesWithQueries(siteUrl, days),
+  );
 }
 
 // --- Sitemap submissions ---

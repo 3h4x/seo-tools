@@ -23,6 +23,7 @@ import {
   cachedGetSearchConsoleQueries,
   cachedGetSearchConsolePages,
   cachedGetSitemapSubmissions,
+  cachedGetTopPagesWithQueries,
 } from '../search-console';
 
 beforeEach(() => {
@@ -366,5 +367,84 @@ describe('cachedGetSitemapSubmissions', () => {
     await cachedGetSitemapSubmissions('https://example.com/');
 
     expect(mockSitemapsList).toHaveBeenCalledWith({ siteUrl: 'https://example.com/' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cachedGetTopPagesWithQueries
+// ---------------------------------------------------------------------------
+
+describe('cachedGetTopPagesWithQueries', () => {
+  it('propagates page-level aggregates from the SC pages query into each result', async () => {
+    // First call: getSearchConsolePages (dimensions: ['page'])
+    mockQuery.mockResolvedValueOnce({
+      data: {
+        rows: [
+          { keys: ['https://example.com/foo'], clicks: 120, impressions: 2400, ctr: 0.05, position: 3.1 },
+        ],
+      },
+    });
+    // Second call: getQueriesForPage for /foo
+    mockQuery.mockResolvedValueOnce({
+      data: {
+        rows: [
+          { keys: ['best foo'], clicks: 40, impressions: 800, ctr: 0.05, position: 2.9 },
+        ],
+      },
+    });
+
+    const result = await cachedGetTopPagesWithQueries('example.com', 7);
+
+    expect(result).toHaveLength(1);
+    expect(result![0].page).toBe('https://example.com/foo');
+    expect(result![0].clicks).toBe(120);
+    expect(result![0].impressions).toBe(2400);
+    expect(result![0].ctr).toBe(0.05);
+    expect(result![0].position).toBe(3.1);
+    expect(result![0].queries).toHaveLength(1);
+    expect(result![0].queries[0].query).toBe('best foo');
+  });
+
+  it('returns null when the underlying pages query fails', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('API error'));
+
+    const result = await cachedGetTopPagesWithQueries('example.com', 7);
+
+    expect(result).toBeNull();
+  });
+
+  it('slices to at most 10 pages', async () => {
+    const manyRows = Array.from({ length: 15 }, (_, i) => ({
+      keys: [`https://example.com/page-${i}`],
+      clicks: 10,
+      impressions: 200,
+      ctr: 0.05,
+      position: 5.0,
+    }));
+    mockQuery.mockResolvedValueOnce({ data: { rows: manyRows } });
+    // Return empty queries for each of the 10 pages
+    for (let i = 0; i < 10; i++) {
+      mockQuery.mockResolvedValueOnce({ data: { rows: [] } });
+    }
+
+    const result = await cachedGetTopPagesWithQueries('example.com', 7);
+
+    expect(result).toHaveLength(10);
+  });
+
+  it('handles pages with no query data gracefully', async () => {
+    mockQuery.mockResolvedValueOnce({
+      data: {
+        rows: [{ keys: ['https://example.com/bar'], clicks: 5, impressions: 50, ctr: 0.1, position: 8.0 }],
+      },
+    });
+    // Query fetch for the page fails silently
+    mockQuery.mockRejectedValueOnce(new Error('quota'));
+
+    const result = await cachedGetTopPagesWithQueries('example.com', 7);
+
+    expect(result).toHaveLength(1);
+    expect(result![0].clicks).toBe(5);
+    expect(result![0].queries).toEqual([]);
   });
 });
