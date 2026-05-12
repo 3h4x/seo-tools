@@ -2,7 +2,7 @@ import { AnalyticsAdminServiceClient } from '@google-analytics/admin';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getAuth } from './google-auth';
 import { getManagedSites } from './sites';
-import { clearCacheEntry, withCache } from './db';
+import { clearCacheEntry, withCache, type ProviderResult } from './db';
 
 const GA4_DISCOVERY_CACHE_KEY = 'ga4-discovery';
 const GA4_DISCOVERY_CACHE_SITE_ID = 'managed-sites';
@@ -187,7 +187,8 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
   }
 }
 
-export async function cachedGetAnalytics(propertyId: string, days: number = 7): Promise<GA4Data | null> {
-  if (!propertyId) return null;
-  return withCache<GA4Data>(`ga4-${days}`, propertyId, () => getAnalytics(propertyId, days));
+export async function cachedGetAnalytics(propertyId: string, days: number = 7): Promise<ProviderResult<GA4Data>> {
+  if (!propertyId) return { data: null, error: false };
+  const data = await withCache<GA4Data>(`ga4-${days}`, propertyId, () => getAnalytics(propertyId, days));
+  return data !== null ? { data, error: false } : { data: null, error: true };
 }

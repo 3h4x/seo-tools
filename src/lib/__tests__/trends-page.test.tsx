@@ -106,17 +106,23 @@ vi.mock('../../../app/components/keyword-rank-table', () => ({
 vi.mock('@/lib/ga4', () => ({
   discoverPropertyIds: vi.fn(async () => [{ id: 'site-1', ga4PropertyId: 'prop-1' }]),
   cachedGetAnalytics: vi.fn(async () => ({
-    current: { users: 10, sessions: 20, views: 30, bounceRate: 0.45, avgSessionDuration: 12 },
-    previous: { users: 8, sessions: 16, views: 24, bounceRate: 0.4, avgSessionDuration: 10 },
-    topPages: [],
-    sources: [],
+    data: {
+      current: { users: 10, sessions: 20, views: 30, bounceRate: 0.45, avgSessionDuration: 12 },
+      previous: { users: 8, sessions: 16, views: 24, bounceRate: 0.4, avgSessionDuration: 10 },
+      topPages: [],
+      trafficSources: [],
+    },
+    error: false,
   })),
 }));
 
 vi.mock('@/lib/search-console', () => ({
   cachedGetSearchConsoleDataWithComparison: vi.fn(async () => ({
-    current: { clicks: 10, impressions: 100, ctr: 0.1, position: 4.2 },
-    previous: { clicks: 8, impressions: 80, ctr: 0.1, position: 4.8 },
+    data: {
+      current: { clicks: 10, impressions: 100, ctr: 0.1, position: 4.2 },
+      previous: { clicks: 8, impressions: 80, ctr: 0.1, position: 4.8 },
+    },
+    error: false,
   })),
   cachedGetSearchConsoleQueries: vi.fn(async () => []),
   cachedGetSearchConsolePages: vi.fn(async () => []),
@@ -345,5 +351,32 @@ describe('SiteDashboardPage', () => {
     }));
 
     expect(html).toContain('href="/trends#keywords"');
+  });
+
+  it('shows data unavailable indicator on GA4 provider error, not on real zero data', async () => {
+    const { cachedGetAnalytics } = await import('@/lib/ga4');
+    const mockAnalytics = vi.mocked(cachedGetAnalytics);
+
+    mockAnalytics.mockResolvedValueOnce({ data: null, error: true });
+    const errorHtml = renderToStaticMarkup(await SiteDashboardPage({
+      params: Promise.resolve({ site: 'site-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+    expect(errorHtml).toContain('data unavailable');
+
+    mockAnalytics.mockResolvedValueOnce({
+      data: {
+        current: { users: 0, sessions: 0, views: 0, bounceRate: 0, avgSessionDuration: 0 },
+        previous: { users: 0, sessions: 0, views: 0, bounceRate: 0, avgSessionDuration: 0 },
+        topPages: [],
+        trafficSources: [],
+      },
+      error: false,
+    });
+    const zeroHtml = renderToStaticMarkup(await SiteDashboardPage({
+      params: Promise.resolve({ site: 'site-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+    expect(zeroHtml).not.toContain('data unavailable');
   });
 });
