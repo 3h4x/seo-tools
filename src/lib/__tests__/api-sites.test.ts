@@ -132,7 +132,7 @@ describe('POST /api/sites', () => {
     };
     vi.mocked(dbGetSites).mockReturnValue([existingSite] as never);
 
-    const res = await POST(postReq(updatedSite));
+    const res = await POST(postReq({ ...updatedSite, originalId: 'site1' }));
 
     expect(res.status).toBe(200);
     expect(dbUpsertSite).toHaveBeenCalledWith(updatedSite);
@@ -222,7 +222,7 @@ describe('POST /api/sites', () => {
     vi.mocked(dbGetSites).mockReturnValue([
       { id: 'site1', name: 'Site 1', domain: 'site1.com', testPages: [] },
     ] as never);
-    const res = await POST(postReq({ id: 'site1', name: 'Site 1 Updated', domain: 'site1.com' }));
+    const res = await POST(postReq({ id: 'site1', originalId: 'site1', name: 'Site 1 Updated', domain: 'site1.com' }));
     expect(res.status).toBe(200);
     expect(dbUpsertSite).toHaveBeenCalled();
   });
@@ -233,6 +233,46 @@ describe('POST /api/sites', () => {
     const data = await res.json();
     expect(data.ok).toBe(false);
     expect(data.errors.scUrl).toBeTruthy();
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when Search Console identity duplicates another site via scUrl', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'existing', name: 'Existing', domain: 'other.example.com', scUrl: 'https://blog.example.com/', testPages: [] },
+    ] as never);
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'blog.example.com' }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(data.errors.scUrl).toMatch(/existing/);
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+  });
+
+  it('allows saving a site when the Search Console identity belongs to its own record', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'site1', name: 'Site 1', domain: 'other.example.com', scUrl: 'https://blog.example.com/', testPages: [] },
+    ] as never);
+    const res = await POST(postReq({ id: 'site1', originalId: 'site1', name: 'Site 1', domain: 'blog.example.com' }));
+    expect(res.status).toBe(200);
+    expect(dbUpsertSite).toHaveBeenCalledWith({
+      id: 'site1',
+      name: 'Site 1',
+      domain: 'blog.example.com',
+      testPages: [],
+    });
+  });
+
+  it('returns 400 when a new save reuses an existing site id', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'site1', name: 'Existing', domain: 'existing.com', testPages: [] },
+    ] as never);
+    const res = await POST(postReq({ id: 'site1', name: 'New Site', domain: 'newsite.com' }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(data.errors.id).toMatch(/site1/);
     expect(dbUpsertSite).not.toHaveBeenCalled();
     expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });

@@ -4,7 +4,8 @@ import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { dbGetSites } from '@/lib/db';
 import { cachedGetDiscoveredGa4Properties } from '@/lib/ga4';
 import { normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
-import { getSCUrl, type Site } from '@/lib/sites';
+import { getSearchConsoleUrlIdentities, getSiteSearchConsoleIdentities, normalizeSearchConsoleIdentity, type Site } from '@/lib/sites';
+import { buildUniqueExactGa4Matches, findMatchingGa4Property, type DiscoveredGa4Property } from '@/lib/ga4-discovery';
 
 type DiscoveredScSite = {
   scUrl: string;
@@ -15,9 +16,18 @@ type DedupeScSite = DiscoveredScSite & {
   scUrls: string[];
 };
 
-function normalizeScIdentity(value: string): string {
-  return value.trim().toLowerCase().replace(/\/$/, '');
-}
+type DiscoverySource = 'sc' | 'ga4' | 'sc+ga4';
+
+type DiscoveryCandidate = Site & {
+  isUpdate?: boolean;
+  discoverySource: DiscoverySource;
+  ga4DisplayName?: string;
+};
+
+type MatchedGa4Property = {
+  propertyId: string;
+  displayName: string;
+};
 
 function isDomainProperty(scUrl: string): boolean {
   return scUrl.toLowerCase().startsWith('sc-domain:');
@@ -37,7 +47,7 @@ function shouldPreferScSite(candidate: DiscoveredScSite, current: DiscoveredScSi
   const candidateRank = getScSiteRank(candidate);
   const currentRank = getScSiteRank(current);
   if (candidateRank !== currentRank) return candidateRank > currentRank;
-  return normalizeScIdentity(candidate.scUrl) < normalizeScIdentity(current.scUrl);
+  return normalizeSearchConsoleIdentity(candidate.scUrl) < normalizeSearchConsoleIdentity(current.scUrl);
 }
 
 function dedupeScSites(scSites: DiscoveredScSite[]): DedupeScSite[] {
@@ -62,6 +72,43 @@ function getExistingDomainIdentity(domain: string): string {
   return normalizeSiteDomain(domain) ?? domain.trim().toLowerCase();
 }
 
+function normalizeGa4PropertyId(propertyId: string): string | undefined {
+  const trimmed = propertyId.trim();
+  if (!trimmed) return undefined;
+  return trimmed.startsWith('properties/') ? trimmed : `properties/${trimmed}`;
+}
+
+function toMatchedGa4Property(property: DiscoveredGa4Property | undefined): MatchedGa4Property | undefined {
+  if (!property) return undefined;
+
+  const propertyId = normalizeGa4PropertyId(property.propertyId);
+  const displayName = property.displayName.trim();
+  if (!propertyId || !displayName) return undefined;
+
+  return {
+    propertyId,
+    displayName,
+  };
+}
+
+function createDiscoveryIdAllocator(existingIds: Iterable<string>): (domain: string) => string {
+  const reservedIds = new Set(existingIds);
+
+  return (domain: string): string => {
+    const baseId = slugifySiteDomain(domain);
+    let nextId = baseId;
+    let suffix = 2;
+
+    while (reservedIds.has(nextId)) {
+      nextId = `${baseId}-${suffix}`;
+      suffix += 1;
+    }
+
+    reservedIds.add(nextId);
+    return nextId;
+  };
+}
+
 export async function GET(req: Request) {
   let auth;
   try {
@@ -71,8 +118,9 @@ export async function GET(req: Request) {
   }
 
   const existingSites = dbGetSites();
+  const existingSiteIds = new Set(existingSites.map(site => site.id));
   const existingDomains = new Set(existingSites.map(s => getExistingDomainIdentity(s.domain)));
-  const existingScIdentities = new Set(existingSites.map(s => normalizeScIdentity(getSCUrl(s))));
+  const existingScIdentities = new Set(existingSites.flatMap(getSiteSearchConsoleIdentities));
 
   // Fetch SC sites
   let scSites: DedupeScSite[] = [];
@@ -94,57 +142,94 @@ export async function GET(req: Request) {
   }
 
   // Fetch GA4 properties (best-effort)
-  const ga4Map = new Map<string, string>(); // display name → propertyId
+  let ga4Properties: DiscoveredGa4Property[] | null = null;
   try {
-    const properties = await cachedGetDiscoveredGa4Properties();
-    for (const property of properties ?? []) {
-      const displayName = property.displayName.trim().toLowerCase();
-      const propertyId = property.propertyId.trim();
-      if (displayName && propertyId) ga4Map.set(displayName, propertyId);
-    }
+    ga4Properties = await cachedGetDiscoveredGa4Properties();
   } catch {
     // GA4 discovery is best-effort; proceed without it.
   }
 
+  const exactGa4Matches = buildUniqueExactGa4Matches(ga4Properties ?? []);
+  const allocateDiscoveryId = createDiscoveryIdAllocator(existingSiteIds);
+
   // Debug: return raw GA4 property names
   if (new URL(req.url).searchParams.has('ga4debug')) {
-    return NextResponse.json(Object.fromEntries(ga4Map));
+    return NextResponse.json(Object.fromEntries(
+      (ga4Properties ?? [])
+        .map((property) => {
+          const propertyId = property.propertyId.trim();
+          const displayName = property.displayName.trim().toLowerCase();
+          return displayName && propertyId ? [displayName, propertyId] : null;
+        })
+        .filter((entry): entry is [string, string] => entry !== null),
+    ));
   }
 
-  function matchGa4(domain: string): string | undefined {
-    const domainLower = domain.toLowerCase();
-    for (const [name, propId] of ga4Map.entries()) {
-      if (name.includes(domainLower) || domainLower.includes(name)) {
-        // Return in properties/NNNNNN format so it passes site validation on import
-        return propId.startsWith('properties/') ? propId : `properties/${propId}`;
+  // Build proposed sites from the union of SC domains and GA4 properties not already in DB
+  const proposedFromSc: DiscoveryCandidate[] = scSites
+    .filter(({ domain, scUrls }) => {
+      if (existingDomains.has(domain.toLowerCase()) || existingScIdentities.has(domain.toLowerCase())) {
+        return false;
       }
-    }
-    return undefined;
-  }
 
-  // Build proposed sites from SC domains not already in DB
-  const proposed: (Site & { isUpdate?: boolean })[] = scSites
-    .filter(({ domain, scUrls }) => (
-      !existingDomains.has(domain.toLowerCase()) &&
-      scUrls.every(scUrl => !existingScIdentities.has(normalizeScIdentity(scUrl)))
-    ))
-    .map(({ domain, scUrl }) => ({
-      id: slugifySiteDomain(domain),
+      const scIdentities = new Set<string>([domain.toLowerCase()]);
+      for (const scUrl of scUrls) {
+        for (const identity of getSearchConsoleUrlIdentities(scUrl)) {
+          scIdentities.add(identity);
+        }
+      }
+
+      return [...scIdentities].every(identity => !existingScIdentities.has(identity));
+    })
+    .map(({ domain, scUrl }) => {
+      const ga4Match = toMatchedGa4Property(findMatchingGa4Property(domain, ga4Properties ?? []));
+      return {
+        id: allocateDiscoveryId(domain),
+        name: domain,
+        domain,
+        scUrl: /^https?:\/\//i.test(scUrl) ? scUrl : undefined,
+        searchConsole: true,
+        testPages: ['/'],
+        ga4PropertyId: ga4Match?.propertyId,
+        ga4DisplayName: ga4Match?.displayName,
+        discoverySource: ga4Match ? 'sc+ga4' : 'sc',
+      };
+    });
+  const proposedScDomains = new Set(proposedFromSc.map(site => site.domain));
+  const proposed: DiscoveryCandidate[] = [...proposedFromSc];
+
+  for (const [domain, ga4Match] of exactGa4Matches.entries()) {
+    if (proposedScDomains.has(domain) || existingDomains.has(domain) || existingScIdentities.has(domain)) continue;
+
+    const matchedGa4Property = toMatchedGa4Property(ga4Match);
+    if (!matchedGa4Property) continue;
+
+    proposed.push({
+      id: allocateDiscoveryId(domain),
       name: domain,
       domain,
-      scUrl: /^https?:\/\//i.test(scUrl) ? scUrl : undefined,
-      searchConsole: true,
+      searchConsole: false,
       testPages: ['/'],
-      ga4PropertyId: matchGa4(domain),
-    }));
+      ga4PropertyId: matchedGa4Property.propertyId,
+      ga4DisplayName: matchedGa4Property.displayName,
+      discoverySource: 'ga4',
+    });
+  }
 
   // Backfill existing sites that are missing a GA4 property ID but now have a discovered match
-  const backfill: (Site & { isUpdate: boolean })[] = existingSites
+  const scDomains = new Set(scSites.map(site => site.domain));
+  const backfill: DiscoveryCandidate[] = existingSites
     .filter(site => !site.ga4PropertyId)
     .flatMap(site => {
-      const ga4PropertyId = matchGa4(site.domain);
-      if (!ga4PropertyId) return [];
-      return [{ ...site, ga4PropertyId, isUpdate: true }];
+      const ga4Match = toMatchedGa4Property(findMatchingGa4Property(site.domain, ga4Properties ?? []));
+      if (!ga4Match) return [];
+      return [{
+        ...site,
+        ga4PropertyId: ga4Match.propertyId,
+        ga4DisplayName: ga4Match.displayName,
+        discoverySource: scDomains.has(site.domain.toLowerCase()) ? 'sc+ga4' : 'ga4',
+        isUpdate: true,
+      }];
     });
 
   return NextResponse.json([...proposed, ...backfill]);
