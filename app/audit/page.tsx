@@ -197,6 +197,11 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                       {gapCount} {gapCount === 1 ? 'recommendation' : 'recommendations'}
                     </span>
                   )}
+                  {audit.sampledPages.length > 0 && (
+                    <span className="text-neutral-600 text-[10px] font-medium px-2 py-0.5 rounded-full border border-neutral-800">
+                      {audit.sampledPages.length} {audit.sampledPages.length === 1 ? 'page' : 'pages'} sampled
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <span className="text-neutral-600 text-xs">View details →</span>

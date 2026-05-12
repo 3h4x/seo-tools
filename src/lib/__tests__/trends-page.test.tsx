@@ -243,6 +243,7 @@ function makeAuditResult() {
       favicon: makeCheckResult({ label: 'Favicon' }),
     },
     score: { pass: 5, warn: 1, fail: 0, error: 0, total: 6 },
+    sampledPages: ['/'],
   };
 }
 
