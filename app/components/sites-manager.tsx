@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { applyImportResults, buildImportSummary, getImportResult, type DiscoverySite, type ImportResult, type ImportSummary } from '@/lib/discovery-import';
 import { getSiteScUrlOverride, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
+import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
 
 interface Site {
@@ -46,8 +47,48 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
   return next;
 }
 
+function buildDiagnosticMap(diagnostics: SiteDiagnosticResult[]): Record<string, SiteDiagnosticResult> {
+  return Object.fromEntries(diagnostics.map((diagnostic) => [diagnostic.siteId, diagnostic]));
+}
+
+async function fetchSiteDiagnostics(): Promise<Record<string, SiteDiagnosticResult>> {
+  const res = await fetch('/api/config/site-diagnostics', { cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error('diagnostics');
+  }
+
+  const data = await res.json() as { diagnostics: SiteDiagnosticResult[] };
+  return buildDiagnosticMap(data.diagnostics);
+}
+
+function StatusBadge({
+  status,
+  message,
+}: {
+  status: SiteDiagnosticResult['searchConsole']['status'] | 'loading';
+  message: string;
+}) {
+  const styles = {
+    ok: 'border-emerald-800/80 bg-emerald-950/50 text-emerald-300',
+    'missing-config': 'border-neutral-700 bg-neutral-900 text-neutral-400',
+    'permission-error': 'border-red-900/80 bg-red-950/40 text-red-300',
+    'not-found': 'border-amber-900/80 bg-amber-950/40 text-amber-300',
+    'provider-error': 'border-red-900/80 bg-red-950/40 text-red-300',
+    loading: 'border-neutral-700 bg-neutral-900 text-neutral-500',
+  } as const;
+
+  return (
+    <span className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-medium ${styles[status]}`}>
+      {message}
+    </span>
+  );
+}
+
 export default function SitesManager({ initialSites, hasAuth }: Props) {
   const [sites, setSites] = useState<Site[]>(initialSites);
+  const [diagnostics, setDiagnostics] = useState<Record<string, SiteDiagnosticResult>>({});
+  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
+  const [diagnosticsError, setDiagnosticsError] = useState(false);
   const [editMode, setEditMode] = useState<EditMode>('none');
   const [form, setForm] = useState<Site>({ id: '', ...EMPTY_SITE });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -77,11 +118,36 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     setError('');
   }
 
+  const loadDiagnostics = useCallback(async () => {
+    if (!hasAuth) {
+      setDiagnostics({});
+      setDiagnosticsError(false);
+      setDiagnosticsLoading(false);
+      return;
+    }
+
+    setDiagnosticsLoading(true);
+    try {
+      setDiagnostics(await fetchSiteDiagnostics());
+      setDiagnosticsError(false);
+    } catch {
+      setDiagnostics({});
+      setDiagnosticsError(true);
+    } finally {
+      setDiagnosticsLoading(false);
+    }
+  }, [hasAuth]);
+
   async function reloadSites() {
     const res = await fetch('/api/sites');
     const data = await res.json() as Site[];
     setSites(data);
+    await loadDiagnostics();
   }
+
+  useEffect(() => {
+    void loadDiagnostics();
+  }, [loadDiagnostics]);
 
   async function persistSiteOrder(nextSites: Site[]) {
     const previousSites = sites;
@@ -289,7 +355,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                 <th className="py-2 pr-4 font-medium">Name</th>
                 <th className="py-2 pr-4 font-medium">Domain</th>
                 <th className="py-2 pr-4 font-medium">Search Console</th>
+                <th className="py-2 pr-4 font-medium">SC Access</th>
                 <th className="py-2 pr-4 font-medium">GA4</th>
+                <th className="py-2 pr-4 font-medium">GA4 Access</th>
                 <th className="py-2 font-medium"></th>
               </tr>
             </thead>
@@ -325,7 +393,41 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   </td>
                   <td className="py-2 pr-4 text-neutral-400 font-mono text-xs">{site.domain}</td>
                   <td className="py-2 pr-4 text-neutral-400">{site.searchConsole ? '✓' : '–'}</td>
+                  <td className="py-2 pr-4">
+                    {hasAuth ? (
+                      diagnostics[site.id] ? (
+                        <StatusBadge
+                          status={diagnostics[site.id].searchConsole.status}
+                          message={diagnostics[site.id].searchConsole.message}
+                        />
+                      ) : (
+                        <StatusBadge
+                          status={diagnosticsLoading ? 'loading' : 'provider-error'}
+                          message={diagnosticsLoading ? 'Checking…' : 'Unavailable'}
+                        />
+                      )
+                    ) : (
+                      <StatusBadge status="loading" message="No service account" />
+                    )}
+                  </td>
                   <td className="py-2 pr-4 text-neutral-400">{site.ga4PropertyId ? '✓' : '–'}</td>
+                  <td className="py-2 pr-4">
+                    {hasAuth ? (
+                      diagnostics[site.id] ? (
+                        <StatusBadge
+                          status={diagnostics[site.id].ga4.status}
+                          message={diagnostics[site.id].ga4.message}
+                        />
+                      ) : (
+                        <StatusBadge
+                          status={diagnosticsLoading ? 'loading' : 'provider-error'}
+                          message={diagnosticsLoading ? 'Checking…' : 'Unavailable'}
+                        />
+                      )
+                    ) : (
+                      <StatusBadge status="loading" message="No service account" />
+                    )}
+                  </td>
                   <td className="py-2 flex gap-2">
                     <button
                       onClick={() => startEdit(site)}
@@ -364,6 +466,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </tbody>
           </table>
         </div>
+      )}
+      {diagnosticsError && hasAuth && (
+        <p className="text-xs text-red-400">Could not load per-site diagnostics.</p>
       )}
       {isEditing && (
         <div className="border border-neutral-700 rounded-lg p-4 space-y-4 bg-neutral-900/50">
