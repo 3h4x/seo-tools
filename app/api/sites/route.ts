@@ -17,9 +17,9 @@ export async function POST(req: NextRequest) {
     const error = Object.values(result.errors).filter(Boolean).join('; ');
     return NextResponse.json({ ok: false, error, errors: result.errors }, { status: 400 });
   }
-  const { site, sortOrder } = result.normalized;
+  const { site } = result.normalized;
   const previousSite = existingSites.find(s => s.id === site.id) ?? null;
-  dbUpsertSite(site, sortOrder);
+  dbUpsertSite(site);
   invalidateManagedSiteCache(previousSite, site);
   clearGa4DiscoveryCache();
   return NextResponse.json({ ok: true });

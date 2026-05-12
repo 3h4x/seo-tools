@@ -496,17 +496,15 @@ export function dbGetSites(): SiteRecord[] {
   return rows.map(rowToSite);
 }
 
-export function dbUpsertSite(site: SiteRecord, sortOrder?: number): void {
+export function dbUpsertSite(site: SiteRecord): void {
   const db = getDb();
-  let order = sortOrder;
-  if (order === undefined) {
-    const existing = db.prepare('SELECT sort_order FROM sites WHERE id = ?').get(site.id) as { sort_order: number } | undefined;
-    if (existing !== undefined) {
-      order = existing.sort_order;
-    } else {
-      const maxRow = db.prepare('SELECT MAX(sort_order) as m FROM sites').get() as { m: number | null };
-      order = (maxRow.m ?? -1) + 1;
-    }
+  let order: number;
+  const existing = db.prepare('SELECT sort_order FROM sites WHERE id = ?').get(site.id) as { sort_order: number } | undefined;
+  if (existing !== undefined) {
+    order = existing.sort_order;
+  } else {
+    const maxRow = db.prepare('SELECT MAX(sort_order) as m FROM sites').get() as { m: number | null };
+    order = (maxRow.m ?? -1) + 1;
   }
   db.prepare(
     `INSERT OR REPLACE INTO sites
@@ -524,6 +522,35 @@ export function dbUpsertSite(site: SiteRecord, sortOrder?: number): void {
     JSON.stringify(site.skipChecks ?? []),
     order,
   );
+}
+
+export function dbReorderSites(orderedIds: string[]): void {
+  const db = getDb();
+  const reorderSites = db.transaction((ids: string[]) => {
+    const rows = db.prepare('SELECT id FROM sites ORDER BY sort_order ASC, id ASC').all() as Array<{ id: string }>;
+    const currentIds = rows.map(row => row.id);
+    const uniqueIds = new Set(ids);
+
+    if (ids.length !== currentIds.length) {
+      throw new Error('orderedIds must include every configured site exactly once');
+    }
+    if (uniqueIds.size !== ids.length) {
+      throw new Error('orderedIds must not contain duplicates');
+    }
+
+    const currentIdSet = new Set(currentIds);
+    const unknownId = ids.find(id => !currentIdSet.has(id));
+    if (unknownId) {
+      throw new Error(`unknown site id: ${unknownId}`);
+    }
+
+    const update = db.prepare('UPDATE sites SET sort_order = ? WHERE id = ?');
+    ids.forEach((id, index) => {
+      update.run(index, id);
+    });
+  });
+
+  reorderSites(orderedIds);
 }
 
 export function dbDeleteSite(id: string): void {

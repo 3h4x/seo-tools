@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../db', () => ({
   dbGetSites: vi.fn(),
   dbUpsertSite: vi.fn(),
+  dbReorderSites: vi.fn(),
   dbDeleteSite: vi.fn(),
 }));
 
@@ -15,10 +16,11 @@ vi.mock('../ga4', () => ({
 }));
 
 // site-domain is used by sites.ts; do not mock it so validation logic runs for real
-import { dbGetSites, dbUpsertSite, dbDeleteSite } from '../db';
+import { dbGetSites, dbUpsertSite, dbReorderSites, dbDeleteSite } from '../db';
 import { clearGa4DiscoveryCache } from '../ga4';
 import { invalidateManagedSiteCache } from '../site-cache';
 import { GET, POST, DELETE } from '../../../app/api/sites/route';
+import { PUT as PUT_ORDER } from '../../../app/api/sites/order/route';
 import { NextRequest } from 'next/server';
 
 function postReq(body: object): NextRequest {
@@ -31,6 +33,14 @@ function postReq(body: object): NextRequest {
 
 function deleteReq(id: string): NextRequest {
   return new NextRequest(`http://localhost/api/sites?id=${id}`, { method: 'DELETE' });
+}
+
+function putOrderReq(body: object): NextRequest {
+  return new NextRequest('http://localhost/api/sites/order', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 
 beforeEach(() => {
@@ -63,7 +73,7 @@ describe('POST /api/sites', () => {
     const res = await POST(postReq(site));
     const data = await res.json();
     expect(data).toEqual({ ok: true });
-    expect(dbUpsertSite).toHaveBeenCalledWith({ ...site, testPages: [] }, undefined);
+    expect(dbUpsertSite).toHaveBeenCalledWith({ ...site, testPages: [] });
     expect(invalidateManagedSiteCache).toHaveBeenCalledWith(null, { ...site, testPages: [] });
     expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
   });
@@ -75,7 +85,6 @@ describe('POST /api/sites', () => {
     expect(data).toEqual({ ok: true });
     expect(dbUpsertSite).toHaveBeenCalledWith(
       { id: 'site1', name: 'Site 1', domain: 'example.com', scUrl: 'https://Example.COM/path?x=1', testPages: [] },
-      undefined,
     );
   });
 
@@ -91,16 +100,14 @@ describe('POST /api/sites', () => {
     expect(data).toEqual({ ok: true });
     expect(dbUpsertSite).toHaveBeenCalledWith(
       { id: 'site1', name: 'Site 1', domain: 'example.com', scUrl: 'sc-domain:example.com', testPages: [] },
-      undefined,
     );
   });
 
-  it('passes sortOrder to dbUpsertSite when provided', async () => {
+  it('ignores sortOrder on the full site upsert endpoint', async () => {
     const body = { id: 'site1', name: 'Site 1', domain: 'site1.com', sortOrder: 3 };
     await POST(postReq(body));
     expect(dbUpsertSite).toHaveBeenCalledWith(
       { id: 'site1', name: 'Site 1', domain: 'site1.com', testPages: [] },
-      3,
     );
   });
 
@@ -128,7 +135,7 @@ describe('POST /api/sites', () => {
     const res = await POST(postReq(updatedSite));
 
     expect(res.status).toBe(200);
-    expect(dbUpsertSite).toHaveBeenCalledWith(updatedSite, undefined);
+    expect(dbUpsertSite).toHaveBeenCalledWith(updatedSite);
     expect(invalidateManagedSiteCache).toHaveBeenCalledWith(existingSite, updatedSite);
     expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
   });
@@ -266,6 +273,38 @@ describe('POST /api/sites', () => {
     const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', testPages: ['/', '/about'] }));
     expect(res.status).toBe(200);
     expect(dbUpsertSite).toHaveBeenCalled();
+  });
+});
+
+describe('PUT /api/sites/order', () => {
+  it('persists a valid full site id order', async () => {
+    const res = await PUT_ORDER(putOrderReq({ orderedIds: ['site-c', 'site-a', 'site-b'] }));
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data).toEqual({ ok: true });
+    expect(dbReorderSites).toHaveBeenCalledWith(['site-c', 'site-a', 'site-b']);
+  });
+
+  it('returns 400 when orderedIds is missing or malformed', async () => {
+    const res = await PUT_ORDER(putOrderReq({ orderedIds: ['site-a', ''] }));
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data.ok).toBe(false);
+    expect(dbReorderSites).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when order validation fails in storage', async () => {
+    vi.mocked(dbReorderSites).mockImplementation(() => {
+      throw new Error('orderedIds must include every configured site exactly once');
+    });
+
+    const res = await PUT_ORDER(putOrderReq({ orderedIds: ['site-a'] }));
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data).toEqual({ ok: false, error: 'orderedIds must include every configured site exactly once' });
   });
 });
 
