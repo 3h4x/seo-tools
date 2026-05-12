@@ -102,7 +102,7 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
   if (!propertyId) return null;
 
   try {
-    const prop = `properties/${propertyId}`;
+    const prop = propertyId.startsWith('properties/') ? propertyId : `properties/${propertyId}`;
 
     const dataClient = getDataClient();
     const [metricsRes, topPagesRes, trafficRes] = await Promise.all([

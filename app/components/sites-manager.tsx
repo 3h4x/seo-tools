@@ -14,6 +14,7 @@ interface Site {
   color?: string;
   testPages: string[];
   skipChecks?: string[];
+  isUpdate?: boolean;
 }
 
 interface Props {
@@ -179,7 +180,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     try {
       const results = await Promise.all(toImport.map(async (site): Promise<ImportResult> => {
         try {
-          const { importError: _importError, ...siteToSave } = site;
+          const { importError: _importError, isUpdate: _isUpdate, ...siteToSave } = site;
           const res = await fetch('/api/sites', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -473,7 +474,14 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   >
                     {selected.size === discovered.length ? 'Deselect All' : 'Select All'}
                   </button>
-                  <span className="text-xs text-neutral-600">{discovered.length} new site{discovered.length !== 1 ? 's' : ''} found</span>
+                  {(() => {
+                    const newCount = discovered.filter(s => !s.isUpdate).length;
+                    const updateCount = discovered.filter(s => s.isUpdate).length;
+                    const parts = [];
+                    if (newCount > 0) parts.push(`${newCount} new site${newCount !== 1 ? 's' : ''}`);
+                    if (updateCount > 0) parts.push(`${updateCount} to update`);
+                    return <span className="text-xs text-neutral-600">{parts.join(', ')} found</span>;
+                  })()}
                 </div>
                 <div className="space-y-2">
                   {discovered.map(site => (
@@ -486,6 +494,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                           className="rounded border-neutral-600"
                         />
                         <span className="text-sm text-white">{site.domain}</span>
+                        {site.isUpdate && (
+                          <span className="text-xs text-amber-400 border border-amber-700 rounded px-1">update</span>
+                        )}
                         {site.ga4PropertyId && (
                           <span className="text-xs text-neutral-500">GA4: {site.ga4PropertyId}</span>
                         )}
