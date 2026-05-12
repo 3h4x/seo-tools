@@ -95,6 +95,21 @@ export function analyzeSiteGaps(audit: SiteAuditResult, site: Site): SiteGapAnal
     });
   }
 
+  const redirectChainIssues = (audit.redirectChains ?? []).filter(
+    (chain) => chain.status !== 'pass' && (chain.hopCount > 1 || chain.hasTemporaryRedirect || chain.loopDetected),
+  );
+  if (redirectChainIssues.length > 0) {
+    gaps.push({
+      id: 'redirect-chains',
+      title: 'Flatten redirect chains to single permanent redirects',
+      description: 'Some audited pages waste crawl budget with multi-hop or temporary redirects. Long chains slow down crawlers and temporary hops dilute canonical link equity.',
+      severity: 'medium',
+      category: 'crawlability',
+      hint: 'Update redirects so each legacy URL resolves in a single permanent 301 or 308 hop to the final canonical destination. Replace 302/303/307 redirects with 301 or 308 when the move is intended to be permanent.',
+      affectedPages: redirectChainIssues.map((chain) => chain.page),
+    });
+  }
+
   // MEDIUM: OG image missing
   if (audit.ogImage.status === 'fail') {
     gaps.push({
@@ -291,6 +306,7 @@ const GAP_SECTION_MAP: Record<string, string> = {
   'robots-no-sitemap-directive': 'robotsTxt',
   'missing-sitemap': 'sitemap',
   'stale-sitemap': 'sitemap',
+  'redirect-chains': 'redirectChains',
   'weak-meta-tags': 'metaTags',
   'missing-canonical': 'metaTags',
   'broken-canonical-targets': 'metaTags',

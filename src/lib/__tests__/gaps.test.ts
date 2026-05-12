@@ -34,6 +34,7 @@ function makeAudit(overrides: Partial<SiteAuditResult> = {}): SiteAuditResult {
     sitemap: { ...makeCheckResult('pass', 'Sitemap'), url: 'https://example.com/sitemap.xml', urlCount: 10, isIndex: false, hasLastmod: true, lastmodSample: new Date().toISOString().split('T')[0] },
     scSitemapFreshness: makeCheckResult('pass', 'SC Sitemap'),
     indexingCoverage: { ...makeCheckResult('pass', 'Indexing'), indexedPages: 10 },
+    redirectChains: [],
     metaTags: [makeMetaTagResult('/')],
     ogImage: makeCheckResult('pass', 'OG Image'),
     ttfb: { ...makeCheckResult('pass', 'TTFB'), ms: 300 },
@@ -108,6 +109,80 @@ describe('analyzeSiteGaps', () => {
     const gap = result.gaps.find(g => g.id === 'weak-meta-tags');
     expect(gap).toBeDefined();
     expect(gap?.affectedPages).toContain('/');
+  });
+
+  it('includes redirect-chains gap for unskipped redirect chain failures', () => {
+    const audit = makeAudit({
+      redirectChains: [{
+        ...makeCheckResult('fail', 'Redirect Chain'),
+        page: '/old-page',
+        requestedUrl: 'https://example.com/old-page',
+        finalUrl: 'https://example.com/new-page',
+        hops: [],
+        hopCount: 3,
+        hasTemporaryRedirect: false,
+        loopDetected: false,
+      }],
+    });
+    const result = analyzeSiteGaps(audit, makeSite());
+    const gap = result.gaps.find(g => g.id === 'redirect-chains');
+    expect(gap).toBeDefined();
+    expect(gap?.affectedPages).toContain('/old-page');
+  });
+
+  it('includes redirect-chains gap for two-hop permanent redirect warnings', () => {
+    const audit = makeAudit({
+      redirectChains: [{
+        ...makeCheckResult('warn', 'Redirect Chain'),
+        page: '/legacy',
+        requestedUrl: 'https://example.com/legacy',
+        finalUrl: 'https://example.com/current',
+        hops: [],
+        hopCount: 2,
+        hasTemporaryRedirect: false,
+        loopDetected: false,
+      }],
+    });
+    const result = analyzeSiteGaps(audit, makeSite());
+    const gap = result.gaps.find(g => g.id === 'redirect-chains');
+    expect(gap).toBeDefined();
+    expect(gap?.affectedPages).toContain('/legacy');
+  });
+
+  it('includes redirect-chains gap for single-hop temporary redirect failures', () => {
+    const audit = makeAudit({
+      redirectChains: [{
+        ...makeCheckResult('fail', 'Redirect Chain'),
+        page: '/temporary',
+        requestedUrl: 'https://example.com/temporary',
+        finalUrl: 'https://example.com/current',
+        hops: [{ url: 'https://example.com/temporary', status: 303, location: 'https://example.com/current' }],
+        hopCount: 1,
+        hasTemporaryRedirect: true,
+        loopDetected: false,
+      }],
+    });
+    const result = analyzeSiteGaps(audit, makeSite());
+    const gap = result.gaps.find(g => g.id === 'redirect-chains');
+    expect(gap).toBeDefined();
+    expect(gap?.affectedPages).toContain('/temporary');
+  });
+
+  it('does not include redirect-chains gap for skipped redirect chain checks', () => {
+    const audit = makeAudit({
+      redirectChains: [{
+        ...makeCheckResult('pass', 'Redirect Chain'),
+        page: '/old-page',
+        requestedUrl: 'https://example.com/old-page',
+        finalUrl: 'https://example.com/new-page',
+        hops: [],
+        hopCount: 3,
+        hasTemporaryRedirect: true,
+        loopDetected: true,
+      }],
+    });
+    const result = analyzeSiteGaps(audit, makeSite());
+    expect(result.gaps.find(g => g.id === 'redirect-chains')).toBeUndefined();
   });
 
   it('includes missing-og-image gap when og image fails', () => {

@@ -9,7 +9,7 @@ import {
   cachedGetSearchConsoleQueries,
   cachedGetSitemapSubmissions,
 } from '@/lib/search-console';
-import { cachedAuditSite } from '@/lib/audit';
+import { cachedAuditSite, normalizeSiteAuditResult } from '@/lib/audit';
 import { analyzeSiteGaps } from '@/lib/gaps';
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getScDaily, getGa4Daily, getKeywordDeltas } from '@/lib/db';
@@ -84,7 +84,7 @@ export default async function SiteDashboardPage({
 
   const scUrl = getSCUrl(site);
 
-  const [audit, sitemapSubmissions, scComparison, scQueries, ga4Data, cwvSummary] = await Promise.all([
+  const [rawAudit, sitemapSubmissions, scComparison, scQueries, ga4Data, cwvSummary] = await Promise.all([
     cachedAuditSite(site),
     site.searchConsole ? cachedGetSitemapSubmissions(scUrl) : Promise.resolve([]),
     site.searchConsole ? cachedGetSearchConsoleDataWithComparison(scUrl, days) : null,
@@ -93,6 +93,7 @@ export default async function SiteDashboardPage({
     getCwvAuditSummary(siteId),
   ]);
 
+  const audit = normalizeSiteAuditResult(rawAudit);
   const gapAnalysis = analyzeSiteGaps(audit, site);
   const sections = gapsBySection(gapAnalysis.gaps);
   const totalGaps = gapAnalysis.gaps.length;
@@ -459,6 +460,37 @@ export default async function SiteDashboardPage({
               ))}
             </div>
             {sections['imageSeo']?.map(g => <Recommendation key={g.id} gap={g} />)}
+          </AuditPanel>
+          <AuditPanel title={`Redirect Chains · ${audit.redirectChains.length} pages checked`}>
+            <div className="space-y-3">
+              {audit.redirectChains.map((chain, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className={`size-1.5 rounded-full shrink-0 ${statusDots[chain.status]}`} />
+                    <span className="text-neutral-400 font-mono w-32 shrink-0">{chain.page}</span>
+                    <span className="text-neutral-300 font-mono">{chain.message}</span>
+                  </div>
+                  <div className="ml-5 space-y-1">
+                    {chain.hops.length > 0 ? (
+                      <>
+                        {chain.hops.map((hop, j) => (
+                          <div key={j} className="text-[11px] font-mono text-neutral-500 break-all">
+                            {hop.url} <span className="text-neutral-400">HTTP {hop.status}</span>
+                            {hop.location ? ` -> ${hop.location}` : ''}
+                          </div>
+                        ))}
+                        {chain.finalUrl !== chain.hops[chain.hops.length - 1]?.url && (
+                          <div className="text-[11px] font-mono text-neutral-600 break-all">{chain.finalUrl}</div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-[11px] font-mono text-neutral-600 break-all">{chain.finalUrl}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {sections['redirectChains']?.map(g => <Recommendation key={g.id} gap={g} />)}
           </AuditPanel>
           <AuditPanel title={`Internal Links · ${audit.internalLinks.length} pages checked`}>
             <div className="space-y-3">

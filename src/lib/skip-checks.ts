@@ -3,6 +3,7 @@ export type SkipCheckId =
   | 'sitemap'
   | 'scSitemap'
   | 'indexing'
+  | 'redirectChain'
   | 'title'
   | 'description'
   | 'ogTitle'
@@ -30,6 +31,7 @@ export const SKIP_CHECK_OPTIONS: SkipCheckOption[] = [
   { id: 'sitemap', label: 'Sitemap' },
   { id: 'scSitemap', label: 'SC Sitemap' },
   { id: 'indexing', label: 'Indexing' },
+  { id: 'redirectChain', label: 'Redirect Chain', aliases: ['redirect-chain'] },
   { id: 'title', label: 'title' },
   { id: 'description', label: 'description' },
   { id: 'ogTitle', label: 'og:title' },
