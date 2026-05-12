@@ -111,32 +111,41 @@ export async function GET(req: Request) {
     return NextResponse.json(Object.fromEntries(ga4Map));
   }
 
+  function matchGa4(domain: string): string | undefined {
+    const domainLower = domain.toLowerCase();
+    for (const [name, propId] of ga4Map.entries()) {
+      if (name.includes(domainLower) || domainLower.includes(name)) {
+        // Return in properties/NNNNNN format so it passes site validation on import
+        return propId.startsWith('properties/') ? propId : `properties/${propId}`;
+      }
+    }
+    return undefined;
+  }
+
   // Build proposed sites from SC domains not already in DB
-  const proposed: Site[] = scSites
+  const proposed: (Site & { isUpdate?: boolean })[] = scSites
     .filter(({ domain, scUrls }) => (
       !existingDomains.has(domain.toLowerCase()) &&
       scUrls.every(scUrl => !existingScIdentities.has(normalizeScIdentity(scUrl)))
     ))
-    .map(({ domain, scUrl }) => {
-      const domainLower = domain.toLowerCase();
-      let ga4PropertyId: string | undefined;
-      for (const [name, propId] of ga4Map.entries()) {
-        if (name.includes(domainLower) || domainLower.includes(name)) {
-          ga4PropertyId = propId;
-          break;
-        }
-      }
+    .map(({ domain, scUrl }) => ({
+      id: slugifySiteDomain(domain),
+      name: domain,
+      domain,
+      scUrl: /^https?:\/\//i.test(scUrl) ? scUrl : undefined,
+      searchConsole: true,
+      testPages: ['/'],
+      ga4PropertyId: matchGa4(domain),
+    }));
 
-      return {
-        id: slugifySiteDomain(domain),
-        name: domain,
-        domain,
-        scUrl: /^https?:\/\//i.test(scUrl) ? scUrl : undefined,
-        searchConsole: true,
-        testPages: ['/'],
-        ga4PropertyId,
-      };
+  // Backfill existing sites that are missing a GA4 property ID but now have a discovered match
+  const backfill: (Site & { isUpdate: boolean })[] = existingSites
+    .filter(site => !site.ga4PropertyId)
+    .flatMap(site => {
+      const ga4PropertyId = matchGa4(site.domain);
+      if (!ga4PropertyId) return [];
+      return [{ ...site, ga4PropertyId, isUpdate: true }];
     });
 
-  return NextResponse.json(proposed);
+  return NextResponse.json([...proposed, ...backfill]);
 }

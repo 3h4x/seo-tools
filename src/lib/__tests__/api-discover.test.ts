@@ -120,7 +120,7 @@ describe('GET /api/sites/discover', () => {
 
     const res = await GET(getReq());
     const body = await res.json();
-    expect(body[0].ga4PropertyId).toBe('123456');
+    expect(body[0].ga4PropertyId).toBe('properties/123456');
   });
 
   it('matches GA4 property when SC returns a URL-prefix property', async () => {
@@ -141,7 +141,7 @@ describe('GET /api/sites/discover', () => {
     const body = await res.json();
     expect(body[0].domain).toBe('blog.example.com');
     expect(body[0].scUrl).toBe('https://blog.example.com/');
-    expect(body[0].ga4PropertyId).toBe('654321');
+    expect(body[0].ga4PropertyId).toBe('properties/654321');
   });
 
   it('dedupes domain and URL-prefix properties for the same hostname', async () => {
@@ -167,7 +167,7 @@ describe('GET /api/sites/discover', () => {
     expect(body[0]).toMatchObject({
       id: 'example-com',
       domain: 'example.com',
-      ga4PropertyId: '123',
+      ga4PropertyId: 'properties/123',
     });
     expect(body[0].scUrl).toBeUndefined();
   });
@@ -389,5 +389,67 @@ describe('GET /api/sites/discover', () => {
     const body = await res.json();
     expect(body).not.toHaveProperty('mysite.com');
     expect(body).toHaveProperty('mysite.com analytics', '321');
+  });
+
+  it('backfills existing site missing GA4 when a match is found', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'mysite-com', name: 'My Site', domain: 'mysite.com', testPages: ['/'], ga4PropertyId: undefined },
+    ] as never);
+    mockSc([]); // already in DB, won't appear in proposed
+    mockGa4([{ displayName: 'mysite.com - GA4', property: 'properties/111' }]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({
+      id: 'mysite-com',
+      domain: 'mysite.com',
+      ga4PropertyId: 'properties/111',
+      isUpdate: true,
+    });
+  });
+
+  it('does not backfill existing site that already has a GA4 property ID', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'mysite-com', name: 'My Site', domain: 'mysite.com', testPages: ['/'], ga4PropertyId: '999' },
+    ] as never);
+    mockSc([]);
+    mockGa4([{ displayName: 'mysite.com GA4', property: 'properties/111' }]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toEqual([]);
+  });
+
+  it('does not backfill existing site when no GA4 match found', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'mysite-com', name: 'My Site', domain: 'mysite.com', testPages: ['/'], ga4PropertyId: undefined },
+    ] as never);
+    mockSc([]);
+    mockGa4([{ displayName: 'unrelated project', property: 'properties/777' }]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toEqual([]);
+  });
+
+  it('returns both new and backfill sites when both match', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'existing-com', name: 'Existing', domain: 'existing.com', testPages: ['/'], ga4PropertyId: undefined },
+    ] as never);
+    mockSc(['newsite.com']); // new site not in DB
+    mockGa4([
+      { displayName: 'existing.com GA4', property: 'properties/100' },
+      { displayName: 'newsite.com GA4', property: 'properties/200' },
+    ]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(2);
+    const backfill = body.find((s: { id: string }) => s.id === 'existing-com');
+    const proposed = body.find((s: { id: string }) => s.id === 'newsite-com');
+    expect(backfill).toMatchObject({ isUpdate: true, ga4PropertyId: 'properties/100' });
+    expect(proposed).toMatchObject({ ga4PropertyId: 'properties/200' });
+    expect(proposed?.isUpdate).toBeUndefined();
   });
 });
