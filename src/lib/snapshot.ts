@@ -1,0 +1,158 @@
+import { searchconsole_v1 } from '@googleapis/searchconsole';
+import { BetaAnalyticsDataClient } from '@google-analytics/data';
+import { getAuth } from './google-auth';
+import { getDb } from './db';
+import { discoverPropertyIds } from './ga4';
+import { getSCUrl } from './sites';
+
+export interface SnapshotResult {
+  date: string;
+  sc: number;
+  keywords: number;
+  ga4: number;
+  errors: string[];
+}
+
+// Module-level lock — Next.js runs in a single process so this is sufficient.
+let snapshotRunning = false;
+
+export class SnapshotAlreadyRunningError extends Error {
+  constructor() {
+    super('snapshot_in_progress');
+    this.name = 'SnapshotAlreadyRunningError';
+  }
+}
+
+export function isSnapshotRunning(): boolean {
+  return snapshotRunning;
+}
+
+export async function runSnapshot(): Promise<SnapshotResult> {
+  if (snapshotRunning) {
+    throw new SnapshotAlreadyRunningError();
+  }
+  snapshotRunning = true;
+  try {
+    return await doSnapshot();
+  } finally {
+    snapshotRunning = false;
+  }
+}
+
+async function doSnapshot(): Promise<SnapshotResult> {
+  const today = new Date().toISOString().split('T')[0];
+  const errors: string[] = [];
+
+  const sites = await discoverPropertyIds();
+  if (sites.length === 0) {
+    return { date: today, sc: 0, keywords: 0, ga4: 0, errors: ['No sites configured'] };
+  }
+
+  const sc = new searchconsole_v1.Searchconsole({ auth: getAuth() });
+  const db = getDb();
+
+  const endDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  })();
+  const startDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split('T')[0];
+  })();
+
+  const scDelete = db.prepare('DELETE FROM sc_snapshots WHERE site_id = ? AND date = ?');
+  const scInsert = db.prepare(
+    'INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)',
+  );
+  let scCount = 0;
+  for (const site of sites) {
+    if (site.searchConsole === false) continue;
+    try {
+      const q = await sc.searchanalytics.query({
+        siteUrl: getSCUrl(site),
+        requestBody: { startDate, endDate, dimensions: ['page'], rowLimit: 100 },
+      });
+      const rows = q.data.rows || [];
+      db.transaction(() => {
+        scDelete.run(site.id, today);
+        for (const row of rows) {
+          scInsert.run(site.id, today, row.keys?.[0] || '', row.clicks || 0, row.impressions || 0, row.ctr || 0, row.position || 0);
+        }
+      })();
+      scCount += rows.length;
+    } catch (e) {
+      errors.push(`SC pages ${site.id}: ${String(e).slice(0, 80)}`);
+    }
+  }
+
+  const kwInsert = db.prepare(
+    `INSERT INTO keyword_history (site_id, date, query, clicks, impressions, ctr, position)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(site_id, date, query) DO UPDATE SET
+       clicks = excluded.clicks, impressions = excluded.impressions,
+       ctr = excluded.ctr, position = excluded.position`,
+  );
+  let kwCount = 0;
+  for (const site of sites) {
+    if (site.searchConsole === false) continue;
+    try {
+      const q = await sc.searchanalytics.query({
+        siteUrl: getSCUrl(site),
+        requestBody: { startDate, endDate, dimensions: ['query'], rowLimit: 50 },
+      });
+      const rows = q.data.rows || [];
+      db.transaction(() => {
+        for (const row of rows) {
+          kwInsert.run(site.id, today, row.keys?.[0] || '', row.clicks || 0, row.impressions || 0, row.ctr || 0, row.position || 0);
+        }
+      })();
+      kwCount += rows.length;
+    } catch (e) {
+      errors.push(`SC keywords ${site.id}: ${String(e).slice(0, 80)}`);
+    }
+  }
+
+  const ga4Client = new BetaAnalyticsDataClient({ auth: getAuth() });
+  const ga4Delete = db.prepare('DELETE FROM ga4_snapshots WHERE site_id = ? AND date = ?');
+  const ga4Insert = db.prepare(
+    'INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration) VALUES (?, ?, ?, ?, ?, ?, ?)',
+  );
+  const ga4Upsert = db.transaction((siteId: string, date: string, users: number, sessions: number, views: number, bounce: number, duration: number) => {
+    ga4Delete.run(siteId, date);
+    ga4Insert.run(siteId, date, users, sessions, views, bounce, duration);
+  });
+  let ga4Count = 0;
+  for (const site of sites) {
+    if (!site.ga4PropertyId) continue;
+    try {
+      const prop = site.ga4PropertyId.startsWith('properties/')
+        ? site.ga4PropertyId
+        : `properties/${site.ga4PropertyId}`;
+      const [report] = await ga4Client.runReport({
+        property: prop,
+        dateRanges: [{ startDate: '7daysAgo', endDate: 'yesterday' }],
+        metrics: [
+          { name: 'activeUsers' },
+          { name: 'sessions' },
+          { name: 'screenPageViews' },
+          { name: 'bounceRate' },
+          { name: 'averageSessionDuration' },
+        ],
+      });
+      const row = report.rows?.[0];
+      const users = parseInt(row?.metricValues?.[0]?.value || '0');
+      const sessions = parseInt(row?.metricValues?.[1]?.value || '0');
+      const views = parseInt(row?.metricValues?.[2]?.value || '0');
+      const bounce = parseFloat(row?.metricValues?.[3]?.value || '0');
+      const duration = parseFloat(row?.metricValues?.[4]?.value || '0');
+      ga4Upsert(site.id, today, users, sessions, views, bounce, duration);
+      ga4Count++;
+    } catch (e) {
+      errors.push(`GA4 ${site.id}: ${String(e).slice(0, 80)}`);
+    }
+  }
+
+  return { date: today, sc: scCount, keywords: kwCount, ga4: ga4Count, errors };
+}

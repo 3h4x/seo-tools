@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getManagedSites } from '@/lib/sites';
+import { SnapshotButton } from '../components/snapshot-button';
 import {
   getScTrends,
   getGa4Trends,
@@ -55,8 +56,10 @@ export default async function TrendsPage({
           </p>
           <div className="mt-4 bg-neutral-800 rounded-lg p-4 max-w-md mx-auto text-left">
             <p className="text-neutral-400 text-xs mb-2 font-semibold">Quick start:</p>
-            <code className="text-emerald-400 text-xs font-mono">pnpm seo snapshot</code>
-            <p className="text-neutral-600 text-xs mt-2">Run daily via cron for best results. Charts appear after 2+ snapshots.</p>
+            <div className="flex justify-center">
+              <SnapshotButton />
+            </div>
+            <p className="text-neutral-600 text-xs mt-3 text-center">Or run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> from the CLI. Charts appear after 2+ snapshots.</p>
           </div>
         </div>
       </div>
@@ -81,12 +84,15 @@ export default async function TrendsPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Trends</h1>
-        <p className="text-neutral-500 text-sm mt-1">
-          {snapshotCount} {snapshotCount === 1 ? 'snapshot' : 'snapshots'} collected
-          {snapshotCount === 1 && ' · Run daily for trend data'}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Trends</h1>
+          <p className="text-neutral-500 text-sm mt-1">
+            {snapshotCount} {snapshotCount === 1 ? 'snapshot' : 'snapshots'} collected
+            {snapshotCount === 1 && ' · Run daily for trend data'}
+          </p>
+        </div>
+        <SnapshotButton />
       </div>
       {showKeywordsFirst ? (
         <>
