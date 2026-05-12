@@ -47,6 +47,8 @@ export function invalidateManagedSiteCache(previousSite: Site | null, nextSite: 
   }
 
   if (shouldClearSitemapSyncState(previous, next)) {
+    // A site identity change must force the next sitemap sync to behave like a
+    // first submit, even when the sitemap XML hash itself is unchanged.
     for (const siteId of auditSiteIds) {
       clearSitemapSyncState(siteId);
     }

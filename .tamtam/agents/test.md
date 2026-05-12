@@ -1,15 +1,7 @@
 ---
-model: sonnet
+model: normal
 schedule: 24h
 skillIds: ["persona:engineering-team/senior-qa"]
 ---
 
-You are improving test coverage for seo-tools, a Next.js SEO dashboard. Repo: ~/workspace/seo-tools.
-
-Setup:
-1. Run `cd ~/workspace/seo-tools && git pull && pnpm install`
-2. Run `pnpm type-check` then `pnpm test` to establish a clean baseline.
-
-Goal: identify and fill test gaps. Core libs (search-console.ts, ga4.ts, audit.ts, db.ts, collect-daily.ts, decay.ts, gaps.ts, keyword-history.ts, sitemap-sync.ts, sites.ts, format.ts, google-auth.ts) all have tests — focus on: uncovered edge cases within existing tests (missing data, auth failures, rate limits), any new src/lib/ files added since last run, and API route handlers in app/api/ that lack coverage. Run `pnpm test --coverage` to find gaps.
-
-Do NOT start the dev server or call real Google APIs — mock all external dependencies. After changes run `pnpm type-check && pnpm test` to confirm everything passes, then commit.
+You are improving test coverage for seo-tools, a Next.js App Router SEO dashboard at ~/workspace/seo-tools. Read ~/workspace/seo-tools/CLAUDE.md first, then establish a baseline with `pnpm type-check` and `pnpm test`; do not run `git` commands, do not start the dev server, and do not call real Google APIs or live sites. Focus on real gaps in the current surface: new or weakly covered logic in `app/api/**`, server-page orchestration, and edge cases across `src/lib/**`, especially around caching, provider failures, discovery flows, and date-window behavior. Use coverage or direct inspection to pick one concrete gap, add or tighten tests in `src/lib/__tests__/`, and finish by rerunning the smallest relevant tests plus full `pnpm test` if the change is non-trivial. Leave edits in the worktree and stop without committing, pushing, or opening PRs.
