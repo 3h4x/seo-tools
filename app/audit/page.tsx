@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { cachedAuditAllSites, type CheckStatus, type SiteAuditResult } from '@/lib/audit';
+import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getManagedSites } from '@/lib/sites';
 import { analyzeSiteGaps, type GapSeverity, type GapCategory } from '@/lib/gaps';
 import { detectAllDecay, type DecaySeverity } from '@/lib/decay';
@@ -172,6 +173,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         {audits.map((audit) => {
           const worst = worstStatus(audit);
           const meta = metaTagsSummary(audit);
+          const canonical = summarizeCanonicalChecks(audit.metaTags);
           const images = checksSummary(audit.imageSeo, { fail: 'missing alt', warn: 'need alt', pass: 'All images have alt' });
           const links = checksSummary(audit.internalLinks, { fail: 'no links', warn: 'low links', pass: 'Good linking' });
           const site = managedSites.find(s => s.id === audit.siteId);
@@ -204,12 +206,13 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-10 gap-3">
                 <CheckItem label="robots.txt" status={audit.robotsTxt.status} />
                 <CheckItem label="Sitemap" status={audit.sitemap.status} />
                 <CheckItem label="SC Sitemap" status={audit.scSitemapFreshness.status} />
                 <CheckItem label="Indexing" status={audit.indexingCoverage.status} sublabel={audit.indexingCoverage.coveragePct != null ? `${audit.indexingCoverage.coveragePct}%` : undefined} />
                 <CheckItem label="Meta Tags" status={meta.status} sublabel={meta.label} />
+                <CheckItem label="Canonical" status={canonical.status} sublabel={canonical.compactLabel} />
                 <CheckItem label="OG Image" status={audit.ogImage.status} />
                 <CheckItem label="Images" status={images.status} sublabel={images.label} />
                 <CheckItem label="Int. Links" status={links.status} sublabel={links.label} />

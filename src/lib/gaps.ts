@@ -1,4 +1,5 @@
 import type { SiteAuditResult } from './audit';
+import { getBrokenCanonicalPages, getMissingCanonicalPages } from './canonical';
 import type { Site } from './sites';
 
 export type GapSeverity = 'high' | 'medium' | 'low';
@@ -170,7 +171,7 @@ export function analyzeSiteGaps(audit: SiteAuditResult, site: Site): SiteGapAnal
   }
 
   // HIGH: missing canonical tags
-  const pagesWithoutCanonical = audit.metaTags.filter(m => m.canonical.status === 'fail');
+  const pagesWithoutCanonical = getMissingCanonicalPages(audit.metaTags);
   if (pagesWithoutCanonical.length > 0) {
     gaps.push({
       id: 'missing-canonical',
@@ -180,6 +181,19 @@ export function analyzeSiteGaps(audit: SiteAuditResult, site: Site): SiteGapAnal
       category: 'indexing',
       hint: 'Add <link rel="canonical" href="https://' + site.domain + '/page-path"> to every page. Use absolute URLs including protocol. Self-referencing canonicals are fine.',
       affectedPages: pagesWithoutCanonical.map(m => m.page),
+    });
+  }
+
+  const pagesWithBrokenCanonical = getBrokenCanonicalPages(audit.metaTags);
+  if (pagesWithBrokenCanonical.length > 0) {
+    gaps.push({
+      id: 'broken-canonical-targets',
+      title: 'Fix broken canonical targets',
+      description: 'Some pages already declare canonical URLs, but those targets are invalid or unavailable. Broken canonicals send conflicting indexing signals and can prevent search engines from trusting the preferred URL.',
+      severity: 'high',
+      category: 'indexing',
+      hint: 'Update each canonical to a live absolute URL that resolves without errors. Prefer self-referential canonicals for indexable pages and verify the final target returns HTTP 200.',
+      affectedPages: pagesWithBrokenCanonical.map((meta) => meta.page),
     });
   }
 
@@ -279,6 +293,7 @@ const GAP_SECTION_MAP: Record<string, string> = {
   'stale-sitemap': 'sitemap',
   'weak-meta-tags': 'metaTags',
   'missing-canonical': 'metaTags',
+  'broken-canonical-targets': 'metaTags',
   'missing-twitter-card': 'metaTags',
   'missing-og-image': 'ogImage',
   'missing-json-ld': 'metaTags',

@@ -213,4 +213,22 @@ describe('validateAndNormalizeSiteInput', () => {
     expect(result.errors).toBeNull();
     expect(result.normalized?.site.testPages).toEqual(['/', '/about']);
   });
+
+  it('normalizes skipChecks to stable ids before storage', () => {
+    const result = validateAndNormalizeSiteInput(
+      { id: 's', name: 'S', domain: 'site.com', skipChecks: ['OG Image', 'Internal Links', 'og:image'] },
+      [],
+    );
+    expect(result.errors).toBeNull();
+    expect(result.normalized?.site.skipChecks).toEqual(['ogImage', 'internalLinks', 'ogImageMeta']);
+  });
+
+  it('preserves existing identifier-style skipChecks when a site is re-saved', () => {
+    const result = validateAndNormalizeSiteInput(
+      { id: 's', name: 'S', domain: 'site.com', skipChecks: ['ogImage', 'internalLinks'] },
+      [],
+    );
+    expect(result.errors).toBeNull();
+    expect(result.normalized?.site.skipChecks).toEqual(['ogImage', 'internalLinks']);
+  });
 });
