@@ -23,6 +23,7 @@ const {
   mockGetScTrends,
   mockGetGa4Trends,
   mockGetAuditTrends,
+  mockGetTtfbTrends,
   mockGetTopKeywordsWithHistory,
   mockGetKeywordDeltas,
   mockGetScDaily,
@@ -37,6 +38,7 @@ const {
   mockGetScTrends: vi.fn(),
   mockGetGa4Trends: vi.fn(),
   mockGetAuditTrends: vi.fn(),
+  mockGetTtfbTrends: vi.fn(),
   mockGetTopKeywordsWithHistory: vi.fn(),
   mockGetKeywordDeltas: vi.fn(),
   mockGetScDaily: vi.fn(),
@@ -55,6 +57,7 @@ vi.mock('@/lib/db', () => ({
   getScTrends: mockGetScTrends,
   getGa4Trends: mockGetGa4Trends,
   getAuditTrends: mockGetAuditTrends,
+  getTtfbTrends: mockGetTtfbTrends,
   getTopKeywordsWithHistory: mockGetTopKeywordsWithHistory,
   getKeywordDeltas: mockGetKeywordDeltas,
   getScDaily: mockGetScDaily,
@@ -281,6 +284,7 @@ beforeEach(() => {
   mockGetAuditTrends.mockReturnValue([
     { date: '2026-05-02', pass: 7, warn: 1, fail: 0 },
   ]);
+  mockGetTtfbTrends.mockReturnValue([]);
   mockGetTopKeywordsWithHistory.mockReturnValue({
     topQueries: ['seo tools'],
     history: [

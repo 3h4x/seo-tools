@@ -10,6 +10,7 @@ export interface SnapshotResult {
   sc: number;
   keywords: number;
   ga4: number;
+  ttfb: number;
   errors: string[];
 }
 
@@ -45,7 +46,7 @@ async function doSnapshot(): Promise<SnapshotResult> {
 
   const sites = await discoverPropertyIds();
   if (sites.length === 0) {
-    return { date: today, sc: 0, keywords: 0, ga4: 0, errors: ['No sites configured'] };
+    return { date: today, sc: 0, keywords: 0, ga4: 0, ttfb: 0, errors: ['No sites configured'] };
   }
 
   const sc = new searchconsole_v1.Searchconsole({ auth: getAuth() });
@@ -154,5 +155,28 @@ async function doSnapshot(): Promise<SnapshotResult> {
     }
   }
 
-  return { date: today, sc: scCount, keywords: kwCount, ga4: ga4Count, errors };
+  const auditDelete = db.prepare('DELETE FROM audit_snapshots WHERE site_id = ? AND date = ?');
+  const auditInsert = db.prepare(
+    'INSERT INTO audit_snapshots (site_id, date, pass_count, warn_count, fail_count, checks_json, ttfb_ms) VALUES (?, ?, 0, 0, 0, ?, ?)',
+  );
+  let ttfbCount = 0;
+  for (const site of sites) {
+    try {
+      const start = Date.now();
+      await fetch(`https://${site.domain}/`, {
+        signal: AbortSignal.timeout(10_000),
+        method: 'HEAD',
+      });
+      const ttfbMs = Date.now() - start;
+      db.transaction(() => {
+        auditDelete.run(site.id, today);
+        auditInsert.run(site.id, today, '{}', ttfbMs);
+      })();
+      ttfbCount++;
+    } catch (e) {
+      errors.push(`TTFB ${site.id}: ${String(e).slice(0, 80)}`);
+    }
+  }
+
+  return { date: today, sc: scCount, keywords: kwCount, ga4: ga4Count, ttfb: ttfbCount, errors };
 }

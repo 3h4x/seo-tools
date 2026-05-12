@@ -162,6 +162,7 @@ function initSchema(db: SqliteDatabase): void {
   `);
   // Migrations for existing DBs
   try { db.exec(`ALTER TABLE sites ADD COLUMN color TEXT`); } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN ttfb_ms INTEGER`); } catch { /* already exists */ }
 }
 
 // --- Cache helpers ---
@@ -327,6 +328,22 @@ export function getAuditTrends(siteId: string, limit: number = 90): AuditTrendPo
     warn: r.warn_count,
     fail: r.fail_count,
   }));
+}
+
+export interface TtfbTrendPoint {
+  date: string;
+  ttfbMs: number;
+}
+
+export function getTtfbTrends(siteId: string, limit: number = 90): TtfbTrendPoint[] {
+  const db = getDb();
+  const rows = db.prepare(`
+    SELECT date, ttfb_ms
+    FROM audit_snapshots WHERE site_id = ? AND ttfb_ms IS NOT NULL
+    ORDER BY date DESC LIMIT ?
+  `).all(siteId, limit) as Array<{ date: string; ttfb_ms: number }>;
+
+  return rows.reverse().map(r => ({ date: r.date, ttfbMs: r.ttfb_ms }));
 }
 
 // --- Daily SC/GA4 helpers ---

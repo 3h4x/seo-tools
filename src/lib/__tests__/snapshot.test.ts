@@ -47,13 +47,17 @@ vi.mock('@google-analytics/data', () => ({
 
 import { getDb } from '../db';
 import { runSnapshot } from '../snapshot';
-import { getScTrends, getGa4Trends } from '../db';
+import { getScTrends, getGa4Trends, getTtfbTrends } from '../db';
+
+const fetchMock = vi.fn();
+vi.stubGlobal('fetch', fetchMock);
 
 function resetDb() {
   const db = getDb();
   db.exec(`
     DELETE FROM sc_snapshots;
     DELETE FROM ga4_snapshots;
+    DELETE FROM audit_snapshots;
     DELETE FROM keyword_history;
   `);
 }
@@ -61,6 +65,7 @@ function resetDb() {
 beforeEach(() => {
   resetDb();
   vi.clearAllMocks();
+  fetchMock.mockResolvedValue({ ok: true, status: 200 });
 
   // SC returns a page-dimension query and a query-dimension query in order per site.
   scQueryMock.mockImplementation(async ({ requestBody }: { requestBody: { dimensions: string[] } }) => {
@@ -107,5 +112,49 @@ describe('runSnapshot dedupe', () => {
     const ga4ForToday = ga4Trend.filter((p) => p.date === today);
     expect(ga4ForToday).toHaveLength(1);
     expect(ga4ForToday[0]?.users).toBe(10);
+  });
+});
+
+describe('runSnapshot TTFB', () => {
+  it('writes ttfb_ms to audit_snapshots for each site', async () => {
+    const result = await runSnapshot();
+    expect(result.ttfb).toBe(2);
+
+    const db = getDb();
+    const rows = db.prepare(
+      'SELECT site_id, ttfb_ms FROM audit_snapshots WHERE date = ? ORDER BY site_id',
+    ).all(result.date) as Array<{ site_id: string; ttfb_ms: number }>;
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0].site_id).toBe('site-a');
+    expect(rows[0].ttfb_ms).toBeGreaterThanOrEqual(0);
+    expect(rows[1].site_id).toBe('site-b');
+  });
+
+  it('deduplicates audit_snapshots on re-run', async () => {
+    await runSnapshot();
+    const r2 = await runSnapshot();
+
+    const db = getDb();
+    const rows = db.prepare(
+      'SELECT site_id FROM audit_snapshots WHERE date = ? ORDER BY site_id',
+    ).all(r2.date) as Array<{ site_id: string }>;
+
+    expect(rows).toHaveLength(2);
+  });
+
+  it('getTtfbTrends returns stored TTFB data', async () => {
+    const result = await runSnapshot();
+    const trends = getTtfbTrends('site-a');
+    expect(trends).toHaveLength(1);
+    expect(trends[0].date).toBe(result.date);
+    expect(trends[0].ttfbMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('records TTFB fetch error and continues other sites', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+    const result = await runSnapshot();
+    expect(result.errors.some((e) => e.includes('TTFB site-a'))).toBe(true);
+    expect(result.ttfb).toBe(1); // site-b still succeeds
   });
 });
