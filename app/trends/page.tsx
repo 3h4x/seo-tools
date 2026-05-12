@@ -5,6 +5,7 @@ import {
   getScTrends,
   getGa4Trends,
   getAuditTrends,
+  getTtfbTrends,
   getSnapshotCount,
   getKeywordCount,
   getTopKeywordsWithHistory,
@@ -122,17 +123,19 @@ function OverviewTab({
     const scTrends = getScTrends(site.id);
     const ga4Trends = getGa4Trends(site.id);
     const auditTrends = getAuditTrends(site.id);
+    const ttfbTrends = getTtfbTrends(site.id);
     const latestGa4 = ga4Trends[ga4Trends.length - 1];
     const latestSc = scTrends[scTrends.length - 1];
-    return { site, scTrends, ga4Trends, auditTrends, latestGa4, latestSc };
+    const latestTtfb = ttfbTrends[ttfbTrends.length - 1];
+    return { site, scTrends, ga4Trends, auditTrends, ttfbTrends, latestGa4, latestSc, latestTtfb };
   }).sort((a, b) => (b.latestGa4?.users ?? 0) - (a.latestGa4?.users ?? 0));
 
   return (
     <div>
       <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Per-Site Data</h2>
       <div className="space-y-4">
-        {sitesData.map(({ site, scTrends, ga4Trends, auditTrends, latestGa4, latestSc }) => {
-          const hasData = scTrends.length > 0 || ga4Trends.length > 0 || auditTrends.length > 0;
+        {sitesData.map(({ site, scTrends, ga4Trends, auditTrends, ttfbTrends, latestGa4, latestSc, latestTtfb }) => {
+          const hasData = scTrends.length > 0 || ga4Trends.length > 0 || auditTrends.length > 0 || ttfbTrends.length > 0;
 
           if (!hasData) {
             return (
@@ -169,7 +172,10 @@ function OverviewTab({
                       <MetricCell label="SC Position" value={latestSc.position.toFixed(1)} color="text-neutral-300" />
                     </>
                   )}
-                  {!latestGa4 && !latestSc && (
+                  {latestTtfb && (
+                    <MetricCell label="TTFB" value={`${latestTtfb.ttfbMs}ms`} color="text-orange-400" />
+                  )}
+                  {!latestGa4 && !latestSc && !latestTtfb && (
                     <div className="col-span-full text-neutral-600 text-sm">No metrics available</div>
                   )}
                 </div>
@@ -211,6 +217,17 @@ function OverviewTab({
                   </div>
                 )}
               </div>
+              {ttfbTrends.length > 0 && (
+                <div>
+                  <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">TTFB · ms · lower is better</h3>
+                  <TrendChart
+                    data={ttfbTrends}
+                    lines={[{ key: 'ttfbMs', color: '#f97316', label: 'TTFB (ms)' }]}
+                    height={160}
+                    valueFormat="integer"
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {ga4Trends.length > 0 && (
                   <TrendsTable
@@ -274,6 +291,21 @@ function OverviewTab({
                       <span key="p" className="text-emerald-400">{row.pass}</span>,
                       <span key="w" className="text-amber-400">{row.warn}</span>,
                       <span key="f" className="text-red-400">{row.fail}</span>,
+                    ])}
+                  />
+                )}
+                {ttfbTrends.length > 0 && (
+                  <TrendsTable
+                    title="TTFB"
+                    columns={[
+                      { label: 'Date' },
+                      { label: 'ms', align: 'right' },
+                    ]}
+                    rows={ttfbTrends.map((row) => [
+                      <span key="d" className="text-neutral-400">{row.date}</span>,
+                      <span key="t" className={row.ttfbMs < 800 ? 'text-emerald-400' : row.ttfbMs < 2000 ? 'text-amber-400' : 'text-red-400'}>
+                        {row.ttfbMs}ms
+                      </span>,
                     ])}
                   />
                 )}
