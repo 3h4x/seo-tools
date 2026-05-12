@@ -396,39 +396,10 @@ describe('operational status helpers', () => {
     expect((await getSnapshotOperationalStatus()).details).not.toContain('audit');
   });
 
-  it('treats auto-discovered GA4 sites as in-scope for daily and snapshot status', async () => {
-    const db = getDb();
-    insertSite({ id: 'site-a', domain: 'a.example' });
-    insertSite({ id: 'site-b', name: 'Site B', domain: 'b.example', ga4PropertyId: 'properties/456' });
-    mockListAccountSummaries.mockResolvedValue([[
-      {
-        propertySummaries: [
-          { displayName: 'a.example', property: 'properties/123' },
-        ],
-      },
-    ]]);
-
-    db.prepare(
-      'INSERT INTO ga4_daily (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    ).run('site-b', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 11:00:00');
-    db.prepare(
-      'INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    ).run('site-b', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 06:00:00');
-
-    const ga4DailyStatus = await getGa4DailyOperationalStatus();
-    const snapshotStatus = await getSnapshotOperationalStatus();
-
-    expect(ga4DailyStatus.state).toBe('stale');
-    expect(ga4DailyStatus.details).toContain('site-a');
-    expect(snapshotStatus.state).toBe('stale');
-    expect(snapshotStatus.details).toContain('GA4');
-  });
-
-  it('surfaces configured-only fallback details when GA4 discovery is unavailable', async () => {
+  it('excludes sites without ga4PropertyId from GA4 daily and snapshot status without live API calls', () => {
     const db = getDb();
     insertSite({ id: 'site-a', domain: 'a.example', searchConsole: false });
     insertSite({ id: 'site-b', name: 'Site B', domain: 'b.example', ga4PropertyId: 'properties/456', searchConsole: false });
-    mockListAccountSummaries.mockRejectedValue(new Error('admin unavailable'));
 
     db.prepare(
       'INSERT INTO ga4_daily (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -437,7 +408,28 @@ describe('operational status helpers', () => {
       'INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     ).run('site-b', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 06:00:00');
 
-    const statuses = await getOperationalStatuses();
+    const ga4DailyStatus = getGa4DailyOperationalStatus();
+    const snapshotStatus = getSnapshotOperationalStatus();
+
+    expect(ga4DailyStatus.state).toBe('fresh');
+    expect(ga4DailyStatus.reason).toContain('1 site');
+    expect(snapshotStatus.state).toBe('fresh');
+    expect(mockListAccountSummaries).not.toHaveBeenCalled();
+  });
+
+  it('returns fresh GA4 status using only SQLite-configured properties when GA4 Admin API is unavailable', () => {
+    const db = getDb();
+    insertSite({ id: 'site-a', domain: 'a.example', searchConsole: false });
+    insertSite({ id: 'site-b', name: 'Site B', domain: 'b.example', ga4PropertyId: 'properties/456', searchConsole: false });
+
+    db.prepare(
+      'INSERT INTO ga4_daily (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-b', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 11:00:00');
+    db.prepare(
+      'INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-b', '2026-05-11', 20, 30, 40, 0.4, 12, '2026-05-12 06:00:00');
+
+    const statuses = getOperationalStatuses();
     const ga4DailyStatus = statuses.find((status) => status.key === 'ga4-daily');
     const snapshotStatus = statuses.find((status) => status.key === 'snapshots');
 
@@ -445,14 +437,10 @@ describe('operational status helpers', () => {
       state: 'fresh',
       reason: 'Collected 1 site through 2026-05-11',
     });
-    expect(ga4DailyStatus?.details).toContain('GA4 discovery unavailable');
-    expect(ga4DailyStatus?.details).toContain('site-a');
-
     expect(snapshotStatus).toMatchObject({
       state: 'fresh',
       reason: 'Latest snapshot date 2026-05-11',
     });
-    expect(snapshotStatus?.details).toContain('GA4 discovery unavailable');
-    expect(snapshotStatus?.details).toContain('site-a');
+    expect(mockListAccountSummaries).not.toHaveBeenCalled();
   });
 });
