@@ -168,6 +168,7 @@ async function takeSnapshot() {
 
   console.log(`Taking snapshot for ${today}...\n`);
 
+  const scDelete = db.prepare('DELETE FROM sc_snapshots WHERE site_id = ? AND date = ?');
   const scInsert = db.prepare('INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)');
   for (const site of sites) {
     try {
@@ -177,6 +178,7 @@ async function takeSnapshot() {
       });
       const rows = q.data.rows || [];
       const insertAll = db.transaction(() => {
+        scDelete.run(site.id, today);
         for (const row of rows) {
           scInsert.run(site.id, today, row.keys?.[0] || '', row.clicks || 0, row.impressions || 0, row.ctr || 0, row.position || 0);
         }
@@ -219,7 +221,12 @@ async function takeSnapshot() {
     scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
   });
   const ga4Client = new BetaAnalyticsDataClient({ auth: ga4Auth });
+  const ga4Delete = db.prepare('DELETE FROM ga4_snapshots WHERE site_id = ? AND date = ?');
   const ga4Insert = db.prepare('INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  const ga4Upsert = db.transaction((siteId, date, users, sessions, views, bounce, duration) => {
+    ga4Delete.run(siteId, date);
+    ga4Insert.run(siteId, date, users, sessions, views, bounce, duration);
+  });
 
   for (const site of sites) {
     if (!site.ga4) continue;
@@ -241,7 +248,7 @@ async function takeSnapshot() {
       const views = parseInt(row?.metricValues?.[2]?.value || '0');
       const bounce = parseFloat(row?.metricValues?.[3]?.value || '0');
       const duration = parseFloat(row?.metricValues?.[4]?.value || '0');
-      ga4Insert.run(site.id, today, users, sessions, views, bounce, duration);
+      ga4Upsert(site.id, today, users, sessions, views, bounce, duration);
       console.log(`  GA4 ${site.id}: ${users} users, ${views} views`);
     } catch (e) {
       console.log(`  GA4 ${site.id}: error - ${e.message.slice(0, 60)}`);
