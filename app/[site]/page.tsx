@@ -7,7 +7,6 @@ import { discoverPropertyIds, cachedGetAnalytics } from '@/lib/ga4';
 import {
   cachedGetSearchConsoleDataWithComparison,
   cachedGetSearchConsoleQueries,
-  cachedGetSearchConsolePages,
   cachedGetSitemapSubmissions,
 } from '@/lib/search-console';
 import { cachedAuditSite } from '@/lib/audit';
@@ -25,6 +24,7 @@ import { MetricCard } from '../components/metric-card';
 import { CheckCard, statusDots, Recommendation, MetaChecksTable } from '../components/audit/check-card';
 import { gapsBySection } from '@/lib/gaps';
 import { ScTable } from '../components/sc-table';
+import { PageQueriesTable } from '../components/page-queries-table';
 import { VALID_DAYS } from '@/lib/constants';
 
 export const revalidate = 300;
@@ -84,12 +84,11 @@ export default async function SiteDashboardPage({
 
   const scUrl = getSCUrl(site);
 
-  const [audit, sitemapSubmissions, scComparison, scQueries, scPages, ga4Data, cwvSummary] = await Promise.all([
+  const [audit, sitemapSubmissions, scComparison, scQueries, ga4Data, cwvSummary] = await Promise.all([
     cachedAuditSite(site),
     site.searchConsole ? cachedGetSitemapSubmissions(scUrl) : Promise.resolve([]),
     site.searchConsole ? cachedGetSearchConsoleDataWithComparison(scUrl, days) : null,
     site.searchConsole ? cachedGetSearchConsoleQueries(scUrl, days) : null,
-    site.searchConsole ? cachedGetSearchConsolePages(scUrl, days) : null,
     cachedGetAnalytics(propertyId, days),
     getCwvAuditSummary(siteId),
   ]);
@@ -254,18 +253,7 @@ export default async function SiteDashboardPage({
           exportData={(scQueries ?? []).map(r => ({ query: r.query, clicks: r.clicks, impressions: r.impressions, ctr: `${(r.ctr * 100).toFixed(2)}%`, position: r.position.toFixed(1) }))}
           filename={`${siteId}-queries-${days}d`}
         />
-        <ScTable
-          heading="Top Pages (Search Console)"
-          columnLabel="Page"
-          rows={(scPages ?? []).map(r => {
-            let label = r.page;
-            try { label = new URL(r.page).pathname; } catch {}
-            return { label, title: r.page, clicks: r.clicks, impressions: r.impressions, position: r.position };
-          })}
-          emptyMessage="No page data available."
-          exportData={(scPages ?? []).map(r => ({ page: r.page, clicks: r.clicks, impressions: r.impressions, position: r.position.toFixed(1) }))}
-          filename={`${siteId}-pages-${days}d`}
-        />
+        <PageQueriesTable siteId={siteId} days={days} />
       </div>
       {keywordDeltas.length > 0 && (
         <div>
