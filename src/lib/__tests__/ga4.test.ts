@@ -63,6 +63,23 @@ describe('discoverPropertyIds', () => {
     expect(result[0].ga4PropertyId).toBe('12345');
   });
 
+  it('does not auto-assign GA4 when multiple exact-domain properties match the same site', async () => {
+    vi.mocked(getManagedSites).mockResolvedValue([
+      { id: 's1', name: 'Site1', domain: 'example.com', testPages: [] },
+    ] as never);
+    mockListAccountSummaries.mockResolvedValue([
+      [{
+        propertySummaries: [
+          { displayName: 'example.com', property: 'properties/12345' },
+          { displayName: 'example.com', property: 'properties/67890' },
+        ],
+      }],
+    ]);
+
+    const result = await discoverPropertyIds();
+    expect(result[0].ga4PropertyId).toBeUndefined();
+  });
+
   it('keeps existing ga4PropertyId if already set', async () => {
     vi.mocked(getManagedSites).mockResolvedValue([
       { id: 's1', name: 'Site1', domain: 'example.com', ga4PropertyId: '99999', testPages: [] },

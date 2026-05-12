@@ -25,11 +25,53 @@ export interface NormalizedSiteInput {
   site: Site;
 }
 
+type SiteIdentityInput = Pick<Site, 'domain' | 'scUrl'>;
+
 /** Returns the URL to use for Search Console API calls for a given site. */
-export function getSCUrl(site: Site): string {
+export function getSCUrl(site: SiteIdentityInput): string {
   const url = site.scUrl ?? site.domain;
   if (url.startsWith('sc-domain:') || url.startsWith('http')) return url;
   return `sc-domain:${url}`;
+}
+
+export function normalizeSearchConsoleIdentity(value: string): string {
+  return value.trim().toLowerCase().replace(/\/$/, '');
+}
+
+export function getSearchConsoleUrlIdentities(scUrl: string): string[] {
+  const normalizedScUrl = normalizeSearchConsoleIdentity(scUrl);
+  if (!normalizedScUrl) return [];
+
+  const identities = new Set<string>([normalizedScUrl]);
+
+  if (normalizedScUrl.startsWith('sc-domain:')) {
+    const domain = normalizeSiteDomain(normalizedScUrl.slice('sc-domain:'.length));
+    if (domain) identities.add(domain);
+    return [...identities];
+  }
+
+  if (/^https?:\/\//i.test(normalizedScUrl)) {
+    try {
+      const domain = normalizeSiteDomain(new URL(normalizedScUrl).hostname);
+      if (domain) identities.add(domain);
+    } catch {
+      // Validation happens elsewhere; identity expansion is best-effort.
+    }
+  }
+
+  return [...identities];
+}
+
+export function getSiteSearchConsoleIdentities(site: SiteIdentityInput): string[] {
+  const identities = new Set<string>();
+  const normalizedDomain = normalizeSiteDomain(site.domain);
+  if (normalizedDomain) identities.add(normalizedDomain);
+
+  for (const identity of getSearchConsoleUrlIdentities(getSCUrl(site))) {
+    identities.add(identity);
+  }
+
+  return [...identities];
 }
 
 import { dbGetSites } from './db';
@@ -46,10 +88,21 @@ export function validateAndNormalizeSiteInput(
   const errors: SiteFieldErrors = {};
 
   const id = typeof body.id === 'string' ? body.id.trim() : '';
+  const originalId = typeof body.originalId === 'string' ? body.originalId.trim() : '';
   if (!id) {
     errors.id = 'id is required';
   } else if (!isValidSiteId(id)) {
     errors.id = 'id must contain only letters, digits, hyphens, underscores, or dots and must not start with a special character';
+  }
+  if (originalId && !isValidSiteId(originalId)) {
+    errors.id = 'originalId must be a valid existing site id';
+  } else if (originalId && originalId !== id) {
+    errors.id = 'changing site id is not supported';
+  }
+
+  const existingById = existingSites.find(site => site.id === id);
+  if (existingById && originalId !== id) {
+    errors.id = `id is already used by site "${existingById.id}"`;
   }
 
   const name = typeof body.name === 'string' ? body.name.trim() : '';
@@ -85,6 +138,20 @@ export function validateAndNormalizeSiteInput(
   if (Object.keys(errors).length > 0) return { errors, normalized: null };
 
   const scUrl = getSiteScUrlOverride(rawDomain, rawScUrl || undefined);
+  const nextScIdentities = new Set(getSiteSearchConsoleIdentities({ domain: normalizedDomain!, scUrl }));
+  const scDuplicate = existingSites.find((site) => (
+    site.id !== id &&
+    getSiteSearchConsoleIdentities(site).some(identity => nextScIdentities.has(identity))
+  ));
+  if (scDuplicate) {
+    return {
+      errors: {
+        scUrl: `Search Console identity is already used by site "${scDuplicate.id}"`,
+      },
+      normalized: null,
+    };
+  }
+
   const site: Site = {
     ...(raw as Site),
     id,
@@ -101,6 +168,7 @@ export function validateAndNormalizeSiteInput(
   }
 
   delete (site as unknown as Record<string, unknown>).sortOrder;
+  delete (site as unknown as Record<string, unknown>).originalId;
 
   return { errors: null, normalized: { site } };
 }

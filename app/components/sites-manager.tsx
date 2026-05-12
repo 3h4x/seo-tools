@@ -19,6 +19,13 @@ interface Site {
   isUpdate?: boolean;
 }
 
+type DiscoverySource = 'sc' | 'ga4' | 'sc+ga4';
+
+type DiscoveredSite = DiscoverySite<Site> & {
+  discoverySource: DiscoverySource;
+  ga4DisplayName?: string;
+};
+
 interface Props {
   initialSites: Site[];
   hasAuth: boolean;
@@ -84,6 +91,20 @@ function StatusBadge({
   );
 }
 
+function DiscoverySourceBadge({ source }: { source: DiscoverySource }) {
+  const styles = {
+    sc: 'border-sky-900/80 bg-sky-950/40 text-sky-300',
+    ga4: 'border-emerald-900/80 bg-emerald-950/40 text-emerald-300',
+    'sc+ga4': 'border-violet-900/80 bg-violet-950/40 text-violet-300',
+  } as const;
+
+  return (
+    <span className={`text-xs rounded border px-1.5 py-0.5 ${styles[source]}`}>
+      {source === 'sc+ga4' ? 'SC + GA4' : source.toUpperCase()}
+    </span>
+  );
+}
+
 export default function SitesManager({ initialSites, hasAuth }: Props) {
   const [sites, setSites] = useState<Site[]>(initialSites);
   const [diagnostics, setDiagnostics] = useState<Record<string, SiteDiagnosticResult>>({});
@@ -93,7 +114,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   const [form, setForm] = useState<Site>({ id: '', ...EMPTY_SITE });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [discovering, setDiscovering] = useState(false);
-  const [discovered, setDiscovered] = useState<DiscoverySite<Site>[] | null>(null);
+  const [discovered, setDiscovered] = useState<DiscoveredSite[] | null>(null);
   const [discoverError, setDiscoverError] = useState('');
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -204,7 +225,10 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       const res = await fetch('/api/sites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(siteToSave),
+        body: JSON.stringify({
+          ...siteToSave,
+          originalId: editMode === 'new' ? undefined : form.id,
+        }),
       });
       const data = await res.json() as { ok: boolean; error?: string };
       if (!data.ok) {
@@ -245,7 +269,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     setSelected(new Set());
     try {
       const res = await fetch('/api/sites/discover');
-      const data = await res.json() as Site[] | { error: string };
+      const data = await res.json() as DiscoveredSite[] | { error: string };
       if ('error' in data) {
         setDiscoverError(data.error);
       } else {
@@ -285,11 +309,20 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     try {
       const results = await Promise.all(toImport.map(async (site): Promise<ImportResult> => {
         try {
-          const { importError: _importError, isUpdate: _isUpdate, ...siteToSave } = site;
+          const {
+            importError: _importError,
+            isUpdate: _isUpdate,
+            discoverySource: _discoverySource,
+            ga4DisplayName: _ga4DisplayName,
+            ...siteToSave
+          } = site;
           const res = await fetch('/api/sites', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(siteToSave),
+            body: JSON.stringify({
+              ...siteToSave,
+              originalId: site.isUpdate ? site.id : undefined,
+            }),
           });
           return {
             id: site.id,
@@ -663,10 +696,21 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                         {site.isUpdate && (
                           <span className="text-xs text-amber-400 border border-amber-700 rounded px-1">update</span>
                         )}
-                        {site.ga4PropertyId && (
-                          <span className="text-xs text-neutral-500">GA4: {site.ga4PropertyId}</span>
-                        )}
+                        <DiscoverySourceBadge source={site.discoverySource} />
                       </label>
+                      <div className="pl-6 space-y-1 text-xs text-neutral-500">
+                        {site.ga4PropertyId ? (
+                          <p>
+                            GA4 match: {site.ga4PropertyId}
+                            {site.ga4DisplayName ? ` · ${site.ga4DisplayName}` : ''}
+                          </p>
+                        ) : (
+                          <p>No GA4 property match yet.</p>
+                        )}
+                        {site.discoverySource === 'ga4' && (
+                          <p>Search Console match missing. Import and set the SC property manually if needed.</p>
+                        )}
+                      </div>
                       {site.importError && (
                         <p className="pl-6 text-xs text-red-400">{site.importError}</p>
                       )}

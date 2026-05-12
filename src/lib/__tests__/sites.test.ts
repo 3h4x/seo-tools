@@ -4,7 +4,15 @@ vi.mock('../db', () => ({ dbGetSites: vi.fn() }));
 
 import { dbGetSites } from '../db';
 import { isValidSiteId } from '../site-domain';
-import { getSCUrl, getManagedSite, getManagedSites, validateAndNormalizeSiteInput } from '../sites';
+import {
+  getSCUrl,
+  getManagedSite,
+  getManagedSites,
+  getSearchConsoleUrlIdentities,
+  getSiteSearchConsoleIdentities,
+  normalizeSearchConsoleIdentity,
+  validateAndNormalizeSiteInput,
+} from '../sites';
 import type { Site } from '../sites';
 
 function makeSite(overrides: Partial<Site> = {}): Site {
@@ -36,6 +44,30 @@ describe('getSCUrl', () => {
   it('uses URL-prefix scUrl for URL-prefix properties', () => {
     const site = makeSite({ scUrl: 'https://3h4x.github.io/', domain: '3h4x.github.io' });
     expect(getSCUrl(site)).toBe('https://3h4x.github.io/');
+  });
+});
+
+describe('Search Console identity helpers', () => {
+  it('normalizes identity strings for stable comparisons', () => {
+    expect(normalizeSearchConsoleIdentity(' HTTPS://Example.com/ ')).toBe('https://example.com');
+  });
+
+  it('expands URL-prefix identities to include the hostname', () => {
+    expect(getSearchConsoleUrlIdentities('https://blog.example.com/')).toEqual([
+      'https://blog.example.com',
+      'blog.example.com',
+    ]);
+  });
+
+  it('includes both hostname and SC override identities for a managed site', () => {
+    expect(getSiteSearchConsoleIdentities(makeSite({
+      domain: 'other.example.com',
+      scUrl: 'https://blog.example.com/',
+    }))).toEqual([
+      'other.example.com',
+      'https://blog.example.com',
+      'blog.example.com',
+    ]);
   });
 });
 
@@ -157,7 +189,7 @@ describe('validateAndNormalizeSiteInput', () => {
   it('allows update of a site with its own existing domain', () => {
     const existing = makeSite({ id: 'mysite', domain: 'mysite.com' });
     const result = validateAndNormalizeSiteInput(
-      { id: 'mysite', name: 'Updated', domain: 'mysite.com' },
+      { id: 'mysite', originalId: 'mysite', name: 'Updated', domain: 'mysite.com' },
       [existing],
     );
     expect(result.errors).toBeNull();
@@ -186,6 +218,50 @@ describe('validateAndNormalizeSiteInput', () => {
       [],
     );
     expect(result.errors?.ga4PropertyId).toBeTruthy();
+  });
+
+  it('returns field error when Search Console identity is already used by another site', () => {
+    const existing = makeSite({
+      id: 'existing',
+      domain: 'other.example.com',
+      scUrl: 'https://blog.example.com/',
+    });
+    const result = validateAndNormalizeSiteInput(
+      { id: 'new-site', name: 'New Site', domain: 'blog.example.com' },
+      [existing],
+    );
+    expect(result.errors?.scUrl).toMatch(/existing/);
+  });
+
+  it('allows update when the Search Console identity belongs to the same site', () => {
+    const existing = makeSite({
+      id: 'existing',
+      domain: 'blog.example.com',
+      scUrl: 'https://blog.example.com/',
+    });
+    const result = validateAndNormalizeSiteInput(
+      { id: 'existing', originalId: 'existing', name: 'Existing', domain: 'blog.example.com' },
+      [existing],
+    );
+    expect(result.errors).toBeNull();
+  });
+
+  it('returns field error when id is already used by another site and originalId is missing', () => {
+    const existing = makeSite({ id: 'existing', domain: 'existing.com' });
+    const result = validateAndNormalizeSiteInput(
+      { id: 'existing', name: 'New Site', domain: 'newsite.com' },
+      [existing],
+    );
+    expect(result.errors?.id).toMatch(/existing/);
+  });
+
+  it('returns field error when originalId does not match the submitted id', () => {
+    const existing = makeSite({ id: 'existing', domain: 'existing.com' });
+    const result = validateAndNormalizeSiteInput(
+      { id: 'new-id', originalId: 'existing', name: 'Existing', domain: 'existing.com' },
+      [existing],
+    );
+    expect(result.errors?.id).toMatch(/changing site id/i);
   });
 
   it('accepts a valid ga4PropertyId', () => {
