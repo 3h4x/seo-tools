@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getManagedSite, getSCUrl } from '@/lib/sites';
+import { getCwvAuditSummary } from '@/lib/performance-site';
 import { discoverPropertyIds, cachedGetAnalytics } from '@/lib/ga4';
 import {
   cachedGetSearchConsoleDataWithComparison,
@@ -14,7 +15,7 @@ import { analyzeSiteGaps } from '@/lib/gaps';
 import { getScDaily, getGa4Daily, getKeywordDeltas } from '@/lib/db';
 import type { KeywordDelta } from '@/lib/keyword-history';
 import { KeywordRankTable } from '../components/keyword-rank-table';
-import { METRIC_COLORS } from '@/lib/constants';
+import { METRIC_COLORS, CWV_RATING_COLORS, CWV_THRESHOLDS, type CwvMetricName } from '@/lib/constants';
 import { pluralize, formatSource, formatDuration, formatBounce } from '@/lib/format';
 import TimeRange from '../components/time-range';
 import { Icons } from '../components/icons';
@@ -82,13 +83,14 @@ export default async function SiteDashboardPage({
 
   const scUrl = getSCUrl(site);
 
-  const [audit, sitemapSubmissions, scComparison, scQueries, scPages, ga4Data] = await Promise.all([
+  const [audit, sitemapSubmissions, scComparison, scQueries, scPages, ga4Data, cwvSummary] = await Promise.all([
     cachedAuditSite(site),
     site.searchConsole ? cachedGetSitemapSubmissions(scUrl) : Promise.resolve([]),
     site.searchConsole ? cachedGetSearchConsoleDataWithComparison(scUrl, days) : null,
     site.searchConsole ? cachedGetSearchConsoleQueries(scUrl, days) : null,
     site.searchConsole ? cachedGetSearchConsolePages(scUrl, days) : null,
     cachedGetAnalytics(propertyId, days),
+    getCwvAuditSummary(siteId),
   ]);
 
   const gapAnalysis = analyzeSiteGaps(audit, site);
@@ -486,6 +488,48 @@ export default async function SiteDashboardPage({
               </div>
             )}
           </CheckCard>
+          {cwvSummary && Object.keys(cwvSummary.metrics).length > 0 && (
+            <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-white font-semibold text-sm">Core Web Vitals</h2>
+                <div className="flex items-center gap-3">
+                  <span className="text-neutral-600 text-[10px] uppercase tracking-wider">
+                    {cwvSummary.source === 'rum' ? 'RUM · GA4' : cwvSummary.source === 'psi-field' ? 'CrUX field' : cwvSummary.source === 'psi-lab' ? 'Lighthouse lab' : ''}
+                  </span>
+                  <Link
+                    href={`/performance/${encodeURIComponent(siteId)}`}
+                    className="text-neutral-500 hover:text-neutral-300 text-xs transition-colors"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    Full detail →
+                  </Link>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                {(['LCP', 'INP', 'CLS'] as CwvMetricName[]).map(name => {
+                  const metric = cwvSummary.metrics[name];
+                  const t = CWV_THRESHOLDS[name];
+                  if (!metric) {
+                    return (
+                      <div key={name} className="space-y-1">
+                        <div className="text-neutral-600 text-xs font-medium">{name}</div>
+                        <div className="text-neutral-700 text-sm font-mono">—</div>
+                      </div>
+                    );
+                  }
+                  const colors = CWV_RATING_COLORS[metric.rating];
+                  const display = t.unit === 'ms' ? `${Math.round(metric.value)}ms` : metric.value.toFixed(3);
+                  return (
+                    <div key={name} className="space-y-1">
+                      <div className="text-neutral-500 text-xs font-medium">{name}</div>
+                      <div className={`text-lg font-mono font-bold ${colors.text}`}>{display}</div>
+                      <div className={`text-[10px] ${colors.text} opacity-70`}>{colors.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {sections['indexing'] && sections['indexing'].length > 0 && (
             <AuditPanel title="Indexing">
               {sections['indexing'].map(g => <Recommendation key={g.id} gap={g} />)}
