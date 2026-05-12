@@ -10,6 +10,9 @@ function makeCheckResult(status: 'pass' | 'warn' | 'fail' | 'error', label: stri
 function makeMetaTagResult(page: string, overrides: Record<string, ReturnType<typeof makeCheckResult>> = {}) {
   return {
     page,
+    canonicalValid: null,
+    canonicalStatus: null,
+    canonicalTarget: null,
     title: makeCheckResult('pass', 'title'),
     description: makeCheckResult('pass', 'description'),
     ogTitle: makeCheckResult('pass', 'og:title'),
@@ -143,6 +146,23 @@ describe('analyzeSiteGaps', () => {
     const gap = result.gaps.find(g => g.id === 'missing-canonical');
     expect(gap).toBeDefined();
     expect(gap?.severity).toBe('high');
+  });
+
+  it('includes broken-canonical-targets gap for pages with failing canonical targets', () => {
+    const audit = makeAudit({
+      metaTags: [{
+        ...makeMetaTagResult('/', { canonical: makeCheckResult('fail', 'canonical') }),
+        canonicalTarget: 'https://example.com/broken',
+        canonicalValid: false,
+        canonicalStatus: 404,
+      }],
+    });
+    const result = analyzeSiteGaps(audit, makeSite());
+    expect(result.gaps.find((gap) => gap.id === 'missing-canonical')).toBeUndefined();
+    const gap = result.gaps.find((g) => g.id === 'broken-canonical-targets');
+    expect(gap).toBeDefined();
+    expect(gap?.severity).toBe('high');
+    expect(gap?.affectedPages).toContain('/');
   });
 
   it('includes missing-twitter-card gap for pages without twitter:card', () => {

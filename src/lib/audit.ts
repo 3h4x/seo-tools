@@ -1,6 +1,7 @@
 import { getManagedSites, getSCUrl, type Site } from './sites';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { getAuth } from './google-auth';
+import { normalizeSkipChecks, type SkipCheckId } from './skip-checks';
 
 export type CheckStatus = 'pass' | 'warn' | 'fail' | 'error';
 
@@ -28,6 +29,9 @@ interface SitemapResult extends CheckResult {
 interface MetaTagResult {
   page: string;
   ogImageUrl?: string;
+  canonicalValid: boolean | null;
+  canonicalStatus: number | null;
+  canonicalTarget: string | null;
   title: CheckResult;
   description: CheckResult;
   ogTitle: CheckResult;
@@ -88,6 +92,15 @@ interface IndexingCoverageResult extends CheckResult {
   coveragePct?: number;
 }
 
+function applySkipToCheck<T extends CheckResult>(check: T, skip: Set<SkipCheckId>, checkId: SkipCheckId): T {
+  if (!skip.has(checkId)) return check;
+  return {
+    ...check,
+    status: 'pass',
+    message: `N/A — ${check.message}`,
+  };
+}
+
 export interface SiteAuditResult {
   siteId: string;
   domain: string;
@@ -124,7 +137,10 @@ export interface FetchResult {
 const MAX_RETRIES = 3;
 const BASE_DELAY = 1_000;
 
-async function safeFetch(url: string, opts?: { ua?: string }): Promise<FetchResult> {
+async function safeFetch(
+  url: string,
+  opts?: { ua?: string; method?: string; redirect?: RequestRedirect; timeoutMs?: number },
+): Promise<FetchResult> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     if (attempt > 0) {
       const delay = BASE_DELAY * Math.pow(2, attempt - 1);
@@ -133,9 +149,10 @@ async function safeFetch(url: string, opts?: { ua?: string }): Promise<FetchResu
     const start = Date.now();
     try {
       const res = await fetch(url, {
-        signal: AbortSignal.timeout(FETCH_TIMEOUT),
+        signal: AbortSignal.timeout(opts?.timeoutMs ?? FETCH_TIMEOUT),
         headers: opts?.ua ? { 'User-Agent': opts.ua } : undefined,
-        redirect: 'follow',
+        method: opts?.method,
+        redirect: opts?.redirect ?? 'follow',
       });
       const ttfbMs = Date.now() - start;
       if (res.status === 429 && attempt < MAX_RETRIES) continue;
@@ -248,6 +265,9 @@ export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
     const errResult: CheckResult = { status: 'error', label: '', message: res.error || `HTTP ${res.status}` };
     return {
       page,
+      canonicalValid: null,
+      canonicalStatus: null,
+      canonicalTarget: null,
       title: { ...errResult, label: 'title' }, description: { ...errResult, label: 'description' },
       ogTitle: { ...errResult, label: 'og:title' }, ogImage: { ...errResult, label: 'og:image' },
       ogDescription: { ...errResult, label: 'og:description' }, twitterCard: { ...errResult, label: 'twitter:card' },
@@ -287,6 +307,9 @@ export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
   return {
     page,
     ogImageUrl: ogImage || undefined,
+    canonicalValid: null,
+    canonicalStatus: null,
+    canonicalTarget: canonical,
     title: titleCheck,
     description: makeCheck('description', desc, 10),
     ogTitle: makeCheck('og:title', ogTitle),
@@ -297,6 +320,110 @@ export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
     jsonLd: hasJsonLd
       ? { status: 'pass', label: 'JSON-LD', message: jsonLdType ? `Found (${jsonLdType})` : 'Found' }
       : { status: 'fail', label: 'JSON-LD', message: 'Not found' },
+  };
+}
+
+function normalizeComparableUrl(url: URL): string {
+  const pathname = url.pathname !== '/' && url.pathname.endsWith('/') ? url.pathname.slice(0, -1) : url.pathname;
+  return `${url.origin}${pathname}${url.search}`;
+}
+
+async function checkCanonicalUrl(
+  pageUrl: string,
+  canonicalHref: string | null,
+): Promise<{ check: CheckResult; canonicalValid: boolean | null; canonicalStatus: number | null; canonicalTarget: string | null }> {
+  if (!canonicalHref) {
+    return {
+      check: { status: 'fail', label: 'canonical', message: 'Not found' },
+      canonicalValid: null,
+      canonicalStatus: null,
+      canonicalTarget: null,
+    };
+  }
+
+  let canonicalUrl: URL;
+  try {
+    canonicalUrl = new URL(canonicalHref, pageUrl);
+  } catch {
+    return {
+      check: { status: 'fail', label: 'canonical', message: 'Invalid canonical URL' },
+      canonicalValid: false,
+      canonicalStatus: null,
+      canonicalTarget: canonicalHref,
+    };
+  }
+
+  const target = canonicalUrl.toString();
+  const page = new URL(pageUrl);
+  const selfReferential = normalizeComparableUrl(page) === normalizeComparableUrl(canonicalUrl);
+  let res = await safeFetch(target, {
+    ua: GOOGLEBOT_UA,
+    method: 'HEAD',
+    redirect: 'manual',
+    timeoutMs: 5_000,
+  });
+  if (res.status === 405 || res.status === 501) {
+    res = await safeFetch(target, {
+      ua: GOOGLEBOT_UA,
+      method: 'GET',
+      redirect: 'manual',
+      timeoutMs: 5_000,
+    });
+  }
+
+  if (res.status >= 300 && res.status < 400) {
+    const location = res.headers.get('location');
+    return {
+      check: {
+        status: 'warn',
+        label: 'canonical',
+        message: `Canonical redirects (${res.status})`,
+        details: location ? `${target} -> ${location}` : target,
+      },
+      canonicalValid: false,
+      canonicalStatus: res.status,
+      canonicalTarget: target,
+    };
+  }
+
+  if (!res.ok) {
+    return {
+      check: {
+        status: 'fail',
+        label: 'canonical',
+        message: res.error ? `Canonical check failed: ${res.error}` : `Canonical returns HTTP ${res.status}`,
+        details: target,
+      },
+      canonicalValid: false,
+      canonicalStatus: res.status || null,
+      canonicalTarget: target,
+    };
+  }
+
+  if (!selfReferential) {
+    return {
+      check: {
+        status: 'warn',
+        label: 'canonical',
+        message: 'Canonical points to a different URL',
+        details: target,
+      },
+      canonicalValid: false,
+      canonicalStatus: res.status,
+      canonicalTarget: target,
+    };
+  }
+
+  return {
+    check: {
+      status: 'pass',
+      label: 'canonical',
+      message: 'Self-referential canonical resolves',
+      details: target,
+    },
+    canonicalValid: true,
+    canonicalStatus: res.status,
+    canonicalTarget: target,
   };
 }
 
@@ -599,8 +726,16 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
   const pageResults: { meta: MetaTagResult; images: ImageSeoResult; links: InternalLinkResult }[] = [];
   for (const page of site.testPages) {
     const res = await safeFetch(`https://${site.domain}${page}`, { ua: GOOGLEBOT_UA });
+    const meta = parseMetaTags(res, page);
+    if (res.ok) {
+      const canonicalCheck = await checkCanonicalUrl(`https://${site.domain}${page}`, meta.canonicalTarget);
+      meta.canonical = canonicalCheck.check;
+      meta.canonicalValid = canonicalCheck.canonicalValid;
+      meta.canonicalStatus = canonicalCheck.canonicalStatus;
+      meta.canonicalTarget = canonicalCheck.canonicalTarget;
+    }
     pageResults.push({
-      meta: parseMetaTags(res, page),
+      meta,
       images: res.ok ? checkImageSeo(res.text, page) : { page, totalImages: 0, withAlt: 0, withoutAlt: 0, withLazyLoading: 0, status: 'error' as CheckStatus, label: 'Images', message: res.error || `HTTP ${res.status}`, images: [] },
       links: res.ok ? checkInternalLinks(res.text, site.domain, page) : { page, internalLinks: 0, externalLinks: 0, status: 'error' as CheckStatus, label: 'Internal Links', message: res.error || `HTTP ${res.status}` },
     });
@@ -614,18 +749,45 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
   const ogImage = await checkOgImage(ogImageUrl);
 
   // Apply skipChecks: replace skipped checks with a neutral pass so they don't affect the score
-  const skip = new Set((site.skipChecks || []).map(s => s.toLowerCase()));
-  const maybeSkip = (c: CheckResult): CheckResult =>
-    skip.has(c.label.toLowerCase())
-      ? { ...c, status: 'pass', message: `N/A — ${c.message}` }
-      : c;
+  const skip = new Set(normalizeSkipChecks(site.skipChecks));
+  const skippedRobotsTxt = applySkipToCheck(robotsTxt, skip, 'robotsTxt');
+  const skippedSitemap = applySkipToCheck(sitemap, skip, 'sitemap');
+  const skippedScSitemapFreshness = applySkipToCheck(scSitemapFreshness, skip, 'scSitemap');
+  const skippedIndexingCoverage = applySkipToCheck(indexingCoverage, skip, 'indexing');
+  const skippedOgImage = applySkipToCheck(ogImage, skip, 'ogImage');
+  const skippedTtfb = applySkipToCheck(ttfb, skip, 'ttfb');
+  const skippedSecurity = {
+    https: applySkipToCheck(security.https, skip, 'https'),
+    hsts: applySkipToCheck(security.hsts, skip, 'hsts'),
+    favicon: applySkipToCheck(security.favicon, skip, 'favicon'),
+  };
+  const skippedMetaTags = metaTags.map(meta => ({
+    ...meta,
+    title: applySkipToCheck(meta.title, skip, 'title'),
+    description: applySkipToCheck(meta.description, skip, 'description'),
+    ogTitle: applySkipToCheck(meta.ogTitle, skip, 'ogTitle'),
+    ogImage: applySkipToCheck(meta.ogImage, skip, 'ogImageMeta'),
+    ogDescription: applySkipToCheck(meta.ogDescription, skip, 'ogDescription'),
+    twitterCard: applySkipToCheck(meta.twitterCard, skip, 'twitterCard'),
+    canonical: applySkipToCheck(meta.canonical, skip, 'canonical'),
+    jsonLd: applySkipToCheck(meta.jsonLd, skip, 'jsonLd'),
+  }));
+  const skippedImageSeo = imageSeo.map(image => applySkipToCheck(image, skip, 'images'));
+  const skippedInternalLinks = internalLinks.map(link => applySkipToCheck(link, skip, 'internalLinks'));
 
   const allChecks: CheckResult[] = [
-    robotsTxt, sitemap, scSitemapFreshness, indexingCoverage, ogImage, ttfb,
-    maybeSkip(security.https), maybeSkip(security.hsts), maybeSkip(security.favicon),
-    ...metaTags.flatMap(m => [m.title, m.description, m.ogTitle, m.ogImage, m.ogDescription, m.twitterCard, m.canonical, m.jsonLd].map(maybeSkip)),
-    ...imageSeo.map(i => maybeSkip({ status: i.status, label: i.label, message: i.message })),
-    ...internalLinks.map(l => maybeSkip({ status: l.status, label: l.label, message: l.message })),
+    skippedRobotsTxt,
+    skippedSitemap,
+    skippedScSitemapFreshness,
+    skippedIndexingCoverage,
+    skippedOgImage,
+    skippedTtfb,
+    skippedSecurity.https,
+    skippedSecurity.hsts,
+    skippedSecurity.favicon,
+    ...skippedMetaTags.flatMap(m => [m.title, m.description, m.ogTitle, m.ogImage, m.ogDescription, m.twitterCard, m.canonical, m.jsonLd]),
+    ...skippedImageSeo,
+    ...skippedInternalLinks,
   ];
 
   const score = allChecks.reduce(
@@ -633,13 +795,22 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
     { pass: 0, warn: 0, fail: 0, error: 0, total: 0 }
   );
 
-  const skippedSecurity = {
-    https: maybeSkip(security.https),
-    hsts: maybeSkip(security.hsts),
-    favicon: maybeSkip(security.favicon),
+  return {
+    siteId: site.id,
+    domain: site.domain,
+    timestamp: Date.now(),
+    robotsTxt: skippedRobotsTxt,
+    sitemap: skippedSitemap,
+    scSitemapFreshness: skippedScSitemapFreshness,
+    indexingCoverage: skippedIndexingCoverage,
+    metaTags: skippedMetaTags,
+    ogImage: skippedOgImage,
+    ttfb: skippedTtfb,
+    imageSeo: skippedImageSeo,
+    internalLinks: skippedInternalLinks,
+    security: skippedSecurity,
+    score,
   };
-
-  return { siteId: site.id, domain: site.domain, timestamp: Date.now(), robotsTxt, sitemap, scSitemapFreshness, indexingCoverage, metaTags, ogImage, ttfb, imageSeo, internalLinks, security: skippedSecurity, score };
 }
 
 async function auditAllSites(): Promise<SiteAuditResult[]> {

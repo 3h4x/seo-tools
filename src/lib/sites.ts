@@ -8,7 +8,7 @@ export interface Site {
   searchConsole?: boolean;
   color?: string;
   testPages: string[];
-  /** Audit check labels to skip (mark as N/A) — for checks that can't be fixed by the site owner. */
+  /** Audit check ids to skip (mark as N/A) — for checks that can't be fixed by the site owner. */
   skipChecks?: string[];
 }
 
@@ -34,6 +34,7 @@ export function getSCUrl(site: Site): string {
 
 import { dbGetSites } from './db';
 import { normalizeSiteDomain, isValidSiteId, getSiteScUrlOverride } from './site-domain';
+import { normalizeSkipChecks } from './skip-checks';
 
 const GA4_PROPERTY_RE = /^properties\/\d+$/;
 
@@ -93,7 +94,11 @@ export function validateAndNormalizeSiteInput(
   };
   if (scUrl) site.scUrl = scUrl; else delete site.scUrl;
   if (rawGa4) site.ga4PropertyId = rawGa4; else delete site.ga4PropertyId;
-  if (!Array.isArray(body.skipChecks)) delete site.skipChecks;
+  if (Array.isArray(body.skipChecks)) {
+    site.skipChecks = normalizeSkipChecks(body.skipChecks.filter((value): value is string => typeof value === 'string'));
+  } else {
+    delete site.skipChecks;
+  }
 
   delete (site as unknown as Record<string, unknown>).sortOrder;
 

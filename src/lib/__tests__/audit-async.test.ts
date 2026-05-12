@@ -322,6 +322,203 @@ describe('auditSite — skipChecks', () => {
     expect(result.security.favicon.status).toBe('pass');
     expect(result.security.favicon.message).toContain('N/A');
   });
+
+  it('marks skipped canonical checks as pass with N/A prefix', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, opts?: { method?: string }) => {
+        const u = String(url);
+        if (opts?.method === 'HEAD' && u === 'https://example.com/') {
+          return Promise.resolve(new Response('', { status: 404 }));
+        }
+        return makeResponse({ body: '<html><head><title>Test</title><link rel="canonical" href="https://example.com/"></head></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite({ skipChecks: ['canonical'] }));
+    expect(result.metaTags[0].canonical.status).toBe('pass');
+    expect(result.metaTags[0].canonical.message).toContain('N/A');
+  });
+
+  it('matches identifier-style skip keys for OG image and internal links', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        const u = String(url);
+        if (u.endsWith('/favicon.ico')) {
+          return makeResponse({ status: 404, body: 'missing' });
+        }
+        if (u.endsWith('/robots.txt')) {
+          return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+        }
+        if (u.endsWith('/sitemap.xml')) {
+          return makeResponse({ body: '<urlset><url><loc>https://example.com/</loc></url></urlset>' });
+        }
+        return makeResponse({
+          body: '<html><head><title>Test</title></head><body><img src="/hero.jpg"><a href="/about">About</a></body></html>',
+        });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite({ skipChecks: ['ogImage', 'internalLinks'] }));
+    expect(result.ogImage.status).toBe('pass');
+    expect(result.ogImage.message).toContain('N/A');
+    expect(result.internalLinks[0].status).toBe('pass');
+    expect(result.internalLinks[0].message).toContain('N/A');
+  });
+
+  it('keeps og:image meta skips separate from the OG Image asset check', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        const u = String(url);
+        if (u.endsWith('/robots.txt')) {
+          return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+        }
+        if (u.endsWith('/sitemap.xml')) {
+          return makeResponse({ body: '<urlset><url><loc>https://example.com/</loc></url></urlset>' });
+        }
+        return makeResponse({
+          body: '<html><head><title>Test</title><meta property="og:image" content="https://example.com/og.png"></head><body></body></html>',
+        });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite({ skipChecks: ['ogImage'] }));
+    expect(result.ogImage.status).toBe('pass');
+    expect(result.ogImage.message).toContain('N/A');
+    expect(result.metaTags[0].ogImage.status).toBe('pass');
+    expect(result.metaTags[0].ogImage.message).not.toContain('N/A');
+  });
+});
+
+describe('auditSite — canonical', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+    mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [] } });
+  });
+
+  it('skips the HEAD validation when canonical is missing', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => makeResponse({ body: '<html><head><title>Test</title></head></html>' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await cachedAuditSite(makeSite());
+    expect(result.metaTags[0].canonical.status).toBe('fail');
+    expect(result.metaTags[0].canonicalStatus).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalledWith('https://example.com/', expect.objectContaining({ method: 'HEAD' }));
+  });
+
+  it('passes when canonical is self-referential and returns 200', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, opts?: { method?: string }) => {
+        if (opts?.method === 'HEAD') {
+          return Promise.resolve(new Response('', { status: 200 }));
+        }
+        return makeResponse({ body: '<html><head><title>Test</title><link rel="canonical" href="https://example.com/"></head></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite());
+    expect(result.metaTags[0].canonical.status).toBe('pass');
+    expect(result.metaTags[0].canonicalValid).toBe(true);
+    expect(result.metaTags[0].canonicalStatus).toBe(200);
+    expect(result.metaTags[0].canonicalTarget).toBe('https://example.com/');
+  });
+
+  it('warns when canonical returns a redirect', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, opts?: { method?: string }) => {
+        if (opts?.method === 'HEAD') {
+          return Promise.resolve(new Response('', { status: 301, headers: { location: 'https://example.com/final' } }));
+        }
+        return makeResponse({ body: '<html><head><title>Test</title><link rel="canonical" href="https://example.com/"></head></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite());
+    expect(result.metaTags[0].canonical.status).toBe('warn');
+    expect(result.metaTags[0].canonicalStatus).toBe(301);
+    expect(result.metaTags[0].canonical.message).toContain('redirects');
+  });
+
+  it('fails when canonical returns 404', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, opts?: { method?: string }) => {
+        if (opts?.method === 'HEAD') {
+          return Promise.resolve(new Response('', { status: 404 }));
+        }
+        return makeResponse({ body: '<html><head><title>Test</title><link rel="canonical" href="https://example.com/"></head></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite());
+    expect(result.metaTags[0].canonical.status).toBe('fail');
+    expect(result.metaTags[0].canonicalValid).toBe(false);
+    expect(result.metaTags[0].canonicalStatus).toBe(404);
+  });
+
+  it('warns when canonical points to a different page', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, opts?: { method?: string }) => {
+        if (opts?.method === 'HEAD') {
+          return Promise.resolve(new Response('', { status: 200 }));
+        }
+        return makeResponse({ body: '<html><head><title>Test</title><link rel="canonical" href="https://example.com/other"></head></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite());
+    expect(result.metaTags[0].canonical.status).toBe('warn');
+    expect(result.metaTags[0].canonicalValid).toBe(false);
+    expect(result.metaTags[0].canonicalTarget).toBe('https://example.com/other');
+    expect(result.metaTags[0].canonical.message).toContain('different URL');
+  });
+
+  it('falls back to GET when HEAD is not supported', async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string, opts?: { method?: string }) => {
+      if (opts?.method === 'HEAD') {
+        return Promise.resolve(new Response('', { status: 405 }));
+      }
+      if (opts?.method === 'GET') {
+        return Promise.resolve(new Response('<html></html>', { status: 200 }));
+      }
+      return makeResponse({ body: '<html><head><title>Test</title><link rel="canonical" href="https://example.com/"></head></html>' });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await cachedAuditSite(makeSite());
+    expect(result.metaTags[0].canonical.status).toBe('pass');
+    expect(result.metaTags[0].canonicalStatus).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://example.com/',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('fails when HEAD is unsupported and GET also fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, opts?: { method?: string }) => {
+        if (opts?.method === 'HEAD') {
+          return Promise.resolve(new Response('', { status: 501 }));
+        }
+        if (opts?.method === 'GET') {
+          return Promise.resolve(new Response('missing', { status: 404 }));
+        }
+        return makeResponse({ body: '<html><head><title>Test</title><link rel="canonical" href="https://example.com/"></head></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite());
+    expect(result.metaTags[0].canonical.status).toBe('fail');
+    expect(result.metaTags[0].canonicalStatus).toBe(404);
+    expect(result.metaTags[0].canonical.message).toContain('HTTP 404');
+  });
 });
 
 // ---------------------------------------------------------------------------

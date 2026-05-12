@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { applyImportResults, buildImportSummary, getImportResult, type DiscoverySite, type ImportResult, type ImportSummary } from '@/lib/discovery-import';
 import { getSiteScUrlOverride, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
+import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
 
 interface Site {
   id: string;
@@ -453,18 +454,15 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             <div className="space-y-1 col-span-2">
               <label className="text-xs text-neutral-400">Skip checks</label>
               <div className="grid grid-cols-3 gap-x-4 gap-y-1.5 pt-1">
-                {['robots.txt','Sitemap','SC Sitemap','Indexing','title','description','og:title','og:description','og:image','OG Image','twitter:card','canonical','JSON-LD','HTTPS','HSTS','Favicon','TTFB','Images','Internal Links'].map(label => (
-                  <label key={label} className="flex items-center gap-2 cursor-pointer">
+                {SKIP_CHECK_OPTIONS.map(({ id, label }) => (
+                  <label key={id} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={(form.skipChecks ?? []).map(s => s.toLowerCase()).includes(label.toLowerCase())}
+                      checked={hasSkipCheck(form.skipChecks, id)}
                       onChange={e => setForm(f => {
-                        const current = f.skipChecks ?? [];
                         return {
                           ...f,
-                          skipChecks: e.target.checked
-                            ? [...current, label]
-                            : current.filter(s => s.toLowerCase() !== label.toLowerCase()),
+                          skipChecks: toggleSkipCheck(f.skipChecks, id, e.target.checked),
                         };
                       })}
                       className="rounded border-neutral-600"

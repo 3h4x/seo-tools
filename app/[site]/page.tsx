@@ -12,6 +12,7 @@ import {
 } from '@/lib/search-console';
 import { cachedAuditSite } from '@/lib/audit';
 import { analyzeSiteGaps } from '@/lib/gaps';
+import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getScDaily, getGa4Daily, getKeywordDeltas } from '@/lib/db';
 import type { KeywordDelta } from '@/lib/keyword-history';
 import { KeywordRankTable } from '../components/keyword-rank-table';
@@ -96,6 +97,7 @@ export default async function SiteDashboardPage({
   const gapAnalysis = analyzeSiteGaps(audit, site);
   const sections = gapsBySection(gapAnalysis.gaps);
   const totalGaps = gapAnalysis.gaps.length;
+  const canonicalSummary = summarizeCanonicalChecks(audit.metaTags);
 
   const sc = scComparison?.data ?? null;
   const scError = scComparison?.error ?? false;
@@ -394,6 +396,27 @@ export default async function SiteDashboardPage({
             </div>
             {sections['metaTags']?.map(g => <Recommendation key={g.id} gap={g} />)}
           </AuditPanel>
+          <CheckCard check={canonicalSummary}>
+            <div className="mt-3 space-y-2">
+              {audit.metaTags.map((meta, i) => (
+                <div key={i} className="flex items-start gap-3 text-xs">
+                  <div className={`size-1.5 rounded-full shrink-0 mt-1 ${statusDots[meta.canonical.status]}`} />
+                  <div className="min-w-0">
+                    <div className="text-neutral-300 font-mono">{meta.page}</div>
+                    <div className={meta.canonical.status === 'fail' ? 'text-red-400' : meta.canonical.status === 'warn' ? 'text-amber-400' : 'text-neutral-500'}>
+                      {meta.canonical.message}
+                    </div>
+                    {meta.canonicalTarget && (
+                      <div className="text-neutral-600 font-mono break-all">
+                        {meta.canonicalTarget}
+                        {meta.canonicalStatus ? ` · HTTP ${meta.canonicalStatus}` : ''}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CheckCard>
           <CheckCard check={audit.ogImage} gaps={sections['ogImage']}>
             {audit.ogImage.url && (
               <div className="mt-3 space-y-3">

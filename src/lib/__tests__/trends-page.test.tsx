@@ -168,7 +168,13 @@ vi.mock('../../../app/components/metric-card', () => ({
 }));
 
 vi.mock('../../../app/components/audit/check-card', () => ({
-  CheckCard: () => <div>Check Card</div>,
+  CheckCard: ({ check, children }: { check: { label: string; message: string }; children?: React.ReactNode }) => (
+    <div>
+      <div>{check.label}</div>
+      <div>{check.message}</div>
+      {children}
+    </div>
+  ),
   statusDots: {},
   Recommendation: () => <div>Recommendation</div>,
   MetaChecksTable: () => <div>Meta Checks</div>,
@@ -382,5 +388,63 @@ describe('SiteDashboardPage', () => {
       searchParams: Promise.resolve({}),
     }));
     expect(zeroHtml).not.toContain('data unavailable');
+  });
+
+  it('shows skipped canonical checks as N/A instead of valid self-referential canonicals', async () => {
+    const { cachedAuditSite } = await import('@/lib/audit');
+    vi.mocked(cachedAuditSite).mockResolvedValueOnce({
+      ...makeAuditResult(),
+      metaTags: [{
+        page: '/',
+        canonicalValid: true,
+        canonicalStatus: 200,
+        canonicalTarget: 'https://site-one.test/',
+        title: makeCheckResult({ label: 'title' }),
+        description: makeCheckResult({ label: 'description' }),
+        ogTitle: makeCheckResult({ label: 'og:title' }),
+        ogImage: makeCheckResult({ label: 'og:image' }),
+        ogDescription: makeCheckResult({ label: 'og:description' }),
+        twitterCard: makeCheckResult({ label: 'twitter:card' }),
+        canonical: makeCheckResult({ label: 'canonical', message: 'N/A — Self-referential canonical resolves' }),
+        jsonLd: makeCheckResult({ label: 'JSON-LD' }),
+      }],
+    });
+
+    const html = renderToStaticMarkup(await SiteDashboardPage({
+      params: Promise.resolve({ site: 'site-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(html).toContain('1 page skipped (N/A)');
+    expect(html).not.toContain('1/1 pages have valid self-referential canonicals');
+  });
+
+  it('describes missing canonicals without calling them broken targets', async () => {
+    const { cachedAuditSite } = await import('@/lib/audit');
+    vi.mocked(cachedAuditSite).mockResolvedValueOnce({
+      ...makeAuditResult(),
+      metaTags: [{
+        page: '/',
+        canonicalValid: null,
+        canonicalStatus: null,
+        canonicalTarget: null,
+        title: makeCheckResult({ label: 'title' }),
+        description: makeCheckResult({ label: 'description' }),
+        ogTitle: makeCheckResult({ label: 'og:title' }),
+        ogImage: makeCheckResult({ label: 'og:image' }),
+        ogDescription: makeCheckResult({ label: 'og:description' }),
+        twitterCard: makeCheckResult({ label: 'twitter:card' }),
+        canonical: makeCheckResult({ status: 'fail', label: 'canonical', message: 'Not found' }),
+        jsonLd: makeCheckResult({ label: 'JSON-LD' }),
+      }],
+    });
+
+    const html = renderToStaticMarkup(await SiteDashboardPage({
+      params: Promise.resolve({ site: 'site-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(html).toContain('1 page missing canonical tags');
+    expect(html).not.toContain('failing canonical targets');
   });
 });

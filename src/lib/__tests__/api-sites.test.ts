@@ -259,6 +259,24 @@ describe('POST /api/sites', () => {
     expect(dbUpsertSite).toHaveBeenCalled();
   });
 
+  it('normalizes skipChecks to stable ids before upsert', async () => {
+    const res = await POST(postReq({
+      id: 'site1',
+      name: 'Site 1',
+      domain: 'site1.com',
+      skipChecks: ['OG Image', 'Internal Links', 'og:image'],
+    }));
+
+    expect(res.status).toBe(200);
+    expect(dbUpsertSite).toHaveBeenCalledWith({
+      id: 'site1',
+      name: 'Site 1',
+      domain: 'site1.com',
+      testPages: [],
+      skipChecks: ['ogImage', 'internalLinks', 'ogImageMeta'],
+    });
+  });
+
   it('returns 400 when a testPage entry does not start with /', async () => {
     const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', testPages: ['noslash'] }));
     expect(res.status).toBe(400);
