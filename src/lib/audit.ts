@@ -55,6 +55,22 @@ interface TtfbResult extends CheckResult {
   ms?: number;
 }
 
+interface RedirectHop {
+  url: string;
+  status: number;
+  location?: string;
+}
+
+interface RedirectChainResult extends CheckResult {
+  page: string;
+  requestedUrl: string;
+  finalUrl: string;
+  hops: RedirectHop[];
+  hopCount: number;
+  hasTemporaryRedirect: boolean;
+  loopDetected: boolean;
+}
+
 interface ImageDetail {
   src: string;
   hasAlt: boolean;
@@ -112,6 +128,7 @@ export interface SiteAuditResult {
   sitemap: SitemapResult;
   scSitemapFreshness: CheckResult;
   indexingCoverage: IndexingCoverageResult;
+  redirectChains: RedirectChainResult[];
   metaTags: MetaTagResult[];
   ogImage: OgImageResult;
   ttfb: TtfbResult;
@@ -120,6 +137,13 @@ export interface SiteAuditResult {
   security: SecurityResult;
   score: { pass: number; warn: number; fail: number; error: number; total: number };
   sampledPages: string[];
+}
+
+export function normalizeSiteAuditResult(audit: SiteAuditResult): SiteAuditResult {
+  return {
+    ...audit,
+    redirectChains: audit.redirectChains ?? [],
+  };
 }
 
 export const MAX_SAMPLED_PAGES = 10;
@@ -181,6 +205,8 @@ function getSc() {
 
 const FETCH_TIMEOUT = 30_000;
 const GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+const MAX_REDIRECT_HOPS = 10;
+const PERMANENT_REDIRECT_STATUSES = new Set([301, 308]);
 
 export interface FetchResult {
   ok: boolean;
@@ -612,6 +638,184 @@ async function checkTtfb(domain: string): Promise<TtfbResult> {
   return { status: 'fail', label: 'TTFB', message: `${ms}ms (very slow)`, ms };
 }
 
+function formatRedirectChainDetails(hops: RedirectHop[], finalUrl: string): string {
+  if (hops.length === 0) return finalUrl;
+
+  const parts = hops.map((hop) => `${hop.url} (${hop.status})`);
+  const lastLocation = hops[hops.length - 1]?.location;
+  if (lastLocation && lastLocation === finalUrl) {
+    parts.push(finalUrl);
+  }
+
+  return parts.join(' -> ');
+}
+
+function isPermanentRedirectStatus(status: number): boolean {
+  return PERMANENT_REDIRECT_STATUSES.has(status);
+}
+
+async function checkRedirectChain(pageUrl: string, page: string): Promise<RedirectChainResult> {
+  const seen = new Set<string>();
+  const hops: RedirectHop[] = [];
+  let currentUrl = pageUrl;
+  let finalUrl = pageUrl;
+  let hasTemporaryRedirect = false;
+
+  for (let depth = 0; depth < MAX_REDIRECT_HOPS; depth++) {
+    if (seen.has(currentUrl)) {
+      return {
+        status: 'fail',
+        label: 'Redirect Chain',
+        message: 'Redirect loop detected',
+        details: formatRedirectChainDetails(hops, finalUrl),
+        page,
+        requestedUrl: pageUrl,
+        finalUrl,
+        hops,
+        hopCount: hops.length,
+        hasTemporaryRedirect,
+        loopDetected: true,
+      };
+    }
+
+    seen.add(currentUrl);
+    const res = await safeFetch(currentUrl, { ua: GOOGLEBOT_UA, redirect: 'manual' });
+
+    if (res.status < 300 || res.status >= 400) {
+      finalUrl = currentUrl;
+
+      if (!res.ok) {
+        return {
+          status: 'error',
+          label: 'Redirect Chain',
+          message: res.error ? `Could not check: ${res.error}` : `Final response HTTP ${res.status}`,
+          details: formatRedirectChainDetails(hops, finalUrl),
+          page,
+          requestedUrl: pageUrl,
+          finalUrl,
+          hops,
+          hopCount: hops.length,
+          hasTemporaryRedirect,
+          loopDetected: false,
+        };
+      }
+
+      const hopCount = hops.length;
+      if (hopCount === 0) {
+        return {
+          status: 'pass',
+          label: 'Redirect Chain',
+          message: 'No redirects',
+          details: finalUrl,
+          page,
+          requestedUrl: pageUrl,
+          finalUrl,
+          hops,
+          hopCount,
+          hasTemporaryRedirect,
+          loopDetected: false,
+        };
+      }
+
+      if (hasTemporaryRedirect) {
+        return {
+          status: 'fail',
+          label: 'Redirect Chain',
+          message: `${hopCount} hop${hopCount === 1 ? '' : 's'} with temporary redirect`,
+          details: formatRedirectChainDetails(hops, finalUrl),
+          page,
+          requestedUrl: pageUrl,
+          finalUrl,
+          hops,
+          hopCount,
+          hasTemporaryRedirect,
+          loopDetected: false,
+        };
+      }
+
+      const status: CheckStatus = hopCount === 1 ? 'pass' : hopCount === 2 ? 'warn' : 'fail';
+      return {
+        status,
+        label: 'Redirect Chain',
+        message:
+          hopCount === 1
+            ? '1 permanent redirect hop'
+            : `${hopCount} redirect hops`,
+        details: formatRedirectChainDetails(hops, finalUrl),
+        page,
+        requestedUrl: pageUrl,
+        finalUrl,
+        hops,
+        hopCount,
+        hasTemporaryRedirect,
+        loopDetected: false,
+      };
+    }
+
+    const location = res.headers.get('location');
+    if (!location) {
+      return {
+        status: 'fail',
+        label: 'Redirect Chain',
+        message: `Redirect missing Location header (${res.status})`,
+        details: formatRedirectChainDetails(hops, finalUrl),
+        page,
+        requestedUrl: pageUrl,
+        finalUrl,
+        hops,
+        hopCount: hops.length,
+        hasTemporaryRedirect,
+        loopDetected: false,
+      };
+    }
+
+    let nextUrl: string;
+    try {
+      nextUrl = new URL(location, currentUrl).toString();
+    } catch {
+      return {
+        status: 'fail',
+        label: 'Redirect Chain',
+        message: `Invalid redirect target (${res.status})`,
+        details: location,
+        page,
+        requestedUrl: pageUrl,
+        finalUrl,
+        hops,
+        hopCount: hops.length,
+        hasTemporaryRedirect,
+        loopDetected: false,
+      };
+    }
+
+    if (!isPermanentRedirectStatus(res.status)) {
+      hasTemporaryRedirect = true;
+    }
+
+    hops.push({
+      url: currentUrl,
+      status: res.status,
+      location: nextUrl,
+    });
+    finalUrl = nextUrl;
+    currentUrl = nextUrl;
+  }
+
+  return {
+    status: 'fail',
+    label: 'Redirect Chain',
+    message: `Exceeded ${MAX_REDIRECT_HOPS} redirect hops`,
+    details: formatRedirectChainDetails(hops, finalUrl),
+    page,
+    requestedUrl: pageUrl,
+    finalUrl,
+    hops,
+    hopCount: hops.length,
+    hasTemporaryRedirect,
+    loopDetected: false,
+  };
+}
+
 async function checkSecurity(domain: string): Promise<SecurityResult> {
   // HTTPS: fetch http:// and check if it redirects to https://
   let httpsCheck: CheckResult;
@@ -813,24 +1017,28 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
   const indexingCoverage = await checkIndexingCoverage(site, sitemap.urlCount);
 
   // Fetch sampled pages sequentially to avoid rate-limiting
-  const pageResults: { meta: MetaTagResult; images: ImageSeoResult; links: InternalLinkResult }[] = [];
+  const pageResults: { redirectChain: RedirectChainResult; meta: MetaTagResult; images: ImageSeoResult; links: InternalLinkResult }[] = [];
   for (const page of sampledPages) {
-    const res = await safeFetch(`https://${site.domain}${page}`, { ua: GOOGLEBOT_UA });
+    const pageUrl = `https://${site.domain}${page}`;
+    const redirectChain = await checkRedirectChain(pageUrl, page);
+    const res = await safeFetch(pageUrl, { ua: GOOGLEBOT_UA });
     const meta = parseMetaTags(res, page);
     if (res.ok) {
-      const canonicalCheck = await checkCanonicalUrl(`https://${site.domain}${page}`, meta.canonicalTarget);
+      const canonicalCheck = await checkCanonicalUrl(pageUrl, meta.canonicalTarget);
       meta.canonical = canonicalCheck.check;
       meta.canonicalValid = canonicalCheck.canonicalValid;
       meta.canonicalStatus = canonicalCheck.canonicalStatus;
       meta.canonicalTarget = canonicalCheck.canonicalTarget;
     }
     pageResults.push({
+      redirectChain,
       meta,
       images: res.ok ? checkImageSeo(res.text, page) : { page, totalImages: 0, withAlt: 0, withoutAlt: 0, withLazyLoading: 0, status: 'error' as CheckStatus, label: 'Images', message: res.error || `HTTP ${res.status}`, images: [] },
       links: res.ok ? checkInternalLinks(res.text, site.domain, page) : { page, internalLinks: 0, externalLinks: 0, status: 'error' as CheckStatus, label: 'Internal Links', message: res.error || `HTTP ${res.status}` },
     });
   }
 
+  const redirectChains = pageResults.map(r => r.redirectChain);
   const metaTags = pageResults.map(r => r.meta);
   const imageSeo = pageResults.map(r => r.images);
   const internalLinks = pageResults.map(r => r.links);
@@ -844,6 +1052,7 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
   const skippedSitemap = applySkipToCheck(sitemap, skip, 'sitemap');
   const skippedScSitemapFreshness = applySkipToCheck(scSitemapFreshness, skip, 'scSitemap');
   const skippedIndexingCoverage = applySkipToCheck(indexingCoverage, skip, 'indexing');
+  const skippedRedirectChains = redirectChains.map(chain => applySkipToCheck(chain, skip, 'redirectChain'));
   const skippedOgImage = applySkipToCheck(ogImage, skip, 'ogImage');
   const skippedTtfb = applySkipToCheck(ttfb, skip, 'ttfb');
   const skippedSecurity = {
@@ -870,6 +1079,7 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
     skippedSitemap,
     skippedScSitemapFreshness,
     skippedIndexingCoverage,
+    ...skippedRedirectChains,
     skippedOgImage,
     skippedTtfb,
     skippedSecurity.https,
@@ -893,6 +1103,7 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
     sitemap: skippedSitemap,
     scSitemapFreshness: skippedScSitemapFreshness,
     indexingCoverage: skippedIndexingCoverage,
+    redirectChains: skippedRedirectChains,
     metaTags: skippedMetaTags,
     ogImage: skippedOgImage,
     ttfb: skippedTtfb,
@@ -914,7 +1125,8 @@ async function auditAllSites(): Promise<SiteAuditResult[]> {
 import { withCache, CACHE_TTL_WEEK } from './db';
 
 export async function cachedAuditSite(site: Site): Promise<SiteAuditResult> {
-  return (await withCache<SiteAuditResult>('audit', site.id, () => auditSite(site), CACHE_TTL_WEEK))!;
+  const audit = (await withCache<SiteAuditResult>('audit', site.id, () => auditSite(site), CACHE_TTL_WEEK))!;
+  return normalizeSiteAuditResult(audit);
 }
 
 export async function cachedAuditAllSites(): Promise<SiteAuditResult[]> {

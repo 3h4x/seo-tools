@@ -134,6 +134,10 @@ vi.mock('@/lib/search-console', () => ({
 
 vi.mock('@/lib/audit', () => ({
   cachedAuditSite: vi.fn(async () => makeAuditResult()),
+  normalizeSiteAuditResult: vi.fn((audit) => ({
+    ...audit,
+    redirectChains: audit.redirectChains ?? [],
+  })),
 }));
 
 vi.mock('@/lib/performance-site', () => ({
@@ -227,6 +231,7 @@ function makeAuditResult() {
       indexedPages: 8,
       coveragePct: 80,
     },
+    redirectChains: [],
     metaTags: [],
     ogImage: {
       ...makeCheckResult({ label: 'OG Image' }),
