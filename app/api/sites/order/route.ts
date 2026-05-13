@@ -1,24 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbReorderSites } from '@/lib/db';
+import { parseOrderedSiteIds, siteRouteError, siteRouteOk } from '@/lib/site-route';
 
 export async function PUT(req: NextRequest) {
   const body = await req.json() as { orderedIds?: unknown };
-  const orderedIds = body.orderedIds;
+  const orderedIds = parseOrderedSiteIds(body.orderedIds);
 
-  if (!Array.isArray(orderedIds) || orderedIds.some(id => typeof id !== 'string' || id.trim() === '')) {
-    return NextResponse.json(
-      { ok: false, error: 'orderedIds must be an array of site ids' },
-      { status: 400 },
-    );
+  if (!orderedIds) {
+    return siteRouteError('orderedIds must be an array of site ids');
   }
 
   try {
     dbReorderSites(orderedIds);
-    return NextResponse.json({ ok: true });
+    return siteRouteOk();
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Failed to reorder sites' },
-      { status: 400 },
-    );
+    return siteRouteError(error instanceof Error ? error.message : 'Failed to reorder sites');
   }
 }
