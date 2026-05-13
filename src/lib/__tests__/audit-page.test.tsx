@@ -1,0 +1,280 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
+import type { ReactNode } from 'react';
+
+vi.mock('next/link', () => ({
+  default: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
+    <a href={href} {...props}>{children}</a>
+  ),
+}));
+
+const {
+  mockCachedAuditAllSites,
+  mockSummarizeCanonicalChecks,
+  mockGetManagedSites,
+  mockAnalyzeSiteGaps,
+  mockDetectAllDecay,
+  mockFormatRelativeTime,
+  mockGetCwvAuditSummary,
+  mockMetricCard,
+  mockGapsClient,
+  mockDataTable,
+} = vi.hoisted(() => ({
+  mockCachedAuditAllSites: vi.fn(),
+  mockSummarizeCanonicalChecks: vi.fn(),
+  mockGetManagedSites: vi.fn(),
+  mockAnalyzeSiteGaps: vi.fn(),
+  mockDetectAllDecay: vi.fn(),
+  mockFormatRelativeTime: vi.fn(),
+  mockGetCwvAuditSummary: vi.fn(),
+  mockMetricCard: vi.fn(({ label, current }: { label: string; current: number }) => <div>{label}:{current}</div>),
+  mockGapsClient: vi.fn(() => <div>Gaps Client</div>),
+  mockDataTable: vi.fn(() => <div>Data Table</div>),
+}));
+
+vi.mock('@/lib/audit', () => ({
+  cachedAuditAllSites: mockCachedAuditAllSites,
+}));
+
+vi.mock('@/lib/canonical', () => ({
+  summarizeCanonicalChecks: mockSummarizeCanonicalChecks,
+}));
+
+vi.mock('@/lib/sites', () => ({
+  getManagedSites: mockGetManagedSites,
+}));
+
+vi.mock('@/lib/gaps', () => ({
+  analyzeSiteGaps: mockAnalyzeSiteGaps,
+}));
+
+vi.mock('@/lib/decay', () => ({
+  detectAllDecay: mockDetectAllDecay,
+}));
+
+vi.mock('@/lib/format', () => ({
+  formatRelativeTime: mockFormatRelativeTime,
+}));
+
+vi.mock('@/lib/performance-site', () => ({
+  getCwvAuditSummary: mockGetCwvAuditSummary,
+}));
+
+vi.mock('@/lib/constants', () => ({
+  CWV_RATING_COLORS: {
+    good: { text: 'text-emerald-400' },
+    'needs-improvement': { text: 'text-amber-400' },
+    poor: { text: 'text-red-400' },
+  },
+  CWV_THRESHOLDS: {
+    LCP: { unit: 'ms' },
+    INP: { unit: 'ms' },
+    CLS: { unit: 'score' },
+  },
+}));
+
+vi.mock('../../../app/components/audit/check-card', () => ({
+  statusDots: {
+    pass: 'bg-emerald-500',
+    warn: 'bg-amber-500',
+    fail: 'bg-red-500',
+    error: 'bg-red-500',
+  },
+  accentBorder: {
+    pass: 'border-l-emerald-500',
+    warn: 'border-l-amber-500',
+    fail: 'border-l-red-500',
+    error: 'border-l-red-500',
+  },
+  StatusBadge: ({ label }: { label: string }) => <div>{label}</div>,
+}));
+
+vi.mock('../../../app/components/metric-card', () => ({
+  MetricCard: mockMetricCard,
+}));
+
+vi.mock('../../../app/components/copy-button', () => ({
+  CopyButton: () => <button>Copy</button>,
+}));
+
+vi.mock('../../../app/components/gaps-client', () => ({
+  GapsClient: mockGapsClient,
+}));
+
+vi.mock('../../../app/components/data-table', () => ({
+  DataTable: mockDataTable,
+}));
+
+vi.mock('../../../app/components/time-range', () => ({
+  default: () => <div>Time Range</div>,
+}));
+
+import AuditPage from '../../../app/audit/page';
+
+function makeCheck(status: 'pass' | 'warn' | 'fail' | 'error' = 'pass') {
+  return { status, label: status, message: status };
+}
+
+function makeAudit({
+  siteId,
+  domain,
+  pass,
+  warn = 0,
+  fail = 0,
+  error = 0,
+  total,
+  timestamp = 1_700_000_000_000,
+}: {
+  siteId: string;
+  domain: string;
+  pass: number;
+  warn?: number;
+  fail?: number;
+  error?: number;
+  total: number;
+  timestamp?: number;
+}) {
+  return {
+    siteId,
+    domain,
+    timestamp,
+    robotsTxt: makeCheck(),
+    sitemap: makeCheck(),
+    scSitemapFreshness: makeCheck(),
+    indexingCoverage: { ...makeCheck(), coveragePct: 95 },
+    redirectChains: [],
+    metaTags: [],
+    ogImage: makeCheck(),
+    ttfb: { ...makeCheck(), ms: 432 },
+    imageSeo: [],
+    internalLinks: [],
+    security: { https: makeCheck(), hsts: makeCheck(), favicon: makeCheck() },
+    score: { pass, warn, fail, error, total },
+    sampledPages: ['/'],
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockSummarizeCanonicalChecks.mockReturnValue({ status: 'pass', compactLabel: 'All canonical' });
+  mockFormatRelativeTime.mockReturnValue('moments ago');
+});
+
+describe('Audit page', () => {
+  it('falls back to 7 days and renders the no-sites empty state', async () => {
+    mockCachedAuditAllSites.mockResolvedValue([]);
+    mockGetManagedSites.mockResolvedValue([]);
+    mockDetectAllDecay.mockResolvedValue([]);
+
+    const page = await AuditPage({
+      searchParams: Promise.resolve({ period: '999' }),
+    });
+
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain('No sites configured');
+    expect(mockDetectAllDecay).toHaveBeenCalledWith(7);
+    expect(mockGetCwvAuditSummary).not.toHaveBeenCalled();
+    expect(mockGapsClient).not.toHaveBeenCalled();
+    expect(mockDataTable).not.toHaveBeenCalled();
+  });
+
+  it('aggregates gaps, decay stats, and CWV summaries for configured sites', async () => {
+    mockCachedAuditAllSites.mockResolvedValue([
+      makeAudit({ siteId: 'site-a', domain: 'a.test', pass: 9, total: 10, timestamp: 1_700_000_000_000 }),
+      makeAudit({ siteId: 'site-b', domain: 'b.test', pass: 4, fail: 4, total: 8, timestamp: 1_700_000_010_000 }),
+    ]);
+    mockGetManagedSites.mockResolvedValue([
+      { id: 'site-a', name: 'Site A', domain: 'a.test', testPages: [] },
+      { id: 'site-b', name: 'Site B', domain: 'b.test', testPages: [] },
+    ]);
+    mockAnalyzeSiteGaps
+      .mockReturnValueOnce({
+        gaps: [
+          { severity: 'medium', category: 'performance', title: 'Perf gap' },
+          { severity: 'high', category: 'social', title: 'Social gap' },
+        ],
+      })
+      .mockReturnValueOnce({
+        gaps: [
+          { severity: 'high', category: 'content', title: 'Content gap' },
+        ],
+      });
+    mockDetectAllDecay.mockResolvedValue([
+      {
+        siteId: 'site-a',
+        domain: 'a.test',
+        decayingPages: [
+          {
+            siteId: 'site-a',
+            domain: 'a.test',
+            page: 'https://a.test/posts/alpha',
+            currentClicks: 12,
+            clicksDelta: -50,
+            currentImpressions: 100,
+            impressionsDelta: -30,
+            currentPosition: 9.4,
+            positionDelta: 3,
+            severity: 'severe',
+          },
+        ],
+      },
+      {
+        siteId: 'site-b',
+        domain: 'b.test',
+        decayingPages: [],
+      },
+    ]);
+    mockGetCwvAuditSummary
+      .mockResolvedValueOnce({
+        metrics: {
+          LCP: { value: 1234, rating: 'good', sampleCount: 10 },
+        },
+        source: 'rum',
+      })
+      .mockResolvedValueOnce({
+        metrics: {},
+        source: 'psi-lab',
+      });
+
+    const page = await AuditPage({
+      searchParams: Promise.resolve({ period: '30' }),
+    });
+
+    const html = renderToStaticMarkup(page);
+
+    expect(mockDetectAllDecay).toHaveBeenCalledWith(30);
+    expect(mockGetCwvAuditSummary).toHaveBeenCalledTimes(2);
+    expect(mockGetCwvAuditSummary).toHaveBeenNthCalledWith(1, 'site-a');
+    expect(mockGetCwvAuditSummary).toHaveBeenNthCalledWith(2, 'site-b');
+    expect(mockMetricCard).toHaveBeenCalledWith(expect.objectContaining({ label: 'Decaying Pages', current: 1 }), undefined);
+    expect(mockMetricCard).toHaveBeenCalledWith(expect.objectContaining({ label: 'Severe', current: 1 }), undefined);
+    expect(mockMetricCard).toHaveBeenCalledWith(expect.objectContaining({ label: 'Sites Affected', current: 1 }), undefined);
+
+    const gapsCall = (mockGapsClient.mock.calls as unknown as Array<[{
+      allSiteGaps: Array<{ siteId: string; gap: { severity: string; category: string; title: string } }>;
+      categories: string[];
+      sites: Array<{ id: string }>;
+    }]>).at(0);
+    expect(gapsCall).toBeDefined();
+    expect(gapsCall![0].allSiteGaps.map((entry) => `${entry.gap.severity}:${entry.gap.category}:${entry.gap.title}`)).toEqual([
+      'high:content:Content gap',
+      'high:social:Social gap',
+      'medium:performance:Perf gap',
+    ]);
+    expect(gapsCall![0].categories).toEqual(['content', 'social', 'performance']);
+    expect(gapsCall![0].sites.map((site) => site.id)).toEqual(expect.arrayContaining(['site-a', 'site-b']));
+    expect(gapsCall![0].sites).toHaveLength(2);
+
+    const dataTableCall = (mockDataTable.mock.calls as unknown as Array<[{
+      rowKeys: string[];
+    }]>).at(0);
+    expect(dataTableCall).toBeDefined();
+    expect(dataTableCall![0].rowKeys).toEqual(['site-a:https://a.test/posts/alpha']);
+
+    expect(html).toContain('Pages losing traffic · 30-day comparison');
+    expect(html).toContain('1234ms');
+    expect(html).toContain('RUM');
+    expect(html).toContain('Checked moments ago');
+  });
+});
