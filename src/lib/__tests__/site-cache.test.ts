@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../db', () => ({
+  clearCache: vi.fn(),
   clearCacheEntry: vi.fn(),
   clearCacheEntriesByPrefix: vi.fn(),
   clearSitemapSyncState: vi.fn(),
 }));
 
-import { clearCacheEntry, clearCacheEntriesByPrefix, clearSitemapSyncState } from '../db';
+import { clearCache, clearCacheEntry, clearCacheEntriesByPrefix, clearSitemapSyncState } from '../db';
 import { invalidateManagedSiteCache } from '../site-cache';
 import type { Site } from '../sites';
 
@@ -30,6 +31,7 @@ describe('invalidateManagedSiteCache', () => {
 
     invalidateManagedSiteCache(null, site);
 
+    expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearCacheEntry).toHaveBeenCalledWith('audit', 'site1');
     expect(clearSitemapSyncState).toHaveBeenCalledWith('site1');
     expect(clearCacheEntry).toHaveBeenCalledWith('sitemap-submissions', 'sc-domain:example.com');
@@ -55,6 +57,7 @@ describe('invalidateManagedSiteCache', () => {
 
     invalidateManagedSiteCache(previous, next);
 
+    expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:old.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:new.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', '1234');
@@ -76,6 +79,7 @@ describe('invalidateManagedSiteCache', () => {
 
     invalidateManagedSiteCache(previous, next);
 
+    expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearSitemapSyncState).toHaveBeenCalledWith('site1');
   });
 
@@ -85,6 +89,7 @@ describe('invalidateManagedSiteCache', () => {
 
     invalidateManagedSiteCache(previous, next);
 
+    expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearSitemapSyncState).not.toHaveBeenCalled();
   });
 
@@ -93,6 +98,7 @@ describe('invalidateManagedSiteCache', () => {
 
     invalidateManagedSiteCache(previous, null);
 
+    expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearSitemapSyncState).toHaveBeenCalledWith('site1');
   });
 
@@ -102,6 +108,7 @@ describe('invalidateManagedSiteCache', () => {
 
     invalidateManagedSiteCache(previous, next);
 
+    expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearCacheEntry).toHaveBeenCalledWith('audit', 'site1');
     expect(clearCacheEntry).toHaveBeenCalledWith('sitemap-submissions', 'sc-domain:example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', '1234');

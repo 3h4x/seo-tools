@@ -137,6 +137,11 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
       <div>
         <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
         <p className="text-neutral-500 text-sm mt-1">Live checks · {audits.length} sites</p>
+        <div className="mt-3">
+          <Link href="/audit/cross-links" className="inline-flex items-center rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-300 hover:bg-neutral-800/50 transition-colors">
+            Cross-site links
+          </Link>
+        </div>
       </div>
       <div className="flex gap-6 items-center">
         <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 flex items-center gap-5 shrink-0">

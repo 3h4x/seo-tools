@@ -1,4 +1,4 @@
-import { clearCacheEntry, clearCacheEntriesByPrefix, clearSitemapSyncState } from './db';
+import { clearCache, clearCacheEntry, clearCacheEntriesByPrefix, clearSitemapSyncState } from './db';
 import { getSCUrl, type Site } from './sites';
 
 const SEARCH_CONSOLE_CACHE_PREFIXES = ['sc-comparison-', 'sc-data-', 'sc-queries-', 'sc-pages-'] as const;
@@ -39,6 +39,8 @@ function shouldClearSitemapSyncState(
 export function invalidateManagedSiteCache(previousSite: Site | null, nextSite: Site | null): void {
   const previous = previousSite ? getCacheIdentities(previousSite) : null;
   const next = nextSite ? getCacheIdentities(nextSite) : null;
+
+  clearCache('cross-links-matrix');
 
   const auditSiteIds = unique([previous?.auditSiteId, next?.auditSiteId]);
 
