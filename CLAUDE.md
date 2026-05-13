@@ -79,6 +79,7 @@ GOOGLE_SA_KEY_JSON='{"type":"service_account",...}'
 - `/trends` — Historical trend data from SQLite snapshots (SC + GA4 + audit scores)
 - `/performance` — Core Web Vitals overview (RUM via GA4 with PSI fallback per site)
 - `/performance/[site]` — Per-site CWV detail (mobile vs desktop, slowest pages, RUM trend chart)
+- `/config` — Service account key management, PageSpeed API key management, and managed sites CRUD/discovery
 
 ## Audit Checks
 
@@ -97,6 +98,11 @@ Each site gets checked for:
 5. **TTFB** — measure time to first byte (pass: <800ms, warn: 800-2000ms, fail: ≥2000ms)
 6. **Image SEO** — count images, alt text coverage ratio, lazy-loading usage
 7. **Internal Links** — count internal vs external links per page (3+ internal = pass)
+8. **HTTPS** — HTTP redirects to HTTPS
+9. **HSTS** — Strict-Transport-Security header present
+10. **Favicon** — `/favicon.ico` reachable
+11. **SC Sitemap** — sitemap submitted to Search Console and downloaded by Google
+12. **Indexing** — indexed page count / sitemap coverage from Search Console
 
 ### Audit UX Enhancements
 - **Last checked timestamps** — Each site audit card shows relative time (e.g., "Checked 5m ago", "Checked yesterday") so users know data freshness. Uses `formatRelativeTime()` helper for human-readable output. Important given 300s revalidate window.
