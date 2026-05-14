@@ -309,6 +309,8 @@ describe('checkInternalLinks', () => {
     const result = checkInternalLinks('<a href="/a">A</a><a href="/b">B</a><a href="/c">C</a>', domain, '/test');
     expect(result.page).toBe('/test');
     expect(result.label).toBe('Internal Links');
+    expect(result.checkedInternalLinks).toBe(0);
+    expect(result.brokenLinks).toEqual([]);
   });
 });
 
