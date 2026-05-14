@@ -2,6 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { computeKeywordDeltas, type KeywordDelta } from './keyword-history';
 import { openDatabase } from './sqlite-driver.js';
+import { normalizeSkipChecks } from './skip-checks';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'seo-tools.db');
 
@@ -68,6 +69,9 @@ function initSchema(db: SqliteDatabase): void {
       warn_count INTEGER NOT NULL DEFAULT 0,
       fail_count INTEGER NOT NULL DEFAULT 0,
       checks_json TEXT NOT NULL DEFAULT '{}',
+      sitemap_urls INTEGER,
+      indexed_pages INTEGER,
+      coverage_pct INTEGER,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -163,6 +167,9 @@ function initSchema(db: SqliteDatabase): void {
   // Migrations for existing DBs
   try { db.exec(`ALTER TABLE sites ADD COLUMN color TEXT`); } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN ttfb_ms INTEGER`); } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN sitemap_urls INTEGER`); } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN indexed_pages INTEGER`); } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN coverage_pct INTEGER`); } catch { /* already exists */ }
 }
 
 // --- Cache helpers ---
@@ -276,6 +283,9 @@ interface AuditTrendPoint {
   pass: number;
   warn: number;
   fail: number;
+  sitemapUrls?: number;
+  indexedPages?: number;
+  coveragePct?: number;
 }
 
 export function getScTrends(siteId: string, limit: number = 90): ScTrendPoint[] {
@@ -317,17 +327,43 @@ export function getGa4Trends(siteId: string, limit: number = 90): Ga4TrendPoint[
 export function getAuditTrends(siteId: string, limit: number = 90): AuditTrendPoint[] {
   const db = getDb();
   const rows = db.prepare(`
-    SELECT date, pass_count, warn_count, fail_count
-    FROM audit_snapshots WHERE site_id = ?
-    ORDER BY date DESC LIMIT ?
-  `).all(siteId, limit) as Array<{ date: string; pass_count: number; warn_count: number; fail_count: number }>;
+    SELECT a.date, a.pass_count, a.warn_count, a.fail_count, a.sitemap_urls, a.indexed_pages, a.coverage_pct,
+           s.skip_checks
+    FROM audit_snapshots a
+    LEFT JOIN sites s ON s.id = a.site_id
+    WHERE a.site_id = ?
+    ORDER BY a.date DESC LIMIT ?
+  `).all(siteId, limit) as Array<{
+    date: string;
+    pass_count: number;
+    warn_count: number;
+    fail_count: number;
+    sitemap_urls: number | null;
+    indexed_pages: number | null;
+    coverage_pct: number | null;
+    skip_checks: string | null;
+  }>;
 
-  return rows.reverse().map(r => ({
-    date: r.date,
-    pass: r.pass_count,
-    warn: r.warn_count,
-    fail: r.fail_count,
-  }));
+  return rows.reverse().map(r => {
+    const skipChecks = (() => {
+      try {
+        return normalizeSkipChecks(JSON.parse(r.skip_checks ?? '[]') as string[]);
+      } catch {
+        return [];
+      }
+    })();
+    const isIndexingSkipped = skipChecks.includes('indexing');
+
+    return {
+      date: r.date,
+      pass: r.pass_count,
+      warn: r.warn_count,
+      fail: r.fail_count,
+      sitemapUrls: isIndexingSkipped ? undefined : r.sitemap_urls ?? undefined,
+      indexedPages: isIndexingSkipped ? undefined : r.indexed_pages ?? undefined,
+      coveragePct: isIndexingSkipped ? undefined : r.coverage_pct ?? undefined,
+    };
+  });
 }
 
 export interface TtfbTrendPoint {

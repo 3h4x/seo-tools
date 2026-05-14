@@ -228,6 +228,17 @@ function OverviewTab({
                   />
                 </div>
               )}
+              {auditTrends.some((row) => row.coveragePct !== undefined) && (
+                <div>
+                  <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">Indexing Coverage · % of sitemap URLs appearing in search</h3>
+                  <TrendChart
+                    data={auditTrends}
+                    lines={[{ key: 'coveragePct', color: '#38bdf8', label: 'Coverage %' }]}
+                    height={160}
+                    valueFormat="integer"
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {ga4Trends.length > 0 && (
                   <TrendsTable
@@ -291,6 +302,23 @@ function OverviewTab({
                       <span key="p" className="text-emerald-400">{row.pass}</span>,
                       <span key="w" className="text-amber-400">{row.warn}</span>,
                       <span key="f" className="text-red-400">{row.fail}</span>,
+                    ])}
+                  />
+                )}
+                {auditTrends.some((row) => row.coveragePct !== undefined) && (
+                  <TrendsTable
+                    title="Indexing Coverage"
+                    columns={[
+                      { label: 'Date' },
+                      { label: 'Coverage', align: 'right' },
+                      { label: 'Indexed', align: 'right' },
+                      { label: 'Sitemap URLs', align: 'right' },
+                    ]}
+                    rows={auditTrends.map((row) => [
+                      <span key="d" className="text-neutral-400">{row.date}</span>,
+                      <span key="c" className="text-sky-400">{row.coveragePct !== undefined ? `${row.coveragePct}%` : '—'}</span>,
+                      <span key="i" className="text-neutral-400">{row.indexedPages?.toLocaleString() ?? '—'}</span>,
+                      <span key="s" className="text-neutral-400">{row.sitemapUrls?.toLocaleString() ?? '—'}</span>,
                     ])}
                   />
                 )}

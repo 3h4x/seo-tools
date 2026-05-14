@@ -52,6 +52,7 @@ import {
   getGa4DailyOperationalStatus,
   getSitemapSyncOperationalStatus,
   getSnapshotOperationalStatus,
+  getAuditTrends,
 } from '../db';
 
 /** Wipe volatile tables between tests so state never leaks. */
@@ -253,6 +254,37 @@ describe('dbDeleteSite', () => {
     expect(db.prepare('SELECT 1 AS present FROM sites WHERE id = ?').get('site-a')).toBeUndefined();
     expect(db.prepare('SELECT 1 AS present FROM sites WHERE id = ?').get('site-b')).toEqual({ present: 1 });
     expect(db.prepare('SELECT 1 AS present FROM api_cache WHERE site_id = ?').get('site-b')).toEqual({ present: 1 });
+  });
+});
+
+describe('trend helpers', () => {
+  it('hides stored indexing coverage when the site skips indexing checks', () => {
+    const db = getDb();
+    dbUpsertSite({
+      id: 'site-a',
+      name: 'Site A',
+      domain: 'a.example',
+      testPages: ['/'],
+      skipChecks: ['indexing'],
+    });
+    db.prepare(`
+      INSERT INTO audit_snapshots (
+        site_id, date, pass_count, warn_count, fail_count, checks_json,
+        sitemap_urls, indexed_pages, coverage_pct
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run('site-a', '2026-05-10', 1, 2, 3, '{}', 10, 8, 80);
+
+    expect(getAuditTrends('site-a')).toEqual([
+      {
+        date: '2026-05-10',
+        pass: 1,
+        warn: 2,
+        fail: 3,
+        sitemapUrls: undefined,
+        indexedPages: undefined,
+        coveragePct: undefined,
+      },
+    ]);
   });
 });
 
