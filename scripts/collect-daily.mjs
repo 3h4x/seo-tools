@@ -13,6 +13,7 @@ import { searchconsole_v1 } from '@googleapis/searchconsole';
 import path from 'node:path';
 import fs from 'node:fs';
 import { openDatabase } from '../src/lib/sqlite-driver.js';
+import { normalizeGa4PropertyId } from './ga4-property.mjs';
 
 // Init DB
 const dbDir = path.join(process.cwd(), 'data');
@@ -210,7 +211,8 @@ const ga4Auth = new GoogleAuth({
 });
 const ga4Client = new BetaAnalyticsDataClient({ auth: ga4Auth });
 
-for (const site of SITES.filter(s => s.ga4)) {
+for (const site of SITES.filter(s => normalizeGa4PropertyId(s.ga4))) {
+  const ga4PropertyId = normalizeGa4PropertyId(site.ga4);
   const missing = getMissing('ga4_daily', site.id);
   if (missing.length === 0) {
     console.log(`  GA4 ${site.id}: up to date`);
@@ -223,7 +225,7 @@ for (const site of SITES.filter(s => s.ga4)) {
   for (const range of ranges) {
     try {
       const [report] = await ga4Client.runReport({
-        property: `properties/${site.ga4}`,
+        property: ga4PropertyId,
         dateRanges: [{ startDate: range.start, endDate: range.end }],
         dimensions: [{ name: 'date' }],
         metrics: [

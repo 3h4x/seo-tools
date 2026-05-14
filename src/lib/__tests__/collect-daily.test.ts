@@ -92,7 +92,7 @@ function mockSites() {
   };
 
   vi.mocked(getManagedSites).mockResolvedValue([site]);
-  vi.mocked(discoverPropertyIds).mockResolvedValue([{ ...site, ga4PropertyId: '123' }]);
+  vi.mocked(discoverPropertyIds).mockResolvedValue([{ ...site, ga4PropertyId: 'properties/123' }]);
   vi.mocked(getSCUrl).mockReturnValue('sc-domain:example.com');
   vi.mocked(getAuth).mockReturnValue('auth' as never);
 
@@ -498,7 +498,7 @@ describe('startCollector', () => {
       domain: 'example.com',
       searchConsole: false,
       testPages: [],
-      ga4PropertyId: '123',
+      ga4PropertyId: 'properties/123',
     }]);
     vi.mocked(getSCUrl).mockReturnValue('sc-domain:example.com');
     vi.mocked(getAuth).mockReturnValue('auth' as never);

@@ -60,7 +60,7 @@ describe('discoverPropertyIds', () => {
     ]);
 
     const result = await discoverPropertyIds();
-    expect(result[0].ga4PropertyId).toBe('12345');
+    expect(result[0].ga4PropertyId).toBe('properties/12345');
   });
 
   it('does not auto-assign GA4 when multiple exact-domain properties match the same site', async () => {
@@ -82,14 +82,14 @@ describe('discoverPropertyIds', () => {
 
   it('keeps existing ga4PropertyId if already set', async () => {
     vi.mocked(getManagedSites).mockResolvedValue([
-      { id: 's1', name: 'Site1', domain: 'example.com', ga4PropertyId: '99999', testPages: [] },
+      { id: 's1', name: 'Site1', domain: 'example.com', ga4PropertyId: 'properties/99999', testPages: [] },
     ] as never);
     mockListAccountSummaries.mockResolvedValue([
       [{ propertySummaries: [{ displayName: 'example.com', property: 'properties/12345' }] }],
     ]);
 
     const result = await discoverPropertyIds();
-    expect(result[0].ga4PropertyId).toBe('99999');
+    expect(result[0].ga4PropertyId).toBe('properties/99999');
   });
 
   it('leaves ga4PropertyId undefined when no match found', async () => {
@@ -165,7 +165,7 @@ describe('discoverPropertyIds', () => {
     ]);
 
     const result = await discoverPropertyIds();
-    expect(result[0].ga4PropertyId).toBe('22222');
+    expect(result[0].ga4PropertyId).toBe('properties/22222');
   });
 
   it('ignores properties without a displayName match', async () => {
@@ -422,6 +422,24 @@ describe('cachedGetAnalytics', () => {
 
     await cachedGetAnalytics('99999');
 
+    expect(mockRunReport).toHaveBeenCalledWith(
+      expect.objectContaining({ property: 'properties/99999' }),
+    );
+  });
+
+  it('reuses the normalized cache key for prefixed property ids', async () => {
+    mockRunReport
+      .mockResolvedValueOnce([{ rows: [] }])
+      .mockResolvedValueOnce([{ rows: [] }])
+      .mockResolvedValueOnce([{ rows: [] }]);
+
+    await cachedGetAnalytics('properties/99999');
+
+    expect(withCache).toHaveBeenCalledWith(
+      'ga4-7',
+      'properties/99999',
+      expect.any(Function),
+    );
     expect(mockRunReport).toHaveBeenCalledWith(
       expect.objectContaining({ property: 'properties/99999' }),
     );

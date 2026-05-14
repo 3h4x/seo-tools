@@ -5,6 +5,7 @@ import { searchconsole_v1 } from '@googleapis/searchconsole';
 import path from 'node:path';
 import fs from 'node:fs';
 import { openDatabase } from '../src/lib/sqlite-driver.js';
+import { normalizeGa4PropertyId } from './ga4-property.mjs';
 
 // Init DB and load SA key
 const dbDir = path.join(process.cwd(), 'data');
@@ -245,10 +246,11 @@ async function takeSnapshot() {
     });
 
     for (const site of sites) {
-      if (!site.ga4) continue;
+      const ga4PropertyId = normalizeGa4PropertyId(site.ga4);
+      if (!ga4PropertyId) continue;
       try {
         const [report] = await ga4Client.runReport({
-          property: `properties/${site.ga4}`,
+          property: ga4PropertyId,
           dateRanges: [{ startDate: '7daysAgo', endDate: 'yesterday' }],
           metrics: [
             { name: 'activeUsers' },
