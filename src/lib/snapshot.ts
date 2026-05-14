@@ -4,6 +4,7 @@ import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getAuth } from './google-auth';
 import { getDb } from './db';
 import { discoverPropertyIds } from './ga4';
+import { normalizeGa4PropertyId } from './ga4-property';
 import { getSCUrl } from './sites';
 import { runSiteAudit } from './audit';
 import { normalizeSkipChecks } from './skip-checks';
@@ -287,9 +288,8 @@ async function doSnapshot(): Promise<SnapshotResult> {
   for (const site of sites) {
     if (!site.ga4PropertyId) continue;
     try {
-      const prop = site.ga4PropertyId.startsWith('properties/')
-        ? site.ga4PropertyId
-        : `properties/${site.ga4PropertyId}`;
+      const prop = normalizeGa4PropertyId(site.ga4PropertyId);
+      if (!prop) continue;
       const [report] = await ga4Client.runReport({
         property: prop,
         dateRanges: [{ startDate: '7daysAgo', endDate: 'yesterday' }],

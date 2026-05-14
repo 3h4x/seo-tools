@@ -17,8 +17,8 @@ vi.mock('../google-auth', () => ({
 }));
 
 const mockSites = vi.hoisted(() => [
-  { id: 'site-a', domain: 'a.example.com', ga4PropertyId: '111', searchConsole: true, skipChecks: [] as string[] },
-  { id: 'site-b', domain: 'b.example.com', ga4PropertyId: '222', searchConsole: true, skipChecks: [] as string[] },
+  { id: 'site-a', domain: 'a.example.com', ga4PropertyId: 'properties/111', searchConsole: true, skipChecks: [] as string[] },
+  { id: 'site-b', domain: 'b.example.com', ga4PropertyId: 'properties/222', searchConsole: true, skipChecks: [] as string[] },
 ]);
 
 vi.mock('../ga4', () => ({

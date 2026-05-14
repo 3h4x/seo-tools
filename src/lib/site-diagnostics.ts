@@ -2,6 +2,7 @@ import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getAuth } from './google-auth';
 import { getManagedSites, getSCUrl, type Site } from './sites';
+import { normalizeGa4PropertyId } from './ga4-property';
 
 export type DiagnosticStatus = 'ok' | 'missing-config' | 'permission-error' | 'not-found' | 'provider-error';
 
@@ -95,13 +96,14 @@ async function checkSearchConsoleAccess(site: Site): Promise<ProviderDiagnostic>
 }
 
 async function checkGa4Access(site: Site): Promise<ProviderDiagnostic> {
-  if (!site.ga4PropertyId) {
+  const propertyId = normalizeGa4PropertyId(site.ga4PropertyId);
+  if (!propertyId) {
     return { status: 'missing-config', message: 'No GA4 property ID' };
   }
 
   try {
     await getGa4Client().runReport({
-      property: site.ga4PropertyId,
+      property: propertyId,
       dateRanges: [{ startDate: 'yesterday', endDate: 'yesterday' }],
       metrics: [{ name: 'activeUsers' }],
       limit: 1,

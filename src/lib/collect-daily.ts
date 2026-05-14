@@ -4,6 +4,7 @@ import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getDb, upsertScDaily, upsertGa4Daily } from './db';
 import { getManagedSites, getSCUrl } from './sites';
 import { discoverPropertyIds } from './ga4';
+import { normalizeGa4PropertyId } from './ga4-property';
 
 const LOOKBACK_DAYS = 90;
 const COLLECT_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
@@ -153,7 +154,8 @@ async function collectDaily(): Promise<void> {
   const enrichedSites = await discoverPropertyIds();
 
   for (const site of enrichedSites) {
-    if (!site.ga4PropertyId) continue;
+    const propertyId = normalizeGa4PropertyId(site.ga4PropertyId);
+    if (!propertyId) continue;
 
     const missing = getMissingDates('ga4_daily', site.id, 'ga4', startDate, ga4EndDate);
     if (missing.length === 0) {
@@ -167,7 +169,7 @@ async function collectDaily(): Promise<void> {
     for (const range of ranges) {
       try {
         const [report] = await ga4Client.runReport({
-          property: `properties/${site.ga4PropertyId}`,
+          property: propertyId,
           dateRanges: [{ startDate: range.start, endDate: range.end }],
           dimensions: [{ name: 'date' }],
           metrics: [

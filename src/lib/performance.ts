@@ -2,6 +2,7 @@ import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getAuth } from './google-auth';
 import { withCache } from './db';
 import { CWV_METRIC_ORDER, type CwvMetricName, type CwvRating, rateCwv } from './constants';
+import { normalizeGa4PropertyId } from './ga4-property';
 
 function getDataClient() {
   return new BetaAnalyticsDataClient({ auth: getAuth() });
@@ -99,12 +100,13 @@ function emptyRumData(): RumCwvData {
 }
 
 async function getRumCoreWebVitals(propertyId: string, days: number): Promise<RumCwvData | null> {
-  if (!propertyId) return null;
+  const normalizedPropertyId = normalizeGa4PropertyId(propertyId);
+  if (!normalizedPropertyId) return null;
 
   try {
     const client = getDataClient();
     const [res] = await client.runReport({
-      property: `properties/${propertyId}`,
+      property: normalizedPropertyId,
       dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'yesterday' }],
       dimensions: [{ name: DIM_METRIC_NAME }, { name: 'deviceCategory' }],
       metrics: [{ name: 'eventCount' }, { name: MET_METRIC_VALUE }],
@@ -147,17 +149,18 @@ async function getRumCoreWebVitals(propertyId: string, days: number): Promise<Ru
     };
   } catch (error) {
     if (isNotConfiguredError(error)) return emptyRumData();
-    console.error(`Error fetching RUM CWV for property ${propertyId}:`, error);
+    console.error(`Error fetching RUM CWV for property ${normalizedPropertyId}:`, error);
     return null;
   }
 }
 
 async function getRumCwvByPage(propertyId: string, days: number, limit: number = 20): Promise<RumCwvByPage[] | null> {
-  if (!propertyId) return null;
+  const normalizedPropertyId = normalizeGa4PropertyId(propertyId);
+  if (!normalizedPropertyId) return null;
   try {
     const client = getDataClient();
     const [res] = await client.runReport({
-      property: `properties/${propertyId}`,
+      property: normalizedPropertyId,
       dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'yesterday' }],
       dimensions: [{ name: 'pagePath' }, { name: DIM_METRIC_NAME }],
       metrics: [{ name: 'eventCount' }, { name: MET_METRIC_VALUE }],
@@ -187,17 +190,18 @@ async function getRumCwvByPage(propertyId: string, days: number, limit: number =
       .slice(0, limit);
   } catch (error) {
     if (isNotConfiguredError(error)) return [];
-    console.error(`Error fetching RUM CWV pages for property ${propertyId}:`, error);
+    console.error(`Error fetching RUM CWV pages for property ${normalizedPropertyId}:`, error);
     return null;
   }
 }
 
 async function getRumCwvTrend(propertyId: string, days: number): Promise<RumCwvTrendPoint[] | null> {
-  if (!propertyId) return null;
+  const normalizedPropertyId = normalizeGa4PropertyId(propertyId);
+  if (!normalizedPropertyId) return null;
   try {
     const client = getDataClient();
     const [res] = await client.runReport({
-      property: `properties/${propertyId}`,
+      property: normalizedPropertyId,
       dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'yesterday' }],
       dimensions: [{ name: 'date' }, { name: DIM_METRIC_NAME }],
       metrics: [{ name: 'eventCount' }, { name: MET_METRIC_VALUE }],
@@ -224,35 +228,39 @@ async function getRumCwvTrend(propertyId: string, days: number): Promise<RumCwvT
       .map(([date, agg]) => ({ date, metrics: finalize(agg) }));
   } catch (error) {
     if (isNotConfiguredError(error)) return [];
-    console.error(`Error fetching RUM CWV trend for property ${propertyId}:`, error);
+    console.error(`Error fetching RUM CWV trend for property ${normalizedPropertyId}:`, error);
     return null;
   }
 }
 
 export function cachedGetRumCoreWebVitals(propertyId: string, days: number = 7): Promise<RumCwvData | null> {
-  if (!propertyId) return Promise.resolve(null);
-  return withCache<RumCwvData>(`rum-cwv-${days}`, propertyId, () => getRumCoreWebVitals(propertyId, days));
+  const normalizedPropertyId = normalizeGa4PropertyId(propertyId);
+  if (!normalizedPropertyId) return Promise.resolve(null);
+  return withCache<RumCwvData>(`rum-cwv-${days}`, normalizedPropertyId, () => getRumCoreWebVitals(normalizedPropertyId, days));
 }
 
 export function cachedGetRumCwvByPage(propertyId: string, days: number = 7, limit: number = 20): Promise<RumCwvByPage[] | null> {
-  if (!propertyId) return Promise.resolve(null);
-  return withCache<RumCwvByPage[]>(`rum-cwv-pages-${days}-${limit}`, propertyId, () => getRumCwvByPage(propertyId, days, limit));
+  const normalizedPropertyId = normalizeGa4PropertyId(propertyId);
+  if (!normalizedPropertyId) return Promise.resolve(null);
+  return withCache<RumCwvByPage[]>(`rum-cwv-pages-${days}-${limit}`, normalizedPropertyId, () => getRumCwvByPage(normalizedPropertyId, days, limit));
 }
 
 export function cachedGetRumCwvTrend(propertyId: string, days: number = 30): Promise<RumCwvTrendPoint[] | null> {
-  if (!propertyId) return Promise.resolve(null);
-  return withCache<RumCwvTrendPoint[]>(`rum-cwv-trend-${days}`, propertyId, () => getRumCwvTrend(propertyId, days));
+  const normalizedPropertyId = normalizeGa4PropertyId(propertyId);
+  if (!normalizedPropertyId) return Promise.resolve(null);
+  return withCache<RumCwvTrendPoint[]>(`rum-cwv-trend-${days}`, normalizedPropertyId, () => getRumCwvTrend(normalizedPropertyId, days));
 }
 
 // Returns the count of core_web_vitals events in the last `days` days.
 // Used to distinguish "GTM not wired" (count = 0) from "wired but custom
 // dimensions still propagating" (count > 0 but full RUM query errors / empty).
 async function getCwvEventCount(propertyId: string, days: number): Promise<number | null> {
-  if (!propertyId) return null;
+  const normalizedPropertyId = normalizeGa4PropertyId(propertyId);
+  if (!normalizedPropertyId) return null;
   try {
     const client = getDataClient();
     const [res] = await client.runReport({
-      property: `properties/${propertyId}`,
+      property: normalizedPropertyId,
       dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'today' }],
       dimensions: [{ name: 'eventName' }],
       metrics: [{ name: 'eventCount' }],
@@ -262,12 +270,13 @@ async function getCwvEventCount(propertyId: string, days: number): Promise<numbe
     const row = (res.rows || [])[0];
     return parseInt(row?.metricValues?.[0]?.value || '0');
   } catch (error) {
-    console.error(`Error fetching CWV event count for property ${propertyId}:`, error);
+    console.error(`Error fetching CWV event count for property ${normalizedPropertyId}:`, error);
     return null;
   }
 }
 
 export function cachedGetCwvEventCount(propertyId: string, days: number = 7): Promise<number | null> {
-  if (!propertyId) return Promise.resolve(null);
-  return withCache<number>(`rum-cwv-events-${days}`, propertyId, () => getCwvEventCount(propertyId, days));
+  const normalizedPropertyId = normalizeGa4PropertyId(propertyId);
+  if (!normalizedPropertyId) return Promise.resolve(null);
+  return withCache<number>(`rum-cwv-events-${days}`, normalizedPropertyId, () => getCwvEventCount(normalizedPropertyId, days));
 }

@@ -1,4 +1,5 @@
 import { normalizeSiteDomain } from './site-domain';
+import { normalizeGa4PropertyId } from './ga4-property';
 
 export const GA4_DISCOVERY_CACHE_KEY = 'ga4-discovery';
 export const GA4_DISCOVERY_CACHE_SITE_ID = 'managed-sites';
@@ -108,7 +109,7 @@ export function resolveSiteGa4PropertyId(
   site: SiteLike,
   properties: DiscoveredGa4Property[],
 ): string | undefined {
-  if (site.ga4PropertyId) return site.ga4PropertyId;
+  if (site.ga4PropertyId) return normalizeGa4PropertyId(site.ga4PropertyId);
 
-  return findMatchingGa4Property(site.domain, properties)?.propertyId;
+  return normalizeGa4PropertyId(findMatchingGa4Property(site.domain, properties)?.propertyId);
 }

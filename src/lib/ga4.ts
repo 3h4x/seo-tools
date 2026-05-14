@@ -3,6 +3,7 @@ import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getAuth } from './google-auth';
 import { getManagedSites } from './sites';
 import { clearCacheEntry, withCache, type ProviderResult } from './db';
+import { normalizeGa4PropertyId } from './ga4-property';
 import {
   GA4_DISCOVERY_CACHE_KEY,
   GA4_DISCOVERY_CACHE_SITE_ID,
@@ -23,7 +24,7 @@ async function fetchDiscoveredGa4Properties(): Promise<DiscoveredGa4Property[] |
     return summaries.flatMap((account) => (
       (account.propertySummaries ?? []).flatMap((property) => {
         const displayName = property.displayName?.trim();
-        const propertyId = property.property?.split('/')[1]?.trim();
+        const propertyId = normalizeGa4PropertyId(property.property);
         if (!displayName || !propertyId) return [];
         return [{ displayName, propertyId }];
       })
@@ -93,15 +94,14 @@ interface GA4Data {
 }
 
 async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Data | null> {
-  if (!propertyId) return null;
+  const normalizedPropertyId = normalizeGa4PropertyId(propertyId);
+  if (!normalizedPropertyId) return null;
 
   try {
-    const prop = propertyId.startsWith('properties/') ? propertyId : `properties/${propertyId}`;
-
     const dataClient = getDataClient();
     const [metricsRes, topPagesRes, trafficRes] = await Promise.all([
       dataClient.runReport({
-        property: prop,
+        property: normalizedPropertyId,
         dateRanges: [
           { startDate: `${days}daysAgo`, endDate: 'yesterday' },
           { startDate: `${days * 2}daysAgo`, endDate: `${days + 1}daysAgo` },
@@ -115,7 +115,7 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
         ],
       }),
       dataClient.runReport({
-        property: prop,
+        property: normalizedPropertyId,
         dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'yesterday' }],
         dimensions: [{ name: 'pagePath' }],
         metrics: [
@@ -128,7 +128,7 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
         limit: 15,
       }),
       dataClient.runReport({
-        property: prop,
+        property: normalizedPropertyId,
         dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'yesterday' }],
         dimensions: [
           { name: 'sessionSource' },
@@ -180,13 +180,14 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
       trafficSources,
     };
   } catch (error) {
-    console.error(`Error fetching GA4 data for property ${propertyId}:`, error);
+    console.error(`Error fetching GA4 data for property ${normalizedPropertyId}:`, error);
     return null;
   }
 }
 
 export async function cachedGetAnalytics(propertyId: string, days: number = 7): Promise<ProviderResult<GA4Data>> {
-  if (!propertyId) return { data: null, error: false };
-  const data = await withCache<GA4Data>(`ga4-${days}`, propertyId, () => getAnalytics(propertyId, days));
+  const normalizedPropertyId = normalizeGa4PropertyId(propertyId);
+  if (!normalizedPropertyId) return { data: null, error: false };
+  const data = await withCache<GA4Data>(`ga4-${days}`, normalizedPropertyId, () => getAnalytics(normalizedPropertyId, days));
   return data !== null ? { data, error: false } : { data: null, error: true };
 }

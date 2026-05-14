@@ -1,5 +1,6 @@
 import { clearCache, clearCacheEntry, clearCacheEntriesByPrefix, clearSitemapSyncState } from './db';
 import { getSCUrl, type Site } from './sites';
+import { normalizeGa4PropertyId } from './ga4-property';
 
 const SEARCH_CONSOLE_CACHE_PREFIXES = ['sc-comparison-', 'sc-data-', 'sc-queries-', 'sc-pages-'] as const;
 const GA4_PROPERTY_CACHE_PREFIXES = ['ga4-', 'rum-cwv-'] as const;
@@ -10,13 +11,13 @@ function getCacheIdentities(site: Site): {
   scSiteId: string;
   ga4PropertyId?: string;
 } {
-  const ga4PropertyId = site.ga4PropertyId?.trim();
+  const ga4PropertyId = normalizeGa4PropertyId(site.ga4PropertyId);
 
   return {
     auditSiteId: site.id,
     domain: site.domain.trim(),
     scSiteId: getSCUrl(site),
-    ga4PropertyId: ga4PropertyId ? ga4PropertyId : undefined,
+    ga4PropertyId,
   };
 }
 

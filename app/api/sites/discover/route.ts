@@ -3,6 +3,7 @@ import { getAuth } from '@/lib/google-auth';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { dbGetSites } from '@/lib/db';
 import { cachedGetDiscoveredGa4Properties } from '@/lib/ga4';
+import { normalizeGa4PropertyId } from '@/lib/ga4-property';
 import { createUniqueSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import { getSearchConsoleUrlIdentities, getSiteSearchConsoleIdentities, normalizeSearchConsoleIdentity, type Site } from '@/lib/sites';
 import { buildUniqueExactGa4Matches, findMatchingGa4Property, getSafeDomainVariants, type DiscoveredGa4Property } from '@/lib/ga4-discovery';
@@ -70,12 +71,6 @@ function dedupeScSites(scSites: DiscoveredScSite[]): DedupeScSite[] {
 
 function getExistingDomainIdentity(domain: string): string {
   return normalizeSiteDomain(domain) ?? domain.trim().toLowerCase();
-}
-
-function normalizeGa4PropertyId(propertyId: string): string | undefined {
-  const trimmed = propertyId.trim();
-  if (!trimmed) return undefined;
-  return trimmed.startsWith('properties/') ? trimmed : `properties/${trimmed}`;
 }
 
 function toMatchedGa4Property(property: DiscoveredGa4Property | undefined): MatchedGa4Property | undefined {
