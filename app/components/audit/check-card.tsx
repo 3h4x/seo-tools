@@ -45,6 +45,15 @@ export function Recommendation({ gap }: { gap: GapRecommendation }) {
       </div>
       <p className="text-neutral-300 text-sm font-medium">{gap.title}</p>
       <p className="text-neutral-500 text-xs mt-1">{gap.description}</p>
+      {gap.evidence && gap.evidence.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {gap.evidence.map((line) => (
+            <div key={line} className="text-neutral-400 text-xs font-mono break-all">
+              {line}
+            </div>
+          ))}
+        </div>
+      )}
       <details className="mt-2">
         <summary className="text-neutral-500 text-xs cursor-pointer hover:text-neutral-300 transition-colors">How to fix</summary>
         <pre className="text-neutral-400 text-xs font-mono mt-1.5 whitespace-pre-wrap">{gap.hint}</pre>

@@ -182,6 +182,34 @@ describe('parseMetaTags', () => {
     const result = parseMetaTags(res, '/');
     expect(result.ogImageUrl).toBe('https://example.com/og.png');
   });
+
+  it('records noindex when robots directives include it', () => {
+    const res = makeFetchResult({
+      text: '<html><head><title>Test</title><meta name="robots" content="index, noindex"></head></html>',
+    });
+    const result = parseMetaTags(res, '/');
+    expect(result.noindex).toBe(true);
+  });
+
+  it('records noindex when X-Robots-Tag header includes it', () => {
+    const headers = new Headers({ 'x-robots-tag': 'googlebot: noindex, nofollow' });
+    const res = makeFetchResult({
+      text: '<html><head><title>Test</title></head></html>',
+      headers,
+    });
+    const result = parseMetaTags(res, '/');
+    expect(result.noindex).toBe(true);
+  });
+
+  it('ignores X-Robots-Tag noindex directives scoped to non-Google bots', () => {
+    const headers = new Headers({ 'x-robots-tag': 'otherbot: noindex, nofollow' });
+    const res = makeFetchResult({
+      text: '<html><head><title>Test</title></head></html>',
+      headers,
+    });
+    const result = parseMetaTags(res, '/');
+    expect(result.noindex).toBe(false);
+  });
 });
 
 describe('checkImageSeo', () => {

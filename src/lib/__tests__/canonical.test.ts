@@ -14,6 +14,7 @@ function makeMetaTag(
   return {
     page: overrides.page ?? '/',
     ogImageUrl: undefined,
+    noindex: false,
     canonicalValid: overrides.canonicalValid ?? null,
     canonicalStatus: overrides.canonicalHttpStatus ?? null,
     canonicalTarget: overrides.canonicalTarget ?? null,

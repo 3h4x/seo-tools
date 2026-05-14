@@ -182,10 +182,24 @@ vi.mock('../../../app/components/metric-card', () => ({
 }));
 
 vi.mock('../../../app/components/audit/check-card', () => ({
-  CheckCard: ({ check, children }: { check: { label: string; message: string }; children?: React.ReactNode }) => (
+  CheckCard: ({
+    check,
+    gaps,
+    children,
+  }: {
+    check: { label: string; message: string };
+    gaps?: Array<{ title: string; hint: string }>;
+    children?: React.ReactNode;
+  }) => (
     <div>
       <div>{check.label}</div>
       <div>{check.message}</div>
+      {gaps?.map((gap) => (
+        <div key={gap.title}>
+          <div>{gap.title}</div>
+          <div>{gap.hint}</div>
+        </div>
+      ))}
       {children}
     </div>
   ),
@@ -419,6 +433,7 @@ describe('SiteDashboardPage', () => {
       ...makeAuditResult(),
       metaTags: [{
         page: '/',
+        noindex: false,
         canonicalValid: true,
         canonicalStatus: 200,
         canonicalTarget: 'https://site-one.test/',
@@ -448,6 +463,7 @@ describe('SiteDashboardPage', () => {
       ...makeAuditResult(),
       metaTags: [{
         page: '/',
+        noindex: false,
         canonicalValid: null,
         canonicalStatus: null,
         canonicalTarget: null,
@@ -509,6 +525,29 @@ describe('SiteDashboardPage', () => {
         days: 30,
       },
     );
+  });
+
+  it('renders indexing gaps through the shared recommendation path', async () => {
+    mockGapsBySection.mockReturnValue({
+      indexing: [{
+        id: 'noindex-but-ranking',
+        title: 'Remove accidental noindex from ranking pages',
+        description: '1 noindexed page still receives Search Console clicks.',
+        severity: 'high',
+        category: 'indexing',
+        hint: 'Remove the noindex directive from the rendered HTML or X-Robots-Tag response header.',
+        evidence: ['https://site-one.test/pricing · 24 clicks · 240 impressions'],
+      }],
+    });
+
+    const html = renderToStaticMarkup(await SiteDashboardPage({
+      params: Promise.resolve({ site: 'site-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(html).toContain('Remove accidental noindex from ranking pages');
+    expect(html).toContain('X-Robots-Tag response header');
+    expect(html.match(/Remove accidental noindex from ranking pages/g)).toHaveLength(1);
   });
 
   it('renders the low-engagement recommendation alongside the summary count', async () => {

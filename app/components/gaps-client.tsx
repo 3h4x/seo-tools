@@ -30,6 +30,15 @@ function GapRow({ sg }: { sg: SiteGap }) {
             <span className="text-white font-semibold text-sm">{gap.title}</span>
           </div>
           <p className="text-neutral-500 text-xs mt-1">{gap.description}</p>
+          {gap.evidence && gap.evidence.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {gap.evidence.map((line) => (
+                <div key={line} className="text-neutral-400 text-xs font-mono break-all">
+                  {line}
+                </div>
+              ))}
+            </div>
+          )}
           <details className="mt-2 group">
             <summary className="text-neutral-500 text-xs cursor-pointer hover:text-neutral-300 transition-colors list-none flex items-center gap-1">
               <span className="group-open:hidden">▸ How to fix</span>

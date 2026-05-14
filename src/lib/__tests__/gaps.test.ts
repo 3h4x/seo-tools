@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeSiteGaps, gapsBySection } from '../gaps';
-import type { SiteAuditResult } from '../audit';
+import { parseMetaTags, type FetchResult, type SiteAuditResult } from '../audit';
 import type { Site } from '../sites';
 import { getSkipCheckId } from '../skip-checks';
 
@@ -8,9 +8,10 @@ function makeCheckResult(status: 'pass' | 'warn' | 'fail' | 'error', label: stri
   return { status, label, message: `${status} result` };
 }
 
-function makeMetaTagResult(page: string, overrides: Record<string, ReturnType<typeof makeCheckResult>> = {}) {
+function makeMetaTagResult(page: string, overrides: Record<string, unknown> = {}) {
   return {
     page,
+    noindex: false,
     canonicalValid: null,
     canonicalStatus: null,
     canonicalTarget: null,
@@ -194,6 +195,105 @@ describe('analyzeSiteGaps', () => {
     const sections = gapsBySection(result.gaps);
 
     expect(sections.content?.map((gap) => gap.id)).toContain('low-engagement-despite-traffic');
+  });
+
+  it('emits noindex-but-ranking when a noindexed page still has Search Console clicks', () => {
+    const result = analyzeSiteGaps(makeAudit({
+      metaTags: [makeMetaTagResult('/pricing', { noindex: true })],
+    }), makeSite(), {
+      scTopPages: [
+        { page: 'https://example.com/pricing', clicks: 24, impressions: 240, ctr: 0.1, position: 4.2 },
+      ],
+    });
+
+    const gap = result.gaps.find((candidate) => candidate.id === 'noindex-but-ranking');
+    expect(gap).toBeDefined();
+    expect(gap?.severity).toBe('high');
+    expect(gap?.affectedPages).toEqual(['https://example.com/pricing']);
+    expect(gap?.evidence).toEqual(['https://example.com/pricing · 24 clicks · 240 impressions']);
+  });
+
+  it('emits noindex-but-ranking when noindex comes from X-Robots-Tag', () => {
+    const metaFromHeader = parseMetaTags({
+      ok: true,
+      status: 200,
+      text: '<html><head><title>Pricing</title></head></html>',
+      headers: new Headers({ 'x-robots-tag': 'googlebot: noindex, nofollow' }),
+      ttfbMs: 50,
+    } satisfies FetchResult, '/pricing');
+
+    const result = analyzeSiteGaps(makeAudit({
+      metaTags: [metaFromHeader],
+    }), makeSite(), {
+      scTopPages: [
+        { page: 'https://example.com/pricing', clicks: 24, impressions: 240, ctr: 0.1, position: 4.2 },
+      ],
+    });
+
+    expect(result.gaps.find((candidate) => candidate.id === 'noindex-but-ranking')).toBeDefined();
+  });
+
+  it('does not emit noindex-but-ranking when X-Robots-Tag noindex targets a different bot', () => {
+    const metaFromHeader = parseMetaTags({
+      ok: true,
+      status: 200,
+      text: '<html><head><title>Pricing</title></head></html>',
+      headers: new Headers({ 'x-robots-tag': 'otherbot: noindex, nofollow' }),
+      ttfbMs: 50,
+    } satisfies FetchResult, '/pricing');
+
+    const result = analyzeSiteGaps(makeAudit({
+      metaTags: [metaFromHeader],
+    }), makeSite(), {
+      scTopPages: [
+        { page: 'https://example.com/pricing', clicks: 24, impressions: 240, ctr: 0.1, position: 4.2 },
+      ],
+    });
+
+    expect(result.gaps.find((candidate) => candidate.id === 'noindex-but-ranking')).toBeUndefined();
+  });
+
+  it('dedupes slash variants when the same noindexed page is sampled twice', () => {
+    const result = analyzeSiteGaps(makeAudit({
+      metaTags: [
+        makeMetaTagResult('/pricing', { noindex: true }),
+        makeMetaTagResult('/pricing/', { noindex: true }),
+      ],
+    }), makeSite(), {
+      scTopPages: [
+        { page: 'https://example.com/pricing', clicks: 24, impressions: 240, ctr: 0.1, position: 4.2 },
+      ],
+    });
+
+    const gap = result.gaps.find((candidate) => candidate.id === 'noindex-but-ranking');
+    expect(gap).toBeDefined();
+    expect(gap?.affectedPages).toEqual(['https://example.com/pricing']);
+    expect(gap?.evidence).toEqual(['https://example.com/pricing · 24 clicks · 240 impressions']);
+    expect(gap?.description).toContain('1 noindexed page');
+  });
+
+  it('does not emit noindex-but-ranking when a noindexed page has no Search Console traffic', () => {
+    const result = analyzeSiteGaps(makeAudit({
+      metaTags: [makeMetaTagResult('/pricing', { noindex: true })],
+    }), makeSite(), {
+      scTopPages: [
+        { page: 'https://example.com/docs', clicks: 24, impressions: 240, ctr: 0.1, position: 4.2 },
+      ],
+    });
+
+    expect(result.gaps.find((candidate) => candidate.id === 'noindex-but-ranking')).toBeUndefined();
+  });
+
+  it('does not emit noindex-but-ranking when a ranking page is indexable', () => {
+    const result = analyzeSiteGaps(makeAudit({
+      metaTags: [makeMetaTagResult('/pricing')],
+    }), makeSite(), {
+      scTopPages: [
+        { page: 'https://example.com/pricing', clicks: 24, impressions: 240, ctr: 0.1, position: 4.2 },
+      ],
+    });
+
+    expect(result.gaps.find((candidate) => candidate.id === 'noindex-but-ranking')).toBeUndefined();
   });
 
   it('includes redirect-chains gap for unskipped redirect chain failures', () => {
