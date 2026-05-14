@@ -2,7 +2,7 @@ import { clearCache, clearCacheEntry, clearCacheEntriesByPrefix, clearSitemapSyn
 import { getSCUrl, type Site } from './sites';
 import { normalizeGa4PropertyId } from './ga4-property';
 
-const SEARCH_CONSOLE_CACHE_PREFIXES = ['sc-comparison-', 'sc-data-', 'sc-queries-', 'sc-pages-'] as const;
+const SEARCH_CONSOLE_CACHE_PREFIXES = ['sc-comparison-', 'sc-data-', 'sc-queries-', 'sc-pages-', 'sc-page-queries-'] as const;
 const GA4_PROPERTY_CACHE_PREFIXES = ['ga4-', 'rum-cwv-'] as const;
 
 function getCacheIdentities(site: Site): {

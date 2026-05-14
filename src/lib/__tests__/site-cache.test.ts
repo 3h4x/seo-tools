@@ -39,6 +39,7 @@ describe('invalidateManagedSiteCache', () => {
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-data-', 'sc-domain:example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-queries-', 'sc-domain:example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-pages-', 'sc-domain:example.com');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-', 'properties/1234');
   });
@@ -60,6 +61,8 @@ describe('invalidateManagedSiteCache', () => {
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:old.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:new.example.com');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:old.example.com');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:new.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', 'properties/5678');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-', 'properties/1234');
@@ -114,7 +117,8 @@ describe('invalidateManagedSiteCache', () => {
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-', 'properties/1234');
     expect(clearCacheEntry).toHaveBeenCalledTimes(2);
-    expect(clearCacheEntriesByPrefix).toHaveBeenCalledTimes(6);
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:example.com');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledTimes(7);
     expect(clearSitemapSyncState).not.toHaveBeenCalled();
   });
 
