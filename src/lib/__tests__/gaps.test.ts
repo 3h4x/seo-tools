@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { analyzeSiteGaps } from '../gaps';
 import type { SiteAuditResult } from '../audit';
 import type { Site } from '../sites';
+import { getSkipCheckId } from '../skip-checks';
 
 function makeCheckResult(status: 'pass' | 'warn' | 'fail' | 'error', label: string = '') {
   return { status, label, message: `${status} result` };
@@ -89,6 +90,19 @@ describe('analyzeSiteGaps', () => {
     const gap = result.gaps.find(g => g.id === 'missing-sitemap');
     expect(gap).toBeDefined();
     expect(gap?.severity).toBe('high');
+  });
+
+  it('does not include missing-sitemap when a discovered sitemap fails health checks', () => {
+    const audit = makeAudit({
+      sitemap: {
+        ...makeCheckResult('fail', 'Sitemap'),
+        url: 'https://example.com/sitemap.xml',
+        deadUrlCount: 1,
+        checkedUrlCount: 3,
+      },
+    });
+    const result = analyzeSiteGaps(audit, makeSite());
+    expect(result.gaps.find(g => g.id === 'missing-sitemap')).toBeUndefined();
   });
 
   it('includes robots-no-sitemap-directive gap when robots.txt warns without sitemap line', () => {
@@ -339,5 +353,9 @@ describe('analyzeSiteGaps', () => {
   it('does not include stale-sitemap gap when lastmod is recent', () => {
     const result = analyzeSiteGaps(makeAudit(), makeSite());
     expect(result.gaps.find(g => g.id === 'stale-sitemap')).toBeUndefined();
+  });
+
+  it('normalizes sitemap-coverage to the sitemap skip check', () => {
+    expect(getSkipCheckId('sitemap-coverage')).toBe('sitemap');
   });
 });

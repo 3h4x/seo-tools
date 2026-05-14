@@ -167,6 +167,138 @@ describe('auditSite — sitemap', () => {
     expect(result.sitemap.status).toBe('warn');
   });
 
+  it('reports dead sitemap URLs and crawl coverage details', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        const u = String(url);
+        const method = init?.method ?? 'GET';
+        if (u.includes('robots.txt')) return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+        if (u.endsWith('/sitemap.xml')) {
+          return makeResponse({
+            body: [
+              '<urlset>',
+              '<url><loc>https://example.com/</loc><lastmod>2026-05-01</lastmod></url>',
+              '<url><loc>https://example.com/in-sitemap</loc><lastmod>2026-05-01</lastmod></url>',
+              '<url><loc>https://example.com/missing</loc><lastmod>2026-05-01</lastmod></url>',
+              '</urlset>',
+            ].join(''),
+          });
+        }
+        if (u.endsWith('/missing') && method === 'HEAD') return makeResponse({ status: 404 });
+        if (u.endsWith('/missing')) return makeResponse({ status: 404 });
+        if (u.endsWith('/start')) {
+          return makeResponse({
+            body: '<html><head><title>Start</title></head><body><a href="/in-sitemap">In sitemap</a><a href="/not-in-sitemap">Missing</a></body></html>',
+          });
+        }
+        return makeResponse({ body: '<html><head><title>Page</title></head></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite({ testPages: ['/start'] }));
+    expect(result.sitemap.status).toBe('fail');
+    expect(result.sitemap.checkedUrlCount).toBe(3);
+    expect(result.sitemap.deadUrlCount).toBe(1);
+    expect(result.sitemap.deadUrls).toContain('https://example.com/missing (404)');
+    expect(result.sitemap.crawledPagesInSitemap).toBe(2);
+    expect(result.sitemap.crawledPagesChecked).toBe(3);
+    expect(result.sitemap.crawlCoveragePct).toBe(67);
+    expect(result.sitemap.message).toContain('Coverage 2/3 sampled sitemap URLs reachable');
+  });
+
+  it('warns when all sampled sitemap lastmod dates are older than 90 days', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        const u = String(url);
+        if (u.includes('robots.txt')) return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+        if (u.endsWith('/sitemap.xml')) {
+          return makeResponse({
+            body: [
+              '<urlset>',
+              '<url><loc>https://example.com/</loc><lastmod>2020-01-01</lastmod></url>',
+              '<url><loc>https://example.com/about</loc><lastmod>2020-02-01</lastmod></url>',
+              '</urlset>',
+            ].join(''),
+          });
+        }
+        return makeResponse({ body: '<html><head><title>Page</title></head></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite({ testPages: [] }));
+    expect(result.sitemap.status).toBe('warn');
+    expect(result.sitemap.staleLastmodCount).toBe(2);
+    expect(result.sitemap.checkedLastmodCount).toBe(2);
+    expect(result.sitemap.message).toContain('older than 90 days');
+  });
+
+  it('limits stale lastmod checks to the sampled sitemap URLs', async () => {
+    const urlRows = Array.from({ length: 55 }, (_, index) => {
+      const path = `/page-${index + 1}`;
+      const lastmod = index < 50 ? '2026-05-01' : '2020-01-01';
+      return `<url><loc>https://example.com${path}</loc><lastmod>${lastmod}</lastmod></url>`;
+    }).join('');
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        const u = String(url);
+        if (u.includes('robots.txt')) return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+        if (u.endsWith('/sitemap.xml')) {
+          return makeResponse({ body: `<urlset>${urlRows}</urlset>` });
+        }
+        return makeResponse({ body: '<html><head><title>Page</title></head></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite({ testPages: [] }));
+    expect(result.sitemap.status).toBe('pass');
+    expect(result.sitemap.checkedUrlCount).toBe(50);
+    expect(result.sitemap.checkedLastmodCount).toBe(50);
+    expect(result.sitemap.staleLastmodCount).toBe(0);
+    expect(result.sitemap.message).toContain('Checked 50 sitemap URLs');
+  });
+
+  it('excludes sitemap index lastmod values from sampled page freshness', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        const u = String(url);
+        if (u.includes('robots.txt')) return makeResponse({ body: 'Sitemap: https://example.com/sitemap-index.xml\n' });
+        if (u.endsWith('/sitemap-index.xml')) {
+          return makeResponse({
+            body: [
+              '<sitemapindex>',
+              '<sitemap><loc>https://example.com/posts.xml</loc><lastmod>2020-01-01</lastmod></sitemap>',
+              '</sitemapindex>',
+            ].join(''),
+          });
+        }
+        if (u.endsWith('/posts.xml')) {
+          return makeResponse({
+            body: [
+              '<urlset>',
+              '<url><loc>https://example.com/</loc><lastmod>2026-05-01</lastmod></url>',
+              '<url><loc>https://example.com/about</loc><lastmod>2026-05-02</lastmod></url>',
+              '</urlset>',
+            ].join(''),
+          });
+        }
+        return makeResponse({ body: '<html><head><title>Page</title></head></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite({ testPages: [] }));
+    expect(result.sitemap.status).toBe('warn');
+    expect(result.sitemap.checkedUrlCount).toBe(2);
+    expect(result.sitemap.checkedLastmodCount).toBe(2);
+    expect(result.sitemap.staleLastmodCount).toBe(0);
+    expect(result.sitemap.message).toContain('stale lastmod: 2020-01-01');
+    expect(result.sitemap.message).toContain('0/2 sampled lastmod dates are older than 90 days');
+  });
+
   it('reports fail when no sitemap is found', async () => {
     vi.stubGlobal(
       'fetch',

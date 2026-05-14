@@ -324,6 +324,40 @@ export default async function SiteDashboardPage({
             {audit.sitemap.url && (
               <p className="text-neutral-600 text-xs font-mono mt-2">URL: {audit.sitemap.url}</p>
             )}
+            {(audit.sitemap.checkedUrlCount != null || audit.sitemap.crawledPagesChecked != null || audit.sitemap.checkedLastmodCount != null) && (
+              <div className="mt-3 border-t border-neutral-800 pt-3 space-y-2 text-xs font-mono">
+                {audit.sitemap.checkedUrlCount != null && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-neutral-500">
+                    <span>
+                      URL health: <span className="text-neutral-300">{audit.sitemap.deadUrlCount ?? 0}/{audit.sitemap.checkedUrlCount}</span> dead
+                    </span>
+                    {audit.sitemap.deadUrls && audit.sitemap.deadUrls.length > 0 && (
+                      <span className="text-red-400">{audit.sitemap.deadUrls.slice(0, 3).join(' • ')}</span>
+                    )}
+                  </div>
+                )}
+                {audit.sitemap.crawledPagesChecked != null && audit.sitemap.crawledPagesInSitemap != null && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-neutral-500">
+                    <span>
+                      Crawl coverage: <span className="text-neutral-300">{audit.sitemap.crawledPagesInSitemap}/{audit.sitemap.crawledPagesChecked}</span>
+                    </span>
+                    <span>
+                      ratio: <span className="text-neutral-300">{audit.sitemap.crawlCoveragePct ?? 0}%</span>
+                    </span>
+                  </div>
+                )}
+                {audit.sitemap.checkedLastmodCount != null && audit.sitemap.checkedLastmodCount > 0 && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-neutral-500">
+                    <span>
+                      Stale lastmod: <span className="text-neutral-300">{audit.sitemap.staleLastmodCount ?? 0}/{audit.sitemap.checkedLastmodCount}</span>
+                    </span>
+                    <span>
+                      threshold: <span className="text-neutral-300">{audit.sitemap.staleLastmodThresholdDays ?? 90}d</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
             {(sitemapSubmissions ?? []).length > 0 && (
               <div className="mt-3 border-t border-neutral-800 pt-3 space-y-2">
                 <p className="text-neutral-500 text-xs font-semibold uppercase tracking-wide">Google Search Console</p>

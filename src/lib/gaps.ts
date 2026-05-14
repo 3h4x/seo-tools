@@ -42,6 +42,7 @@ interface SiteGapAnalysis {
 
 export function analyzeSiteGaps(audit: SiteAuditResult, site: Site): SiteGapAnalysis {
   const gaps: GapRecommendation[] = [];
+  const sitemapMissing = audit.sitemap.status === 'fail' && !audit.sitemap.url;
 
   // HIGH: robots.txt missing
   if (audit.robotsTxt.status === 'fail') {
@@ -56,7 +57,7 @@ export function analyzeSiteGaps(audit: SiteAuditResult, site: Site): SiteGapAnal
   }
 
   // HIGH: sitemap missing
-  if (audit.sitemap.status === 'fail') {
+  if (sitemapMissing) {
     gaps.push({
       id: 'missing-sitemap',
       title: 'Add dynamic sitemap generation',
