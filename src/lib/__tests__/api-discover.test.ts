@@ -114,7 +114,7 @@ describe('GET /api/sites/discover', () => {
     expect(body[0].domain).not.toContain('sc-domain:');
   });
 
-  it('matches GA4 property by domain substring in display name', async () => {
+  it('matches GA4 property when the display name starts with the domain and a GA4 descriptor', async () => {
     mockSc(['mysite.com']);
     mockGa4([{ displayName: 'mysite.com - GA4', property: 'properties/123456' }]);
 
@@ -123,6 +123,45 @@ describe('GET /api/sites/discover', () => {
     expect(body[0].ga4PropertyId).toBe('properties/123456');
     expect(body[0].ga4DisplayName).toBe('mysite.com - GA4');
     expect(body[0].discoverySource).toBe('sc+ga4');
+  });
+
+  it('still auto-assigns a GA4 property for an approved www host variant', async () => {
+    mockSc(['www.mysite.com']);
+    mockGa4([{ displayName: 'mysite.com', property: 'properties/123456' }]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0].ga4PropertyId).toBe('properties/123456');
+    expect(body[0].ga4DisplayName).toBe('mysite.com');
+    expect(body[0].discoverySource).toBe('sc+ga4');
+  });
+
+  it('does not create a duplicate GA4-only candidate for the reverse www host variant', async () => {
+    mockSc(['mysite.com']);
+    mockGa4([{ displayName: 'www.mysite.com', property: 'properties/123456' }]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({
+      domain: 'mysite.com',
+      ga4PropertyId: 'properties/123456',
+      ga4DisplayName: 'www.mysite.com',
+      discoverySource: 'sc+ga4',
+    });
+  });
+
+  it('does not propose a GA4-only candidate for an existing site www host variant', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'mysite-com', name: 'My Site', domain: 'mysite.com', testPages: ['/'], ga4PropertyId: 'properties/999' },
+    ] as never);
+    mockSc([]);
+    mockGa4([{ displayName: 'www.mysite.com', property: 'properties/123456' }]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toEqual([]);
   });
 
   it('includes GA4-only properties as discovery candidates when the display name is an exact domain', async () => {
@@ -565,6 +604,25 @@ describe('GET /api/sites/discover', () => {
       id: 'mysite-com',
       domain: 'mysite.com',
       ga4PropertyId: 'properties/111',
+      isUpdate: true,
+    });
+  });
+
+  it('backfills existing site as SC plus GA4 when Search Console differs only by www', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'mysite-com', name: 'My Site', domain: 'mysite.com', testPages: ['/'], ga4PropertyId: undefined },
+    ] as never);
+    mockSc(['www.mysite.com']);
+    mockGa4([{ displayName: 'www.mysite.com', property: 'properties/111' }]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({
+      id: 'mysite-com',
+      domain: 'mysite.com',
+      ga4PropertyId: 'properties/111',
+      discoverySource: 'sc+ga4',
       isUpdate: true,
     });
   });

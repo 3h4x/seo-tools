@@ -5,7 +5,7 @@ import { dbGetSites } from '@/lib/db';
 import { cachedGetDiscoveredGa4Properties } from '@/lib/ga4';
 import { createUniqueSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import { getSearchConsoleUrlIdentities, getSiteSearchConsoleIdentities, normalizeSearchConsoleIdentity, type Site } from '@/lib/sites';
-import { buildUniqueExactGa4Matches, findMatchingGa4Property, type DiscoveredGa4Property } from '@/lib/ga4-discovery';
+import { buildUniqueExactGa4Matches, findMatchingGa4Property, getSafeDomainVariants, type DiscoveredGa4Property } from '@/lib/ga4-discovery';
 
 type DiscoveredScSite = {
   scUrl: string;
@@ -102,6 +102,13 @@ function createDiscoveryIdAllocator(existingIds: Iterable<string>): (domain: str
   };
 }
 
+function hasDomainVariant(domain: string, domains: Set<string>): boolean {
+  for (const variant of getSafeDomainVariants(domain)) {
+    if (domains.has(variant)) return true;
+  }
+  return false;
+}
+
 export async function GET(req: Request) {
   let auth;
   try {
@@ -161,7 +168,7 @@ export async function GET(req: Request) {
   // Build proposed sites from the union of SC domains and GA4 properties not already in DB
   const proposedFromSc: DiscoveryCandidate[] = scSites
     .filter(({ domain, scUrls }) => {
-      if (existingDomains.has(domain.toLowerCase()) || existingScIdentities.has(domain.toLowerCase())) {
+      if (hasDomainVariant(domain, existingDomains) || hasDomainVariant(domain, existingScIdentities)) {
         return false;
       }
 
@@ -192,7 +199,13 @@ export async function GET(req: Request) {
   const proposed: DiscoveryCandidate[] = [...proposedFromSc];
 
   for (const [domain, ga4Match] of exactGa4Matches.entries()) {
-    if (proposedScDomains.has(domain) || existingDomains.has(domain) || existingScIdentities.has(domain)) continue;
+    if (
+      hasDomainVariant(domain, proposedScDomains) ||
+      hasDomainVariant(domain, existingDomains) ||
+      hasDomainVariant(domain, existingScIdentities)
+    ) {
+      continue;
+    }
 
     const matchedGa4Property = toMatchedGa4Property(ga4Match);
     if (!matchedGa4Property) continue;
@@ -220,7 +233,7 @@ export async function GET(req: Request) {
         ...site,
         ga4PropertyId: ga4Match.propertyId,
         ga4DisplayName: ga4Match.displayName,
-        discoverySource: scDomains.has(site.domain.toLowerCase()) ? 'sc+ga4' : 'ga4',
+        discoverySource: hasDomainVariant(site.domain, scDomains) ? 'sc+ga4' : 'ga4',
         isUpdate: true,
       }];
     });
