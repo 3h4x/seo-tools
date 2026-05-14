@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { cachedAuditAllSites, type CheckStatus, type SiteAuditResult } from '@/lib/audit';
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getManagedSites } from '@/lib/sites';
-import { analyzeSiteGaps, type GapSeverity, type GapCategory } from '@/lib/gaps';
+import { discoverPropertyIds } from '@/lib/ga4';
+import { analyzeSiteGaps, loadSiteGapSignals, type GapSeverity, type GapCategory } from '@/lib/gaps';
 import { detectAllDecay, type DecaySeverity } from '@/lib/decay';
 import { formatRelativeTime } from '@/lib/format';
 import { getCwvAuditSummary, type CwvAuditSummary } from '@/lib/performance-site';
@@ -66,11 +67,16 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const period = sp.period === '30' ? 30 : 7;
 
-  const [audits, managedSites, decayResults] = await Promise.all([
+  const [audits, managedSites, decayResults, discoveredSites] = await Promise.all([
     cachedAuditAllSites(),
     getManagedSites(),
     detectAllDecay(period as 7 | 30),
+    discoverPropertyIds(),
   ]);
+
+  const propertyIdBySite = new Map(
+    discoveredSites.map((site) => [site.id, site.ga4PropertyId || '']),
+  );
 
   const cwvSummaries = Object.fromEntries(
     await Promise.all(
@@ -87,13 +93,22 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
 
   const allSiteGaps: SiteGap[] = [];
   const gapCountBySite = new Map<string, number>();
-  for (const audit of audits) {
-    const site = managedSites.find(s => s.id === audit.siteId);
-    if (!site) continue;
-    const { gaps } = analyzeSiteGaps(audit, site);
-    gapCountBySite.set(site.id, gaps.length);
-    for (const gap of gaps) {
-      allSiteGaps.push({ gap, siteId: site.id, siteName: site.name, domain: site.domain });
+  const siteGapRows = await Promise.all(audits.map(async (audit) => {
+    const site = managedSites.find((candidate) => candidate.id === audit.siteId);
+    if (!site) return null;
+
+    const propertyId = propertyIdBySite.get(site.id) || site.ga4PropertyId || '';
+    const signals = await loadSiteGapSignals(site, propertyId, period);
+    const { gaps } = analyzeSiteGaps(audit, site, signals);
+
+    return { site, gaps };
+  }));
+
+  for (const row of siteGapRows) {
+    if (!row) continue;
+    gapCountBySite.set(row.site.id, row.gaps.length);
+    for (const gap of row.gaps) {
+      allSiteGaps.push({ gap, siteId: row.site.id, siteName: row.site.name, domain: row.site.domain });
     }
   }
   const severityOrder: Record<GapSeverity, number> = { high: 0, medium: 1, low: 2 };

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { analyzeSiteGaps } from '../gaps';
+import { analyzeSiteGaps, gapsBySection } from '../gaps';
 import type { SiteAuditResult } from '../audit';
 import type { Site } from '../sites';
 import { getSkipCheckId } from '../skip-checks';
@@ -123,6 +123,60 @@ describe('analyzeSiteGaps', () => {
     const gap = result.gaps.find(g => g.id === 'weak-meta-tags');
     expect(gap).toBeDefined();
     expect(gap?.affectedPages).toContain('/');
+  });
+
+  it('includes low-engagement-despite-traffic when SC clicks are strong but engagement is weak', () => {
+    const result = analyzeSiteGaps(makeAudit(), makeSite(), {
+      days: 30,
+      ga4TopPages: [
+        { path: '/pricing', views: 300, users: 180, engagementRate: 0.32, avgSessionDuration: 42 },
+        { path: '/docs', views: 120, users: 90, engagementRate: 0.72, avgSessionDuration: 180 },
+      ],
+      scTopPages: [
+        { page: 'https://example.com/pricing', clicks: 88, impressions: 900, ctr: 0.1, position: 3.2 },
+        { page: 'https://example.com/docs', clicks: 70, impressions: 600, ctr: 0.11, position: 4.1 },
+      ],
+    });
+
+    const gap = result.gaps.find(g => g.id === 'low-engagement-despite-traffic');
+    expect(gap).toBeDefined();
+    expect(gap?.severity).toBe('medium');
+    expect(gap?.affectedPages).toEqual(['/pricing']);
+  });
+
+  it('aggregates duplicate normalized SC pages before scoring low-engagement traffic', () => {
+    const result = analyzeSiteGaps(makeAudit(), makeSite(), {
+      days: 30,
+      ga4TopPages: [
+        { path: '/pricing', views: 300, users: 180, engagementRate: 0.32, avgSessionDuration: 42 },
+      ],
+      scTopPages: [
+        { page: 'https://example.com/pricing', clicks: 28, impressions: 400, ctr: 0.07, position: 4.1 },
+        { page: 'https://example.com/pricing/', clicks: 26, impressions: 320, ctr: 0.08125, position: 3.4 },
+      ],
+    });
+
+    const gap = result.gaps.find((candidate) => candidate.id === 'low-engagement-despite-traffic');
+
+    expect(gap).toBeDefined();
+    expect(gap?.affectedPages).toEqual(['/pricing']);
+    expect(gap?.description).toContain('54 Search Console clicks');
+  });
+
+  it('maps low-engagement-despite-traffic into the content section', () => {
+    const result = analyzeSiteGaps(makeAudit(), makeSite(), {
+      days: 30,
+      ga4TopPages: [
+        { path: '/pricing', views: 300, users: 180, engagementRate: 0.32, avgSessionDuration: 42 },
+      ],
+      scTopPages: [
+        { page: 'https://example.com/pricing', clicks: 88, impressions: 900, ctr: 0.1, position: 3.2 },
+      ],
+    });
+
+    const sections = gapsBySection(result.gaps);
+
+    expect(sections.content?.map((gap) => gap.id)).toContain('low-engagement-despite-traffic');
   });
 
   it('includes redirect-chains gap for unskipped redirect chain failures', () => {

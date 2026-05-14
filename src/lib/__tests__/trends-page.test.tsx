@@ -28,6 +28,9 @@ const {
   mockGetKeywordDeltas,
   mockGetScDaily,
   mockGetGa4Daily,
+  mockAnalyzeSiteGaps,
+  mockCreateSiteGapSignals,
+  mockGapsBySection,
 } = vi.hoisted(() => ({
   mockTrendsTable: vi.fn(({ title }: { title: string }) => <div>{title}</div>),
   mockGetManagedSites: vi.fn(),
@@ -43,6 +46,12 @@ const {
   mockGetKeywordDeltas: vi.fn(),
   mockGetScDaily: vi.fn(),
   mockGetGa4Daily: vi.fn(),
+  mockAnalyzeSiteGaps: vi.fn(() => ({
+    gaps: [],
+    counts: { high: 0, medium: 0, low: 0 },
+  })),
+  mockCreateSiteGapSignals: vi.fn((signals) => signals),
+  mockGapsBySection: vi.fn(() => ({})),
 }));
 
 vi.mock('@/lib/sites', () => ({
@@ -145,11 +154,9 @@ vi.mock('@/lib/performance-site', () => ({
 }));
 
 vi.mock('@/lib/gaps', () => ({
-  analyzeSiteGaps: vi.fn(() => ({
-    gaps: [],
-    counts: { high: 0, medium: 0, low: 0 },
-  })),
-  gapsBySection: vi.fn(() => []),
+  analyzeSiteGaps: mockAnalyzeSiteGaps,
+  createSiteGapSignals: mockCreateSiteGapSignals,
+  gapsBySection: mockGapsBySection,
 }));
 
 vi.mock('../../../app/components/time-range', () => ({
@@ -183,7 +190,7 @@ vi.mock('../../../app/components/audit/check-card', () => ({
     </div>
   ),
   statusDots: {},
-  Recommendation: () => <div>Recommendation</div>,
+  Recommendation: ({ gap }: { gap: { title: string } }) => <div>{gap.title}</div>,
   MetaChecksTable: () => <div>Meta Checks</div>,
 }));
 
@@ -271,6 +278,12 @@ const managedSite = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockTrendsTable.mockImplementation(({ title }: { title: string }) => <div>{title}</div>);
+  mockAnalyzeSiteGaps.mockReturnValue({
+    gaps: [],
+    counts: { high: 0, medium: 0, low: 0 },
+  });
+  mockCreateSiteGapSignals.mockImplementation((signals) => signals);
+  mockGapsBySection.mockReturnValue({});
 
   mockGetManagedSites.mockResolvedValue([managedSite]);
   mockGetManagedSite.mockResolvedValue(managedSite);
@@ -456,5 +469,75 @@ describe('SiteDashboardPage', () => {
 
     expect(html).toContain('1 page missing canonical tags');
     expect(html).not.toContain('failing canonical targets');
+  });
+
+  it('builds site gap analysis from the shared signal helper', async () => {
+    const { cachedGetAnalytics } = await import('@/lib/ga4');
+    const { cachedGetSearchConsolePages } = await import('@/lib/search-console');
+    const duplicatedScRows = [
+      { page: 'https://site-one.test/pricing', clicks: 28, impressions: 400, ctr: 0.07, position: 4.1 },
+      { page: 'https://site-one.test/pricing/', clicks: 26, impressions: 320, ctr: 0.08125, position: 3.4 },
+    ];
+
+    vi.mocked(cachedGetAnalytics).mockResolvedValueOnce({
+      data: {
+        current: { users: 10, sessions: 20, views: 30, bounceRate: 0.45, avgSessionDuration: 12 },
+        previous: { users: 8, sessions: 16, views: 24, bounceRate: 0.4, avgSessionDuration: 10 },
+        topPages: [{ path: '/pricing', views: 300, users: 180, engagementRate: 0.32, avgSessionDuration: 42 }],
+        trafficSources: [],
+      },
+      error: false,
+    });
+    vi.mocked(cachedGetSearchConsolePages).mockResolvedValueOnce(duplicatedScRows);
+
+    await SiteDashboardPage({
+      params: Promise.resolve({ site: 'site-1' }),
+      searchParams: Promise.resolve({ days: '30' }),
+    });
+
+    expect(mockCreateSiteGapSignals).toHaveBeenCalledWith({
+      ga4TopPages: [{ path: '/pricing', views: 300, users: 180, engagementRate: 0.32, avgSessionDuration: 42 }],
+      scTopPages: duplicatedScRows,
+      days: 30,
+    });
+    expect(mockAnalyzeSiteGaps).toHaveBeenCalledWith(
+      expect.objectContaining({ siteId: 'site-1' }),
+      expect.objectContaining({ id: 'site-1' }),
+      {
+        ga4TopPages: [{ path: '/pricing', views: 300, users: 180, engagementRate: 0.32, avgSessionDuration: 42 }],
+        scTopPages: duplicatedScRows,
+        days: 30,
+      },
+    );
+  });
+
+  it('renders the low-engagement recommendation alongside the summary count', async () => {
+    const gap = {
+      id: 'low-engagement-despite-traffic',
+      title: 'Fix pages that rank but do not engage visitors',
+      description: '1 page attracts search traffic but converts poorly once users land.',
+      severity: 'medium' as const,
+      category: 'content' as const,
+      hint: 'Tighten intent match and CTA placement.',
+      affectedPages: ['/pricing'],
+    };
+
+    mockAnalyzeSiteGaps.mockReturnValueOnce({
+      gaps: [gap],
+      counts: { high: 0, medium: 1, low: 0 },
+    } as never);
+    mockGapsBySection.mockReturnValueOnce({
+      content: [gap],
+    } as never);
+
+    const html = renderToStaticMarkup(await SiteDashboardPage({
+      params: Promise.resolve({ site: 'site-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(html).toContain('recommendations');
+    expect(html).toContain('1 med');
+    expect(html).toContain('Content Opportunities');
+    expect(html).toContain('Fix pages that rank but do not engage visitors');
   });
 });

@@ -1,6 +1,8 @@
 import type { SiteAuditResult } from './audit';
 import { getBrokenCanonicalPages, getMissingCanonicalPages } from './canonical';
-import type { Site } from './sites';
+import { cachedGetAnalytics, type GA4TopPage } from './ga4';
+import { cachedGetSearchConsolePages, type SCPageRow } from './search-console';
+import { getSCUrl, type Site } from './sites';
 
 export type GapSeverity = 'high' | 'medium' | 'low';
 export type GapCategory = 'crawlability' | 'content' | 'social' | 'indexing' | 'structured-data' | 'performance' | 'security';
@@ -40,7 +42,118 @@ interface SiteGapAnalysis {
   counts: { high: number; medium: number; low: number };
 }
 
-export function analyzeSiteGaps(audit: SiteAuditResult, site: Site): SiteGapAnalysis {
+export interface SiteGapSignals {
+  ga4TopPages?: GA4TopPage[];
+  scTopPages?: SCPageRow[];
+  days?: number;
+}
+
+export function createSiteGapSignals({
+  ga4TopPages,
+  scTopPages,
+  days,
+}: SiteGapSignals = {}): SiteGapSignals {
+  return {
+    ga4TopPages,
+    scTopPages: scTopPages ?? undefined,
+    days,
+  };
+}
+
+export async function loadSiteGapSignals(
+  site: Site,
+  propertyId: string,
+  days: number,
+): Promise<SiteGapSignals> {
+  const [scTopPages, ga4Data] = await Promise.all([
+    site.searchConsole ? cachedGetSearchConsolePages(getSCUrl(site), days) : Promise.resolve(null),
+    cachedGetAnalytics(propertyId, days),
+  ]);
+
+  return createSiteGapSignals({
+    ga4TopPages: ga4Data.data?.topPages,
+    scTopPages: scTopPages ?? undefined,
+    days,
+  });
+}
+
+function normalizePageKey(value: string): string {
+  try {
+    const url = value.startsWith('http://') || value.startsWith('https://')
+      ? new URL(value)
+      : new URL(value, 'https://placeholder.local');
+    const pathname = url.pathname.replace(/\/+$/, '') || '/';
+    return pathname.toLowerCase();
+  } catch {
+    const trimmed = value.split('?')[0]?.split('#')[0] ?? value;
+    const normalized = trimmed.replace(/\/+$/, '') || '/';
+    return normalized.toLowerCase();
+  }
+}
+
+interface AggregatedScPageSignal {
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+function aggregateScTopPages(scTopPages: SCPageRow[]): Map<string, AggregatedScPageSignal> {
+  const aggregated = new Map<string, AggregatedScPageSignal>();
+
+  for (const page of scTopPages) {
+    const key = normalizePageKey(page.page);
+    const existing = aggregated.get(key);
+
+    if (existing) {
+      const totalClicks = existing.clicks + page.clicks;
+      const totalImpressions = existing.impressions + page.impressions;
+      aggregated.set(key, {
+        clicks: totalClicks,
+        impressions: totalImpressions,
+        ctr: totalImpressions > 0
+          ? totalClicks / totalImpressions
+          : Math.max(existing.ctr, page.ctr),
+        position: Math.min(existing.position, page.position),
+      });
+      continue;
+    }
+
+    aggregated.set(key, {
+      clicks: page.clicks,
+      impressions: page.impressions,
+      ctr: page.ctr,
+      position: page.position,
+    });
+  }
+
+  return aggregated;
+}
+
+function getLowEngagementPages(
+  ga4TopPages: GA4TopPage[],
+  scTopPages: SCPageRow[],
+  days: number,
+): Array<{ path: string; clicks: number; engagementRate: number; avgSessionDuration: number }> {
+  const monthlyClickThreshold = 50;
+  const clickThreshold = Math.max(1, Math.ceil((monthlyClickThreshold / 30) * days));
+  const scByPage = aggregateScTopPages(scTopPages);
+
+  return ga4TopPages.flatMap((page) => {
+    const scPage = scByPage.get(normalizePageKey(page.path));
+    if (!scPage) return [];
+    if (scPage.clicks < clickThreshold || page.engagementRate >= 0.4) return [];
+
+    return [{
+      path: page.path,
+      clicks: scPage.clicks,
+      engagementRate: page.engagementRate,
+      avgSessionDuration: page.avgSessionDuration,
+    }];
+  });
+}
+
+export function analyzeSiteGaps(audit: SiteAuditResult, site: Site, signals: SiteGapSignals = {}): SiteGapAnalysis {
   const gaps: GapRecommendation[] = [];
   const sitemapMissing = audit.sitemap.status === 'fail' && !audit.sitemap.url;
 
@@ -171,6 +284,22 @@ export function analyzeSiteGaps(audit: SiteAuditResult, site: Site): SiteGapAnal
       category: 'content',
       hint: 'Add 3-10 relevant internal links per page. Link to related content, category pages, and key conversion pages. Use descriptive anchor text that includes target keywords.',
       affectedPages: pagesWithLowLinks.map(p => p.page),
+    });
+  }
+
+  const lowEngagementPages = signals.ga4TopPages && signals.scTopPages
+    ? getLowEngagementPages(signals.ga4TopPages, signals.scTopPages, signals.days ?? 30)
+    : [];
+  if (lowEngagementPages.length > 0) {
+    const topClickPage = lowEngagementPages.reduce((best, page) => page.clicks > best.clicks ? page : best, lowEngagementPages[0]);
+    gaps.push({
+      id: 'low-engagement-despite-traffic',
+      title: 'Fix pages that rank but do not engage visitors',
+      description: `${lowEngagementPages.length} page${lowEngagementPages.length > 1 ? 's' : ''} attract search traffic but convert poorly once users land. The worst page has ${topClickPage.clicks} Search Console clicks with only ${(topClickPage.engagementRate * 100).toFixed(0)}% engagement.`,
+      severity: 'medium',
+      category: 'content',
+      hint: 'Review search intent match, hero copy, above-the-fold clarity, and internal CTA placement on these pages. Pages that win clicks but lose visitors quickly usually need tighter query alignment or clearer next steps.',
+      affectedPages: lowEngagementPages.map((page) => page.path),
     });
   }
 
@@ -317,6 +446,7 @@ const GAP_SECTION_MAP: Record<string, string> = {
   'missing-image-alt': 'imageSeo',
   'missing-lazy-loading': 'imageSeo',
   'low-internal-linking': 'internalLinks',
+  'low-engagement-despite-traffic': 'content',
   'slow-ttfb': 'ttfb',
   'missing-indexnow': 'indexing',
   'missing-noindex-dead': 'indexing',

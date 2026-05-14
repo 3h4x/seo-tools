@@ -196,10 +196,21 @@ function makeReportRow(values: string[]) {
   return { metricValues: values.map(v => ({ value: v })) };
 }
 
-function makePageRow(path: string, views: string, users: string) {
+function makePageRow(
+  path: string,
+  views: string,
+  users: string,
+  engagementRate: string = '0',
+  avgSessionDuration: string = '0',
+) {
   return {
     dimensionValues: [{ value: path }],
-    metricValues: [{ value: views }, { value: users }],
+    metricValues: [
+      { value: views },
+      { value: users },
+      { value: engagementRate },
+      { value: avgSessionDuration },
+    ],
   };
 }
 
@@ -225,7 +236,10 @@ describe('cachedGetAnalytics', () => {
       ],
     };
     const topPagesRes = {
-      rows: [makePageRow('/home', '150', '90'), makePageRow('/about', '50', '30')],
+      rows: [
+        makePageRow('/home', '150', '90', '0.62', '135'),
+        makePageRow('/about', '50', '30', '0.38', '45'),
+      ],
     };
     const trafficRes = {
       rows: [makeSourceRow('google', 'organic', '60', '50')],
@@ -245,7 +259,13 @@ describe('cachedGetAnalytics', () => {
     expect(result.data!.current.bounceRate).toBeCloseTo(0.4);
     expect(result.data!.current.avgSessionDuration).toBeCloseTo(120.5);
     expect(result.data!.topPages).toHaveLength(2);
-    expect(result.data!.topPages[0]).toEqual({ path: '/home', views: 150, users: 90 });
+    expect(result.data!.topPages[0]).toEqual({
+      path: '/home',
+      views: 150,
+      users: 90,
+      engagementRate: 0.62,
+      avgSessionDuration: 135,
+    });
     expect(result.data!.trafficSources[0]).toEqual({ source: 'google', medium: 'organic', sessions: 60, users: 50 });
   });
 
@@ -350,7 +370,7 @@ describe('cachedGetAnalytics', () => {
   it('uses default path for top pages when dimensionValues missing', async () => {
     mockRunReport
       .mockResolvedValueOnce([{ rows: [] }])
-      .mockResolvedValueOnce([{ rows: [{ dimensionValues: [], metricValues: [{ value: '5' }, { value: '3' }] }] }])
+      .mockResolvedValueOnce([{ rows: [{ dimensionValues: [], metricValues: [{ value: '5' }, { value: '3' }, { value: '0.5' }, { value: '25' }] }] }])
       .mockResolvedValueOnce([{ rows: [] }]);
 
     const result = await cachedGetAnalytics('12345');
@@ -379,7 +399,13 @@ describe('cachedGetAnalytics', () => {
       .mockResolvedValueOnce([{ rows: [{ dimensionValues: [{ value: 'newsletter' }, { value: 'email' }] }] }]);
 
     const result = await cachedGetAnalytics('12345');
-    expect(result.data!.topPages[0]).toEqual({ path: '/pricing', views: 0, users: 0 });
+    expect(result.data!.topPages[0]).toEqual({
+      path: '/pricing',
+      views: 0,
+      users: 0,
+      engagementRate: 0,
+      avgSessionDuration: 0,
+    });
     expect(result.data!.trafficSources[0]).toEqual({
       source: 'newsletter',
       medium: 'email',

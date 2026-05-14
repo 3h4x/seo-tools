@@ -12,7 +12,9 @@ const {
   mockCachedAuditAllSites,
   mockSummarizeCanonicalChecks,
   mockGetManagedSites,
+  mockDiscoverPropertyIds,
   mockAnalyzeSiteGaps,
+  mockLoadSiteGapSignals,
   mockDetectAllDecay,
   mockFormatRelativeTime,
   mockGetCwvAuditSummary,
@@ -23,7 +25,9 @@ const {
   mockCachedAuditAllSites: vi.fn(),
   mockSummarizeCanonicalChecks: vi.fn(),
   mockGetManagedSites: vi.fn(),
+  mockDiscoverPropertyIds: vi.fn(),
   mockAnalyzeSiteGaps: vi.fn(),
+  mockLoadSiteGapSignals: vi.fn(),
   mockDetectAllDecay: vi.fn(),
   mockFormatRelativeTime: vi.fn(),
   mockGetCwvAuditSummary: vi.fn(),
@@ -44,8 +48,13 @@ vi.mock('@/lib/sites', () => ({
   getManagedSites: mockGetManagedSites,
 }));
 
+vi.mock('@/lib/ga4', () => ({
+  discoverPropertyIds: mockDiscoverPropertyIds,
+}));
+
 vi.mock('@/lib/gaps', () => ({
   analyzeSiteGaps: mockAnalyzeSiteGaps,
+  loadSiteGapSignals: mockLoadSiteGapSignals,
 }));
 
 vi.mock('@/lib/decay', () => ({
@@ -158,6 +167,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockSummarizeCanonicalChecks.mockReturnValue({ status: 'pass', compactLabel: 'All canonical' });
   mockFormatRelativeTime.mockReturnValue('moments ago');
+  mockDiscoverPropertyIds.mockResolvedValue([]);
+  mockLoadSiteGapSignals.mockResolvedValue({ days: 7 });
 });
 
 describe('Audit page', () => {
@@ -180,14 +191,29 @@ describe('Audit page', () => {
   });
 
   it('aggregates gaps, decay stats, and CWV summaries for configured sites', async () => {
+    const siteADuplicatedScRows = [
+      { page: 'https://a.test/pricing', clicks: 28, impressions: 400, ctr: 0.07, position: 4.1 },
+      { page: 'https://a.test/pricing/', clicks: 26, impressions: 320, ctr: 0.08125, position: 3.4 },
+    ];
     mockCachedAuditAllSites.mockResolvedValue([
       makeAudit({ siteId: 'site-a', domain: 'a.test', pass: 9, total: 10, timestamp: 1_700_000_000_000 }),
       makeAudit({ siteId: 'site-b', domain: 'b.test', pass: 4, fail: 4, total: 8, timestamp: 1_700_000_010_000 }),
     ]);
     mockGetManagedSites.mockResolvedValue([
-      { id: 'site-a', name: 'Site A', domain: 'a.test', testPages: [] },
-      { id: 'site-b', name: 'Site B', domain: 'b.test', testPages: [] },
+      { id: 'site-a', name: 'Site A', domain: 'a.test', ga4PropertyId: 'site-prop-a', testPages: [] },
+      { id: 'site-b', name: 'Site B', domain: 'b.test', ga4PropertyId: 'site-prop-b', testPages: [] },
     ]);
+    mockDiscoverPropertyIds.mockResolvedValue([
+      { id: 'site-a', ga4PropertyId: 'discovered-prop-a' },
+      { id: 'site-b', ga4PropertyId: 'discovered-prop-b' },
+    ]);
+    mockLoadSiteGapSignals
+      .mockResolvedValueOnce({
+        days: 30,
+        ga4TopPages: [{ path: '/pricing', views: 1, users: 1, engagementRate: 0.32, avgSessionDuration: 42 }],
+        scTopPages: siteADuplicatedScRows,
+      })
+      .mockResolvedValueOnce({ days: 30, ga4TopPages: [{ path: '/docs', views: 1, users: 1, engagementRate: 0.72, avgSessionDuration: 180 }] });
     mockAnalyzeSiteGaps
       .mockReturnValueOnce({
         gaps: [
@@ -244,6 +270,18 @@ describe('Audit page', () => {
     const html = renderToStaticMarkup(page);
 
     expect(mockDetectAllDecay).toHaveBeenCalledWith(30);
+    expect(mockLoadSiteGapSignals).toHaveBeenNthCalledWith(1, expect.objectContaining({ id: 'site-a' }), 'discovered-prop-a', 30);
+    expect(mockLoadSiteGapSignals).toHaveBeenNthCalledWith(2, expect.objectContaining({ id: 'site-b' }), 'discovered-prop-b', 30);
+    expect(mockAnalyzeSiteGaps).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ siteId: 'site-a' }),
+      expect.objectContaining({ id: 'site-a' }),
+      {
+        days: 30,
+        ga4TopPages: [{ path: '/pricing', views: 1, users: 1, engagementRate: 0.32, avgSessionDuration: 42 }],
+        scTopPages: siteADuplicatedScRows,
+      },
+    );
     expect(mockGetCwvAuditSummary).toHaveBeenCalledTimes(2);
     expect(mockGetCwvAuditSummary).toHaveBeenNthCalledWith(1, 'site-a');
     expect(mockGetCwvAuditSummary).toHaveBeenNthCalledWith(2, 'site-b');
