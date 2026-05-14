@@ -1,7 +1,4 @@
 import Link from 'next/link';
-import { discoverPropertyIds } from '@/lib/ga4';
-import { cachedGetRumCoreWebVitals, cachedGetCwvEventCount, type CwvMetricMap } from '@/lib/performance';
-import { cachedGetPagespeed, type PsiData } from '@/lib/pagespeed';
 import {
   CWV_METRIC_ORDER,
   PERF_VALID_DAYS,
@@ -10,6 +7,10 @@ import {
   type CwvRating,
 } from '@/lib/constants';
 import { parseAllowedIntegerParam } from '@/lib/days';
+import {
+  getPerformanceOverviewRows,
+  type PerformanceOverviewRow,
+} from '@/lib/performance-overview';
 import TimeRange from '../components/time-range';
 import CwvSetupGuide from '../components/cwv-setup-guide';
 import { CwvCell } from '../components/cwv-cell';
@@ -17,86 +18,7 @@ import { CwvMetricsCards } from '../components/cwv-metrics-cards';
 
 export const revalidate = 300;
 
-interface SiteRow {
-  id: string;
-  name: string;
-  domain: string;
-  source: 'rum' | 'rum-pending' | 'psi-field' | 'psi-lab' | 'none';
-  metrics: Partial<Record<CwvMetricName, { value: number; rating: CwvRating }>>;
-  perfScore: number | null;
-  needsKey: boolean;
-  cwvEventCount: number;
-}
-
-function fromRum(map: CwvMetricMap): SiteRow['metrics'] {
-  const out: SiteRow['metrics'] = {};
-  for (const name of CWV_METRIC_ORDER) {
-    const m = map[name];
-    if (m) out[name] = { value: m.value, rating: m.rating };
-  }
-  return out;
-}
-
-function fromPsi(psi: PsiData): { metrics: SiteRow['metrics']; source: 'psi-field' | 'psi-lab' } {
-  const out: SiteRow['metrics'] = {};
-  if (psi.field) {
-    for (const name of CWV_METRIC_ORDER) {
-      const m = psi.field[name];
-      if (m) out[name] = { value: m.value, rating: m.rating };
-    }
-    if (Object.keys(out).length > 0) return { metrics: out, source: 'psi-field' };
-  }
-  for (const name of CWV_METRIC_ORDER) {
-    const v = psi.lab[name];
-    if (typeof v === 'number') out[name] = { value: v, rating: rateCwv(name, v) };
-  }
-  return { metrics: out, source: 'psi-lab' };
-}
-
-async function getRows(days: number): Promise<SiteRow[]> {
-  const sites = await discoverPropertyIds();
-
-  return Promise.all(sites.map(async (site): Promise<SiteRow> => {
-    const propertyId = site.ga4PropertyId || '';
-    const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
-
-    const [rum, eventCount, psi] = await Promise.all([
-      propertyId ? cachedGetRumCoreWebVitals(propertyId, days) : Promise.resolve(null),
-      propertyId ? cachedGetCwvEventCount(propertyId, days) : Promise.resolve(null),
-      cachedGetPagespeed(url, 'mobile'),
-    ]);
-    const cwvEventCount = eventCount ?? 0;
-
-    if (rum?.hasData) {
-      return {
-        id: site.id, name: site.name, domain: site.domain,
-        source: 'rum', metrics: fromRum(rum.overall),
-        perfScore: psi?.performanceScore ?? null,
-        needsKey: !!psi?.needsKey,
-        cwvEventCount,
-      };
-    }
-    if (psi && (psi.field || Object.keys(psi.lab).length > 0)) {
-      const { metrics, source } = fromPsi(psi);
-      return {
-        id: site.id, name: site.name, domain: site.domain,
-        source: cwvEventCount > 0 ? 'rum-pending' : source,
-        metrics, perfScore: psi.performanceScore,
-        needsKey: !!psi.needsKey,
-        cwvEventCount,
-      };
-    }
-    return {
-      id: site.id, name: site.name, domain: site.domain,
-      source: cwvEventCount > 0 ? 'rum-pending' : 'none',
-      metrics: {}, perfScore: null,
-      needsKey: !!psi?.needsKey,
-      cwvEventCount,
-    };
-  }));
-}
-
-const SOURCE_BADGE: Record<SiteRow['source'], { label: string; cls: string; tip: string }> = {
+const SOURCE_BADGE: Record<PerformanceOverviewRow['source'], { label: string; cls: string; tip: string }> = {
   'rum':         { label: 'RUM',      cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30', tip: 'Real-user data via GA4 core_web_vitals' },
   'rum-pending': { label: 'RUM 24h',  cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30',          tip: 'Events flowing — custom dimensions still propagating to the Data API (24–48h after registration)' },
   'psi-field':   { label: 'CrUX',     cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30',          tip: 'PageSpeed Insights field data (CrUX, p75)' },
@@ -107,7 +29,7 @@ const SOURCE_BADGE: Record<SiteRow['source'], { label: string; cls: string; tip:
 export default async function PerformancePage({ searchParams }: { searchParams: Promise<{ days?: string; guide?: string }> }) {
   const params = await searchParams;
   const days = parseAllowedIntegerParam(params.days, PERF_VALID_DAYS, 7);
-  const rows = await getRows(days);
+  const rows = await getPerformanceOverviewRows(days);
 
   const overallAgg: Record<CwvMetricName, { sum: number; count: number }> = {
     LCP:  { sum: 0, count: 0 }, INP: { sum: 0, count: 0 }, CLS: { sum: 0, count: 0 },
