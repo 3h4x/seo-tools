@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { applyImportResults, buildImportSummary, getImportResult, type DiscoverySite, type ImportResult, type ImportSummary } from '@/lib/discovery-import';
+import { getMutationResult } from '@/lib/request-result';
 import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
@@ -234,9 +235,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           originalId: editMode === 'new' ? undefined : form.id,
         }),
       });
-      const data = await res.json() as { ok: boolean; error?: string };
-      if (!data.ok) {
-        setError(data.error ?? 'Save failed');
+      const result = await getMutationResult(res, 'Save failed');
+      if (!result.ok) {
+        setError(result.error ?? 'Save failed');
         return;
       }
       await reloadSites();
@@ -250,7 +251,13 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
 
   async function handleDelete(id: string) {
     try {
-      await fetch(`/api/sites?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      setError('');
+      const res = await fetch(`/api/sites?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const result = await getMutationResult(res, 'Delete failed');
+      if (!result.ok) {
+        setError(result.error ?? 'Delete failed');
+        return;
+      }
       setSites(prev => prev.filter(s => s.id !== id));
       setDeleteConfirm(null);
       if (editMode === id) setEditMode('none');
