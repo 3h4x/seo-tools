@@ -3,21 +3,31 @@ import { getSCUrl, type Site } from './sites';
 import { normalizeGa4PropertyId } from './ga4-property';
 
 const SEARCH_CONSOLE_CACHE_PREFIXES = ['sc-comparison-', 'sc-data-', 'sc-queries-', 'sc-pages-', 'sc-page-queries-'] as const;
-const GA4_PROPERTY_CACHE_PREFIXES = ['ga4-', 'rum-cwv-'] as const;
+const GA4_PROPERTY_CACHE_PREFIXES = ['ga4-', 'rum-cwv-', 'rum-cwv-events-'] as const;
+const PSI_CACHE_KEYS = ['psi-mobile', 'psi-desktop'] as const;
+
+function getDomainUrl(domain: string): string | undefined {
+  const normalizedDomain = domain.trim();
+  if (!normalizedDomain) return undefined;
+  return normalizedDomain.startsWith('http') ? normalizedDomain : `https://${normalizedDomain}`;
+}
 
 function getCacheIdentities(site: Site): {
   auditSiteId: string;
   domain: string;
   scSiteId: string;
   ga4PropertyId?: string;
+  psiUrl?: string;
 } {
   const ga4PropertyId = normalizeGa4PropertyId(site.ga4PropertyId);
+  const domain = site.domain.trim();
 
   return {
     auditSiteId: site.id,
-    domain: site.domain.trim(),
+    domain,
     scSiteId: getSCUrl(site),
     ga4PropertyId,
+    psiUrl: getDomainUrl(domain),
   };
 }
 
@@ -61,6 +71,12 @@ export function invalidateManagedSiteCache(previousSite: Site | null, nextSite: 
     clearCacheEntry('sitemap-submissions', siteId);
     for (const prefix of SEARCH_CONSOLE_CACHE_PREFIXES) {
       clearCacheEntriesByPrefix(prefix, siteId);
+    }
+  }
+
+  for (const psiUrl of unique([previous?.psiUrl, next?.psiUrl])) {
+    for (const cacheKey of PSI_CACHE_KEYS) {
+      clearCacheEntry(cacheKey, psiUrl);
     }
   }
 
