@@ -554,11 +554,31 @@ export default async function SiteDashboardPage({
           <AuditPanel title={`Internal Links · ${audit.internalLinks.length} pages checked`}>
             <div className="space-y-3">
               {audit.internalLinks.map((link, i) => (
-                <div key={i} className="flex items-center gap-4 text-xs">
-                  <div className={`size-1.5 rounded-full shrink-0 ${statusDots[link.status]}`} />
-                  <span className="text-neutral-400 font-mono w-32 shrink-0">{link.page}</span>
-                  <span className="text-neutral-300 font-mono">{link.internalLinks} internal</span>
-                  <span className="text-neutral-500 font-mono">{link.externalLinks} external</span>
+                <div key={i} className="rounded border border-neutral-800 bg-neutral-950/40 p-3">
+                  <div className="flex flex-wrap items-center gap-4 text-xs">
+                    <div className={`size-1.5 rounded-full shrink-0 ${statusDots[link.status]}`} />
+                    <span className="text-neutral-400 font-mono w-32 shrink-0">{link.page}</span>
+                    <span className="text-neutral-300 font-mono">{link.internalLinks} internal</span>
+                    <span className="text-neutral-500 font-mono">{link.externalLinks} external</span>
+                    <span className="text-neutral-600 font-mono">{link.brokenLinksMessage}</span>
+                    {link.brokenLinks.length > 0 && (
+                      <span className="text-red-400 font-mono">{link.brokenLinks.length} broken</span>
+                    )}
+                  </div>
+                  {link.brokenLinks.length > 0 && (
+                    <details className="mt-3">
+                      <summary className="cursor-pointer text-xs text-red-400 font-mono">
+                        Show broken internal URLs
+                      </summary>
+                      <div className="mt-2 space-y-1">
+                        {link.brokenLinks.map((brokenLink) => (
+                          <div key={`${link.page}-${brokenLink.url}`} className="text-[11px] font-mono text-neutral-500 break-all">
+                            <span className="text-red-400">HTTP {brokenLink.status || 0}</span> {brokenLink.url}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
                 </div>
               ))}
             </div>

@@ -544,9 +544,7 @@ describe('auditSite — skipChecks', () => {
   });
 
   it('matches identifier-style skip keys for OG image and internal links', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockImplementation((url: string) => {
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
         const u = String(url);
         if (u.endsWith('/favicon.ico')) {
           return makeResponse({ status: 404, body: 'missing' });
@@ -560,14 +558,86 @@ describe('auditSite — skipChecks', () => {
         return makeResponse({
           body: '<html><head><title>Test</title></head><body><img src="/hero.jpg"><a href="/about">About</a></body></html>',
         });
-      }),
-    );
+      });
+    vi.stubGlobal('fetch', fetchMock);
 
     const result = await cachedAuditSite(makeSite({ skipChecks: ['ogImage', 'internalLinks'] }));
     expect(result.ogImage.status).toBe('pass');
     expect(result.ogImage.message).toContain('N/A');
     expect(result.internalLinks[0].status).toBe('pass');
     expect(result.internalLinks[0].message).toContain('N/A');
+    expect(result.internalLinks[0].brokenLinks).toEqual([]);
+    expect(result.internalLinks[0].brokenLinksMessage).toContain('N/A');
+    expect(
+      fetchMock.mock.calls.some(([url, init]) => String(url).endsWith('/about') && (init as RequestInit | undefined)?.method === 'HEAD'),
+    ).toBe(false);
+  });
+
+  it('supports the broken-links skip alias without skipping internal link counts', async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        const u = String(url);
+        const method = init?.method ?? 'GET';
+        if (u.endsWith('/robots.txt')) {
+          return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+        }
+        if (u.endsWith('/sitemap.xml')) {
+          return makeResponse({ body: '<urlset><url><loc>https://example.com/</loc></url></urlset>' });
+        }
+        if (u.endsWith('/missing') && method === 'HEAD') {
+          return makeResponse({ status: 404 });
+        }
+        return makeResponse({
+          body: '<html><head><title>Test</title></head><body><a href="/about">About</a><a href="/missing">Missing</a><a href="/contact">Contact</a></body></html>',
+        });
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await cachedAuditSite(makeSite({ skipChecks: ['broken-links'] }));
+    expect(result.internalLinks[0].internalLinks).toBe(3);
+    expect(result.internalLinks[0].status).toBe('pass');
+    expect(result.internalLinks[0].checkedInternalLinks).toBe(0);
+    expect(result.internalLinks[0].brokenLinks).toEqual([]);
+    expect(result.internalLinks[0].brokenLinksMessage).toContain('N/A');
+    expect(
+      fetchMock.mock.calls.some(([url, init]) => {
+        const target = String(url);
+        const method = (init as RequestInit | undefined)?.method ?? 'GET';
+        return (target.endsWith('/about') || target.endsWith('/missing') || target.endsWith('/contact')) &&
+          (method === 'HEAD' || method === 'GET');
+      }),
+    ).toBe(false);
+  });
+
+  it('removes broken-link penalties when internal links are skipped', async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      const method = init?.method ?? 'GET';
+      if (u.endsWith('/robots.txt')) {
+        return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+      }
+      if (u.endsWith('/sitemap.xml')) {
+        return makeResponse({ body: '<urlset><url><loc>https://example.com/</loc></url></urlset>' });
+      }
+      if (u.endsWith('/missing') && method === 'HEAD') {
+        return makeResponse({ status: 404 });
+      }
+      return makeResponse({
+        body: '<html><head><title>Test</title></head><body><a href="/about">About</a><a href="/missing">Missing</a><a href="/contact">Contact</a></body></html>',
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const baseline = await cachedAuditSite(makeSite());
+    const skipped = await cachedAuditSite(makeSite({ skipChecks: ['internalLinks'] }));
+
+    expect(baseline.internalLinks[0].brokenLinks).toEqual([{ url: 'https://example.com/missing', status: 404 }]);
+    expect(skipped.internalLinks[0].status).toBe('pass');
+    expect(skipped.internalLinks[0].brokenLinks).toEqual([]);
+    expect(skipped.internalLinks[0].brokenLinksMessage).toContain('N/A');
+    expect(skipped.score.fail).toBe(baseline.score.fail - 1);
+    expect(
+      fetchMock.mock.calls.some(([url, init]) => String(url).endsWith('/missing') && (init as RequestInit | undefined)?.method === 'HEAD'),
+    ).toBe(true);
   });
 
   it('keeps og:image meta skips separate from the OG Image asset check', async () => {
@@ -721,6 +791,124 @@ describe('auditSite — canonical', () => {
     expect(result.metaTags[0].canonical.status).toBe('fail');
     expect(result.metaTags[0].canonicalStatus).toBe(404);
     expect(result.metaTags[0].canonical.message).toContain('HTTP 404');
+  });
+});
+
+describe('auditSite — broken internal links', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
+    mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [] } });
+  });
+
+  it('checks up to 20 unique internal links and records broken targets', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        const u = String(url);
+        const method = init?.method ?? 'GET';
+        if (u.endsWith('/robots.txt')) {
+          return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+        }
+        if (u.endsWith('/sitemap.xml')) {
+          return makeResponse({ body: '<urlset><url><loc>https://example.com/</loc></url></urlset>' });
+        }
+        if (method === 'HEAD' && u.endsWith('/missing-a')) {
+          return makeResponse({ status: 404 });
+        }
+        if (method === 'HEAD' && u.endsWith('/missing-b')) {
+          return makeResponse({ status: 500 });
+        }
+        if (method === 'HEAD' && u.startsWith('https://example.com/page-')) {
+          return makeResponse({ status: 200 });
+        }
+
+        return makeResponse({
+          body: [
+            '<html><head><title>Test</title></head><body>',
+            '<a href="/page-1">One</a>',
+            '<a href="/page-2">Two</a>',
+            '<a href="/page-3">Three</a>',
+            '<a href="/page-4">Four</a>',
+            '<a href="/page-5">Five</a>',
+            '<a href="/page-6">Six</a>',
+            '<a href="/page-7">Seven</a>',
+            '<a href="/page-8">Eight</a>',
+            '<a href="/page-9">Nine</a>',
+            '<a href="/page-10">Ten</a>',
+            '<a href="/page-11">Eleven</a>',
+            '<a href="/page-12">Twelve</a>',
+            '<a href="/page-13">Thirteen</a>',
+            '<a href="/page-14">Fourteen</a>',
+            '<a href="/page-15">Fifteen</a>',
+            '<a href="/page-16">Sixteen</a>',
+            '<a href="/page-17">Seventeen</a>',
+            '<a href="/page-18">Eighteen</a>',
+            '<a href="/missing-a">Missing A</a>',
+            '<a href="/missing-b">Missing B</a>',
+            '<a href="/page-19">Nineteen</a>',
+            '<a href="/page-20">Twenty</a>',
+            '<a href="/page-21">Twenty One</a>',
+            '</body></html>',
+          ].join(''),
+        });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite());
+    expect(result.internalLinks[0].checkedInternalLinks).toBe(20);
+    expect(result.internalLinks[0].brokenLinks).toEqual([
+      { url: 'https://example.com/missing-a', status: 404 },
+      { url: 'https://example.com/missing-b', status: 500 },
+    ]);
+    expect(result.internalLinks[0].brokenLinksMessage).toContain('2 broken');
+    expect(result.score.fail).toBeGreaterThanOrEqual(2);
+  });
+
+  it('verifies internal links with bounded concurrency instead of one-by-one', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        const u = String(url);
+        const method = init?.method ?? 'GET';
+        if (u.endsWith('/robots.txt')) {
+          return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+        }
+        if (u.endsWith('/sitemap.xml')) {
+          return makeResponse({ body: '<urlset><url><loc>https://example.com/</loc></url></urlset>' });
+        }
+        if (method === 'HEAD' && u.startsWith('https://example.com/page-')) {
+          inFlight++;
+          maxInFlight = Math.max(maxInFlight, inFlight);
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              inFlight--;
+              resolve(makeResponse({ status: 200 }));
+            }, 20);
+          });
+        }
+
+        return makeResponse({
+          body: [
+            '<html><head><title>Test</title></head><body>',
+            '<a href="/page-1">One</a>',
+            '<a href="/page-2">Two</a>',
+            '<a href="/page-3">Three</a>',
+            '<a href="/page-4">Four</a>',
+            '<a href="/page-5">Five</a>',
+            '<a href="/page-6">Six</a>',
+            '</body></html>',
+          ].join(''),
+        });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite());
+    expect(result.internalLinks[0].checkedInternalLinks).toBe(6);
+    expect(maxInFlight).toBeGreaterThan(1);
   });
 });
 

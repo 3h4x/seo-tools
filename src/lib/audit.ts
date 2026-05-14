@@ -103,6 +103,12 @@ interface InternalLinkResult {
   page: string;
   internalLinks: number;
   externalLinks: number;
+  checkedInternalLinks: number;
+  brokenLinks: Array<{
+    url: string;
+    status: number;
+  }>;
+  brokenLinksMessage: string;
   status: CheckStatus;
   label: string;
   message: string;
@@ -152,12 +158,20 @@ export function normalizeSiteAuditResult(audit: SiteAuditResult): SiteAuditResul
   return {
     ...audit,
     redirectChains: audit.redirectChains ?? [],
+    internalLinks: (audit.internalLinks ?? []).map((link) => ({
+      ...link,
+      checkedInternalLinks: link.checkedInternalLinks ?? 0,
+      brokenLinks: link.brokenLinks ?? [],
+      brokenLinksMessage: link.brokenLinksMessage ?? 'Broken-link verification unavailable in cached audit',
+    })),
   };
 }
 
 export const MAX_SAMPLED_PAGES = 10;
 const SITEMAP_SAMPLE_LIMIT = 5;
 const SC_SAMPLE_LIMIT = 5;
+const INTERNAL_LINK_HEALTH_LIMIT = 20;
+const INTERNAL_LINK_HEALTH_CONCURRENCY = 5;
 
 export function extractLocsFromSitemap(xml: string): string[] {
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/gi)].map(m => m[1].trim());
@@ -174,6 +188,29 @@ function summarizeStatuses(statuses: CheckStatus[]): CheckStatus {
   if (statuses.includes('warn')) return 'warn';
   if (statuses.includes('error')) return 'error';
   return 'pass';
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) return [];
+
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  async function runWorker() {
+    while (true) {
+      const currentIndex = nextIndex++;
+      if (currentIndex >= items.length) return;
+      results[currentIndex] = await worker(items[currentIndex], currentIndex);
+    }
+  }
+
+  const workerCount = Math.min(concurrency, items.length);
+  await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
+  return results;
 }
 
 function extractInternalPagePaths(html: string, domain: string): string[] {
@@ -272,6 +309,20 @@ async function getUrlHealthStatus(url: string): Promise<number> {
   }
 
   const getRes = await safeFetch(url, { ua: GOOGLEBOT_UA });
+  return getRes.status;
+}
+
+async function getInternalLinkHealthStatus(url: string): Promise<number> {
+  const headRes = await safeFetch(url, {
+    method: 'HEAD',
+    ua: GOOGLEBOT_UA,
+    timeoutMs: 5_000,
+  });
+  if (headRes.status !== 405 && headRes.status !== 501 && headRes.status !== 0) {
+    return headRes.status;
+  }
+
+  const getRes = await safeFetch(url, { ua: GOOGLEBOT_UA, timeoutMs: 5_000 });
   return getRes.status;
 }
 
@@ -790,8 +841,46 @@ export function checkInternalLinks(html: string, domain: string, page: string): 
 
   return {
     page, internalLinks, externalLinks, status,
+    checkedInternalLinks: 0,
+    brokenLinks: [],
+    brokenLinksMessage: 'Broken-link verification unavailable',
     label: 'Internal Links',
     message: `${internalLinks} internal, ${externalLinks} external`,
+  };
+}
+
+async function enrichInternalLinkResult(html: string, domain: string, page: string): Promise<InternalLinkResult> {
+  const base = checkInternalLinks(html, domain, page);
+  const internalPaths = extractInternalPagePaths(html, domain).slice(0, INTERNAL_LINK_HEALTH_LIMIT);
+
+  if (internalPaths.length === 0) {
+    return {
+      ...base,
+      checkedInternalLinks: 0,
+      brokenLinksMessage: 'No internal links to verify',
+    };
+  }
+
+  const linkStatuses = await mapWithConcurrency(
+    internalPaths,
+    INTERNAL_LINK_HEALTH_CONCURRENCY,
+    async (path) => {
+      const url = `https://${domain}${path}`;
+      const status = await getInternalLinkHealthStatus(url);
+      return { url, status };
+    },
+  );
+
+  const brokenLinks = linkStatuses.filter(({ status }) => status >= 400 || status === 0);
+
+  return {
+    ...base,
+    checkedInternalLinks: internalPaths.length,
+    brokenLinks,
+    brokenLinksMessage:
+      brokenLinks.length === 0
+        ? `Checked ${internalPaths.length} unique internal link${internalPaths.length === 1 ? '' : 's'}`
+        : `Checked ${internalPaths.length} unique internal link${internalPaths.length === 1 ? '' : 's'} · ${brokenLinks.length} broken`,
   };
 }
 
@@ -1205,6 +1294,8 @@ async function fetchScTopPageUrls(site: Site): Promise<string[]> {
 }
 
 async function auditSite(site: Site): Promise<SiteAuditResult> {
+  const skip = new Set(normalizeSkipChecks(site.skipChecks));
+  const shouldVerifyBrokenLinks = !skip.has('internalLinks') && !skip.has('brokenLinks');
   const robotsTxt = await checkRobotsTxt(site.domain);
 
   const [rawSitemap, ttfb, security, scSitemapFreshness, scTopPageUrls] = await Promise.all([
@@ -1244,7 +1335,21 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
       redirectChain,
       meta,
       images: res.ok ? checkImageSeo(res.text, page) : { page, totalImages: 0, withAlt: 0, withoutAlt: 0, withLazyLoading: 0, status: 'error' as CheckStatus, label: 'Images', message: res.error || `HTTP ${res.status}`, images: [] },
-      links: res.ok ? checkInternalLinks(res.text, site.domain, page) : { page, internalLinks: 0, externalLinks: 0, status: 'error' as CheckStatus, label: 'Internal Links', message: res.error || `HTTP ${res.status}` },
+      links: res.ok
+        ? shouldVerifyBrokenLinks
+          ? await enrichInternalLinkResult(res.text, site.domain, page)
+          : checkInternalLinks(res.text, site.domain, page)
+        : {
+            page,
+            internalLinks: 0,
+            externalLinks: 0,
+            checkedInternalLinks: 0,
+            brokenLinks: [],
+            brokenLinksMessage: res.error || `HTTP ${res.status}`,
+            status: 'error' as CheckStatus,
+            label: 'Internal Links',
+            message: res.error || `HTTP ${res.status}`,
+          },
     });
   }
 
@@ -1257,7 +1362,6 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
   const ogImage = await checkOgImage(ogImageUrl);
 
   // Apply skipChecks: replace skipped checks with a neutral pass so they don't affect the score
-  const skip = new Set(normalizeSkipChecks(site.skipChecks));
   const skippedRobotsTxt = applySkipToCheck(robotsTxt, skip, 'robotsTxt');
   const skippedSitemap = applySkipToCheck(sitemap, skip, 'sitemap');
   const skippedScSitemapFreshness = applySkipToCheck(scSitemapFreshness, skip, 'scSitemap');
@@ -1282,7 +1386,29 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
     jsonLd: applySkipToCheck(meta.jsonLd, skip, 'jsonLd'),
   }));
   const skippedImageSeo = imageSeo.map(image => applySkipToCheck(image, skip, 'images'));
-  const skippedInternalLinks = internalLinks.map(link => applySkipToCheck(link, skip, 'internalLinks'));
+  const shouldSkipBrokenLinkReporting = skip.has('internalLinks') || skip.has('brokenLinks');
+  const skippedInternalLinks = internalLinks.map(link => {
+    const skippedLink = applySkipToCheck(link, skip, 'internalLinks');
+    if (shouldSkipBrokenLinkReporting) {
+      return {
+        ...skippedLink,
+        checkedInternalLinks: 0,
+        brokenLinks: [],
+        brokenLinksMessage: 'N/A — broken-link verification skipped',
+      };
+    }
+    return skippedLink;
+  });
+
+  const brokenLinkPenaltyChecks = shouldSkipBrokenLinkReporting
+    ? []
+    : skippedInternalLinks.flatMap((link) =>
+        link.brokenLinks.map((brokenLink) => ({
+          status: 'fail' as const,
+          label: 'Broken Link',
+          message: `${link.page} -> ${brokenLink.url} (${brokenLink.status || 'timeout'})`,
+        })),
+      );
 
   const allChecks: CheckResult[] = [
     skippedRobotsTxt,
@@ -1298,6 +1424,7 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
     ...skippedMetaTags.flatMap(m => [m.title, m.description, m.ogTitle, m.ogImage, m.ogDescription, m.twitterCard, m.canonical, m.jsonLd]),
     ...skippedImageSeo,
     ...skippedInternalLinks,
+    ...brokenLinkPenaltyChecks,
   ];
 
   const score = allChecks.reduce(

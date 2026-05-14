@@ -18,6 +18,7 @@ export type SkipCheckId =
   | 'favicon'
   | 'ttfb'
   | 'images'
+  | 'brokenLinks'
   | 'internalLinks';
 
 export interface SkipCheckOption {
@@ -46,6 +47,7 @@ export const SKIP_CHECK_OPTIONS: SkipCheckOption[] = [
   { id: 'favicon', label: 'Favicon' },
   { id: 'ttfb', label: 'TTFB' },
   { id: 'images', label: 'Images' },
+  { id: 'brokenLinks', label: 'Broken Links', aliases: ['broken-links'] },
   { id: 'internalLinks', label: 'Internal Links' },
 ];
 
