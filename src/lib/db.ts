@@ -9,7 +9,7 @@ const DB_PATH = path.join(process.cwd(), 'data', 'seo-tools.db');
 interface SqliteStatement<Result = unknown> {
   get(...params: unknown[]): Result;
   all(...params: unknown[]): Result[];
-  run(...params: unknown[]): unknown;
+  run(...params: unknown[]): { changes?: number };
 }
 
 export interface SqliteDatabase {
@@ -132,6 +132,17 @@ function initSchema(db: SqliteDatabase): void {
       submit_count INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS snapshot_runs (
+      job_key TEXT NOT NULL PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'idle',
+      last_started_at INTEGER,
+      last_finished_at INTEGER,
+      last_success_at INTEGER,
+      last_failure_at INTEGER,
+      last_error TEXT,
+      lock_owner TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS config (
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -170,6 +181,7 @@ function initSchema(db: SqliteDatabase): void {
   try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN sitemap_urls INTEGER`); } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN indexed_pages INTEGER`); } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN coverage_pct INTEGER`); } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE snapshot_runs ADD COLUMN lock_owner TEXT`); } catch { /* already exists */ }
 }
 
 // --- Cache helpers ---

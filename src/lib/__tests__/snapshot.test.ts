@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('node:fs', async () => {
   const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
@@ -51,7 +51,13 @@ vi.mock('@google-analytics/data', () => ({
 }));
 
 import { getDb } from '../db';
-import { runSnapshot } from '../snapshot';
+import { discoverPropertyIds } from '../ga4';
+import {
+  getSnapshotRunState,
+  runSnapshot,
+  runSnapshotIfDue,
+  SnapshotAlreadyRunningError,
+} from '../snapshot';
 import { getScTrends, getGa4Trends, getTtfbTrends } from '../db';
 
 const fetchMock = vi.fn();
@@ -64,6 +70,7 @@ function resetDb() {
     DELETE FROM ga4_snapshots;
     DELETE FROM audit_snapshots;
     DELETE FROM keyword_history;
+    DELETE FROM snapshot_runs;
   `);
 }
 
@@ -112,6 +119,10 @@ beforeEach(() => {
   ga4ReportMock.mockResolvedValue([{
     rows: [{ metricValues: [{ value: '10' }, { value: '20' }, { value: '30' }, { value: '0.4' }, { value: '12.5' }] }],
   }]);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('runSnapshot dedupe', () => {
@@ -230,5 +241,140 @@ describe('runSnapshot TTFB', () => {
     const result = await runSnapshot();
     expect(result.errors.some((e) => e.includes('Audit site-a'))).toBe(true);
     expect(result.ttfb).toBe(1); // site-b still succeeds
+  });
+
+  it('persists snapshot run timestamps after success', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-14T08:00:00Z'));
+
+    await runSnapshot();
+
+    const now = Date.parse('2026-05-14T08:00:00Z');
+
+    expect(getSnapshotRunState()).toEqual({
+      status: 'idle',
+      last_started_at: now,
+      last_finished_at: now,
+      last_success_at: now,
+      last_failure_at: null,
+      last_error: null,
+    });
+  });
+
+  it('persists failure metadata when snapshot throws before any site work starts', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-14T09:00:00Z'));
+    vi.mocked(discoverPropertyIds).mockRejectedValueOnce(new Error('Discovery offline'));
+
+    await expect(runSnapshot()).rejects.toThrow('Discovery offline');
+
+    const now = Date.parse('2026-05-14T09:00:00Z');
+
+    expect(getSnapshotRunState()).toEqual({
+      status: 'idle',
+      last_started_at: now,
+      last_finished_at: now,
+      last_success_at: null,
+      last_failure_at: now,
+      last_error: 'Discovery offline',
+    });
+  });
+});
+
+describe('runSnapshotIfDue', () => {
+  it('runs immediately when no successful snapshot exists yet', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-14T10:00:00Z'));
+
+    await expect(runSnapshotIfDue()).resolves.toBe('started');
+    expect(scQueryMock).toHaveBeenCalled();
+  });
+
+  it('skips when the last successful snapshot is still within the schedule window', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-14T10:00:00Z'));
+    await runSnapshot();
+    scQueryMock.mockClear();
+
+    vi.setSystemTime(new Date('2026-05-14T20:00:00Z'));
+    await expect(runSnapshotIfDue()).resolves.toBe('skipped-not-due');
+    expect(scQueryMock).not.toHaveBeenCalled();
+  });
+
+  it('returns skipped-running when persisted state is already in progress', async () => {
+    const db = getDb();
+    db.prepare(
+      `INSERT INTO snapshot_runs (
+        job_key, status, last_started_at, last_finished_at, last_success_at, last_failure_at, last_error, lock_owner
+      ) VALUES (?, 'running', ?, NULL, NULL, NULL, NULL, ?)`,
+    ).run('daily', Date.now(), 'existing-owner');
+
+    await expect(runSnapshotIfDue()).resolves.toBe('skipped-running');
+    expect(scQueryMock).not.toHaveBeenCalled();
+  });
+
+  it('refuses a manual run when another process holds a fresh persisted lock', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-14T11:00:00Z'));
+    const db = getDb();
+    const startedAt = Date.now();
+    db.prepare(
+      `INSERT INTO snapshot_runs (
+        job_key, status, last_started_at, last_finished_at, last_success_at, last_failure_at, last_error, lock_owner
+      ) VALUES (?, 'running', ?, NULL, NULL, NULL, NULL, ?)`,
+    ).run('daily', startedAt, 'existing-owner');
+
+    await expect(runSnapshot()).rejects.toBeInstanceOf(SnapshotAlreadyRunningError);
+
+    const row = db.prepare(
+      'SELECT status, last_started_at, lock_owner FROM snapshot_runs WHERE job_key = ?',
+    ).get('daily') as { status: string; last_started_at: number; lock_owner: string };
+    expect(row).toEqual({
+      status: 'running',
+      last_started_at: startedAt,
+      lock_owner: 'existing-owner',
+    });
+    expect(scQueryMock).not.toHaveBeenCalled();
+  });
+
+  it('atomically replaces a stale persisted lock and only clears the new owner on finish', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-14T12:00:00Z'));
+    const db = getDb();
+    const staleStartedAt = Date.now() - (6 * 60 * 60 * 1000) - 1;
+    db.prepare(
+      `INSERT INTO snapshot_runs (
+        job_key, status, last_started_at, last_finished_at, last_success_at, last_failure_at, last_error, lock_owner
+      ) VALUES (?, 'running', ?, NULL, NULL, NULL, ?, ?)`,
+    ).run('daily', staleStartedAt, 'previous process crashed', 'stale-owner');
+
+    await expect(runSnapshot()).resolves.toMatchObject({ date: '2026-05-14' });
+
+    const now = Date.parse('2026-05-14T12:00:00Z');
+    const row = db.prepare(
+      'SELECT status, last_started_at, last_success_at, last_error, lock_owner FROM snapshot_runs WHERE job_key = ?',
+    ).get('daily') as {
+      status: string;
+      last_started_at: number;
+      last_success_at: number;
+      last_error: string | null;
+      lock_owner: string | null;
+    };
+    expect(row).toEqual({
+      status: 'idle',
+      last_started_at: now,
+      last_success_at: now,
+      last_error: null,
+      lock_owner: null,
+    });
+    expect(scQueryMock).toHaveBeenCalled();
+  });
+
+  it('throws SnapshotAlreadyRunningError on overlapping manual runs', async () => {
+    const first = runSnapshot();
+    await Promise.resolve();
+
+    await expect(runSnapshot()).rejects.toBeInstanceOf(SnapshotAlreadyRunningError);
+    await first;
   });
 });

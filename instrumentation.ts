@@ -6,5 +6,8 @@ export async function register() {
 
     const { startSitemapSync } = await import('@/lib/sitemap-sync');
     startSitemapSync();
+
+    const { startSnapshotScheduler } = await import('@/lib/snapshot');
+    startSnapshotScheduler();
   }
 }
