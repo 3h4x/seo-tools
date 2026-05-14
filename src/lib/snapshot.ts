@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getAuth } from './google-auth';
@@ -16,8 +17,24 @@ export interface SnapshotResult {
   errors: string[];
 }
 
-// Module-level lock — Next.js runs in a single process so this is sufficient.
+interface SnapshotRunRow {
+  status: 'idle' | 'running';
+  last_started_at: number | null;
+  last_finished_at: number | null;
+  last_success_at: number | null;
+  last_failure_at: number | null;
+  last_error: string | null;
+}
+
+type ScheduledSnapshotResult = 'started' | 'skipped-not-due' | 'skipped-running';
+
+const SNAPSHOT_JOB_KEY = 'daily';
+const SNAPSHOT_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const SNAPSHOT_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+const SNAPSHOT_STALE_LOCK_MS = 6 * 60 * 60 * 1000;
+
 let snapshotRunning = false;
+let schedulerIntervalId: ReturnType<typeof setInterval> | null = null;
 
 export class SnapshotAlreadyRunningError extends Error {
   constructor() {
@@ -27,19 +44,159 @@ export class SnapshotAlreadyRunningError extends Error {
 }
 
 export function isSnapshotRunning(): boolean {
-  return snapshotRunning;
+  if (snapshotRunning) {
+    return true;
+  }
+  return hasFreshLock(getSnapshotRunState());
 }
 
 export async function runSnapshot(): Promise<SnapshotResult> {
   if (snapshotRunning) {
     throw new SnapshotAlreadyRunningError();
   }
+  const lockOwner = acquireSnapshotLock();
   snapshotRunning = true;
   try {
-    return await doSnapshot();
+    const result = await doSnapshot();
+    finishSnapshotRun({ lockOwner, success: true });
+    return result;
+  } catch (error) {
+    finishSnapshotRun({ lockOwner, success: false, error });
+    throw error;
   } finally {
     snapshotRunning = false;
   }
+}
+
+export function getSnapshotRunState(): SnapshotRunRow {
+  const db = getDb();
+  const row = db.prepare(
+    `SELECT status, last_started_at, last_finished_at, last_success_at, last_failure_at, last_error
+     FROM snapshot_runs WHERE job_key = ?`,
+  ).get(SNAPSHOT_JOB_KEY) as SnapshotRunRow | undefined;
+
+  return row ?? {
+    status: 'idle',
+    last_started_at: null,
+    last_finished_at: null,
+    last_success_at: null,
+    last_failure_at: null,
+    last_error: null,
+  };
+}
+
+export async function runSnapshotIfDue(now: number = Date.now()): Promise<ScheduledSnapshotResult> {
+  const state = getSnapshotRunState();
+  if (snapshotRunning || hasFreshLock(state, now)) {
+    return 'skipped-running';
+  }
+  if (!isSnapshotDue(state, now)) {
+    return 'skipped-not-due';
+  }
+
+  await runSnapshot();
+  return 'started';
+}
+
+export function startSnapshotScheduler(): void {
+  if (schedulerIntervalId) {
+    return;
+  }
+
+  runSnapshotIfDue().catch((error) => {
+    console.error('[snapshot] startup check failed:', (error as Error).message);
+  });
+
+  schedulerIntervalId = setInterval(() => {
+    runSnapshotIfDue().catch((error) => {
+      console.error('[snapshot] scheduled run failed:', (error as Error).message);
+    });
+  }, SNAPSHOT_CHECK_INTERVAL_MS);
+
+  console.log(
+    `[snapshot] Scheduled due-check every ${SNAPSHOT_CHECK_INTERVAL_MS / 3_600_000}h (window ${SNAPSHOT_INTERVAL_MS / 3_600_000}h)`,
+  );
+}
+
+function isSnapshotDue(state: SnapshotRunRow, now: number): boolean {
+  if (state.last_success_at === null) {
+    return true;
+  }
+  return now - state.last_success_at >= SNAPSHOT_INTERVAL_MS;
+}
+
+function hasFreshLock(state: SnapshotRunRow, now: number = Date.now()): boolean {
+  return state.status === 'running'
+    && typeof state.last_started_at === 'number'
+    && now - state.last_started_at < SNAPSHOT_STALE_LOCK_MS;
+}
+
+function acquireSnapshotLock(now: number = Date.now()): string {
+  const db = getDb();
+  const lockOwner = randomUUID();
+  const upsertRunning = db.prepare(
+    `INSERT INTO snapshot_runs (
+       job_key, status, last_started_at, last_finished_at, last_error, lock_owner
+     )
+     VALUES (?, 'running', ?, NULL, NULL, ?)
+     ON CONFLICT(job_key) DO UPDATE SET
+       status = 'running',
+       last_started_at = excluded.last_started_at,
+       last_finished_at = NULL,
+       last_error = NULL,
+       lock_owner = excluded.lock_owner
+     WHERE snapshot_runs.status != 'running'
+       OR snapshot_runs.last_started_at IS NULL
+       OR ? - snapshot_runs.last_started_at >= ?`,
+  );
+
+  const result = upsertRunning.run(SNAPSHOT_JOB_KEY, now, lockOwner, now, SNAPSHOT_STALE_LOCK_MS);
+  if (result.changes === 0) {
+    throw new SnapshotAlreadyRunningError();
+  }
+  return lockOwner;
+}
+
+function finishSnapshotRun({
+  lockOwner,
+  success,
+  error,
+  now = Date.now(),
+}: {
+  lockOwner: string;
+  success: boolean;
+  error?: unknown;
+  now?: number;
+}): void {
+  const db = getDb();
+  if (success) {
+    db.prepare(
+      `UPDATE snapshot_runs
+       SET status = 'idle',
+         last_finished_at = ?,
+         last_success_at = ?,
+         last_error = NULL,
+         lock_owner = NULL
+       WHERE job_key = ? AND lock_owner = ?`,
+    ).run(now, now, SNAPSHOT_JOB_KEY, lockOwner);
+    return;
+  }
+
+  db.prepare(
+    `UPDATE snapshot_runs
+     SET status = 'idle',
+       last_finished_at = ?,
+       last_failure_at = ?,
+       last_error = ?,
+       lock_owner = NULL
+     WHERE job_key = ? AND lock_owner = ?`,
+  ).run(
+    now,
+    now,
+    error instanceof Error ? error.message : String(error),
+    SNAPSHOT_JOB_KEY,
+    lockOwner,
+  );
 }
 
 async function doSnapshot(): Promise<SnapshotResult> {

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { randomUUID } from 'node:crypto';
 import { GoogleAuth } from 'google-auth-library';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import path from 'node:path';
@@ -22,6 +23,8 @@ if (creds.private_key) creds.private_key = creds.private_key.replace(/\\n/g, '\n
 
 const auth = new GoogleAuth({ credentials: creds, scopes: ['https://www.googleapis.com/auth/webmasters'] });
 const sc = new searchconsole_v1.Searchconsole({ auth });
+const SNAPSHOT_JOB_KEY = 'daily';
+const SNAPSHOT_STALE_LOCK_MS = 6 * 60 * 60 * 1000;
 
 function loadSites() {
   try {
@@ -150,10 +153,21 @@ async function takeSnapshot() {
     CREATE TABLE IF NOT EXISTS ga4_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, site_id TEXT NOT NULL, date TEXT NOT NULL, users INTEGER NOT NULL DEFAULT 0, sessions INTEGER NOT NULL DEFAULT 0, views INTEGER NOT NULL DEFAULT 0, bounce_rate REAL NOT NULL DEFAULT 0, avg_duration REAL NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
     CREATE INDEX IF NOT EXISTS idx_sc_site_date ON sc_snapshots(site_id, date);
     CREATE INDEX IF NOT EXISTS idx_ga4_site_date ON ga4_snapshots(site_id, date);
+    CREATE TABLE IF NOT EXISTS snapshot_runs (
+      job_key TEXT NOT NULL PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'idle',
+      last_started_at INTEGER,
+      last_finished_at INTEGER,
+      last_success_at INTEGER,
+      last_failure_at INTEGER,
+      last_error TEXT,
+      lock_owner TEXT
+    );
     -- keyword_history is also created in src/lib/db.ts (app initSchema); keep schemas in sync
     CREATE TABLE IF NOT EXISTS keyword_history (site_id TEXT NOT NULL, date TEXT NOT NULL, query TEXT NOT NULL, clicks INTEGER NOT NULL DEFAULT 0, impressions INTEGER NOT NULL DEFAULT 0, ctr REAL NOT NULL DEFAULT 0, position REAL NOT NULL DEFAULT 0, PRIMARY KEY (site_id, date, query));
     CREATE INDEX IF NOT EXISTS idx_kw_history_site_query ON keyword_history(site_id, query, date);
   `);
+  try { db.exec(`ALTER TABLE snapshot_runs ADD COLUMN lock_owner TEXT`); } catch { /* already exists */ }
 
   const sites = loadSites();
   if (sites.length === 0) {
@@ -161,101 +175,162 @@ async function takeSnapshot() {
     return;
   }
 
-  const end = new Date(); end.setDate(end.getDate() - 1);
-  const start = new Date(); start.setDate(start.getDate() - 7);
-  const startDate = start.toISOString().split('T')[0];
-  const endDate = end.toISOString().split('T')[0];
+  const lockOwner = acquireSnapshotLock();
+  try {
+    const end = new Date(); end.setDate(end.getDate() - 1);
+    const start = new Date(); start.setDate(start.getDate() - 7);
+    const startDate = start.toISOString().split('T')[0];
+    const endDate = end.toISOString().split('T')[0];
 
-  console.log(`Taking snapshot for ${today}...\n`);
+    console.log(`Taking snapshot for ${today}...\n`);
 
-  const scDelete = db.prepare('DELETE FROM sc_snapshots WHERE site_id = ? AND date = ?');
-  const scInsert = db.prepare('INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)');
-  for (const site of sites) {
-    try {
-      const q = await sc.searchanalytics.query({
-        siteUrl: site.scUrl,
-        requestBody: { startDate, endDate, dimensions: ['page'], rowLimit: 100 },
-      });
-      const rows = q.data.rows || [];
-      const insertAll = db.transaction(() => {
-        scDelete.run(site.id, today);
-        for (const row of rows) {
-          scInsert.run(site.id, today, row.keys?.[0] || '', row.clicks || 0, row.impressions || 0, row.ctr || 0, row.position || 0);
-        }
-      });
-      insertAll();
-      console.log(`  SC ${site.id}: ${rows.length} pages`);
-    } catch (e) {
-      console.log(`  SC ${site.id}: error - ${e.message.slice(0, 60)}`);
+    const scDelete = db.prepare('DELETE FROM sc_snapshots WHERE site_id = ? AND date = ?');
+    const scInsert = db.prepare('INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    for (const site of sites) {
+      try {
+        const q = await sc.searchanalytics.query({
+          siteUrl: site.scUrl,
+          requestBody: { startDate, endDate, dimensions: ['page'], rowLimit: 100 },
+        });
+        const rows = q.data.rows || [];
+        const insertAll = db.transaction(() => {
+          scDelete.run(site.id, today);
+          for (const row of rows) {
+            scInsert.run(site.id, today, row.keys?.[0] || '', row.clicks || 0, row.impressions || 0, row.ctr || 0, row.position || 0);
+          }
+        });
+        insertAll();
+        console.log(`  SC ${site.id}: ${rows.length} pages`);
+      } catch (e) {
+        console.log(`  SC ${site.id}: error - ${e.message.slice(0, 60)}`);
+      }
     }
+
+    const kwInsert = db.prepare(
+      `INSERT INTO keyword_history (site_id, date, query, clicks, impressions, ctr, position)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(site_id, date, query) DO UPDATE SET
+         clicks = excluded.clicks, impressions = excluded.impressions,
+         ctr = excluded.ctr, position = excluded.position`,
+    );
+    for (const site of sites) {
+      try {
+        const q = await sc.searchanalytics.query({
+          siteUrl: site.scUrl,
+          requestBody: { startDate, endDate, dimensions: ['query'], rowLimit: 50 },
+        });
+        const rows = q.data.rows || [];
+        const insertAll = db.transaction(() => {
+          for (const row of rows) {
+            kwInsert.run(site.id, today, row.keys?.[0] || '', row.clicks || 0, row.impressions || 0, row.ctr || 0, row.position || 0);
+          }
+        });
+        insertAll();
+        console.log(`  KW ${site.id}: ${rows.length} queries`);
+      } catch (e) {
+        console.log(`  KW ${site.id}: error - ${e.message.slice(0, 60)}`);
+      }
+    }
+
+    const ga4Auth = new GoogleAuth({
+      credentials: creds,
+      scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+    });
+    const ga4Client = new BetaAnalyticsDataClient({ auth: ga4Auth });
+    const ga4Delete = db.prepare('DELETE FROM ga4_snapshots WHERE site_id = ? AND date = ?');
+    const ga4Insert = db.prepare('INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const ga4Upsert = db.transaction((siteId, date, users, sessions, views, bounce, duration) => {
+      ga4Delete.run(siteId, date);
+      ga4Insert.run(siteId, date, users, sessions, views, bounce, duration);
+    });
+
+    for (const site of sites) {
+      if (!site.ga4) continue;
+      try {
+        const [report] = await ga4Client.runReport({
+          property: `properties/${site.ga4}`,
+          dateRanges: [{ startDate: '7daysAgo', endDate: 'yesterday' }],
+          metrics: [
+            { name: 'activeUsers' },
+            { name: 'sessions' },
+            { name: 'screenPageViews' },
+            { name: 'bounceRate' },
+            { name: 'averageSessionDuration' },
+          ],
+        });
+        const row = report.rows?.[0];
+        const users = parseInt(row?.metricValues?.[0]?.value || '0');
+        const sessions = parseInt(row?.metricValues?.[1]?.value || '0');
+        const views = parseInt(row?.metricValues?.[2]?.value || '0');
+        const bounce = parseFloat(row?.metricValues?.[3]?.value || '0');
+        const duration = parseFloat(row?.metricValues?.[4]?.value || '0');
+        ga4Upsert(site.id, today, users, sessions, views, bounce, duration);
+        console.log(`  GA4 ${site.id}: ${users} users, ${views} views`);
+      } catch (e) {
+        console.log(`  GA4 ${site.id}: error - ${e.message.slice(0, 60)}`);
+      }
+    }
+
+    finishSnapshotRun({ lockOwner, success: true });
+    console.log(`\nSnapshot saved for ${today}`);
+  } catch (error) {
+    finishSnapshotRun({ lockOwner, success: false, error });
+    throw error;
+  }
+}
+
+function acquireSnapshotLock(now = Date.now()) {
+  const lockOwner = randomUUID();
+  const upsertRunning = db.prepare(`
+    INSERT INTO snapshot_runs (job_key, status, last_started_at, last_finished_at, last_error, lock_owner)
+    VALUES (?, 'running', ?, NULL, NULL, ?)
+    ON CONFLICT(job_key) DO UPDATE SET
+      status = 'running',
+      last_started_at = excluded.last_started_at,
+      last_finished_at = NULL,
+      last_error = NULL,
+      lock_owner = excluded.lock_owner
+    WHERE snapshot_runs.status != 'running'
+      OR snapshot_runs.last_started_at IS NULL
+      OR ? - snapshot_runs.last_started_at >= ?
+  `);
+
+  const result = upsertRunning.run(SNAPSHOT_JOB_KEY, now, lockOwner, now, SNAPSHOT_STALE_LOCK_MS);
+  if (result.changes === 0) {
+    throw new Error('snapshot_in_progress');
+  }
+  return lockOwner;
+}
+
+function finishSnapshotRun({ lockOwner, success, error, now = Date.now() }) {
+  if (success) {
+    db.prepare(`
+      UPDATE snapshot_runs
+      SET status = 'idle',
+        last_finished_at = ?,
+        last_success_at = ?,
+        last_error = NULL,
+        lock_owner = NULL
+      WHERE job_key = ? AND lock_owner = ?
+    `).run(now, now, SNAPSHOT_JOB_KEY, lockOwner);
+    return;
   }
 
-  const kwInsert = db.prepare(
-    `INSERT INTO keyword_history (site_id, date, query, clicks, impressions, ctr, position)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(site_id, date, query) DO UPDATE SET
-       clicks = excluded.clicks, impressions = excluded.impressions,
-       ctr = excluded.ctr, position = excluded.position`,
+  db.prepare(`
+    UPDATE snapshot_runs
+    SET status = 'idle',
+      last_finished_at = ?,
+      last_failure_at = ?,
+      last_error = ?,
+      lock_owner = NULL
+    WHERE job_key = ? AND lock_owner = ?
+  `).run(
+    now,
+    now,
+    error instanceof Error ? error.message : String(error),
+    SNAPSHOT_JOB_KEY,
+    lockOwner,
   );
-  for (const site of sites) {
-    try {
-      const q = await sc.searchanalytics.query({
-        siteUrl: site.scUrl,
-        requestBody: { startDate, endDate, dimensions: ['query'], rowLimit: 50 },
-      });
-      const rows = q.data.rows || [];
-      const insertAll = db.transaction(() => {
-        for (const row of rows) {
-          kwInsert.run(site.id, today, row.keys?.[0] || '', row.clicks || 0, row.impressions || 0, row.ctr || 0, row.position || 0);
-        }
-      });
-      insertAll();
-      console.log(`  KW ${site.id}: ${rows.length} queries`);
-    } catch (e) {
-      console.log(`  KW ${site.id}: error - ${e.message.slice(0, 60)}`);
-    }
-  }
-
-  const ga4Auth = new GoogleAuth({
-    credentials: creds,
-    scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
-  });
-  const ga4Client = new BetaAnalyticsDataClient({ auth: ga4Auth });
-  const ga4Delete = db.prepare('DELETE FROM ga4_snapshots WHERE site_id = ? AND date = ?');
-  const ga4Insert = db.prepare('INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration) VALUES (?, ?, ?, ?, ?, ?, ?)');
-  const ga4Upsert = db.transaction((siteId, date, users, sessions, views, bounce, duration) => {
-    ga4Delete.run(siteId, date);
-    ga4Insert.run(siteId, date, users, sessions, views, bounce, duration);
-  });
-
-  for (const site of sites) {
-    if (!site.ga4) continue;
-    try {
-      const [report] = await ga4Client.runReport({
-        property: `properties/${site.ga4}`,
-        dateRanges: [{ startDate: '7daysAgo', endDate: 'yesterday' }],
-        metrics: [
-          { name: 'activeUsers' },
-          { name: 'sessions' },
-          { name: 'screenPageViews' },
-          { name: 'bounceRate' },
-          { name: 'averageSessionDuration' },
-        ],
-      });
-      const row = report.rows?.[0];
-      const users = parseInt(row?.metricValues?.[0]?.value || '0');
-      const sessions = parseInt(row?.metricValues?.[1]?.value || '0');
-      const views = parseInt(row?.metricValues?.[2]?.value || '0');
-      const bounce = parseFloat(row?.metricValues?.[3]?.value || '0');
-      const duration = parseFloat(row?.metricValues?.[4]?.value || '0');
-      ga4Upsert(site.id, today, users, sessions, views, bounce, duration);
-      console.log(`  GA4 ${site.id}: ${users} users, ${views} views`);
-    } catch (e) {
-      console.log(`  GA4 ${site.id}: error - ${e.message.slice(0, 60)}`);
-    }
-  }
-
-  console.log(`\nSnapshot saved for ${today}`);
 }
 
 const UAS = [
