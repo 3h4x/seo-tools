@@ -75,7 +75,7 @@ export function getSiteSearchConsoleIdentities(site: SiteIdentityInput): string[
 }
 
 import { dbGetSites } from './db';
-import { normalizeSiteDomain, isValidSiteId, getSiteScUrlOverride } from './site-domain';
+import { normalizeSiteDomain, isReservedSiteId, isValidSiteId, getSiteScUrlOverride } from './site-domain';
 import { normalizeSkipChecks } from './skip-checks';
 
 const GA4_PROPERTY_RE = /^properties\/\d+$/;
@@ -93,6 +93,8 @@ export function validateAndNormalizeSiteInput(
     errors.id = 'id is required';
   } else if (!isValidSiteId(id)) {
     errors.id = 'id must contain only letters, digits, hyphens, underscores, or dots and must not start with a special character';
+  } else if (isReservedSiteId(id)) {
+    errors.id = `"${id}" is reserved for an app route and cannot be used as a site id`;
   }
   if (originalId && !isValidSiteId(originalId)) {
     errors.id = 'originalId must be a valid existing site id';

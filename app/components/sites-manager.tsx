@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { applyImportResults, buildImportSummary, getImportResult, type DiscoverySite, type ImportResult, type ImportSummary } from '@/lib/discovery-import';
-import { getSiteScUrlOverride, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
+import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
 
@@ -206,6 +206,10 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     const siteId = editMode === 'new' ? (form.id.trim() || slugifySiteDomain(normalizedDomain)) : form.id;
     if (!isValidSiteId(siteId)) {
       setError('Site ID can only contain letters, numbers, dots, underscores, and hyphens');
+      return;
+    }
+    if (isReservedSiteId(siteId)) {
+      setError(`"${siteId}" is reserved for an app route and cannot be used as a site ID`);
       return;
     }
 

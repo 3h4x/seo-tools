@@ -1,5 +1,6 @@
 const DOMAIN_RE = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 const SITE_ID_RE = /^[a-z0-9][a-z0-9_.-]*$/i;
+export const RESERVED_SITE_IDS = ['actions', 'api', 'audit', 'config', 'performance', 'trends'] as const;
 
 export function normalizeSiteDomain(value: string): string | null {
   const input = value.trim();
@@ -37,4 +38,21 @@ export function slugifySiteDomain(domain: string): string {
 
 export function isValidSiteId(value: string): boolean {
   return value === value.trim() && SITE_ID_RE.test(value);
+}
+
+export function isReservedSiteId(value: string): boolean {
+  return RESERVED_SITE_IDS.includes(value.trim().toLowerCase() as typeof RESERVED_SITE_IDS[number]);
+}
+
+export function createUniqueSiteId(baseId: string, existingIds: Iterable<string>): string {
+  const unavailableIds = new Set([...RESERVED_SITE_IDS, ...existingIds].map(id => id.toLowerCase()));
+  let nextId = baseId;
+  let suffix = 2;
+
+  while (unavailableIds.has(nextId.toLowerCase())) {
+    nextId = `${baseId}-${suffix}`;
+    suffix += 1;
+  }
+
+  return nextId;
 }
