@@ -6,11 +6,12 @@ import { getCwvAuditSummary } from '@/lib/performance-site';
 import { discoverPropertyIds, cachedGetAnalytics } from '@/lib/ga4';
 import {
   cachedGetSearchConsoleDataWithComparison,
+  cachedGetSearchConsolePages,
   cachedGetSearchConsoleQueries,
   cachedGetSitemapSubmissions,
 } from '@/lib/search-console';
 import { cachedAuditSite, normalizeSiteAuditResult } from '@/lib/audit';
-import { analyzeSiteGaps } from '@/lib/gaps';
+import { analyzeSiteGaps, createSiteGapSignals } from '@/lib/gaps';
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getScDaily, getGa4Daily, getKeywordDeltas } from '@/lib/db';
 import type { KeywordDelta } from '@/lib/keyword-history';
@@ -64,6 +65,12 @@ function getQueryBucketStats(
   return stats;
 }
 
+function engagementTone(engagementRate: number): string {
+  if (engagementRate >= 0.6) return 'text-emerald-400';
+  if (engagementRate >= 0.4) return 'text-amber-400';
+  return 'text-red-400';
+}
+
 export default async function SiteDashboardPage({
   params,
   searchParams,
@@ -84,17 +91,22 @@ export default async function SiteDashboardPage({
 
   const scUrl = getSCUrl(site);
 
-  const [rawAudit, sitemapSubmissions, scComparison, scQueries, ga4Data, cwvSummary] = await Promise.all([
+  const [rawAudit, sitemapSubmissions, scComparison, scQueries, scTopPages, ga4Data, cwvSummary] = await Promise.all([
     cachedAuditSite(site),
     site.searchConsole ? cachedGetSitemapSubmissions(scUrl) : Promise.resolve([]),
     site.searchConsole ? cachedGetSearchConsoleDataWithComparison(scUrl, days) : null,
     site.searchConsole ? cachedGetSearchConsoleQueries(scUrl, days) : null,
+    site.searchConsole ? cachedGetSearchConsolePages(scUrl, days) : null,
     cachedGetAnalytics(propertyId, days),
     getCwvAuditSummary(siteId),
   ]);
 
   const audit = normalizeSiteAuditResult(rawAudit);
-  const gapAnalysis = analyzeSiteGaps(audit, site);
+  const gapAnalysis = analyzeSiteGaps(audit, site, createSiteGapSignals({
+    ga4TopPages: ga4Data.data?.topPages,
+    scTopPages: scTopPages ?? undefined,
+    days,
+  }));
   const sections = gapsBySection(gapAnalysis.gaps);
   const totalGaps = gapAnalysis.gaps.length;
   const canonicalSummary = summarizeCanonicalChecks(audit.metaTags);
@@ -271,17 +283,30 @@ export default async function SiteDashboardPage({
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Top Pages (GA4)</h2>
           {ga4 && ga4.topPages.length > 0 ? (
-            <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
-              <div className="space-y-1.5">
+            <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-neutral-800 px-4 py-3 text-[11px] uppercase tracking-wider text-neutral-500">
+                <span>Page</span>
+                <span className="text-right">Views</span>
+                <span className="text-right">Engagement</span>
+              </div>
+              <div className="space-y-1.5 p-4">
                 {ga4.topPages.map((page, i) => {
                   const maxViews = ga4.topPages[0].views || 1;
                   return (
-                    <div key={i} className="flex items-center gap-3 text-xs">
-                      <span className="text-neutral-400 font-mono truncate min-w-0 flex-1">{page.path}</span>
-                      <div className="w-16 bg-neutral-800 h-1 rounded-full overflow-hidden shrink-0">
-                        <div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${(page.views / maxViews) * 100}%` }} />
+                    <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs">
+                      <div className="min-w-0">
+                        <span className="block truncate font-mono text-neutral-400">{page.path}</span>
+                        <span className="block text-[11px] text-neutral-600">{formatDuration(page.avgSessionDuration)}</span>
                       </div>
-                      <span className="text-neutral-500 font-mono shrink-0 w-20 text-right">{pluralize(page.views, 'view')}</span>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="w-16 bg-neutral-800 h-1 rounded-full overflow-hidden shrink-0">
+                          <div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${(page.views / maxViews) * 100}%` }} />
+                        </div>
+                        <span className="w-20 text-right font-mono text-neutral-500">{pluralize(page.views, 'view')}</span>
+                      </div>
+                      <span className={`w-24 text-right font-mono ${engagementTone(page.engagementRate)}`}>
+                        {(page.engagementRate * 100).toFixed(0)}%
+                      </span>
                     </div>
                   );
                 })}
@@ -539,6 +564,11 @@ export default async function SiteDashboardPage({
             </div>
             {sections['internalLinks']?.map(g => <Recommendation key={g.id} gap={g} />)}
           </AuditPanel>
+          {sections['content'] && sections['content'].length > 0 && (
+            <AuditPanel title="Content Opportunities">
+              {sections['content'].map(g => <Recommendation key={g.id} gap={g} />)}
+            </AuditPanel>
+          )}
           {audit.security && (
             <AuditPanel title="Security">
               <div className="space-y-2">
@@ -618,6 +648,11 @@ export default async function SiteDashboardPage({
           {sections['indexing'] && sections['indexing'].length > 0 && (
             <AuditPanel title="Indexing">
               {sections['indexing'].map(g => <Recommendation key={g.id} gap={g} />)}
+            </AuditPanel>
+          )}
+          {sections['other'] && sections['other'].length > 0 && (
+            <AuditPanel title="Additional Recommendations">
+              {sections['other'].map(g => <Recommendation key={g.id} gap={g} />)}
             </AuditPanel>
           )}
         </div>

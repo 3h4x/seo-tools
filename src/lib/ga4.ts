@@ -70,10 +70,12 @@ interface GA4Metrics {
   avgSessionDuration: number;
 }
 
-interface GA4TopPage {
+export interface GA4TopPage {
   path: string;
   views: number;
   users: number;
+  engagementRate: number;
+  avgSessionDuration: number;
 }
 
 interface GA4TrafficSource {
@@ -119,6 +121,8 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
         metrics: [
           { name: 'screenPageViews' },
           { name: 'activeUsers' },
+          { name: 'engagementRate' },
+          { name: 'averageSessionDuration' },
         ],
         orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
         limit: 15,
@@ -158,6 +162,8 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
       path: row.dimensionValues?.[0]?.value || '/',
       views: parseInt(row.metricValues?.[0]?.value || '0'),
       users: parseInt(row.metricValues?.[1]?.value || '0'),
+      engagementRate: parseFloat(row.metricValues?.[2]?.value || '0'),
+      avgSessionDuration: parseFloat(row.metricValues?.[3]?.value || '0'),
     }));
 
     const trafficSources: GA4TrafficSource[] = (trafficRes[0].rows || []).map(row => ({
