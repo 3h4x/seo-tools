@@ -185,6 +185,17 @@ describe('POST /api/sites', () => {
     expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
   });
 
+  it('returns 400 when id is reserved by a top-level app route', async () => {
+    const res = await POST(postReq({ id: 'actions', name: 'Site', domain: 'site.com' }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(data.errors.id).toMatch(/reserved/i);
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when name is missing', async () => {
     const res = await POST(postReq({ id: 'site1', domain: 'site.com' }));
     expect(res.status).toBe(400);

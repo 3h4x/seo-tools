@@ -1062,6 +1062,16 @@ export interface KeywordHistoryPoint {
   position: number;
 }
 
+export interface KeywordDropAction {
+  query: string;
+  clicks: number;
+  impressions: number;
+  currentPosition: number;
+  previousPosition: number;
+  delta: number;
+  window: '7d' | '30d';
+}
+
 function getKeywordHistory(siteId: string, days: number = 35): KeywordHistoryPoint[] {
   const db = getDb();
   const cutoff = new Date();
@@ -1117,6 +1127,67 @@ export function getKeywordDeltas(siteId: string): KeywordDelta[] {
     history.map((r) => ({ date: r.date, query: r.query, position: r.position })),
     latestDate,
   );
+}
+
+export function getKeywordDropActions(siteId: string, limit: number = 10): KeywordDropAction[] {
+  const history = getKeywordHistory(siteId, 35);
+  if (history.length === 0) return [];
+
+  const latestDate = history.reduce((max, r) => (r.date > max ? r.date : max), history[0].date);
+  const latestByQuery = new Map(
+    history
+      .filter((row) => row.date === latestDate)
+      .map((row) => [row.query, row] as const),
+  );
+
+  return computeKeywordDeltas(
+    history.map((r) => ({ date: r.date, query: r.query, position: r.position })),
+    latestDate,
+  )
+    .flatMap((delta) => {
+      const latest = latestByQuery.get(delta.query);
+      if (!latest) return [];
+
+      const windows = [
+        delta.delta7d !== null && delta.delta7d < -0.5
+          ? {
+              window: '7d' as const,
+              delta: delta.delta7d,
+              previousPosition: delta.position7d,
+            }
+          : null,
+        delta.delta30d !== null && delta.delta30d < -0.5
+          ? {
+              window: '30d' as const,
+              delta: delta.delta30d,
+              previousPosition: delta.position30d,
+            }
+          : null,
+      ].filter((candidate): candidate is { window: '7d' | '30d'; delta: number; previousPosition: number | null } => candidate !== null);
+
+      if (windows.length === 0) return [];
+
+      const worst = windows.reduce((selected, candidate) => (
+        Math.abs(candidate.delta) > Math.abs(selected.delta) ? candidate : selected
+      ));
+
+      if (worst.previousPosition === null) return [];
+
+      return [{
+        query: delta.query,
+        clicks: latest.clicks,
+        impressions: latest.impressions,
+        currentPosition: delta.currentPosition,
+        previousPosition: worst.previousPosition,
+        delta: worst.delta,
+        window: worst.window,
+      }];
+    })
+    .sort((a, b) => {
+      if (b.clicks !== a.clicks) return b.clicks - a.clicks;
+      return Math.abs(b.delta) - Math.abs(a.delta);
+    })
+    .slice(0, limit);
 }
 
 export function getKeywordCount(): number {

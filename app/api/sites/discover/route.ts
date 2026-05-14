@@ -3,7 +3,7 @@ import { getAuth } from '@/lib/google-auth';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { dbGetSites } from '@/lib/db';
 import { cachedGetDiscoveredGa4Properties } from '@/lib/ga4';
-import { normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
+import { createUniqueSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import { getSearchConsoleUrlIdentities, getSiteSearchConsoleIdentities, normalizeSearchConsoleIdentity, type Site } from '@/lib/sites';
 import { buildUniqueExactGa4Matches, findMatchingGa4Property, type DiscoveredGa4Property } from '@/lib/ga4-discovery';
 
@@ -92,19 +92,12 @@ function toMatchedGa4Property(property: DiscoveredGa4Property | undefined): Matc
 }
 
 function createDiscoveryIdAllocator(existingIds: Iterable<string>): (domain: string) => string {
-  const reservedIds = new Set(existingIds);
+  const allocatedIds = new Set(existingIds);
 
   return (domain: string): string => {
     const baseId = slugifySiteDomain(domain);
-    let nextId = baseId;
-    let suffix = 2;
-
-    while (reservedIds.has(nextId)) {
-      nextId = `${baseId}-${suffix}`;
-      suffix += 1;
-    }
-
-    reservedIds.add(nextId);
+    const nextId = createUniqueSiteId(baseId, allocatedIds);
+    allocatedIds.add(nextId);
     return nextId;
   };
 }

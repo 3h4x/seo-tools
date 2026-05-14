@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('../db', () => ({ dbGetSites: vi.fn() }));
 
 import { dbGetSites } from '../db';
-import { isValidSiteId } from '../site-domain';
+import { createUniqueSiteId, isReservedSiteId, isValidSiteId } from '../site-domain';
 import {
   getSCUrl,
   getManagedSite,
@@ -116,6 +116,26 @@ describe('isValidSiteId', () => {
   });
 });
 
+describe('isReservedSiteId', () => {
+  it('reserves top-level app route segments that would shadow site detail pages', () => {
+    expect(isReservedSiteId('actions')).toBe(true);
+    expect(isReservedSiteId('audit')).toBe(true);
+    expect(isReservedSiteId('performance')).toBe(true);
+    expect(isReservedSiteId('site-1')).toBe(false);
+  });
+});
+
+describe('createUniqueSiteId', () => {
+  it('skips reserved top-level route segments when allocating ids', () => {
+    expect(createUniqueSiteId('actions', [])).toBe('actions-2');
+    expect(createUniqueSiteId('audit', ['audit-2'])).toBe('audit-3');
+  });
+
+  it('skips existing ids when allocating ids', () => {
+    expect(createUniqueSiteId('site-1', ['site-1', 'site-1-2'])).toBe('site-1-3');
+  });
+});
+
 describe('validateAndNormalizeSiteInput', () => {
   it('returns normalized site for a minimal valid payload', () => {
     const result = validateAndNormalizeSiteInput(
@@ -165,6 +185,11 @@ describe('validateAndNormalizeSiteInput', () => {
   it('returns field error for invalid id', () => {
     const result = validateAndNormalizeSiteInput({ id: '//bad', name: 'S', domain: 'site.com' }, []);
     expect(result.errors?.id).toBeTruthy();
+  });
+
+  it('returns field error for reserved app route ids', () => {
+    const result = validateAndNormalizeSiteInput({ id: 'actions', name: 'S', domain: 'site.com' }, []);
+    expect(result.errors?.id).toMatch(/reserved/i);
   });
 
   it('returns field error for missing name', () => {
