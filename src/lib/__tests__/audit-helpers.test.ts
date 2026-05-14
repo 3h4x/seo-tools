@@ -123,7 +123,7 @@ describe('parseMetaTags', () => {
       <meta property="og:description" content="OG description text here.">
       <meta name="twitter:card" content="summary_large_image">
       <link rel="canonical" href="https://example.com/">
-      <script type="application/ld+json">{"@type":"Product","name":"Example"}</script>
+      <script type="application/ld+json">{"@type":"Product","name":"Example","brand":{"@type":"Brand","name":"Example"}}</script>
     </head>
     </html>
   `;
@@ -175,6 +175,68 @@ describe('parseMetaTags', () => {
     const res = makeFetchResult({ text: fullHtml });
     const result = parseMetaTags(res, '/');
     expect(result.jsonLd.message).toContain('Product');
+  });
+
+  it('fails JSON-LD when structured data contains invalid JSON', () => {
+    const html = `
+      <html>
+      <head>
+        <title>Test</title>
+        <script type="application/ld+json">{"@type":"Product",}</script>
+      </head>
+      </html>
+    `;
+    const res = makeFetchResult({ text: html });
+    const result = parseMetaTags(res, '/');
+    expect(result.jsonLd.status).toBe('fail');
+    expect(result.jsonLd.message).toBe('Invalid JSON in structured data');
+  });
+
+  it('warns when Product schema is missing required fields', () => {
+    const html = `
+      <html>
+      <head>
+        <title>Test</title>
+        <script type="application/ld+json">{"@type":"Product","name":"Example"}</script>
+      </head>
+      </html>
+    `;
+    const res = makeFetchResult({ text: html });
+    const result = parseMetaTags(res, '/');
+    expect(result.jsonLd.status).toBe('warn');
+    expect(result.jsonLd.message).toContain('Product missing one of "offers", "brand", or "image"');
+  });
+
+  it('warns when BreadcrumbList entries are incomplete', () => {
+    const html = `
+      <html>
+      <head>
+        <title>Test</title>
+        <script type="application/ld+json">{"@type":"BreadcrumbList","itemListElement":[{"position":1}]}</script>
+      </head>
+      </html>
+    `;
+    const res = makeFetchResult({ text: html });
+    const result = parseMetaTags(res, '/');
+    expect(result.jsonLd.status).toBe('warn');
+    expect(result.jsonLd.details).toContain('BreadcrumbList missing "itemListElement.item"');
+  });
+
+  it('passes multiple valid JSON-LD blocks and lists discovered schema types', () => {
+    const html = `
+      <html>
+      <head>
+        <title>Test</title>
+        <script type="application/ld+json">{"@type":"WebApplication","name":"Example","applicationCategory":"BusinessApplication"}</script>
+        <script type="application/ld+json">{"@type":"BreadcrumbList","itemListElement":[{"item":"https://example.com/","position":1}]}</script>
+      </head>
+      </html>
+    `;
+    const res = makeFetchResult({ text: html });
+    const result = parseMetaTags(res, '/');
+    expect(result.jsonLd.status).toBe('pass');
+    expect(result.jsonLd.message).toContain('WebApplication');
+    expect(result.jsonLd.message).toContain('BreadcrumbList');
   });
 
   it('extracts ogImageUrl for OG image check chaining', () => {

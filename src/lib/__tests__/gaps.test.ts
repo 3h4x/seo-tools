@@ -399,6 +399,44 @@ describe('analyzeSiteGaps', () => {
     expect(result.gaps.find(g => g.id === 'missing-json-ld')).toBeUndefined();
   });
 
+  it('includes missing-json-ld-fields when structured data is invalid or incomplete', () => {
+    const audit = makeAudit({
+      metaTags: [
+        makeMetaTagResult('/', {
+          jsonLd: {
+            ...makeCheckResult('warn', 'JSON-LD'),
+            message: 'Product missing one of "offers", "brand", or "image"',
+          },
+        }),
+      ],
+    });
+    const result = analyzeSiteGaps(audit, makeSite());
+    const gap = result.gaps.find((candidate) => candidate.id === 'missing-json-ld-fields');
+    expect(gap).toBeDefined();
+    expect(gap?.severity).toBe('medium');
+    expect(gap?.affectedPages).toEqual(['/']);
+    expect(gap?.evidence).toEqual(['/ · Product missing one of "offers", "brand", or "image"']);
+    expect(result.gaps.find((candidate) => candidate.id === 'missing-json-ld')).toBeUndefined();
+  });
+
+  it('treats malformed JSON-LD as invalid fields work, not missing JSON-LD', () => {
+    const audit = makeAudit({
+      metaTags: [
+        makeMetaTagResult('/', {
+          jsonLd: {
+            ...makeCheckResult('fail', 'JSON-LD'),
+            message: 'Invalid JSON in structured data',
+          },
+        }),
+      ],
+    });
+    const result = analyzeSiteGaps(audit, makeSite());
+    const gap = result.gaps.find((candidate) => candidate.id === 'missing-json-ld-fields');
+    expect(gap).toBeDefined();
+    expect(gap?.severity).toBe('high');
+    expect(result.gaps.find((candidate) => candidate.id === 'missing-json-ld')).toBeUndefined();
+  });
+
   it('includes missing-canonical gap for pages without canonical', () => {
     const audit = makeAudit({
       metaTags: [makeMetaTagResult('/', { canonical: makeCheckResult('fail', 'canonical') })],

@@ -605,6 +605,20 @@ export function makeCheck(label: string, value: string | null, minLen: number = 
 
 const GENERIC_TITLES = ['react app', 'vite app', 'document', 'untitled', 'home', 'index'];
 
+interface JsonLdValidationResult {
+  status: CheckStatus;
+  message: string;
+  details?: string;
+}
+
+type JsonLdSchemaType = 'WebApplication' | 'Product' | 'BreadcrumbList';
+
+const JSON_LD_SCHEMA_LABELS: Record<JsonLdSchemaType, string> = {
+  WebApplication: 'WebApplication',
+  Product: 'Product',
+  BreadcrumbList: 'BreadcrumbList',
+};
+
 function hasNoindexDirective(value: string | null | undefined): boolean {
   return value ? /\b(?:noindex|none)\b/i.test(value) : false;
 }
@@ -634,6 +648,141 @@ function xRobotsTagHasApplicableNoindex(value: string | null | undefined): boole
   }
 
   return false;
+}
+
+function extractJsonLdBlocks(html: string): string[] {
+  return [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)]
+    .map((match) => match[1]?.trim() ?? '')
+    .filter(Boolean);
+}
+
+function getJsonLdTypes(value: unknown): string[] {
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) {
+    return value.filter((entry): entry is string => typeof entry === 'string');
+  }
+  return [];
+}
+
+function collectJsonLdEntries(value: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => collectJsonLdEntries(entry));
+  }
+
+  if (!value || typeof value !== 'object') return [];
+
+  const entry = value as Record<string, unknown>;
+  const graphEntries = Array.isArray(entry['@graph']) ? collectJsonLdEntries(entry['@graph']) : [];
+  return [entry, ...graphEntries];
+}
+
+function validateJsonLdEntry(entry: Record<string, unknown>): string[] {
+  const types = getJsonLdTypes(entry['@type']);
+  if (types.length === 0) return [];
+
+  const issues = new Set<string>();
+
+  for (const type of types) {
+    if (type === 'WebApplication') {
+      if (typeof entry.name !== 'string' || entry.name.trim().length === 0) {
+        issues.add(`${JSON_LD_SCHEMA_LABELS.WebApplication} missing "name"`);
+      }
+      if (typeof entry.applicationCategory !== 'string' || entry.applicationCategory.trim().length === 0) {
+        issues.add(`${JSON_LD_SCHEMA_LABELS.WebApplication} missing "applicationCategory"`);
+      }
+    }
+
+    if (type === 'Product') {
+      if (typeof entry.name !== 'string' || entry.name.trim().length === 0) {
+        issues.add(`${JSON_LD_SCHEMA_LABELS.Product} missing "name"`);
+      }
+      if (!entry.offers && !entry.brand && !entry.image) {
+        issues.add(`${JSON_LD_SCHEMA_LABELS.Product} missing one of "offers", "brand", or "image"`);
+      }
+    }
+
+    if (type === 'BreadcrumbList') {
+      const itemListElement = entry.itemListElement;
+      if (!Array.isArray(itemListElement) || itemListElement.length === 0) {
+        issues.add(`${JSON_LD_SCHEMA_LABELS.BreadcrumbList} missing "itemListElement"`);
+        continue;
+      }
+
+      for (const item of itemListElement) {
+        if (!item || typeof item !== 'object') {
+          issues.add(`${JSON_LD_SCHEMA_LABELS.BreadcrumbList} itemListElement entries must include "item" and "position"`);
+          break;
+        }
+
+        const listItem = item as Record<string, unknown>;
+        if (!('item' in listItem)) {
+          issues.add(`${JSON_LD_SCHEMA_LABELS.BreadcrumbList} missing "itemListElement.item"`);
+        }
+        if (!('position' in listItem)) {
+          issues.add(`${JSON_LD_SCHEMA_LABELS.BreadcrumbList} missing "itemListElement.position"`);
+        }
+      }
+    }
+  }
+
+  return [...issues];
+}
+
+function validateJsonLd(html: string): JsonLdValidationResult {
+  const blocks = extractJsonLdBlocks(html);
+  if (blocks.length === 0) {
+    return { status: 'fail', message: 'Not found' };
+  }
+
+  const parseErrors: string[] = [];
+  const validationIssues = new Set<string>();
+  const discoveredTypes = new Set<string>();
+
+  for (const block of blocks) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(block);
+    } catch {
+      parseErrors.push('Invalid JSON in structured data');
+      continue;
+    }
+
+    for (const entry of collectJsonLdEntries(parsed)) {
+      for (const type of getJsonLdTypes(entry['@type'])) {
+        discoveredTypes.add(type);
+      }
+
+      for (const issue of validateJsonLdEntry(entry)) {
+        validationIssues.add(issue);
+      }
+    }
+  }
+
+  if (parseErrors.length > 0) {
+    return {
+      status: 'fail',
+      message: 'Invalid JSON in structured data',
+      details: parseErrors.join('\n'),
+    };
+  }
+
+  if (validationIssues.size > 0) {
+    const issueList = [...validationIssues];
+    return {
+      status: 'warn',
+      message: issueList[0],
+      details: issueList.join('\n'),
+    };
+  }
+
+  const typeLabel = discoveredTypes.size > 0
+    ? `Valid (${[...discoveredTypes].join(', ')})`
+    : 'Valid';
+
+  return {
+    status: 'pass',
+    message: typeLabel,
+  };
 }
 
 export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
@@ -675,15 +824,7 @@ export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
   const canonicalMatch = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']*?)["'][^>]*>/i);
   const canonical = canonicalMatch?.[1] ?? null;
 
-  const hasJsonLd = /<script[^>]+type=["']application\/ld\+json["'][^>]*>/i.test(html);
-  let jsonLdType: string | undefined;
-  if (hasJsonLd) {
-    const jsonLdMatch = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i);
-    try {
-      const parsed = JSON.parse(jsonLdMatch?.[1] || '{}');
-      jsonLdType = parsed['@type'] || (Array.isArray(parsed) ? parsed[0]?.['@type'] : undefined);
-    } catch { /* ignore parse errors */ }
-  }
+  const jsonLd = validateJsonLd(html);
 
   return {
     page,
@@ -699,9 +840,7 @@ export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
     ogDescription: makeCheck('og:description', ogDesc, 10),
     twitterCard: makeCheck('twitter:card', twitterCard),
     canonical: makeCheck('canonical', canonical),
-    jsonLd: hasJsonLd
-      ? { status: 'pass', label: 'JSON-LD', message: jsonLdType ? `Found (${jsonLdType})` : 'Found' }
-      : { status: 'fail', label: 'JSON-LD', message: 'Not found' },
+    jsonLd: { status: jsonLd.status, label: 'JSON-LD', message: jsonLd.message, details: jsonLd.details },
   };
 }
 
