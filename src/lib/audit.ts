@@ -483,9 +483,10 @@ const BASE_DELAY = 1_000;
 
 async function safeFetch(
   url: string,
-  opts?: { ua?: string; method?: string; redirect?: RequestRedirect; timeoutMs?: number },
+  opts?: { ua?: string; method?: string; redirect?: RequestRedirect; timeoutMs?: number; retries?: number },
 ): Promise<FetchResult> {
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  const maxRetries = opts?.retries ?? MAX_RETRIES;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     if (attempt > 0) {
       const delay = BASE_DELAY * Math.pow(2, attempt - 1);
       await new Promise(r => setTimeout(r, delay));
@@ -499,12 +500,12 @@ async function safeFetch(
         redirect: opts?.redirect ?? 'follow',
       });
       const ttfbMs = Date.now() - start;
-      if (res.status === 429 && attempt < MAX_RETRIES) continue;
+      if (res.status === 429 && attempt < maxRetries) continue;
       const text = await res.text();
       return { ok: res.ok, status: res.status, text, headers: res.headers, ttfbMs };
     } catch (e) {
       const isTimeout = e instanceof DOMException && e.name === 'TimeoutError';
-      if ((isTimeout || (e instanceof Error && e.message.includes('abort'))) && attempt < MAX_RETRIES) continue;
+      if ((isTimeout || (e instanceof Error && e.message.includes('abort'))) && attempt < maxRetries) continue;
       return {
         ok: false, status: 0, text: '', headers: new Headers(),
         ttfbMs: Date.now() - start,
@@ -844,6 +845,12 @@ export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
   };
 }
 
+function toAbsoluteAuditPageUrl(domain: string, page: string): string {
+  if (page.startsWith('http://') || page.startsWith('https://')) return page;
+  const normalizedPath = page.startsWith('/') ? page : `/${page}`;
+  return `https://${domain}${normalizedPath}`;
+}
+
 function normalizeComparableUrl(url: URL): string {
   const pathname = url.pathname !== '/' && url.pathname.endsWith('/') ? url.pathname.slice(0, -1) : url.pathname;
   return `${url.origin}${pathname}${url.search}`;
@@ -852,6 +859,7 @@ function normalizeComparableUrl(url: URL): string {
 async function checkCanonicalUrl(
   pageUrl: string,
   canonicalHref: string | null,
+  options: { timeoutMs?: number; retries?: number } = {},
 ): Promise<{ check: CheckResult; canonicalValid: boolean | null; canonicalStatus: number | null; canonicalTarget: string | null }> {
   if (!canonicalHref) {
     return {
@@ -881,14 +889,16 @@ async function checkCanonicalUrl(
     ua: GOOGLEBOT_UA,
     method: 'HEAD',
     redirect: 'manual',
-    timeoutMs: 5_000,
+    timeoutMs: options.timeoutMs ?? 5_000,
+    retries: options.retries,
   });
   if (res.status === 405 || res.status === 501) {
     res = await safeFetch(target, {
       ua: GOOGLEBOT_UA,
       method: 'GET',
       redirect: 'manual',
-      timeoutMs: 5_000,
+      timeoutMs: options.timeoutMs ?? 5_000,
+      retries: options.retries,
     });
   }
 
@@ -946,6 +956,36 @@ async function checkCanonicalUrl(
     canonicalStatus: res.status,
     canonicalTarget: target,
   };
+}
+
+export async function auditPageMetaTags(
+  domain: string,
+  pages: string[],
+  options: { timeoutMs?: number; retries?: number; concurrency?: number; canonicalTimeoutMs?: number } = {},
+): Promise<SiteAuditResult['metaTags']> {
+  const uniquePages = [...new Set(pages)];
+
+  return mapWithConcurrency(uniquePages, options.concurrency ?? 5, async (page) => {
+    const pageUrl = toAbsoluteAuditPageUrl(domain, page);
+    const res = await safeFetch(pageUrl, {
+      ua: GOOGLEBOT_UA,
+      timeoutMs: options.timeoutMs,
+      retries: options.retries,
+    });
+    const meta = parseMetaTags(res, pageUrl);
+    const canonical = await checkCanonicalUrl(pageUrl, meta.canonicalTarget, {
+      timeoutMs: options.canonicalTimeoutMs ?? options.timeoutMs,
+      retries: options.retries,
+    });
+
+    return {
+      ...meta,
+      canonical: canonical.check,
+      canonicalValid: canonical.canonicalValid,
+      canonicalStatus: canonical.canonicalStatus,
+      canonicalTarget: canonical.canonicalTarget,
+    };
+  });
 }
 
 export function checkImageSeo(html: string, page: string): ImageSeoResult {

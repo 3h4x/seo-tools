@@ -5,6 +5,7 @@ import { normalizeGa4PropertyId } from './ga4-property';
 const SEARCH_CONSOLE_CACHE_PREFIXES = ['sc-comparison-', 'sc-data-', 'sc-queries-', 'sc-pages-', 'sc-page-queries-'] as const;
 const GA4_PROPERTY_CACHE_PREFIXES = ['ga4-', 'rum-cwv-', 'rum-cwv-events-'] as const;
 const PSI_CACHE_KEYS = ['psi-mobile', 'psi-desktop'] as const;
+const SITE_ID_CACHE_PREFIXES = ['page-opportunities-'] as const;
 
 function getDomainUrl(domain: string): string | undefined {
   const normalizedDomain = domain.trim();
@@ -57,6 +58,9 @@ export function invalidateManagedSiteCache(previousSite: Site | null, nextSite: 
 
   for (const siteId of auditSiteIds) {
     clearCacheEntry('audit', siteId);
+    for (const prefix of SITE_ID_CACHE_PREFIXES) {
+      clearCacheEntriesByPrefix(prefix, siteId);
+    }
   }
 
   if (shouldClearSitemapSyncState(previous, next)) {

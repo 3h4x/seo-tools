@@ -33,6 +33,7 @@ describe('invalidateManagedSiteCache', () => {
 
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearCacheEntry).toHaveBeenCalledWith('audit', 'site1');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('page-opportunities-', 'site1');
     expect(clearSitemapSyncState).toHaveBeenCalledWith('site1');
     expect(clearCacheEntry).toHaveBeenCalledWith('sitemap-submissions', 'sc-domain:example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:example.com');
@@ -62,6 +63,7 @@ describe('invalidateManagedSiteCache', () => {
     invalidateManagedSiteCache(previous, next);
 
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('page-opportunities-', 'site1');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:old.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:new.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:old.example.com');
@@ -122,6 +124,7 @@ describe('invalidateManagedSiteCache', () => {
 
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearCacheEntry).toHaveBeenCalledWith('audit', 'site1');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('page-opportunities-', 'site1');
     expect(clearCacheEntry).toHaveBeenCalledWith('sitemap-submissions', 'sc-domain:example.com');
     expect(clearCacheEntry).toHaveBeenCalledWith('psi-mobile', 'https://example.com');
     expect(clearCacheEntry).toHaveBeenCalledWith('psi-desktop', 'https://example.com');
@@ -130,7 +133,7 @@ describe('invalidateManagedSiteCache', () => {
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-events-', 'properties/1234');
     expect(clearCacheEntry).toHaveBeenCalledTimes(4);
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:example.com');
-    expect(clearCacheEntriesByPrefix).toHaveBeenCalledTimes(8);
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledTimes(9);
     expect(clearSitemapSyncState).not.toHaveBeenCalled();
   });
 

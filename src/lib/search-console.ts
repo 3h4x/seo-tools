@@ -170,8 +170,12 @@ async function queryScPages(
   }
 }
 
-async function getSearchConsolePages(siteUrl: string, days: number = 7) {
-  return queryScPages(siteUrl, daysAgo(days), daysAgo(1));
+async function getSearchConsolePages(
+  siteUrl: string,
+  days: number = 7,
+  rowLimit: number = 20,
+) {
+  return queryScPages(siteUrl, daysAgo(days), daysAgo(1), rowLimit);
 }
 
 export async function getSearchConsolePagesForPeriod(
@@ -306,10 +310,11 @@ export async function cachedGetSearchConsoleQueries(
 export async function cachedGetSearchConsolePages(
   siteUrl: string,
   days: number = 7,
+  rowLimit: number = 20,
 ) {
   return withCache<SCPageRow[]>(
-    `sc-pages-${days}`, siteUrl,
-    () => getSearchConsolePages(siteUrl, days),
+    `sc-pages-${days}-${rowLimit}`, siteUrl,
+    () => getSearchConsolePages(siteUrl, days, rowLimit),
   );
 }
 

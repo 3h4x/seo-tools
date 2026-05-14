@@ -15,6 +15,7 @@ import { analyzeSiteGaps, createSiteGapSignals } from '@/lib/gaps';
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getScDaily, getGa4Daily, getKeywordDeltas } from '@/lib/db';
 import type { KeywordDelta } from '@/lib/keyword-history';
+import { getPageOpportunityRows } from '@/lib/page-opportunities';
 import { KeywordRankTable } from '../components/keyword-rank-table';
 import { METRIC_COLORS, CWV_RATING_COLORS, CWV_THRESHOLDS, type CwvMetricName } from '@/lib/constants';
 import { pluralize, formatSource, formatDuration, formatBounce } from '@/lib/format';
@@ -25,7 +26,7 @@ import { MetricCard } from '../components/metric-card';
 import { CheckCard, statusDots, Recommendation, MetaChecksTable } from '../components/audit/check-card';
 import { gapsBySection } from '@/lib/gaps';
 import { ScTable } from '../components/sc-table';
-import { PageQueriesTable } from '../components/page-queries-table';
+import { PagesTable } from '../components/pages-table';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam } from '@/lib/days';
 
@@ -91,7 +92,7 @@ export default async function SiteDashboardPage({
 
   const scUrl = getSCUrl(site);
 
-  const [rawAudit, sitemapSubmissions, scComparison, scQueries, scTopPages, ga4Data, cwvSummary] = await Promise.all([
+  const [rawAudit, sitemapSubmissions, scComparison, scQueries, scTopPages, ga4Data, cwvSummary, pageOpportunities] = await Promise.all([
     cachedAuditSite(site),
     site.searchConsole ? cachedGetSitemapSubmissions(scUrl) : Promise.resolve([]),
     site.searchConsole ? cachedGetSearchConsoleDataWithComparison(scUrl, days) : null,
@@ -99,6 +100,7 @@ export default async function SiteDashboardPage({
     site.searchConsole ? cachedGetSearchConsolePages(scUrl, days) : null,
     cachedGetAnalytics(propertyId, days),
     getCwvAuditSummary(siteId),
+    getPageOpportunityRows(site, days),
   ]);
 
   const audit = normalizeSiteAuditResult(rawAudit);
@@ -266,7 +268,7 @@ export default async function SiteDashboardPage({
           exportData={(scQueries ?? []).map(r => ({ query: r.query, clicks: r.clicks, impressions: r.impressions, ctr: `${(r.ctr * 100).toFixed(2)}%`, position: r.position.toFixed(1) }))}
           filename={`${siteId}-queries-${days}d`}
         />
-        <PageQueriesTable siteId={siteId} days={days} />
+        <PagesTable rows={pageOpportunities} days={days} />
       </div>
       {keywordDeltas.length > 0 && (
         <div>

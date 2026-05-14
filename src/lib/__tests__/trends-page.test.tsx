@@ -28,6 +28,7 @@ const {
   mockGetKeywordDeltas,
   mockGetScDaily,
   mockGetGa4Daily,
+  mockWithCache,
   mockAnalyzeSiteGaps,
   mockCreateSiteGapSignals,
   mockGapsBySection,
@@ -46,6 +47,7 @@ const {
   mockGetKeywordDeltas: vi.fn(),
   mockGetScDaily: vi.fn(),
   mockGetGa4Daily: vi.fn(),
+  mockWithCache: vi.fn((_key: string, _id: string, fetcher: () => unknown) => fetcher()),
   mockAnalyzeSiteGaps: vi.fn(() => ({
     gaps: [],
     counts: { high: 0, medium: 0, low: 0 },
@@ -71,6 +73,7 @@ vi.mock('@/lib/db', () => ({
   getKeywordDeltas: mockGetKeywordDeltas,
   getScDaily: mockGetScDaily,
   getGa4Daily: mockGetGa4Daily,
+  withCache: mockWithCache,
 }));
 
 vi.mock('@/lib/format', () => ({
