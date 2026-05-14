@@ -314,7 +314,7 @@ beforeEach(() => {
     { date: '2026-05-02', users: 25, sessions: 35, views: 45, bounceRate: 0.35, avgDuration: 18 },
   ]);
   mockGetAuditTrends.mockReturnValue([
-    { date: '2026-05-02', pass: 7, warn: 1, fail: 0 },
+    { date: '2026-05-02', pass: 7, warn: 1, fail: 0, sitemapUrls: 10, indexedPages: 8, coveragePct: 80 },
   ]);
   mockGetTtfbTrends.mockReturnValue([]);
   mockGetTopKeywordsWithHistory.mockReturnValue({
@@ -377,6 +377,29 @@ describe('TrendsPage', () => {
       }),
       undefined
     );
+    expect(mockTrendsTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Indexing Coverage',
+        columns: expect.arrayContaining([
+          expect.objectContaining({ label: 'Coverage', align: 'right' }),
+          expect.objectContaining({ label: 'Sitemap URLs', align: 'right' }),
+        ]),
+      }),
+      undefined
+    );
+  });
+
+  it('does not render indexing coverage trends when coverage fields are unavailable', async () => {
+    mockGetAuditTrends.mockReturnValue([
+      { date: '2026-05-02', pass: 7, warn: 1, fail: 0 },
+    ]);
+
+    const html = renderToStaticMarkup(await TrendsPage({
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(html).not.toContain('Indexing Coverage');
+    expect(mockTrendsTable.mock.calls.some(([props]) => props.title === 'Indexing Coverage')).toBe(false);
   });
 
   it('renders the keyword section first for legacy tab=keywords links', async () => {

@@ -17,8 +17,8 @@ vi.mock('../google-auth', () => ({
 }));
 
 const mockSites = vi.hoisted(() => [
-  { id: 'site-a', domain: 'a.example.com', ga4PropertyId: '111', searchConsole: true },
-  { id: 'site-b', domain: 'b.example.com', ga4PropertyId: '222', searchConsole: true },
+  { id: 'site-a', domain: 'a.example.com', ga4PropertyId: '111', searchConsole: true, skipChecks: [] as string[] },
+  { id: 'site-b', domain: 'b.example.com', ga4PropertyId: '222', searchConsole: true, skipChecks: [] as string[] },
 ]);
 
 vi.mock('../ga4', () => ({
@@ -29,7 +29,12 @@ vi.mock('../sites', () => ({
   getSCUrl: (s: { domain: string }) => `sc-domain:${s.domain}`,
 }));
 
-const scQueryMock = vi.fn();
+const runSiteAuditMock = vi.hoisted(() => vi.fn());
+vi.mock('../audit', () => ({
+  runSiteAudit: runSiteAuditMock,
+}));
+
+const scQueryMock = vi.hoisted(() => vi.fn());
 vi.mock('@googleapis/searchconsole', () => ({
   searchconsole_v1: {
     Searchconsole: function () {
@@ -38,7 +43,7 @@ vi.mock('@googleapis/searchconsole', () => ({
   },
 }));
 
-const ga4ReportMock = vi.fn();
+const ga4ReportMock = vi.hoisted(() => vi.fn());
 vi.mock('@google-analytics/data', () => ({
   BetaAnalyticsDataClient: function () {
     return { runReport: ga4ReportMock };
@@ -65,7 +70,31 @@ function resetDb() {
 beforeEach(() => {
   resetDb();
   vi.clearAllMocks();
+  mockSites[0].skipChecks = [];
+  mockSites[1].skipChecks = [];
   fetchMock.mockResolvedValue({ ok: true, status: 200 });
+  runSiteAuditMock.mockImplementation(async (site: { id: string; domain: string }) => ({
+    siteId: site.id,
+    domain: site.domain,
+    timestamp: Date.now(),
+    robotsTxt: { status: 'pass', label: 'robots.txt', message: 'OK', hasSitemapDirective: true },
+    sitemap: { status: 'pass', label: 'Sitemap', message: 'OK', urlCount: 12 },
+    scSitemapFreshness: { status: 'pass', label: 'SC Sitemap', message: 'OK' },
+    indexingCoverage: { status: 'warn', label: 'Indexing', message: 'Coverage', sitemapUrls: 12, indexedPages: 9, coveragePct: 75 },
+    redirectChains: [],
+    metaTags: [],
+    ogImage: { status: 'pass', label: 'OG Image', message: 'OK' },
+    ttfb: { status: 'pass', label: 'TTFB', message: 'Fast', ms: site.id === 'site-a' ? 320 : 450 },
+    imageSeo: [],
+    internalLinks: [],
+    security: {
+      https: { status: 'pass', label: 'HTTPS', message: 'OK' },
+      hsts: { status: 'pass', label: 'HSTS', message: 'OK' },
+      favicon: { status: 'pass', label: 'Favicon', message: 'OK' },
+    },
+    score: { pass: 7, warn: 1, fail: 0, error: 0, total: 8 },
+    sampledPages: ['/'],
+  }));
 
   // SC returns a page-dimension query and a query-dimension query in order per site.
   scQueryMock.mockImplementation(async ({ requestBody }: { requestBody: { dimensions: string[] } }) => {
@@ -116,19 +145,64 @@ describe('runSnapshot dedupe', () => {
 });
 
 describe('runSnapshot TTFB', () => {
-  it('writes ttfb_ms to audit_snapshots for each site', async () => {
+  it('writes audit-derived indexing coverage and ttfb to audit_snapshots for each site', async () => {
     const result = await runSnapshot();
     expect(result.ttfb).toBe(2);
 
     const db = getDb();
     const rows = db.prepare(
-      'SELECT site_id, ttfb_ms FROM audit_snapshots WHERE date = ? ORDER BY site_id',
-    ).all(result.date) as Array<{ site_id: string; ttfb_ms: number }>;
+      'SELECT site_id, ttfb_ms, sitemap_urls, indexed_pages, coverage_pct, pass_count, warn_count, fail_count FROM audit_snapshots WHERE date = ? ORDER BY site_id',
+    ).all(result.date) as Array<{
+      site_id: string;
+      ttfb_ms: number;
+      sitemap_urls: number;
+      indexed_pages: number;
+      coverage_pct: number;
+      pass_count: number;
+      warn_count: number;
+      fail_count: number;
+    }>;
 
     expect(rows).toHaveLength(2);
     expect(rows[0].site_id).toBe('site-a');
-    expect(rows[0].ttfb_ms).toBeGreaterThanOrEqual(0);
+    expect(rows[0].ttfb_ms).toBe(320);
+    expect(rows[0].sitemap_urls).toBe(12);
+    expect(rows[0].indexed_pages).toBe(9);
+    expect(rows[0].coverage_pct).toBe(75);
+    expect(rows[0].pass_count).toBe(7);
+    expect(rows[0].warn_count).toBe(1);
+    expect(rows[0].fail_count).toBe(0);
     expect(rows[1].site_id).toBe('site-b');
+  });
+
+  it('stores null indexing coverage when the site skips indexing checks', async () => {
+    mockSites[0].skipChecks = ['indexing'];
+
+    const result = await runSnapshot();
+
+    const db = getDb();
+    const rows = db.prepare(
+      'SELECT site_id, sitemap_urls, indexed_pages, coverage_pct FROM audit_snapshots WHERE date = ? ORDER BY site_id',
+    ).all(result.date) as Array<{
+      site_id: string;
+      sitemap_urls: number | null;
+      indexed_pages: number | null;
+      coverage_pct: number | null;
+    }>;
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toEqual({
+      site_id: 'site-a',
+      sitemap_urls: null,
+      indexed_pages: null,
+      coverage_pct: null,
+    });
+    expect(rows[1]).toEqual({
+      site_id: 'site-b',
+      sitemap_urls: 12,
+      indexed_pages: 9,
+      coverage_pct: 75,
+    });
   });
 
   it('deduplicates audit_snapshots on re-run', async () => {
@@ -152,9 +226,9 @@ describe('runSnapshot TTFB', () => {
   });
 
   it('records TTFB fetch error and continues other sites', async () => {
-    fetchMock.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+    runSiteAuditMock.mockRejectedValueOnce(new Error('ECONNREFUSED'));
     const result = await runSnapshot();
-    expect(result.errors.some((e) => e.includes('TTFB site-a'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('Audit site-a'))).toBe(true);
     expect(result.ttfb).toBe(1); // site-b still succeeds
   });
 });

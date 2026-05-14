@@ -4,6 +4,8 @@ import { getAuth } from './google-auth';
 import { getDb } from './db';
 import { discoverPropertyIds } from './ga4';
 import { getSCUrl } from './sites';
+import { runSiteAudit } from './audit';
+import { normalizeSkipChecks } from './skip-checks';
 
 export interface SnapshotResult {
   date: string;
@@ -157,24 +159,41 @@ async function doSnapshot(): Promise<SnapshotResult> {
 
   const auditDelete = db.prepare('DELETE FROM audit_snapshots WHERE site_id = ? AND date = ?');
   const auditInsert = db.prepare(
-    'INSERT INTO audit_snapshots (site_id, date, pass_count, warn_count, fail_count, checks_json, ttfb_ms) VALUES (?, ?, 0, 0, 0, ?, ?)',
+    `INSERT INTO audit_snapshots (
+      site_id, date, pass_count, warn_count, fail_count, checks_json, ttfb_ms,
+      sitemap_urls, indexed_pages, coverage_pct
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   let ttfbCount = 0;
   for (const site of sites) {
     try {
-      const start = Date.now();
-      await fetch(`https://${site.domain}/`, {
-        signal: AbortSignal.timeout(10_000),
-        method: 'HEAD',
-      });
-      const ttfbMs = Date.now() - start;
+      const audit = await runSiteAudit(site);
+      const ttfbMs = audit.ttfb.ms;
+      const skipChecks = normalizeSkipChecks(site.skipChecks);
+      const shouldStoreIndexingCoverage = !skipChecks.includes('indexing');
+      const { sitemapUrls, indexedPages, coveragePct } = shouldStoreIndexingCoverage
+        ? audit.indexingCoverage
+        : { sitemapUrls: null, indexedPages: null, coveragePct: null };
       db.transaction(() => {
         auditDelete.run(site.id, today);
-        auditInsert.run(site.id, today, '{}', ttfbMs);
+        auditInsert.run(
+          site.id,
+          today,
+          audit.score.pass,
+          audit.score.warn,
+          audit.score.fail,
+          JSON.stringify(audit),
+          ttfbMs ?? null,
+          sitemapUrls ?? null,
+          indexedPages ?? null,
+          coveragePct ?? null,
+        );
       })();
-      ttfbCount++;
+      if (typeof ttfbMs === 'number') {
+        ttfbCount++;
+      }
     } catch (e) {
-      errors.push(`TTFB ${site.id}: ${String(e).slice(0, 80)}`);
+      errors.push(`Audit ${site.id}: ${String(e).slice(0, 80)}`);
     }
   }
 

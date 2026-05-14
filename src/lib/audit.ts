@@ -1490,6 +1490,10 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
   };
 }
 
+export async function runSiteAudit(site: Site): Promise<SiteAuditResult> {
+  return auditSite(site);
+}
+
 async function auditAllSites(): Promise<SiteAuditResult[]> {
   const sites = await getManagedSites();
   return Promise.all(sites.map(site => auditSite(site)));
@@ -1500,7 +1504,7 @@ async function auditAllSites(): Promise<SiteAuditResult[]> {
 import { withCache, CACHE_TTL_WEEK } from './db';
 
 export async function cachedAuditSite(site: Site): Promise<SiteAuditResult> {
-  const audit = (await withCache<SiteAuditResult>('audit', site.id, () => auditSite(site), CACHE_TTL_WEEK))!;
+  const audit = (await withCache<SiteAuditResult>('audit', site.id, () => runSiteAudit(site), CACHE_TTL_WEEK))!;
   return normalizeSiteAuditResult(audit);
 }
 
