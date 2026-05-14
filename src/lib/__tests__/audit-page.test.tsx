@@ -311,6 +311,7 @@ describe('Audit page', () => {
     expect(dataTableCall![0].rowKeys).toEqual(['site-a:https://a.test/posts/alpha']);
 
     expect(html).toContain('Pages losing traffic · 30-day comparison');
+    expect(html).toContain('1 recommendation');
     expect(html).toContain('1234ms');
     expect(html).toContain('RUM');
     expect(html).toContain('Checked moments ago');

@@ -83,11 +83,11 @@ function normalizePageKey(value: string): string {
       ? new URL(value)
       : new URL(value, 'https://placeholder.local');
     const pathname = url.pathname.replace(/\/+$/, '') || '/';
-    return pathname.toLowerCase();
+    return pathname;
   } catch {
     const trimmed = value.split('?')[0]?.split('#')[0] ?? value;
     const normalized = trimmed.replace(/\/+$/, '') || '/';
-    return normalized.toLowerCase();
+    return normalized;
   }
 }
 

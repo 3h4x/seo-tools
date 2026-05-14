@@ -163,6 +163,23 @@ describe('analyzeSiteGaps', () => {
     expect(gap?.description).toContain('54 Search Console clicks');
   });
 
+  it('does not merge distinct case-sensitive SC paths when scoring low-engagement traffic', () => {
+    const result = analyzeSiteGaps(makeAudit(), makeSite(), {
+      days: 30,
+      ga4TopPages: [
+        { path: '/pricing', views: 300, users: 180, engagementRate: 0.32, avgSessionDuration: 42 },
+      ],
+      scTopPages: [
+        { page: 'https://example.com/pricing', clicks: 30, impressions: 400, ctr: 0.075, position: 4.1 },
+        { page: 'https://example.com/Pricing', clicks: 30, impressions: 320, ctr: 0.09375, position: 3.4 },
+      ],
+    });
+
+    const gap = result.gaps.find((candidate) => candidate.id === 'low-engagement-despite-traffic');
+
+    expect(gap).toBeUndefined();
+  });
+
   it('maps low-engagement-despite-traffic into the content section', () => {
     const result = analyzeSiteGaps(makeAudit(), makeSite(), {
       days: 30,
