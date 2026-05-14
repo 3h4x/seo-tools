@@ -144,7 +144,7 @@ describe('discoverPropertyIds', () => {
     expect(result[0].ga4PropertyId).toBeUndefined();
   });
 
-  it('matches when property displayName contains the domain', async () => {
+  it('does not match unsupported descriptive display names that only contain the domain as a substring', async () => {
     vi.mocked(getManagedSites).mockResolvedValue([
       { id: 's1', name: 'Site1', domain: 'bonker.wtf', testPages: [] },
     ] as never);
@@ -153,10 +153,10 @@ describe('discoverPropertyIds', () => {
     ]);
 
     const result = await discoverPropertyIds();
-    expect(result[0].ga4PropertyId).toBe('55555');
+    expect(result[0].ga4PropertyId).toBeUndefined();
   });
 
-  it('matches when site domain contains the property displayName', async () => {
+  it('matches when the only difference is a safe www host variant', async () => {
     vi.mocked(getManagedSites).mockResolvedValue([
       { id: 's1', name: 'Site1', domain: 'www.bonker.wtf', testPages: [] },
     ] as never);

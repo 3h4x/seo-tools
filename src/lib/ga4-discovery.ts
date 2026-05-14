@@ -15,7 +15,35 @@ interface SiteLike {
 
 type PreparedGa4Property = DiscoveredGa4Property & {
   exactDomain?: string;
+  matchDomain?: string;
 };
+
+export function getSafeDomainVariants(domain: string): Set<string> {
+  const normalized = normalizeSiteDomain(domain);
+  if (!normalized) return new Set();
+
+  const variants = new Set([normalized]);
+  if (normalized.startsWith('www.')) {
+    variants.add(normalized.slice(4));
+  } else {
+    variants.add(`www.${normalized}`);
+  }
+
+  return variants;
+}
+
+function parseLeadingDomainDisplayName(displayName: string): string | undefined {
+  const match = displayName.match(/^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+)(.*)$/i);
+  if (!match) return undefined;
+
+  const domain = normalizeSiteDomain(match[1]);
+  if (!domain) return undefined;
+
+  const descriptor = match[2].trim().replace(/^[-_:|/()[\]\s]+/, '').trim().toLowerCase();
+  if (!descriptor) return domain;
+
+  return /^(?:ga4|web|analytics)\b/.test(descriptor) ? domain : undefined;
+}
 
 function prepareGa4Properties(properties: DiscoveredGa4Property[]): PreparedGa4Property[] {
   const prepared: PreparedGa4Property[] = [];
@@ -25,10 +53,12 @@ function prepareGa4Properties(properties: DiscoveredGa4Property[]): PreparedGa4P
     const propertyId = property.propertyId.trim();
     if (!displayName || !propertyId) continue;
 
+    const exactDomain = normalizeSiteDomain(displayName) ?? undefined;
     prepared.push({
       displayName,
       propertyId,
-      exactDomain: normalizeSiteDomain(displayName) ?? undefined,
+      exactDomain,
+      matchDomain: exactDomain ?? parseLeadingDomainDisplayName(displayName),
     });
   }
 
@@ -59,14 +89,11 @@ export function buildUniqueExactGa4Matches(properties: DiscoveredGa4Property[]):
 }
 
 export function findMatchingGa4Property(domain: string, properties: DiscoveredGa4Property[]): DiscoveredGa4Property | undefined {
-  const domainLower = domain.trim().toLowerCase();
-  if (!domainLower) return undefined;
+  const safeVariants = getSafeDomainVariants(domain);
+  if (safeVariants.size === 0) return undefined;
 
   const matches = prepareGa4Properties(properties).filter((property) => {
-    if (property.exactDomain === domainLower) return true;
-
-    const displayName = property.displayName.toLowerCase();
-    return displayName.includes(domainLower) || domainLower.includes(displayName);
+    return property.matchDomain ? safeVariants.has(property.matchDomain) : false;
   });
 
   if (matches.length !== 1) return undefined;
