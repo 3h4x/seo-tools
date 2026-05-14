@@ -40,8 +40,11 @@ describe('invalidateManagedSiteCache', () => {
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-queries-', 'sc-domain:example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-pages-', 'sc-domain:example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:example.com');
+    expect(clearCacheEntry).toHaveBeenCalledWith('psi-mobile', 'https://example.com');
+    expect(clearCacheEntry).toHaveBeenCalledWith('psi-desktop', 'https://example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-', 'properties/1234');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-events-', 'properties/1234');
   });
 
   it('clears Search Console and GA4 caches for previous and next identities when updating', () => {
@@ -63,10 +66,16 @@ describe('invalidateManagedSiteCache', () => {
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:new.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:old.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:new.example.com');
+    expect(clearCacheEntry).toHaveBeenCalledWith('psi-mobile', 'https://old.example.com');
+    expect(clearCacheEntry).toHaveBeenCalledWith('psi-mobile', 'https://new.example.com');
+    expect(clearCacheEntry).toHaveBeenCalledWith('psi-desktop', 'https://old.example.com');
+    expect(clearCacheEntry).toHaveBeenCalledWith('psi-desktop', 'https://new.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', 'properties/5678');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-', 'properties/5678');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-events-', 'properties/1234');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-events-', 'properties/5678');
     expect(clearSitemapSyncState).toHaveBeenCalledWith('site1');
   });
 
@@ -114,11 +123,14 @@ describe('invalidateManagedSiteCache', () => {
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearCacheEntry).toHaveBeenCalledWith('audit', 'site1');
     expect(clearCacheEntry).toHaveBeenCalledWith('sitemap-submissions', 'sc-domain:example.com');
+    expect(clearCacheEntry).toHaveBeenCalledWith('psi-mobile', 'https://example.com');
+    expect(clearCacheEntry).toHaveBeenCalledWith('psi-desktop', 'https://example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-', 'properties/1234');
-    expect(clearCacheEntry).toHaveBeenCalledTimes(2);
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-events-', 'properties/1234');
+    expect(clearCacheEntry).toHaveBeenCalledTimes(4);
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:example.com');
-    expect(clearCacheEntriesByPrefix).toHaveBeenCalledTimes(7);
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledTimes(8);
     expect(clearSitemapSyncState).not.toHaveBeenCalled();
   });
 
@@ -129,5 +141,6 @@ describe('invalidateManagedSiteCache', () => {
 
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-', 'properties/1234');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-events-', 'properties/1234');
   });
 });
