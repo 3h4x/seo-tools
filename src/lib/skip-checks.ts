@@ -28,7 +28,7 @@ export interface SkipCheckOption {
 
 export const SKIP_CHECK_OPTIONS: SkipCheckOption[] = [
   { id: 'robotsTxt', label: 'robots.txt' },
-  { id: 'sitemap', label: 'Sitemap' },
+  { id: 'sitemap', label: 'Sitemap', aliases: ['sitemap-coverage'] },
   { id: 'scSitemap', label: 'SC Sitemap' },
   { id: 'indexing', label: 'Indexing' },
   { id: 'redirectChain', label: 'Redirect Chain', aliases: ['redirect-chain'] },
