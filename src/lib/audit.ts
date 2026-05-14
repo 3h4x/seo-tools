@@ -41,6 +41,7 @@ interface SitemapResult extends CheckResult {
 interface MetaTagResult {
   page: string;
   ogImageUrl?: string;
+  noindex: boolean;
   canonicalValid: boolean | null;
   canonicalStatus: number | null;
   canonicalTarget: string | null;
@@ -604,11 +605,43 @@ export function makeCheck(label: string, value: string | null, minLen: number = 
 
 const GENERIC_TITLES = ['react app', 'vite app', 'document', 'untitled', 'home', 'index'];
 
+function hasNoindexDirective(value: string | null | undefined): boolean {
+  return value ? /\b(?:noindex|none)\b/i.test(value) : false;
+}
+
+function xRobotsTagHasApplicableNoindex(value: string | null | undefined): boolean {
+  if (!value) return false;
+
+  let activeScope: 'generic' | 'googlebot' | 'other' = 'generic';
+
+  for (const part of value.split(',')) {
+    const token = part.trim();
+    if (!token) continue;
+
+    const scopedDirective = token.match(/^([^:]+):\s*(.+)$/);
+    if (scopedDirective) {
+      const scope = scopedDirective[1].trim().toLowerCase();
+      activeScope = scope === 'googlebot' ? 'googlebot' : 'other';
+      if (activeScope === 'googlebot' && hasNoindexDirective(scopedDirective[2])) {
+        return true;
+      }
+      continue;
+    }
+
+    if ((activeScope === 'generic' || activeScope === 'googlebot') && hasNoindexDirective(token)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
   if (!res.ok) {
     const errResult: CheckResult = { status: 'error', label: '', message: res.error || `HTTP ${res.status}` };
     return {
       page,
+      noindex: false,
       canonicalValid: null,
       canonicalStatus: null,
       canonicalTarget: null,
@@ -634,6 +667,10 @@ export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
   const ogImage = extractMeta(html, 'og:image');
   const ogDesc = extractMeta(html, 'og:description');
   const twitterCard = extractMeta(html, 'twitter:card', 'name') || extractMeta(html, 'twitter:card');
+  const robotsDirectives = [extractMeta(html, 'robots', 'name'), extractMeta(html, 'googlebot', 'name')]
+    .filter((value): value is string => Boolean(value));
+  const xRobotsTag = res.headers.get('x-robots-tag');
+  const noindex = robotsDirectives.some(hasNoindexDirective) || xRobotsTagHasApplicableNoindex(xRobotsTag);
 
   const canonicalMatch = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']*?)["'][^>]*>/i);
   const canonical = canonicalMatch?.[1] ?? null;
@@ -651,6 +688,7 @@ export function parseMetaTags(res: FetchResult, page: string): MetaTagResult {
   return {
     page,
     ogImageUrl: ogImage || undefined,
+    noindex,
     canonicalValid: null,
     canonicalStatus: null,
     canonicalTarget: canonical,

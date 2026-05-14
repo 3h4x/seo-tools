@@ -33,6 +33,7 @@ export interface GapRecommendation {
   category: GapCategory;
   hint: string;
   affectedPages?: string[];
+  evidence?: string[];
 }
 
 interface SiteGapAnalysis {
@@ -92,6 +93,7 @@ function normalizePageKey(value: string): string {
 }
 
 interface AggregatedScPageSignal {
+  page: string;
   clicks: number;
   impressions: number;
   ctr: number;
@@ -109,6 +111,7 @@ function aggregateScTopPages(scTopPages: SCPageRow[]): Map<string, AggregatedScP
       const totalClicks = existing.clicks + page.clicks;
       const totalImpressions = existing.impressions + page.impressions;
       aggregated.set(key, {
+        page: existing.page,
         clicks: totalClicks,
         impressions: totalImpressions,
         ctr: totalImpressions > 0
@@ -120,6 +123,7 @@ function aggregateScTopPages(scTopPages: SCPageRow[]): Map<string, AggregatedScP
     }
 
     aggregated.set(key, {
+      page: page.page,
       clicks: page.clicks,
       impressions: page.impressions,
       ctr: page.ctr,
@@ -128,6 +132,45 @@ function aggregateScTopPages(scTopPages: SCPageRow[]): Map<string, AggregatedScP
   }
 
   return aggregated;
+}
+
+function toAbsolutePageUrl(page: string, domain: string): string {
+  if (page.startsWith('http://') || page.startsWith('https://')) return page;
+  const normalizedPage = page.startsWith('/') ? page : `/${page}`;
+  return `https://${domain}${normalizedPage}`;
+}
+
+interface NoindexConflict {
+  page: string;
+  clicks: number;
+  impressions: number;
+}
+
+function getNoindexButRankingPages(
+  audit: SiteAuditResult,
+  scTopPages: SCPageRow[],
+  domain: string,
+): NoindexConflict[] {
+  const scByPage = aggregateScTopPages(scTopPages);
+  const seen = new Set<string>();
+
+  return audit.metaTags.flatMap((meta) => {
+    if (!meta.noindex) return [];
+
+    const absoluteUrl = toAbsolutePageUrl(meta.page, domain);
+    const key = normalizePageKey(absoluteUrl);
+    if (seen.has(key)) return [];
+
+    const scPage = scByPage.get(key);
+    if (!scPage || scPage.clicks <= 0) return [];
+    seen.add(key);
+
+    return [{
+      page: scPage.page || absoluteUrl,
+      clicks: scPage.clicks,
+      impressions: scPage.impressions,
+    }];
+  });
 }
 
 function getLowEngagementPages(
@@ -246,6 +289,23 @@ export function analyzeSiteGaps(audit: SiteAuditResult, site: Site, signals: Sit
       severity: 'medium',
       category: 'structured-data',
       hint: 'Add <script type="application/ld+json"> blocks with schema.org types appropriate for your content: Product for items with prices, WebApplication for the homepage, BreadcrumbList for navigation hierarchy.',
+    });
+  }
+
+  const noindexButRankingPages = signals.scTopPages
+    ? getNoindexButRankingPages(audit, signals.scTopPages, site.domain)
+    : [];
+  if (noindexButRankingPages.length > 0) {
+    const worstConflict = noindexButRankingPages.reduce((best, page) => page.clicks > best.clicks ? page : best, noindexButRankingPages[0]);
+    gaps.push({
+      id: 'noindex-but-ranking',
+      title: 'Remove accidental noindex from ranking pages',
+      description: `${noindexButRankingPages.length} noindexed page${noindexButRankingPages.length === 1 ? '' : 's'} still receive Search Console clicks. The highest-risk conflict is ${worstConflict.page} with ${worstConflict.clicks} click${worstConflict.clicks === 1 ? '' : 's'}.`,
+      severity: 'high',
+      category: 'indexing',
+      hint: 'Confirm whether each page should be excluded from search. If the page should rank, remove the noindex directive from the rendered HTML or X-Robots-Tag response header and request re-indexing. If the noindex is intentional, redirect or de-optimize the page so it stops attracting search traffic first.',
+      affectedPages: noindexButRankingPages.map((page) => page.page),
+      evidence: noindexButRankingPages.map((page) => `${page.page} · ${page.clicks} click${page.clicks === 1 ? '' : 's'} · ${page.impressions} impressions`),
     });
   }
 
@@ -441,6 +501,7 @@ const GAP_SECTION_MAP: Record<string, string> = {
   'missing-canonical': 'metaTags',
   'broken-canonical-targets': 'metaTags',
   'missing-twitter-card': 'metaTags',
+  'noindex-but-ranking': 'indexing',
   'missing-og-image': 'ogImage',
   'missing-json-ld': 'metaTags',
   'missing-image-alt': 'imageSeo',

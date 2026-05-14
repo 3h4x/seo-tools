@@ -404,7 +404,7 @@ export default async function SiteDashboardPage({
             )}
           </CheckCard>
           <CheckCard check={audit.scSitemapFreshness} />
-          <CheckCard check={audit.indexingCoverage}>
+          <CheckCard check={audit.indexingCoverage} gaps={sections['indexing']}>
             {audit.indexingCoverage.sitemapUrls != null && audit.indexingCoverage.indexedPages != null && (
               <div className="mt-3">
                 <div className="flex items-center gap-4 text-xs text-neutral-400 mb-2">
@@ -664,11 +664,6 @@ export default async function SiteDashboardPage({
                 })}
               </div>
             </div>
-          )}
-          {sections['indexing'] && sections['indexing'].length > 0 && (
-            <AuditPanel title="Indexing">
-              {sections['indexing'].map(g => <Recommendation key={g.id} gap={g} />)}
-            </AuditPanel>
           )}
           {sections['other'] && sections['other'].length > 0 && (
             <AuditPanel title="Additional Recommendations">
