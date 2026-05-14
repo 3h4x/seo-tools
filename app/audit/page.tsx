@@ -43,7 +43,7 @@ function metaTagsSummary(audit: SiteAuditResult): { status: CheckStatus; label: 
   const pages = audit.metaTags;
   const issues = pages.filter(p => {
     const checks = [p.title, p.description, p.ogTitle, p.ogImage, p.ogDescription, p.twitterCard, p.canonical, p.jsonLd];
-    return checks.some(c => c.status === 'fail' || c.status === 'error');
+    return checks.some(c => c.status === 'fail' || c.status === 'error' || (c.label === 'JSON-LD' && c.status === 'warn'));
   });
   if (issues.length === 0) return { status: 'pass', label: `${pages.length}/${pages.length} pages pass` };
   if (issues.length === pages.length) return { status: 'fail', label: `${issues.length}/${pages.length} have issues` };

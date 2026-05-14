@@ -43,6 +43,8 @@ interface SiteGapAnalysis {
   counts: { high: number; medium: number; low: number };
 }
 
+const JSON_LD_INVALID_JSON_MESSAGE = 'Invalid JSON in structured data';
+
 export interface SiteGapSignals {
   ga4TopPages?: GA4TopPage[];
   scTopPages?: SCPageRow[];
@@ -90,6 +92,15 @@ function normalizePageKey(value: string): string {
     const normalized = trimmed.replace(/\/+$/, '') || '/';
     return normalized;
   }
+}
+
+function isMissingJsonLd(meta: SiteAuditResult['metaTags'][number]): boolean {
+  return meta.jsonLd.status === 'fail' && meta.jsonLd.message !== JSON_LD_INVALID_JSON_MESSAGE;
+}
+
+function isInvalidJsonLd(meta: SiteAuditResult['metaTags'][number]): boolean {
+  return meta.jsonLd.status === 'warn'
+    || (meta.jsonLd.status === 'fail' && meta.jsonLd.message === JSON_LD_INVALID_JSON_MESSAGE);
 }
 
 interface AggregatedScPageSignal {
@@ -280,7 +291,8 @@ export function analyzeSiteGaps(audit: SiteAuditResult, site: Site, signals: Sit
   }
 
   // MEDIUM: JSON-LD missing on all pages
-  const allJsonLdFail = audit.metaTags.every((m) => m.jsonLd.status === 'fail');
+  const allJsonLdFail = audit.metaTags.length > 0
+    && audit.metaTags.every(isMissingJsonLd);
   if (allJsonLdFail) {
     gaps.push({
       id: 'missing-json-ld',
@@ -289,6 +301,20 @@ export function analyzeSiteGaps(audit: SiteAuditResult, site: Site, signals: Sit
       severity: 'medium',
       category: 'structured-data',
       hint: 'Add <script type="application/ld+json"> blocks with schema.org types appropriate for your content: Product for items with prices, WebApplication for the homepage, BreadcrumbList for navigation hierarchy.',
+    });
+  }
+
+  const invalidJsonLdPages = audit.metaTags.filter(isInvalidJsonLd);
+  if (invalidJsonLdPages.length > 0) {
+    gaps.push({
+      id: 'missing-json-ld-fields',
+      title: 'Fix invalid or incomplete structured data',
+      description: 'Some pages include JSON-LD, but required schema fields are missing or the JSON is malformed. Search engines can ignore these blocks entirely, preventing rich results.',
+      severity: invalidJsonLdPages.some((meta) => meta.jsonLd.status === 'fail') ? 'high' : 'medium',
+      category: 'structured-data',
+      hint: 'Validate each JSON-LD block before deploy. Ensure Product includes name plus one of offers/brand/image, WebApplication includes name and applicationCategory, and BreadcrumbList includes itemListElement entries with item and position.',
+      affectedPages: invalidJsonLdPages.map((meta) => meta.page),
+      evidence: invalidJsonLdPages.map((meta) => `${meta.page} · ${meta.jsonLd.message}`),
     });
   }
 
@@ -504,6 +530,7 @@ const GAP_SECTION_MAP: Record<string, string> = {
   'noindex-but-ranking': 'indexing',
   'missing-og-image': 'ogImage',
   'missing-json-ld': 'metaTags',
+  'missing-json-ld-fields': 'metaTags',
   'missing-image-alt': 'imageSeo',
   'missing-lazy-loading': 'imageSeo',
   'low-internal-linking': 'internalLinks',
