@@ -3,18 +3,19 @@ import { getManagedSite, getSCUrl } from '@/lib/sites';
 import { cachedGetTopPagesWithQueries } from '@/lib/search-console';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam } from '@/lib/days';
+import { getRouteSiteParam, siteNotFoundError } from '@/lib/site-route';
 
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ site: string }> },
 ) {
   try {
-    const { site } = await context.params;
+    const site = await getRouteSiteParam(context);
     const days = parseAllowedIntegerParam(req.nextUrl.searchParams.get('days'), VALID_DAYS, 7);
 
     const siteConfig = await getManagedSite(site);
     if (!siteConfig) {
-      return NextResponse.json({ error: 'Site not found' }, { status: 404 });
+      return siteNotFoundError();
     }
 
     if (!siteConfig.searchConsole) {

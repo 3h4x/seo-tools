@@ -6,6 +6,10 @@ type SiteRouteErrorOptions = {
   errors?: unknown;
 };
 
+type SiteRouteParamsContext = {
+  params: Promise<{ site: string }>;
+};
+
 export function siteRouteOk() {
   return NextResponse.json({ ok: true });
 }
@@ -20,9 +24,17 @@ export function siteValidationError(errors: SiteFieldErrors) {
   return siteRouteError(error, { errors });
 }
 
+export function siteNotFoundError() {
+  return NextResponse.json({ error: 'Site not found' }, { status: 404 });
+}
+
 export function getRequiredQueryParam(searchParams: URLSearchParams, key: string): string | null {
   const value = searchParams.get(key)?.trim();
   return value ? value : null;
+}
+
+export async function getRouteSiteParam(context: SiteRouteParamsContext): Promise<string> {
+  return (await context.params).site;
 }
 
 export function parseOrderedSiteIds(value: unknown): string[] | null {
