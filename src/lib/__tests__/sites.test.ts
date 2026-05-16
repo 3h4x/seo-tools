@@ -120,6 +120,7 @@ describe('isReservedSiteId', () => {
   it('reserves top-level app route segments that would shadow site detail pages', () => {
     expect(isReservedSiteId('actions')).toBe(true);
     expect(isReservedSiteId('audit')).toBe(true);
+    expect(isReservedSiteId('opportunities')).toBe(true);
     expect(isReservedSiteId('performance')).toBe(true);
     expect(isReservedSiteId('site-1')).toBe(false);
   });
@@ -129,6 +130,7 @@ describe('createUniqueSiteId', () => {
   it('skips reserved top-level route segments when allocating ids', () => {
     expect(createUniqueSiteId('actions', [])).toBe('actions-2');
     expect(createUniqueSiteId('audit', ['audit-2'])).toBe('audit-3');
+    expect(createUniqueSiteId('opportunities', [])).toBe('opportunities-2');
   });
 
   it('skips existing ids when allocating ids', () => {
@@ -188,7 +190,7 @@ describe('validateAndNormalizeSiteInput', () => {
   });
 
   it('returns field error for reserved app route ids', () => {
-    const result = validateAndNormalizeSiteInput({ id: 'actions', name: 'S', domain: 'site.com' }, []);
+    const result = validateAndNormalizeSiteInput({ id: 'opportunities', name: 'S', domain: 'site.com' }, []);
     expect(result.errors?.id).toMatch(/reserved/i);
   });
 
@@ -243,6 +245,29 @@ describe('validateAndNormalizeSiteInput', () => {
       [],
     );
     expect(result.errors?.ga4PropertyId).toBeTruthy();
+  });
+
+  it('accepts an IndexNow key using provider-supported characters', () => {
+    const result = validateAndNormalizeSiteInput(
+      { id: 's', name: 'S', domain: 'site.com', indexNowKey: 'indexnow-key-123' },
+      [],
+    );
+    expect(result.errors).toBeNull();
+    expect(result.normalized?.site.indexNowKey).toBe('indexnow-key-123');
+  });
+
+  it('returns field error for IndexNow keys with dots or underscores', () => {
+    const dotted = validateAndNormalizeSiteInput(
+      { id: 's', name: 'S', domain: 'site.com', indexNowKey: 'index.now.key' },
+      [],
+    );
+    expect(dotted.errors?.indexNowKey).toMatch(/letters, numbers, or hyphens/i);
+
+    const underscored = validateAndNormalizeSiteInput(
+      { id: 's', name: 'S', domain: 'site.com', indexNowKey: 'index_now_key' },
+      [],
+    );
+    expect(underscored.errors?.indexNowKey).toMatch(/letters, numbers, or hyphens/i);
   });
 
   it('returns field error when Search Console identity is already used by another site', () => {

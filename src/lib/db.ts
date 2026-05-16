@@ -154,6 +154,7 @@ function initSchema(db: SqliteDatabase): void {
       domain          TEXT NOT NULL,
       sc_url          TEXT,
       ga4_property_id TEXT,
+      indexnow_key    TEXT,
       search_console  INTEGER NOT NULL DEFAULT 1,
       color           TEXT,
       test_pages      TEXT NOT NULL DEFAULT '[]',
@@ -177,6 +178,7 @@ function initSchema(db: SqliteDatabase): void {
   `);
   // Migrations for existing DBs
   try { db.exec(`ALTER TABLE sites ADD COLUMN color TEXT`); } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE sites ADD COLUMN indexnow_key TEXT`); } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN ttfb_ms INTEGER`); } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN sitemap_urls INTEGER`); } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN indexed_pages INTEGER`); } catch { /* already exists */ }
@@ -257,6 +259,15 @@ export function clearCacheEntriesByPrefix(cacheKeyPrefix: string, siteId: string
   try {
     const db = getDb();
     db.prepare('DELETE FROM api_cache WHERE cache_key LIKE ? AND site_id = ?').run(`${cacheKeyPrefix}%`, siteId);
+  } catch {
+    // silently fail
+  }
+}
+
+export function clearCacheEntriesBySiteIdPrefix(cacheKey: string, siteIdPrefix: string): void {
+  try {
+    const db = getDb();
+    db.prepare('DELETE FROM api_cache WHERE cache_key = ? AND site_id GLOB ?').run(cacheKey, `${siteIdPrefix}*`);
   } catch {
     // silently fail
   }
@@ -942,6 +953,7 @@ interface SiteRow {
   domain: string;
   sc_url: string | null;
   ga4_property_id: string | null;
+  indexnow_key: string | null;
   search_console: number;
   color: string | null;
   test_pages: string;
@@ -955,6 +967,7 @@ interface SiteRecord {
   domain: string;
   scUrl?: string;
   ga4PropertyId?: string;
+  indexNowKey?: string;
   searchConsole?: boolean;
   color?: string;
   testPages: string[];
@@ -980,6 +993,7 @@ function rowToSite(row: SiteRow): SiteRecord {
     domain: row.domain,
     scUrl: row.sc_url ?? undefined,
     ga4PropertyId: row.ga4_property_id ?? undefined,
+    indexNowKey: row.indexnow_key ?? undefined,
     searchConsole: row.search_console === 1,
     color: row.color ?? undefined,
     testPages: JSON.parse(row.test_pages) as string[],
@@ -1007,14 +1021,15 @@ export function dbUpsertSite(site: SiteRecord): void {
   }
   db.prepare(
     `INSERT OR REPLACE INTO sites
-       (id, name, domain, sc_url, ga4_property_id, search_console, color, test_pages, skip_checks, sort_order)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, name, domain, sc_url, ga4_property_id, indexnow_key, search_console, color, test_pages, skip_checks, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     site.id,
     site.name,
     site.domain,
     site.scUrl ?? null,
     site.ga4PropertyId ?? null,
+    site.indexNowKey ?? null,
     site.searchConsole !== false ? 1 : 0,
     site.color ?? null,
     JSON.stringify(site.testPages),
@@ -1058,6 +1073,7 @@ export function dbDeleteSite(id: string): void {
     for (const table of SITE_OWNED_TABLES) {
       db.prepare(`DELETE FROM ${table} WHERE site_id = ?`).run(siteId);
     }
+    db.prepare("DELETE FROM api_cache WHERE cache_key = 'url-inspection' AND site_id GLOB ?").run(`${siteId}:*`);
     db.prepare('DELETE FROM sites WHERE id = ?').run(siteId);
   });
   deleteSite(id);

@@ -36,6 +36,8 @@ function makeAudit(overrides: Partial<SiteAuditResult> = {}): SiteAuditResult {
     sitemap: { ...makeCheckResult('pass', 'Sitemap'), url: 'https://example.com/sitemap.xml', urlCount: 10, isIndex: false, hasLastmod: true, lastmodSample: new Date().toISOString().split('T')[0] },
     scSitemapFreshness: makeCheckResult('pass', 'SC Sitemap'),
     indexingCoverage: { ...makeCheckResult('pass', 'Indexing'), indexedPages: 10 },
+    indexNow: makeCheckResult('pass', 'IndexNow'),
+    urlInspection: [],
     redirectChains: [],
     metaTags: [makeMetaTagResult('/')],
     ogImage: makeCheckResult('pass', 'OG Image'),

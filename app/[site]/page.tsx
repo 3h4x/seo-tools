@@ -23,6 +23,7 @@ import { Icons } from '../components/icons';
 import TrendChart from '../components/trend-chart';
 import { MetricCard } from '../components/metric-card';
 import { CheckCard, statusDots, Recommendation, MetaChecksTable } from '../components/audit/check-card';
+import { IndexNowButton } from '../components/indexnow-button';
 import { gapsBySection } from '@/lib/gaps';
 import { ScTable } from '../components/sc-table';
 import { PageQueriesTable } from '../components/page-queries-table';
@@ -69,6 +70,13 @@ function engagementTone(engagementRate: number): string {
   if (engagementRate >= 0.6) return 'text-emerald-400';
   if (engagementRate >= 0.4) return 'text-amber-400';
   return 'text-red-400';
+}
+
+function urlInspectionTone(status: 'pass' | 'warn' | 'fail' | 'error'): string {
+  if (status === 'pass') return 'text-emerald-400';
+  if (status === 'warn') return 'text-amber-400';
+  if (status === 'fail') return 'text-red-400';
+  return 'text-neutral-500';
 }
 
 export default async function SiteDashboardPage({
@@ -429,6 +437,53 @@ export default async function SiteDashboardPage({
               </div>
             )}
           </CheckCard>
+          <CheckCard check={audit.indexNow}>
+            <IndexNowButton siteId={siteId} configured={Boolean(site.indexNowKey)} />
+          </CheckCard>
+          {audit.urlInspection.length > 0 && (
+            <AuditPanel title={`URL Inspection · ${audit.urlInspection.length} test pages`}>
+              <div className="space-y-3">
+                {audit.urlInspection.map((inspection) => (
+                  <div key={inspection.page} className="rounded border border-neutral-800 bg-neutral-950/40 p-3">
+                    <div className="flex flex-wrap items-center gap-3 text-xs">
+                      <div className={`size-1.5 rounded-full shrink-0 ${statusDots[inspection.status]}`} />
+                      <span className="text-neutral-300 font-mono">{inspection.page}</span>
+                      <span className={`font-mono ${urlInspectionTone(inspection.status)}`}>{inspection.message}</span>
+                      {inspection.verdict && <span className="text-neutral-500 font-mono">verdict: {inspection.verdict}</span>}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono text-neutral-500">
+                      <span>crawl: <span className="text-neutral-300">{inspection.lastCrawlTime ? new Date(inspection.lastCrawlTime).toLocaleString() : '—'}</span></span>
+                      <span>mobile: <span className="text-neutral-300">{inspection.mobileUsabilityVerdict ?? '—'}</span></span>
+                      <span>rich results: <span className="text-neutral-300">{inspection.richResultsVerdict ?? '—'}</span></span>
+                    </div>
+                    {(inspection.googleCanonical || inspection.userCanonical) && (
+                      <div className="mt-2 space-y-1 text-[11px] font-mono text-neutral-500 break-all">
+                        {inspection.userCanonical && <div>user canonical: <span className="text-neutral-300">{inspection.userCanonical}</span></div>}
+                        {inspection.googleCanonical && <div>google canonical: <span className="text-neutral-300">{inspection.googleCanonical}</span></div>}
+                      </div>
+                    )}
+                    {inspection.referringUrls && inspection.referringUrls.length > 0 && (
+                      <div className="mt-2 text-[11px] font-mono text-neutral-500">
+                        discovered via: <span className="text-neutral-300">{inspection.referringUrls.slice(0, 2).join(' • ')}</span>
+                      </div>
+                    )}
+                    {inspection.inspectionResultLink && (
+                      <div className="mt-2">
+                        <a
+                          href={inspection.inspectionResultLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] text-neutral-400 hover:text-neutral-200 transition-colors"
+                        >
+                          Open in Search Console →
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </AuditPanel>
+          )}
           <AuditPanel title={`Meta Tags · ${audit.metaTags.length} pages checked`}>
             <div className="space-y-5">
               {audit.metaTags.map((meta, i) => (

@@ -1,4 +1,10 @@
-import { clearCache, clearCacheEntry, clearCacheEntriesByPrefix, clearSitemapSyncState } from './db';
+import {
+  clearCache,
+  clearCacheEntry,
+  clearCacheEntriesByPrefix,
+  clearCacheEntriesBySiteIdPrefix,
+  clearSitemapSyncState,
+} from './db';
 import { getSCUrl, type Site } from './sites';
 import { normalizeGa4PropertyId } from './ga4-property';
 
@@ -57,6 +63,7 @@ export function invalidateManagedSiteCache(previousSite: Site | null, nextSite: 
 
   for (const siteId of auditSiteIds) {
     clearCacheEntry('audit', siteId);
+    clearCacheEntriesBySiteIdPrefix('url-inspection', `${siteId}:`);
   }
 
   if (shouldClearSitemapSyncState(previous, next)) {

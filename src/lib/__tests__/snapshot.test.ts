@@ -88,6 +88,7 @@ beforeEach(() => {
     sitemap: { status: 'pass', label: 'Sitemap', message: 'OK', urlCount: 12 },
     scSitemapFreshness: { status: 'pass', label: 'SC Sitemap', message: 'OK' },
     indexingCoverage: { status: 'warn', label: 'Indexing', message: 'Coverage', sitemapUrls: 12, indexedPages: 9, coveragePct: 75 },
+    urlInspection: [],
     redirectChains: [],
     metaTags: [],
     ogImage: { status: 'pass', label: 'OG Image', message: 'OK' },

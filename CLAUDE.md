@@ -15,6 +15,9 @@ A multi-project SEO manager that:
 - **Styling:** Tailwind v4
 - **APIs:** Google Search Console API, GA4 Data API, GA4 Admin API
 - **Auth:** Google service account (stored in SQLite via Config tab, with `GOOGLE_SA_KEY_JSON` env fallback)
+- **Package manager:** pnpm 11
+
+`package.json` does not currently declare a `packageManager` field; add a pnpm 11 pin when convenient so local/devcontainer installs use the same major version.
 
 ## Managed Sites
 

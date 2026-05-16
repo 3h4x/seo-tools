@@ -151,6 +151,7 @@ function makeAudit({
     sitemap: makeCheck(),
     scSitemapFreshness: makeCheck(),
     indexingCoverage: { ...makeCheck(), coveragePct: 95 },
+    urlInspection: [],
     redirectChains: [],
     metaTags: [],
     ogImage: makeCheck(),

@@ -335,15 +335,44 @@ export function analyzeSiteGaps(audit: SiteAuditResult, site: Site, signals: Sit
     });
   }
 
-  // LOW: no IndexNow
-  gaps.push({
-    id: 'missing-indexnow',
-    title: 'Add IndexNow ping on new content',
-    description: 'IndexNow instantly notifies search engines when new content is published, significantly reducing the time to index.',
-    severity: 'low',
-    category: 'indexing',
-    hint: 'POST to https://api.indexnow.org/indexnow with your site URL and a generated key whenever new content is created. Store the key at /' + site.domain + '/indexnow-key.txt.',
-  });
+  const notIndexedInspectionPages = (audit.urlInspection ?? []).filter((page) =>
+    page.status === 'fail'
+    && (page.coverageState || page.indexingState)
+    && `${page.coverageState ?? ''} ${page.indexingState ?? ''}`.toLowerCase().includes('not indexed'),
+  );
+  if (notIndexedInspectionPages.length > 0) {
+    gaps.push({
+      id: 'url-inspection-not-indexed',
+      title: 'Fix pages Google crawled but still did not index',
+      description: `${notIndexedInspectionPages.length} configured test page${notIndexedInspectionPages.length === 1 ? '' : 's'} returned a not-indexed state from Search Console URL Inspection.`,
+      severity: 'high',
+      category: 'indexing',
+      hint: 'Compare the inspected URL against the rendered canonical, robots directives, and page quality signals. When the page should rank, remove blocking directives, strengthen internal links, and request re-indexing after the underlying issue is fixed.',
+      affectedPages: notIndexedInspectionPages.map((page) => page.page),
+      evidence: notIndexedInspectionPages.map((page) => `${page.page} · ${page.coverageState ?? page.indexingState ?? page.message}`),
+    });
+  }
+
+  if (!site.indexNowKey) {
+    gaps.push({
+      id: 'missing-indexnow',
+      title: 'Add IndexNow ping on new content',
+      description: 'IndexNow instantly notifies search engines when new content is published, significantly reducing the time to index.',
+      severity: 'low',
+      category: 'indexing',
+      hint: 'Generate an IndexNow key, store it in Config, deploy it at https://' + site.domain + '/{key}.txt, then use the per-site Ping IndexNow action or CLI command.',
+    });
+  } else if (audit.indexNow.status !== 'pass') {
+    gaps.push({
+      id: 'broken-indexnow',
+      title: 'Fix the deployed IndexNow key file',
+      description: 'The site has an IndexNow key configured, but the key file is missing or does not match the configured value.',
+      severity: 'medium',
+      category: 'indexing',
+      hint: 'Ensure https://' + site.domain + '/' + site.indexNowKey + '.txt is publicly reachable and its response body contains only the configured key.',
+      evidence: [audit.indexNow.message],
+    });
+  }
 
   // MEDIUM/LOW: missing image alt text
   const pagesWithBadAlt = audit.imageSeo?.filter(i => i.status === 'fail' || i.status === 'warn') || [];
@@ -528,6 +557,7 @@ const GAP_SECTION_MAP: Record<string, string> = {
   'broken-canonical-targets': 'metaTags',
   'missing-twitter-card': 'metaTags',
   'noindex-but-ranking': 'indexing',
+  'url-inspection-not-indexed': 'indexing',
   'missing-og-image': 'ogImage',
   'missing-json-ld': 'metaTags',
   'missing-json-ld-fields': 'metaTags',
@@ -537,6 +567,7 @@ const GAP_SECTION_MAP: Record<string, string> = {
   'low-engagement-despite-traffic': 'content',
   'slow-ttfb': 'ttfb',
   'missing-indexnow': 'indexing',
+  'broken-indexnow': 'indexing',
   'missing-noindex-dead': 'indexing',
   'no-https': 'security',
   'missing-hsts': 'security',
