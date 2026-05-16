@@ -17,8 +17,6 @@ A multi-project SEO manager that:
 - **Auth:** Google service account (stored in SQLite via Config tab, with `GOOGLE_SA_KEY_JSON` env fallback)
 - **Package manager:** pnpm 11
 
-`package.json` does not currently declare a `packageManager` field; add a pnpm 11 pin when convenient so local/devcontainer installs use the same major version.
-
 ## Managed Sites
 
 Sites are stored in SQLite (`data/seo-tools.db`) and managed via the Config tab UI. No site names, domains, or GA4 property IDs are hardcoded in source code.

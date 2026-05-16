@@ -2,6 +2,7 @@
   "type": "module",
   "name": "seo-tools",
   "version": "1.0.0",
+  "packageManager": "pnpm@11.0.0",
   "scripts": {
     "dev": "docker compose -f docker-compose.dev.yml up --build",
     "build": "next build",
