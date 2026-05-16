@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockSitemapsList = vi.fn().mockResolvedValue({ data: { sitemap: [] } });
 const mockSearchAnalyticsQuery = vi.fn().mockResolvedValue({ data: { rows: [] } });
+const mockUrlInspectionInspect = vi.fn().mockResolvedValue({ data: { inspectionResult: { indexStatusResult: { verdict: 'PASS', coverageState: 'Submitted and indexed' } } } });
 
 // Mock all external dependencies so audit.ts can be imported without credentials
 vi.mock('../google-auth', () => ({ getAuth: () => ({}) }));
@@ -10,6 +11,7 @@ vi.mock('@googleapis/searchconsole', () => ({
     Searchconsole: class {
       sitemaps = { list: mockSitemapsList };
       searchanalytics = { query: mockSearchAnalyticsQuery };
+      urlInspection = { index: { inspect: mockUrlInspectionInspect } };
     },
   },
 }));
@@ -55,6 +57,7 @@ describe('auditSite — robots.txt', () => {
     vi.clearAllMocks();
     mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
     mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [] } });
+    mockUrlInspectionInspect.mockResolvedValue({ data: { inspectionResult: { indexStatusResult: { verdict: 'PASS', coverageState: 'Submitted and indexed' } } } });
   });
 
   it('reports pass when robots.txt has Sitemap directive', async () => {
@@ -124,6 +127,7 @@ describe('auditSite — sitemap', () => {
     vi.clearAllMocks();
     mockSitemapsList.mockResolvedValue({ data: { sitemap: [] } });
     mockSearchAnalyticsQuery.mockResolvedValue({ data: { rows: [] } });
+    mockUrlInspectionInspect.mockResolvedValue({ data: { inspectionResult: { indexStatusResult: { verdict: 'PASS', coverageState: 'Submitted and indexed' } } } });
   });
 
   it('reports pass for valid sitemap with URLs and recent lastmod', async () => {

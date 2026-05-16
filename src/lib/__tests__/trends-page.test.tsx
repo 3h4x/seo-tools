@@ -246,12 +246,14 @@ function makeAuditResult() {
       lastmodSample: '2026-05-02',
     },
     scSitemapFreshness: makeCheckResult({ label: 'SC Sitemap' }),
+    indexNow: makeCheckResult({ label: 'IndexNow' }),
     indexingCoverage: {
       ...makeCheckResult({ label: 'Indexing' }),
       sitemapUrls: 10,
       indexedPages: 8,
       coveragePct: 80,
     },
+    urlInspection: [],
     redirectChains: [],
     metaTags: [],
     ogImage: {

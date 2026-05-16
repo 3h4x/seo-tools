@@ -4,10 +4,17 @@ vi.mock('../db', () => ({
   clearCache: vi.fn(),
   clearCacheEntry: vi.fn(),
   clearCacheEntriesByPrefix: vi.fn(),
+  clearCacheEntriesBySiteIdPrefix: vi.fn(),
   clearSitemapSyncState: vi.fn(),
 }));
 
-import { clearCache, clearCacheEntry, clearCacheEntriesByPrefix, clearSitemapSyncState } from '../db';
+import {
+  clearCache,
+  clearCacheEntry,
+  clearCacheEntriesByPrefix,
+  clearCacheEntriesBySiteIdPrefix,
+  clearSitemapSyncState,
+} from '../db';
 import { invalidateManagedSiteCache } from '../site-cache';
 import type { Site } from '../sites';
 
@@ -33,6 +40,7 @@ describe('invalidateManagedSiteCache', () => {
 
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearCacheEntry).toHaveBeenCalledWith('audit', 'site1');
+    expect(clearCacheEntriesBySiteIdPrefix).toHaveBeenCalledWith('url-inspection', 'site1:');
     expect(clearSitemapSyncState).toHaveBeenCalledWith('site1');
     expect(clearCacheEntry).toHaveBeenCalledWith('sitemap-submissions', 'sc-domain:example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:example.com');
@@ -62,6 +70,7 @@ describe('invalidateManagedSiteCache', () => {
     invalidateManagedSiteCache(previous, next);
 
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
+    expect(clearCacheEntriesBySiteIdPrefix).toHaveBeenCalledWith('url-inspection', 'site1:');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:old.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-comparison-', 'sc-domain:new.example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:old.example.com');
@@ -92,6 +101,7 @@ describe('invalidateManagedSiteCache', () => {
     invalidateManagedSiteCache(previous, next);
 
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
+    expect(clearCacheEntriesBySiteIdPrefix).toHaveBeenCalledWith('url-inspection', 'site1:');
     expect(clearSitemapSyncState).toHaveBeenCalledWith('site1');
   });
 
@@ -102,6 +112,7 @@ describe('invalidateManagedSiteCache', () => {
     invalidateManagedSiteCache(previous, next);
 
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
+    expect(clearCacheEntriesBySiteIdPrefix).toHaveBeenCalledWith('url-inspection', 'site1:');
     expect(clearSitemapSyncState).not.toHaveBeenCalled();
   });
 
@@ -111,6 +122,7 @@ describe('invalidateManagedSiteCache', () => {
     invalidateManagedSiteCache(previous, null);
 
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
+    expect(clearCacheEntriesBySiteIdPrefix).toHaveBeenCalledWith('url-inspection', 'site1:');
     expect(clearSitemapSyncState).toHaveBeenCalledWith('site1');
   });
 
@@ -122,6 +134,7 @@ describe('invalidateManagedSiteCache', () => {
 
     expect(clearCache).toHaveBeenCalledWith('cross-links-matrix');
     expect(clearCacheEntry).toHaveBeenCalledWith('audit', 'site1');
+    expect(clearCacheEntriesBySiteIdPrefix).toHaveBeenCalledWith('url-inspection', 'site1:');
     expect(clearCacheEntry).toHaveBeenCalledWith('sitemap-submissions', 'sc-domain:example.com');
     expect(clearCacheEntry).toHaveBeenCalledWith('psi-mobile', 'https://example.com');
     expect(clearCacheEntry).toHaveBeenCalledWith('psi-desktop', 'https://example.com');
@@ -129,6 +142,7 @@ describe('invalidateManagedSiteCache', () => {
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-events-', 'properties/1234');
     expect(clearCacheEntry).toHaveBeenCalledTimes(4);
+    expect(clearCacheEntriesBySiteIdPrefix).toHaveBeenCalledTimes(1);
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-page-queries-', 'sc-domain:example.com');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledTimes(8);
     expect(clearSitemapSyncState).not.toHaveBeenCalled();

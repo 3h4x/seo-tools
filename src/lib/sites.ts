@@ -5,6 +5,7 @@ export interface Site {
   /** Override the Search Console site URL. Use for sites that can't use sc-domain: (e.g. GitHub Pages). */
   scUrl?: string;
   ga4PropertyId?: string;
+  indexNowKey?: string;
   searchConsole?: boolean;
   color?: string;
   testPages: string[];
@@ -18,6 +19,7 @@ export interface SiteFieldErrors {
   domain?: string;
   scUrl?: string;
   ga4PropertyId?: string;
+  indexNowKey?: string;
   testPages?: string;
 }
 
@@ -79,6 +81,7 @@ import { normalizeSiteDomain, isReservedSiteId, isValidSiteId, getSiteScUrlOverr
 import { normalizeSkipChecks } from './skip-checks';
 
 const GA4_PROPERTY_RE = /^properties\/\d+$/;
+const INDEXNOW_KEY_RE = /^[A-Za-z0-9-]{8,128}$/;
 
 export function validateAndNormalizeSiteInput(
   raw: unknown,
@@ -131,6 +134,11 @@ export function validateAndNormalizeSiteInput(
     errors.ga4PropertyId = 'ga4PropertyId must be in the format properties/NNNNNN';
   }
 
+  const rawIndexNowKey = typeof body.indexNowKey === 'string' ? body.indexNowKey.trim() : '';
+  if (rawIndexNowKey && !INDEXNOW_KEY_RE.test(rawIndexNowKey)) {
+    errors.indexNowKey = 'indexNowKey must be 8-128 chars and use only letters, numbers, or hyphens';
+  }
+
   const rawTestPages = Array.isArray(body.testPages) ? body.testPages : [];
   const badPage = rawTestPages.find(p => typeof p !== 'string' || !String(p).trim().startsWith('/'));
   if (badPage !== undefined) {
@@ -163,6 +171,7 @@ export function validateAndNormalizeSiteInput(
   };
   if (scUrl) site.scUrl = scUrl; else delete site.scUrl;
   if (rawGa4) site.ga4PropertyId = rawGa4; else delete site.ga4PropertyId;
+  if (rawIndexNowKey) site.indexNowKey = rawIndexNowKey; else delete site.indexNowKey;
   if (Array.isArray(body.skipChecks)) {
     site.skipChecks = normalizeSkipChecks(body.skipChecks.filter((value): value is string => typeof value === 'string'));
   } else {

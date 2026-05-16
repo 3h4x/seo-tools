@@ -186,7 +186,7 @@ describe('POST /api/sites', () => {
   });
 
   it('returns 400 when id is reserved by a top-level app route', async () => {
-    const res = await POST(postReq({ id: 'actions', name: 'Site', domain: 'site.com' }));
+    const res = await POST(postReq({ id: 'opportunities', name: 'Site', domain: 'site.com' }));
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.ok).toBe(false);
@@ -308,6 +308,38 @@ describe('POST /api/sites', () => {
     const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', ga4PropertyId: 'properties/123456' }));
     expect(res.status).toBe(200);
     expect(dbUpsertSite).toHaveBeenCalled();
+  });
+
+  it('accepts a valid IndexNow key', async () => {
+    const res = await POST(postReq({
+      id: 'site1',
+      name: 'Site 1',
+      domain: 'site1.com',
+      indexNowKey: 'indexnow-key-123',
+    }));
+    expect(res.status).toBe(200);
+    expect(dbUpsertSite).toHaveBeenCalledWith({
+      id: 'site1',
+      name: 'Site 1',
+      domain: 'site1.com',
+      indexNowKey: 'indexnow-key-123',
+      testPages: [],
+    });
+  });
+
+  it('returns 400 for IndexNow keys with unsupported characters', async () => {
+    const res = await POST(postReq({
+      id: 'site1',
+      name: 'Site 1',
+      domain: 'site1.com',
+      indexNowKey: 'index_now.key',
+    }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(data.errors.indexNowKey).toMatch(/letters, numbers, or hyphens/i);
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
   it('normalizes skipChecks to stable ids before upsert', async () => {

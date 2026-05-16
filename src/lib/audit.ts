@@ -2,6 +2,7 @@ import { getManagedSites, getSCUrl, type Site } from './sites';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { getAuth } from './google-auth';
 import { normalizeSkipChecks, type SkipCheckId } from './skip-checks';
+import { checkIndexNowKey } from './indexnow.js';
 
 export type CheckStatus = 'pass' | 'warn' | 'fail' | 'error';
 
@@ -127,6 +128,21 @@ interface IndexingCoverageResult extends CheckResult {
   coveragePct?: number;
 }
 
+interface UrlInspectionPageResult extends CheckResult {
+  page: string;
+  inspectionUrl: string;
+  verdict?: string;
+  coverageState?: string;
+  indexingState?: string;
+  lastCrawlTime?: string;
+  mobileUsabilityVerdict?: string;
+  richResultsVerdict?: string;
+  referringUrls?: string[];
+  googleCanonical?: string;
+  userCanonical?: string;
+  inspectionResultLink?: string;
+}
+
 function applySkipToCheck<T extends CheckResult>(check: T, skip: Set<SkipCheckId>, checkId: SkipCheckId): T {
   if (!skip.has(checkId)) return check;
   return {
@@ -144,6 +160,8 @@ export interface SiteAuditResult {
   sitemap: SitemapResult;
   scSitemapFreshness: CheckResult;
   indexingCoverage: IndexingCoverageResult;
+  indexNow: CheckResult;
+  urlInspection: UrlInspectionPageResult[];
   redirectChains: RedirectChainResult[];
   metaTags: MetaTagResult[];
   ogImage: OgImageResult;
@@ -158,6 +176,7 @@ export interface SiteAuditResult {
 export function normalizeSiteAuditResult(audit: SiteAuditResult): SiteAuditResult {
   return {
     ...audit,
+    urlInspection: audit.urlInspection ?? [],
     redirectChains: audit.redirectChains ?? [],
     internalLinks: (audit.internalLinks ?? []).map((link) => ({
       ...link,
@@ -173,6 +192,7 @@ const SITEMAP_SAMPLE_LIMIT = 5;
 const SC_SAMPLE_LIMIT = 5;
 const INTERNAL_LINK_HEALTH_LIMIT = 20;
 const INTERNAL_LINK_HEALTH_CONCURRENCY = 5;
+const CACHE_TTL_DAY = 24 * 60 * 60 * 1000;
 
 export function extractLocsFromSitemap(xml: string): string[] {
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/gi)].map(m => m[1].trim());
@@ -189,6 +209,112 @@ function summarizeStatuses(statuses: CheckStatus[]): CheckStatus {
   if (statuses.includes('warn')) return 'warn';
   if (statuses.includes('error')) return 'error';
   return 'pass';
+}
+
+function getSc() {
+  return new searchconsole_v1.Searchconsole({ auth: getAuth() });
+}
+
+function toAbsoluteAuditUrl(domain: string, page: string): string {
+  return `https://${domain}${page.startsWith('/') ? page : `/${page}`}`;
+}
+
+function describeUrlInspectionStatus(
+  result: searchconsole_v1.Schema$UrlInspectionResult | undefined,
+): Pick<UrlInspectionPageResult, 'status' | 'message' | 'verdict' | 'coverageState' | 'indexingState' | 'lastCrawlTime' | 'mobileUsabilityVerdict' | 'richResultsVerdict' | 'referringUrls' | 'googleCanonical' | 'userCanonical' | 'inspectionResultLink'> {
+  const indexStatus = result?.indexStatusResult;
+  const coverageState = indexStatus?.coverageState ?? undefined;
+  const indexingState = indexStatus?.indexingState ?? undefined;
+  const verdict = indexStatus?.verdict ?? undefined;
+  const mobileUsabilityVerdict = result?.mobileUsabilityResult?.verdict ?? undefined;
+  const richResultsVerdict = result?.richResultsResult?.verdict ?? undefined;
+  const lastCrawlTime = indexStatus?.lastCrawlTime ?? undefined;
+  const normalizedSummary = `${coverageState ?? ''} ${indexingState ?? ''} ${verdict ?? ''}`.toLowerCase();
+
+  let status: CheckStatus = 'warn';
+  if (
+    normalizedSummary.includes('not indexed')
+    || normalizedSummary.includes('blocked')
+    || normalizedSummary.includes('noindex')
+  ) {
+    status = 'fail';
+  } else if (normalizedSummary.includes('indexed') || verdict === 'PASS') {
+    status = 'pass';
+  } else if (verdict === 'FAIL') {
+    status = 'fail';
+  }
+
+  const primaryMessage = coverageState ?? indexingState ?? verdict ?? 'Inspection data unavailable';
+  const secondaryMessage = indexingState && indexingState !== coverageState ? ` · ${indexingState}` : '';
+
+  return {
+    status,
+    message: `${primaryMessage}${secondaryMessage}`,
+    verdict,
+    coverageState,
+    indexingState,
+    lastCrawlTime,
+    mobileUsabilityVerdict,
+    richResultsVerdict,
+    referringUrls: indexStatus?.referringUrls ?? undefined,
+    googleCanonical: indexStatus?.googleCanonical ?? undefined,
+    userCanonical: indexStatus?.userCanonical ?? undefined,
+    inspectionResultLink: result?.inspectionResultLink ?? undefined,
+  };
+}
+
+async function checkUrlInspection(scUrl: string, pageUrl: string, page: string): Promise<UrlInspectionPageResult> {
+  try {
+    const response = await getSc().urlInspection.index.inspect({
+      requestBody: {
+        inspectionUrl: pageUrl,
+        siteUrl: scUrl,
+        languageCode: 'en-US',
+      },
+    });
+    const described = describeUrlInspectionStatus(response.data.inspectionResult);
+    return {
+      page,
+      inspectionUrl: pageUrl,
+      label: 'URL Inspection',
+      ...described,
+    };
+  } catch (error) {
+    console.error(`Error inspecting URL ${pageUrl}:`, error);
+    return {
+      page,
+      inspectionUrl: pageUrl,
+      status: 'error',
+      label: 'URL Inspection',
+      message: 'Search Console inspection unavailable',
+    };
+  }
+}
+
+async function checkUrlInspectionForSite(site: Site): Promise<UrlInspectionPageResult[]> {
+  if (!site.searchConsole || site.testPages.length === 0) return [];
+
+  const scUrl = getSCUrl(site);
+  return Promise.all(
+    site.testPages.map(async (page) => {
+      const pageUrl = toAbsoluteAuditUrl(site.domain, page);
+      const cacheId = `${site.id}:${page}`;
+      const cached = await withCache<UrlInspectionPageResult>(
+        'url-inspection',
+        cacheId,
+        () => checkUrlInspection(scUrl, pageUrl, page),
+        CACHE_TTL_DAY,
+      );
+
+      return cached ?? {
+        page,
+        inspectionUrl: pageUrl,
+        status: 'error',
+        label: 'URL Inspection',
+        message: 'Search Console inspection unavailable',
+      };
+    }),
+  );
 }
 
 async function mapWithConcurrency<T, R>(
@@ -456,10 +582,6 @@ export function sampleAuditPages(
   }
 
   return result;
-}
-
-function getSc() {
-  return new searchconsole_v1.Searchconsole({ auth: getAuth() });
 }
 
 const FETCH_TIMEOUT = 30_000;
@@ -1475,12 +1597,14 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
   const shouldVerifyBrokenLinks = !skip.has('internalLinks') && !skip.has('brokenLinks');
   const robotsTxt = await checkRobotsTxt(site.domain);
 
-  const [rawSitemap, ttfb, security, scSitemapFreshness, scTopPageUrls] = await Promise.all([
+  const [rawSitemap, ttfb, security, scSitemapFreshness, scTopPageUrls, indexNow, urlInspection] = await Promise.all([
     checkSitemap(site.domain, robotsTxt.sitemapUrl),
     checkTtfb(site.domain),
     checkSecurity(site.domain),
     checkScSitemapFreshness(site),
     fetchScTopPageUrls(site),
+    checkIndexNowKey(site) as Promise<CheckResult>,
+    checkUrlInspectionForSite(site),
   ]);
   const sitemap = await enrichSitemapResult(rawSitemap);
 
@@ -1543,6 +1667,8 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
   const skippedSitemap = applySkipToCheck(sitemap, skip, 'sitemap');
   const skippedScSitemapFreshness = applySkipToCheck(scSitemapFreshness, skip, 'scSitemap');
   const skippedIndexingCoverage = applySkipToCheck(indexingCoverage, skip, 'indexing');
+  const skippedIndexNow = applySkipToCheck(indexNow, skip, 'indexNow');
+  const skippedUrlInspection = urlInspection.map((result) => applySkipToCheck(result, skip, 'urlInspection'));
   const skippedRedirectChains = redirectChains.map(chain => applySkipToCheck(chain, skip, 'redirectChain'));
   const skippedOgImage = applySkipToCheck(ogImage, skip, 'ogImage');
   const skippedTtfb = applySkipToCheck(ttfb, skip, 'ttfb');
@@ -1592,6 +1718,8 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
     skippedSitemap,
     skippedScSitemapFreshness,
     skippedIndexingCoverage,
+    skippedIndexNow,
+    ...skippedUrlInspection,
     ...skippedRedirectChains,
     skippedOgImage,
     skippedTtfb,
@@ -1617,6 +1745,8 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
     sitemap: skippedSitemap,
     scSitemapFreshness: skippedScSitemapFreshness,
     indexingCoverage: skippedIndexingCoverage,
+    indexNow: skippedIndexNow,
+    urlInspection: skippedUrlInspection,
     redirectChains: skippedRedirectChains,
     metaTags: skippedMetaTags,
     ogImage: skippedOgImage,

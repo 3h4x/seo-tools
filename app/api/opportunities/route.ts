@@ -1,0 +1,30 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getManagedSites, getSCUrl } from '@/lib/sites';
+import {
+  cachedGetKeywordOpportunities,
+  OPPORTUNITIES_DEFAULT_DAYS,
+  OPPORTUNITIES_VALID_DAYS,
+  type SiteOpportunities,
+} from '@/lib/opportunities';
+import { parseAllowedIntegerParam } from '@/lib/days';
+
+export async function GET(req: NextRequest) {
+  const params = req.nextUrl.searchParams;
+  const days = parseAllowedIntegerParam(params.get('days'), OPPORTUNITIES_VALID_DAYS, OPPORTUNITIES_DEFAULT_DAYS);
+
+  const sites = await getManagedSites();
+  const scSites = sites.filter(s => s.searchConsole !== false);
+
+  const results: SiteOpportunities[] = await Promise.all(
+    scSites.map(async (site) => {
+      const opportunities = await cachedGetKeywordOpportunities(getSCUrl(site), site.id, days);
+      return {
+        siteId: site.id,
+        domain: site.domain,
+        opportunities: opportunities ?? [],
+      };
+    }),
+  );
+
+  return NextResponse.json(results);
+}

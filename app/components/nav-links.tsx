@@ -7,6 +7,7 @@ const links = [
   { href: '/', label: 'Overview' },
   { href: '/actions', label: 'Actions' },
   { href: '/audit', label: 'Audit' },
+  { href: '/opportunities', label: 'Opportunities' },
   { href: '/trends', label: 'Trends' },
   { href: '/performance', label: 'Performance' },
   { href: '/config', label: 'Config' },

@@ -38,6 +38,7 @@ import {
   clearCache,
   clearCacheEntry,
   clearCacheEntriesByPrefix,
+  clearCacheEntriesBySiteIdPrefix,
   clearSitemapSyncState,
   dbDeleteSite,
   dbUpsertSite,
@@ -197,6 +198,29 @@ describe('targeted cache clearing', () => {
     expect(getCached('sc-data-7', 'sc-domain:other.com')).toEqual({ clicks: 2 });
   });
 
+  it('removes cache entries by exact key and site id prefix', () => {
+    setCache('url-inspection', 'site-a:/', { page: '/' });
+    setCache('url-inspection', 'site-a:/about', { page: '/about' });
+    setCache('url-inspection', 'site-ab:/', { page: '/' });
+    setCache('url-inspection', 'site_1:/', { page: '/' });
+    setCache('url-inspection', 'siteA1:/', { page: '/' });
+    setCache('audit', 'site-a', { score: 90 });
+
+    clearCacheEntriesBySiteIdPrefix('url-inspection', 'site-a:');
+
+    expect(getCached('url-inspection', 'site-a:/')).toBeNull();
+    expect(getCached('url-inspection', 'site-a:/about')).toBeNull();
+    expect(getCached('url-inspection', 'site-ab:/')).toEqual({ page: '/' });
+    expect(getCached('url-inspection', 'site_1:/')).toEqual({ page: '/' });
+    expect(getCached('url-inspection', 'siteA1:/')).toEqual({ page: '/' });
+    expect(getCached('audit', 'site-a')).toEqual({ score: 90 });
+
+    clearCacheEntriesBySiteIdPrefix('url-inspection', 'site_1:');
+
+    expect(getCached('url-inspection', 'site_1:/')).toBeNull();
+    expect(getCached('url-inspection', 'siteA1:/')).toEqual({ page: '/' });
+  });
+
   it('removes only the requested sitemap sync state row', () => {
     const db = getDb();
     const insertState = db.prepare(`
@@ -228,6 +252,8 @@ describe('dbDeleteSite', () => {
     db.prepare('INSERT INTO audit_snapshots (site_id, date, pass_count, warn_count, fail_count, checks_json) VALUES (?, ?, ?, ?, ?, ?)').run('site-a', '2026-05-10', 1, 2, 3, '{}');
     db.prepare('INSERT INTO keyword_history (site_id, date, query, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)').run('site-a', '2026-05-10', 'seo', 1, 2, 0.5, 3);
     db.prepare('INSERT INTO api_cache (cache_key, site_id, data_json, fetched_at) VALUES (?, ?, ?, ?)').run('audit', 'site-a', '{}', Date.now());
+    db.prepare('INSERT INTO api_cache (cache_key, site_id, data_json, fetched_at) VALUES (?, ?, ?, ?)').run('url-inspection', 'site-a:/', '{}', Date.now());
+    db.prepare('INSERT INTO api_cache (cache_key, site_id, data_json, fetched_at) VALUES (?, ?, ?, ?)').run('url-inspection', 'site-ab:/', '{}', Date.now());
     db.prepare('INSERT INTO daily_genesis (site_id, source, genesis_date) VALUES (?, ?, ?)').run('site-a', 'sc', '2026-05-01');
     db.prepare('INSERT INTO sitemap_state (site_id, sitemap_url, content_hash, url_count, latest_lastmod, last_submitted_at, last_checked_at, submit_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run('site-a', 'https://a.example/sitemap.xml', 'hash', 1, null, null, 0, 0);
     db.prepare('INSERT INTO api_cache (cache_key, site_id, data_json, fetched_at) VALUES (?, ?, ?, ?)').run('audit', 'site-b', '{}', Date.now());
@@ -252,8 +278,10 @@ describe('dbDeleteSite', () => {
     }
 
     expect(db.prepare('SELECT 1 AS present FROM sites WHERE id = ?').get('site-a')).toBeUndefined();
+    expect(db.prepare("SELECT 1 AS present FROM api_cache WHERE cache_key = 'url-inspection' AND site_id = ?").get('site-a:/')).toBeUndefined();
     expect(db.prepare('SELECT 1 AS present FROM sites WHERE id = ?').get('site-b')).toEqual({ present: 1 });
     expect(db.prepare('SELECT 1 AS present FROM api_cache WHERE site_id = ?').get('site-b')).toEqual({ present: 1 });
+    expect(db.prepare("SELECT 1 AS present FROM api_cache WHERE cache_key = 'url-inspection' AND site_id = ?").get('site-ab:/')).toEqual({ present: 1 });
   });
 });
 

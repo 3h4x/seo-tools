@@ -13,6 +13,7 @@ interface Site {
   domain: string;
   scUrl?: string;
   ga4PropertyId?: string;
+  indexNowKey?: string;
   searchConsole?: boolean;
   color?: string;
   testPages: string[];
@@ -42,6 +43,7 @@ const EMPTY_SITE: Omit<Site, 'id'> = {
   domain: '',
   scUrl: '',
   ga4PropertyId: '',
+  indexNowKey: '',
   searchConsole: true,
   color: undefined,
   testPages: ['/'],
@@ -130,7 +132,12 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   }
 
   function startEdit(site: Site) {
-    setForm({ ...site, scUrl: site.scUrl ?? '', ga4PropertyId: site.ga4PropertyId ?? '' });
+    setForm({
+      ...site,
+      scUrl: site.scUrl ?? '',
+      ga4PropertyId: site.ga4PropertyId ?? '',
+      indexNowKey: site.indexNowKey ?? '',
+    });
     setEditMode(site.id);
     setError('');
   }
@@ -223,6 +230,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       domain: normalizedDomain,
       scUrl: getSiteScUrlOverride(form.domain, form.scUrl),
       ga4PropertyId: form.ga4PropertyId?.trim() || undefined,
+      indexNowKey: form.indexNowKey?.trim() || undefined,
       testPages: form.testPages.map(page => page.trim()).filter(Boolean),
     };
 
@@ -569,6 +577,18 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                 onChange={e => setForm(f => ({ ...f, ga4PropertyId: e.target.value }))}
                 placeholder="123456789"
               />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-neutral-400">IndexNow key</label>
+              <input
+                className={MONO_INPUT_CLS}
+                value={form.indexNowKey ?? ''}
+                onChange={e => setForm(f => ({ ...f, indexNowKey: e.target.value }))}
+                placeholder="indexnow-key"
+              />
+              <p className="text-[11px] text-neutral-600">
+                Use 8-128 letters, numbers, or hyphens. Serve this exact key from <span className="font-mono text-neutral-400">/{'{key}'}.txt</span> before using the ping action.
+              </p>
             </div>
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">Color</label>
