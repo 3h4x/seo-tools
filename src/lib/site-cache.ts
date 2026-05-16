@@ -64,6 +64,7 @@ export function invalidateManagedSiteCache(previousSite: Site | null, nextSite: 
   for (const siteId of auditSiteIds) {
     clearCacheEntry('audit', siteId);
     clearCacheEntriesBySiteIdPrefix('url-inspection', `${siteId}:`);
+    clearCacheEntriesByPrefix('opportunities-', siteId);
   }
 
   if (shouldClearSitemapSyncState(previous, next)) {

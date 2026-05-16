@@ -26,8 +26,10 @@ import {
   checkInternalLinks,
   extractLocsFromSitemap,
   sampleAuditPages,
+  normalizeSiteAuditResult,
   MAX_SAMPLED_PAGES,
   type FetchResult,
+  type SiteAuditResult,
 } from '../audit';
 
 function makeFetchResult(overrides: Partial<FetchResult> = {}): FetchResult {
@@ -489,5 +491,67 @@ describe('sampleAuditPages', () => {
 
   it('handles invalid URLs gracefully', () => {
     expect(() => sampleAuditPages([], ['not-a-url'], ['also-bad'], domain)).not.toThrow();
+  });
+});
+
+describe('normalizeSiteAuditResult', () => {
+  function makeLegacyAudit(overrides: Record<string, unknown> = {}): SiteAuditResult {
+    return {
+      siteId: 'test',
+      domain: 'example.com',
+      timestamp: 1000,
+      robotsTxt: { status: 'pass', label: 'robots.txt', message: 'ok', hasSitemapDirective: true },
+      sitemap: { status: 'pass', label: 'Sitemap', message: 'ok', url: 'https://example.com/sitemap.xml', urlCount: 1, isIndex: false, hasLastmod: true },
+      scSitemapFreshness: { status: 'pass', label: 'SC Sitemap', message: 'ok' },
+      indexingCoverage: { status: 'pass', label: 'Indexing', message: 'ok', indexedPages: 1 },
+      metaTags: [],
+      ogImage: { status: 'pass', label: 'OG Image', message: 'ok' },
+      ttfb: { status: 'pass', label: 'TTFB', message: 'ok', ms: 200 },
+      imageSeo: [],
+      internalLinks: [],
+      security: {
+        https: { status: 'pass', label: 'HTTPS', message: 'ok' },
+        hsts: { status: 'pass', label: 'HSTS', message: 'ok' },
+        favicon: { status: 'pass', label: 'Favicon', message: 'ok' },
+      },
+      score: { pass: 1, warn: 0, fail: 0, error: 0, total: 1 },
+      sampledPages: [],
+      ...overrides,
+    } as unknown as SiteAuditResult;
+  }
+
+  it('backfills indexNow with a warn default when absent from legacy cache', () => {
+    const audit = makeLegacyAudit();
+    const result = normalizeSiteAuditResult(audit);
+    expect(result.indexNow).toMatchObject({ status: 'warn', label: 'IndexNow' });
+    expect(result.indexNow.message).toContain('legacy cache');
+  });
+
+  it('preserves an existing indexNow check unchanged', () => {
+    const indexNow = { status: 'pass' as const, label: 'IndexNow', message: 'Key verified' };
+    const audit = makeLegacyAudit({ indexNow });
+    const result = normalizeSiteAuditResult(audit);
+    expect(result.indexNow).toBe(indexNow);
+  });
+
+  it('backfills urlInspection with empty array when absent', () => {
+    const audit = makeLegacyAudit();
+    const result = normalizeSiteAuditResult(audit);
+    expect(result.urlInspection).toEqual([]);
+  });
+
+  it('backfills redirectChains with empty array when absent', () => {
+    const audit = makeLegacyAudit();
+    const result = normalizeSiteAuditResult(audit);
+    expect(result.redirectChains).toEqual([]);
+  });
+
+  it('normalizes a fully legacy audit (no indexNow, no urlInspection) without throwing', () => {
+    const audit = makeLegacyAudit();
+    expect(() => normalizeSiteAuditResult(audit)).not.toThrow();
+    const result = normalizeSiteAuditResult(audit);
+    expect(result.indexNow.status).toBe('warn');
+    expect(result.urlInspection).toEqual([]);
+    expect(result.redirectChains).toEqual([]);
   });
 });
