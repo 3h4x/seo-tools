@@ -3,6 +3,10 @@ import { getScDaily, getGa4Daily } from '@/lib/db';
 import { getManagedSites } from '@/lib/sites';
 import { CHART_COLORS } from '@/lib/constants';
 
+function formatDateOnly(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export async function GET(req: NextRequest) {
   const parsedDays = parseInt(req.nextUrl.searchParams.get('days') || '30');
   const days = Number.isFinite(parsedDays) ? Math.min(365, Math.max(1, parsedDays)) : 30;
@@ -10,7 +14,7 @@ export async function GET(req: NextRequest) {
   // Calculate the cutoff date
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
-  const cutoffStr = cutoff.toISOString().split('T')[0];
+  const cutoffStr = formatDateOnly(cutoff);
 
   const result: Record<string, Record<string, { users: number; views: number; clicks: number; impressions: number }>> = {};
 
