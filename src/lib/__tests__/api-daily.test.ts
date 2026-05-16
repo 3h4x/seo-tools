@@ -29,6 +29,7 @@ const SITE = { id: 'site1', name: 'Site One', domain: 'site1.com', testPages: []
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useRealTimers();
   vi.mocked(getManagedSites).mockResolvedValue([SITE] as never);
   vi.mocked(getScDaily).mockReturnValue([]);
   vi.mocked(getGa4Daily).mockReturnValue([]);
@@ -97,6 +98,31 @@ describe('GET /api/daily', () => {
 
     expect(body.data[staleDate]).toBeUndefined();
     expect(body.data[recentDate]?.site1).toMatchObject({
+      clicks: 5,
+      impressions: 50,
+      users: 20,
+      views: 80,
+    });
+  });
+
+  it('uses local calendar dates for the cutoff across spring DST boundaries', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-30T00:30:00+02:00'));
+
+    vi.mocked(getScDaily).mockReturnValue([
+      { date: '2026-03-28', clicks: 99, impressions: 999 },
+      { date: '2026-03-29', clicks: 5, impressions: 50 },
+    ] as never);
+    vi.mocked(getGa4Daily).mockReturnValue([
+      { date: '2026-03-28', users: 77, views: 777 },
+      { date: '2026-03-29', users: 20, views: 80 },
+    ] as never);
+
+    const res = await GET(getReq(1));
+    const body = await res.json();
+
+    expect(body.data['2026-03-28']).toBeUndefined();
+    expect(body.data['2026-03-29']?.site1).toMatchObject({
       clicks: 5,
       impressions: 50,
       users: 20,
