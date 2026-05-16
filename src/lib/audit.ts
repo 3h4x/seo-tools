@@ -173,9 +173,16 @@ export interface SiteAuditResult {
   sampledPages: string[];
 }
 
+const LEGACY_INDEXNOW_DEFAULT: CheckResult = {
+  status: 'warn',
+  label: 'IndexNow',
+  message: 'Not audited (legacy cache — refresh to update)',
+};
+
 export function normalizeSiteAuditResult(audit: SiteAuditResult): SiteAuditResult {
   return {
     ...audit,
+    indexNow: audit.indexNow ?? LEGACY_INDEXNOW_DEFAULT,
     urlInspection: audit.urlInspection ?? [],
     redirectChains: audit.redirectChains ?? [],
     internalLinks: (audit.internalLinks ?? []).map((link) => ({
