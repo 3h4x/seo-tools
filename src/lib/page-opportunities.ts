@@ -5,7 +5,6 @@ import { getSCUrl, type Site } from './sites';
 import { normalizeSkipChecks, type SkipCheckId } from './skip-checks';
 
 const PAGE_LIMIT = 20;
-const META_AUDIT_LIMIT = 10;
 const META_AUDIT_TIMEOUT_MS = 3_000;
 const META_AUDIT_CANONICAL_TIMEOUT_MS = 1_500;
 const QUICK_WIN_IMPRESSIONS = 100;
@@ -100,10 +99,9 @@ export async function getPageOpportunityRows(
       const scPages = await cachedGetSearchConsolePages(getSCUrl(site), days, PAGE_LIMIT);
       if (!scPages || scPages.length === 0) return [];
 
-      const pagesToAudit = scPages.slice(0, META_AUDIT_LIMIT);
       const metaTags = await auditPageMetaTags(
         site.domain,
-        pagesToAudit.map((page) => page.page),
+        scPages.map((page) => page.page),
         {
           concurrency: 3,
           timeoutMs: META_AUDIT_TIMEOUT_MS,

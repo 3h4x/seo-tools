@@ -167,7 +167,7 @@ describe('getPageOpportunityRows', () => {
     expect(rows[0].checks.ogImage.status).toBe('fail');
   });
 
-  it('keeps server-render enrichment bounded to a small audited subset', async () => {
+  it('audits the full tracked Search Console page set for joined status badges', async () => {
     const scPages = Array.from({ length: 20 }, (_, index) => ({
       page: `https://example.com/page-${index + 1}`,
       clicks: 1,
@@ -178,7 +178,7 @@ describe('getPageOpportunityRows', () => {
 
     mockCachedGetSearchConsolePages.mockResolvedValue(scPages);
     mockAuditPageMetaTags.mockResolvedValue(
-      scPages.slice(0, 10).map((page) => ({
+      scPages.map((page) => ({
         page: page.page,
         title: { status: 'pass', label: 'title', message: 'Title' },
         description: { status: 'pass', label: 'description', message: 'Description' },
@@ -199,7 +199,7 @@ describe('getPageOpportunityRows', () => {
     expect(mockCachedGetSearchConsolePages).toHaveBeenCalledWith('sc-domain:example.com', 7, 20);
     expect(mockAuditPageMetaTags).toHaveBeenCalledWith(
       'example.com',
-      scPages.slice(0, 10).map((page) => page.page),
+      scPages.map((page) => page.page),
       {
         concurrency: 3,
         timeoutMs: 3000,
@@ -212,10 +212,7 @@ describe('getPageOpportunityRows', () => {
       issueCount: 0,
       quickWin: false,
     });
-    expect(rows[10].checks.title).toMatchObject({
-      status: 'pass',
-      message: 'N/A — Audit not run for this page',
-    });
+    expect(rows[10].checks.title).toMatchObject({ status: 'pass', message: 'Title' });
   });
 
   it('returns neutral page rows when metadata enrichment fails', async () => {
