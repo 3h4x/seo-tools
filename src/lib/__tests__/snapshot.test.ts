@@ -50,6 +50,11 @@ vi.mock('@google-analytics/data', () => ({
   },
 }));
 
+const processSnapshotAlertsMock = vi.hoisted(() => vi.fn(async () => ({ fired: 0, errors: [] as string[] })));
+vi.mock('../alerts', () => ({
+  processSnapshotAlerts: processSnapshotAlertsMock,
+}));
+
 import { getDb } from '../db';
 import { discoverPropertyIds } from '../ga4';
 import {
@@ -124,6 +129,25 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe('runSnapshot alert dispatch', () => {
+  it('invokes processSnapshotAlerts exactly once per snapshot run', async () => {
+    const result = await runSnapshot();
+    expect(processSnapshotAlertsMock).toHaveBeenCalledTimes(1);
+    expect(processSnapshotAlertsMock).toHaveBeenCalledWith(result.date);
+  });
+
+  it('surfaces alert delivery errors via SnapshotResult.errors', async () => {
+    processSnapshotAlertsMock.mockResolvedValueOnce({
+      fired: 0,
+      errors: ['Alert site-a/sc_clicks: email: missing resend config'],
+    });
+
+    const result = await runSnapshot();
+
+    expect(result.errors).toContain('Alert site-a/sc_clicks: email: missing resend config');
+  });
 });
 
 describe('runSnapshot dedupe', () => {

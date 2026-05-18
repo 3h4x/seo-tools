@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getSiteScUrlOverride, isValidSiteDomain, normalizeSiteDomain, slugifySiteDomain } from '../site-domain';
+import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, normalizeSiteDomain, slugifySiteDomain } from '../site-domain';
 
 describe('site-domain helpers', () => {
   it('normalizes bare domains', () => {
@@ -35,5 +35,9 @@ describe('site-domain helpers', () => {
 
   it('slugifies normalized domains for generated ids', () => {
     expect(slugifySiteDomain('blog.example.com')).toBe('blog-example-com');
+  });
+
+  it('treats alerts as a reserved app route', () => {
+    expect(isReservedSiteId('alerts')).toBe(true);
   });
 });

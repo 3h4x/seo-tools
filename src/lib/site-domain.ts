@@ -1,6 +1,6 @@
 const DOMAIN_RE = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 const SITE_ID_RE = /^[a-z0-9][a-z0-9_.-]*$/i;
-export const RESERVED_SITE_IDS = ['actions', 'api', 'audit', 'config', 'opportunities', 'performance', 'trends'] as const;
+export const RESERVED_SITE_IDS = ['actions', 'alerts', 'api', 'audit', 'config', 'opportunities', 'performance', 'trends'] as const;
 
 export function normalizeSiteDomain(value: string): string | null {
   const input = value.trim();

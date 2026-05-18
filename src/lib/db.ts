@@ -20,6 +20,34 @@ export interface SqliteDatabase {
   close?(): void;
 }
 
+export type AlertMetric = 'sc_clicks' | 'ga4_sessions' | 'audit_score';
+export type AlertChannel = 'email' | 'webhook';
+
+export interface AlertRule {
+  id: number;
+  siteId: string;
+  metric: AlertMetric;
+  thresholdPct: number;
+  channels: AlertChannel[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AlertEvent {
+  id: number;
+  siteId: string;
+  ruleId: number;
+  metric: AlertMetric;
+  thresholdPct: number;
+  previousValue: number;
+  currentValue: number;
+  deltaPct: number;
+  snapshotDate: string;
+  deliveredChannels: AlertChannel[];
+  deliveryError: string | null;
+  createdAt: string;
+}
+
 let _db: SqliteDatabase | null = null;
 
 export function getDb(): SqliteDatabase {
@@ -147,6 +175,37 @@ function initSchema(db: SqliteDatabase): void {
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS alert_rules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      site_id TEXT NOT NULL,
+      metric TEXT NOT NULL,
+      threshold_pct INTEGER NOT NULL,
+      channels_json TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_alert_rules_site ON alert_rules(site_id);
+
+    CREATE TABLE IF NOT EXISTS alert_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      site_id TEXT NOT NULL,
+      rule_id INTEGER NOT NULL,
+      metric TEXT NOT NULL,
+      threshold_pct INTEGER NOT NULL,
+      previous_value REAL NOT NULL,
+      current_value REAL NOT NULL,
+      delta_pct REAL NOT NULL,
+      snapshot_date TEXT NOT NULL,
+      delivered_channels_json TEXT NOT NULL DEFAULT '[]',
+      delivery_error TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(rule_id, snapshot_date)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_alert_events_created ON alert_events(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_alert_events_site ON alert_events(site_id, created_at DESC);
 
     CREATE TABLE IF NOT EXISTS sites (
       id              TEXT PRIMARY KEY,
@@ -945,6 +1004,131 @@ export function deleteConfig(key: string): void {
   db.prepare('DELETE FROM config WHERE key = ?').run(key);
 }
 
+function rowToAlertRule(row: AlertRuleRow): AlertRule {
+  return {
+    id: row.id,
+    siteId: row.site_id,
+    metric: row.metric,
+    thresholdPct: row.threshold_pct,
+    channels: JSON.parse(row.channels_json) as AlertChannel[],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function rowToAlertEvent(row: AlertEventRow): AlertEvent {
+  return {
+    id: row.id,
+    siteId: row.site_id,
+    ruleId: row.rule_id,
+    metric: row.metric,
+    thresholdPct: row.threshold_pct,
+    previousValue: row.previous_value,
+    currentValue: row.current_value,
+    deltaPct: row.delta_pct,
+    snapshotDate: row.snapshot_date,
+    deliveredChannels: JSON.parse(row.delivered_channels_json) as AlertChannel[],
+    deliveryError: row.delivery_error,
+    createdAt: row.created_at,
+  };
+}
+
+export function dbGetAlertRules(): AlertRule[] {
+  const db = getDb();
+  const rows = db.prepare(
+    'SELECT * FROM alert_rules ORDER BY site_id ASC, metric ASC, threshold_pct ASC, id ASC',
+  ).all() as AlertRuleRow[];
+  return rows.map(rowToAlertRule);
+}
+
+export function dbUpsertAlertRule(rule: {
+  id?: number;
+  siteId: string;
+  metric: AlertMetric;
+  thresholdPct: number;
+  channels: AlertChannel[];
+}): AlertRule {
+  const db = getDb();
+  const channelsJson = JSON.stringify(rule.channels);
+
+  if (typeof rule.id === 'number') {
+    db.prepare(
+      `UPDATE alert_rules
+       SET site_id = ?, metric = ?, threshold_pct = ?, channels_json = ?, updated_at = datetime('now')
+       WHERE id = ?`,
+    ).run(rule.siteId, rule.metric, rule.thresholdPct, channelsJson, rule.id);
+    const row = db.prepare('SELECT * FROM alert_rules WHERE id = ?').get(rule.id) as AlertRuleRow | undefined;
+    if (!row) {
+      throw new Error(`unknown alert rule: ${rule.id}`);
+    }
+    return rowToAlertRule(row);
+  }
+
+  db.prepare(
+    `INSERT INTO alert_rules (site_id, metric, threshold_pct, channels_json)
+     VALUES (?, ?, ?, ?)`,
+  ).run(rule.siteId, rule.metric, rule.thresholdPct, channelsJson);
+  const row = db.prepare('SELECT * FROM alert_rules WHERE id = last_insert_rowid()').get() as AlertRuleRow | undefined;
+  if (!row) {
+    throw new Error('failed_to_create_alert_rule');
+  }
+  return rowToAlertRule(row);
+}
+
+export function dbDeleteAlertRule(id: number): void {
+  const db = getDb();
+  db.prepare('DELETE FROM alert_rules WHERE id = ?').run(id);
+}
+
+export function dbInsertAlertEvent(event: {
+  siteId: string;
+  ruleId: number;
+  metric: AlertMetric;
+  thresholdPct: number;
+  previousValue: number;
+  currentValue: number;
+  deltaPct: number;
+  snapshotDate: string;
+  deliveredChannels: AlertChannel[];
+  deliveryError?: string | null;
+}): boolean {
+  const db = getDb();
+  const result = db.prepare(
+    `INSERT OR IGNORE INTO alert_events (
+      site_id, rule_id, metric, threshold_pct, previous_value, current_value, delta_pct, snapshot_date,
+      delivered_channels_json, delivery_error
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    event.siteId,
+    event.ruleId,
+    event.metric,
+    event.thresholdPct,
+    event.previousValue,
+    event.currentValue,
+    event.deltaPct,
+    event.snapshotDate,
+    JSON.stringify(event.deliveredChannels),
+    event.deliveryError ?? null,
+  );
+  return (result.changes ?? 0) > 0;
+}
+
+export function dbHasAlertEvent(ruleId: number, snapshotDate: string): boolean {
+  const db = getDb();
+  const row = db.prepare(
+    'SELECT 1 as found FROM alert_events WHERE rule_id = ? AND snapshot_date = ?',
+  ).get(ruleId, snapshotDate) as { found: number } | undefined;
+  return row?.found === 1;
+}
+
+export function dbGetAlertEvents(limit: number = 100): AlertEvent[] {
+  const db = getDb();
+  const rows = db.prepare(
+    'SELECT * FROM alert_events ORDER BY created_at DESC, id DESC LIMIT ?',
+  ).all(limit) as AlertEventRow[];
+  return rows.map(rowToAlertEvent);
+}
+
 // --- Sites helpers ---
 
 interface SiteRow {
@@ -974,7 +1158,34 @@ interface SiteRecord {
   skipChecks?: string[];
 }
 
+interface AlertRuleRow {
+  id: number;
+  site_id: string;
+  metric: AlertMetric;
+  threshold_pct: number;
+  channels_json: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AlertEventRow {
+  id: number;
+  site_id: string;
+  rule_id: number;
+  metric: AlertMetric;
+  threshold_pct: number;
+  previous_value: number;
+  current_value: number;
+  delta_pct: number;
+  snapshot_date: string;
+  delivered_channels_json: string;
+  delivery_error: string | null;
+  created_at: string;
+}
+
 const SITE_OWNED_TABLES = [
+  'alert_rules',
+  'alert_events',
   'sc_daily',
   'ga4_daily',
   'sc_snapshots',

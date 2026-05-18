@@ -5,6 +5,8 @@ import ConfigForm from '../components/config-form';
 import OperationalStatusPanel from '../components/operational-status-panel';
 import PagespeedKeyForm from '../components/pagespeed-key-form';
 import SitesManager from '../components/sites-manager';
+import AlertDeliveryForm from '../components/alert-delivery-form';
+import AlertRulesManager from '../components/alert-rules-manager';
 import type { OperationalStatus } from '@/lib/db';
 import type { Site } from '@/lib/sites';
 
@@ -76,6 +78,10 @@ export default function ConfigPage() {
       <OperationalStatusPanel statuses={statuses} error={statusError} />
       <hr className="border-neutral-800" />
       <PagespeedKeyForm />
+      <hr className="border-neutral-800" />
+      <AlertDeliveryForm />
+      <hr className="border-neutral-800" />
+      <AlertRulesManager sites={sites} />
       <hr className="border-neutral-800" />
       <SitesManager initialSites={sites} hasAuth={hasAuth} />
     </div>
