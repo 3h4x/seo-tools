@@ -46,6 +46,11 @@
     "husky": "^9.1.7"
   },
   "pnpm": {
+    "ignoredBuiltDependencies": [
+      "protobufjs",
+      "sharp",
+      "unrs-resolver"
+    ],
     "onlyBuiltDependencies": [
       "better-sqlite3"
     ]
