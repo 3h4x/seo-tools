@@ -53,6 +53,7 @@ const CONFIG_KEYS: Record<AlertDeliveryConfigKey, { db: string; env: string }> =
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DELIVERY_TIMEOUT_MS = 10_000;
+const WEBHOOK_RESPONSE_BODY_LIMIT_BYTES = 64 * 1024;
 const NON_PUBLIC_IPV4_RANGES = [
   { start: ipv4ToInt('0.0.0.0'), end: ipv4ToInt('0.255.255.255') },
   { start: ipv4ToInt('10.0.0.0'), end: ipv4ToInt('10.255.255.255') },
@@ -294,6 +295,7 @@ function postPinnedHttpsJson(target: ResolvedWebhookTarget, body: unknown, signa
   const requestBody = JSON.stringify(body);
 
   return new Promise((resolve, reject) => {
+    let settled = false;
     const req = httpsRequest({
       protocol: 'https:',
       hostname: target.url.hostname,
@@ -311,10 +313,29 @@ function postPinnedHttpsJson(target: ResolvedWebhookTarget, body: unknown, signa
       },
     }, (res) => {
       const chunks: Buffer[] = [];
+      let receivedBytes = 0;
       res.on('data', (chunk: Buffer | string) => {
-        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        if (settled) {
+          return;
+        }
+
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        receivedBytes += buffer.byteLength;
+        if (receivedBytes > WEBHOOK_RESPONSE_BODY_LIMIT_BYTES) {
+          settled = true;
+          reject(new Error(`Webhook response body exceeded ${WEBHOOK_RESPONSE_BODY_LIMIT_BYTES} bytes`));
+          req.destroy();
+          return;
+        }
+
+        chunks.push(buffer);
       });
       res.on('end', () => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
         const statusCode = res.statusCode ?? 0;
         if (statusCode >= 300 && statusCode < 400) {
           reject(new Error('Webhook redirect responses are not allowed'));

@@ -107,9 +107,11 @@ function mockHttpsResponse(statusCode = 204, body = '') {
       on: ReturnType<typeof vi.fn>;
       write: ReturnType<typeof vi.fn>;
       end: ReturnType<typeof vi.fn>;
+      destroy: ReturnType<typeof vi.fn>;
     };
     req.on = vi.fn(() => req);
     req.write = vi.fn();
+    req.destroy = vi.fn();
     req.end = vi.fn(() => {
       const responseHandlers = new Map<string, (chunk?: Buffer) => void>();
       const res = {
@@ -295,6 +297,29 @@ describe('CLI snapshot alerts', () => {
     const lookupCallback = vi.fn();
     options.lookup('hooks.example.com', {}, lookupCallback);
     expect(lookupCallback).toHaveBeenCalledWith(null, '93.184.216.34', 4);
+  });
+
+  it('aborts oversized webhook error responses without concatenating the full body', async () => {
+    db.prepare('UPDATE alert_rules SET channels_json = ? WHERE site_id = ?').run(
+      JSON.stringify(['webhook']),
+      'site-a',
+    );
+    db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run(
+      'alert_webhook_url',
+      'https://hooks.example.com/seo-alerts',
+    );
+    const oversizedBody = 'x'.repeat((64 * 1024) + 1);
+    mockHttpsResponse(500, oversizedBody);
+
+    const result = await processSnapshotAlertsForCli(db, '2026-05-17');
+
+    expect(result).toEqual({
+      fired: 1,
+      errors: ['Alert site-a/sc_clicks: webhook: Webhook response body exceeded 65536 bytes'],
+    });
+    const req = httpsRequestMock.mock.results[0].value as { destroy: ReturnType<typeof vi.fn> };
+    expect(req.destroy).toHaveBeenCalled();
+    expect(result.errors.join('\n')).not.toContain(oversizedBody);
   });
 
   it('rejects webhook hostnames that resolve to private addresses before request', async () => {

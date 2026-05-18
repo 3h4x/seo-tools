@@ -54,9 +54,11 @@ function mockHttpsResponse(statusCode = 204, body = '') {
       on: ReturnType<typeof vi.fn>;
       write: ReturnType<typeof vi.fn>;
       end: ReturnType<typeof vi.fn>;
+      destroy: ReturnType<typeof vi.fn>;
     };
     req.on = vi.fn(() => req);
     req.write = vi.fn();
+    req.destroy = vi.fn();
     req.end = vi.fn(() => {
       const responseHandlers = new Map<string, (chunk?: Buffer) => void>();
       const res = {
@@ -252,6 +254,22 @@ describe('alert delivery config', () => {
       deliveryError: 'webhook: Webhook redirect responses are not allowed',
     });
     expect(httpsRequestMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('aborts oversized webhook error responses without concatenating the full body', async () => {
+    const oversizedBody = 'x'.repeat((64 * 1024) + 1);
+    mockHttpsResponse(500, oversizedBody);
+    setConfig('alert_webhook_url', 'https://hooks.example.com/seo-alerts');
+
+    const result = await sendAlertNotifications(['webhook'], payload);
+
+    expect(result).toEqual({
+      deliveredChannels: [],
+      deliveryError: 'webhook: Webhook response body exceeded 65536 bytes',
+    });
+    const req = httpsRequestMock.mock.results[0].value as { destroy: ReturnType<typeof vi.fn> };
+    expect(req.destroy).toHaveBeenCalled();
+    expect(result.deliveryError).not.toContain(oversizedBody);
   });
 
   it('delivers email with a timeout signal', async () => {
