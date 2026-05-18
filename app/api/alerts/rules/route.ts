@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbDeleteAlertRule, dbGetAlertRules, dbGetSites, dbUpsertAlertRule, type AlertChannel, type AlertMetric } from '@/lib/db';
 
-const VALID_METRICS: AlertMetric[] = ['sc_clicks', 'ga4_sessions', 'audit_score'];
+const VALID_METRICS: AlertMetric[] = ['sc_clicks', 'ga4_sessions'];
 const VALID_CHANNELS: AlertChannel[] = ['email', 'webhook'];
 
 function validateRuleInput(raw: unknown) {
@@ -23,7 +23,7 @@ function validateRuleInput(raw: unknown) {
   }
 
   if (!VALID_METRICS.includes(metric as AlertMetric)) {
-    throw new Error('metric must be one of sc_clicks, ga4_sessions, audit_score');
+    throw new Error('metric must be one of sc_clicks, ga4_sessions');
   }
 
   if (!Number.isFinite(thresholdPct) || thresholdPct < 1 || thresholdPct > 100) {

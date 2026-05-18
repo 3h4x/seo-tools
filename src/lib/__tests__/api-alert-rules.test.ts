@@ -82,7 +82,23 @@ describe('POST /api/alerts/rules', () => {
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({
       ok: false,
-      error: 'metric must be one of sc_clicks, ga4_sessions, audit_score',
+      error: 'metric must be one of sc_clicks, ga4_sessions',
+    });
+    expect(dbUpsertAlertRule).not.toHaveBeenCalled();
+  });
+
+  it('rejects audit score rules because CLI snapshots do not collect audit snapshots', async () => {
+    const res = await POST(postReq({
+      siteId: 'site-a',
+      metric: 'audit_score',
+      thresholdPct: 25,
+      channels: ['email'],
+    }));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      ok: false,
+      error: 'metric must be one of sc_clicks, ga4_sessions',
     });
     expect(dbUpsertAlertRule).not.toHaveBeenCalled();
   });

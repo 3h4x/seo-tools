@@ -35,7 +35,7 @@ export const ALERT_SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_alert_events_site ON alert_events(site_id, created_at DESC);
 `;
 
-const VALID_METRICS = new Set(['sc_clicks', 'ga4_sessions', 'audit_score']);
+const VALID_METRICS = new Set(['sc_clicks', 'ga4_sessions']);
 const VALID_CHANNELS = new Set(['email', 'webhook']);
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DELIVERY_TIMEOUT_MS = 10_000;

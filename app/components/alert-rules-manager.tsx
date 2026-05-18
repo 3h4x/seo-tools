@@ -16,7 +16,6 @@ type FormState = {
 const METRIC_OPTIONS: Array<{ value: AlertMetric; label: string }> = [
   { value: 'sc_clicks', label: 'SC clicks' },
   { value: 'ga4_sessions', label: 'GA4 sessions' },
-  { value: 'audit_score', label: 'Audit score' },
 ];
 
 const INPUT_CLS = 'w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-500';

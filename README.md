@@ -89,7 +89,7 @@ Sites are stored in SQLite and managed via the **Config** tab → Managed Sites.
 
 ## Alerts
 
-Alert rules are configured in the **Config** tab and recent fired alerts appear on the **Alerts** page. Rules fire after `pnpm seo snapshot` when the latest snapshot drops past the configured threshold versus the previous snapshot for Search Console clicks, GA4 sessions, or audit score.
+Alert rules are configured in the **Config** tab and recent fired alerts appear on the **Alerts** page. Rules fire after `pnpm seo snapshot` when the latest snapshot drops past the configured threshold versus the previous snapshot for Search Console clicks or GA4 sessions.
 
 Email delivery uses Resend. Webhook delivery requires a public HTTPS URL and does not follow redirects. Delivery settings are stored in SQLite from the Config tab, with these optional env var fallbacks:
 
