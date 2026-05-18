@@ -53,13 +53,22 @@ const CONFIG_KEYS: Record<AlertDeliveryConfigKey, { db: string; env: string }> =
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DELIVERY_TIMEOUT_MS = 10_000;
-const PRIVATE_IPV4_RANGES = [
+const NON_PUBLIC_IPV4_RANGES = [
+  { start: ipv4ToInt('0.0.0.0'), end: ipv4ToInt('0.255.255.255') },
   { start: ipv4ToInt('10.0.0.0'), end: ipv4ToInt('10.255.255.255') },
+  { start: ipv4ToInt('100.64.0.0'), end: ipv4ToInt('100.127.255.255') },
   { start: ipv4ToInt('127.0.0.0'), end: ipv4ToInt('127.255.255.255') },
   { start: ipv4ToInt('169.254.0.0'), end: ipv4ToInt('169.254.255.255') },
   { start: ipv4ToInt('172.16.0.0'), end: ipv4ToInt('172.31.255.255') },
+  { start: ipv4ToInt('192.0.0.0'), end: ipv4ToInt('192.0.0.255') },
+  { start: ipv4ToInt('192.0.2.0'), end: ipv4ToInt('192.0.2.255') },
+  { start: ipv4ToInt('192.88.99.0'), end: ipv4ToInt('192.88.99.255') },
   { start: ipv4ToInt('192.168.0.0'), end: ipv4ToInt('192.168.255.255') },
-  { start: ipv4ToInt('0.0.0.0'), end: ipv4ToInt('0.255.255.255') },
+  { start: ipv4ToInt('198.18.0.0'), end: ipv4ToInt('198.19.255.255') },
+  { start: ipv4ToInt('198.51.100.0'), end: ipv4ToInt('198.51.100.255') },
+  { start: ipv4ToInt('203.0.113.0'), end: ipv4ToInt('203.0.113.255') },
+  { start: ipv4ToInt('224.0.0.0'), end: ipv4ToInt('239.255.255.255') },
+  { start: ipv4ToInt('240.0.0.0'), end: ipv4ToInt('255.255.255.255') },
 ];
 
 interface ResolvedWebhookTarget {
@@ -111,6 +120,72 @@ function getIpv4MappedIpv6(hostname: string): string | null {
   }
 
   return ipv4IntToString((high << 16) + low);
+}
+
+function getIpv4CompatibleIpv6(hostname: string): string | null {
+  const normalized = normalizeHostname(hostname).toLowerCase();
+  if (
+    isIP(normalized) !== 6 ||
+    !normalized.startsWith('::') ||
+    normalized === '::' ||
+    normalized === '::1' ||
+    normalized.startsWith('::ffff:')
+  ) {
+    return null;
+  }
+
+  const embedded = normalized.slice(2);
+  if (isIP(embedded) === 4) {
+    return embedded;
+  }
+
+  const parts = embedded.split(':');
+  if (parts.length !== 2) {
+    return null;
+  }
+
+  const high = Number.parseInt(parts[0], 16);
+  const low = Number.parseInt(parts[1], 16);
+  if (
+    !Number.isInteger(high) ||
+    !Number.isInteger(low) ||
+    high < 0 ||
+    high > 0xffff ||
+    low < 0 ||
+    low > 0xffff
+  ) {
+    return null;
+  }
+
+  return ipv4IntToString((high << 16) + low);
+}
+
+function parseIpv6Hextets(hostname: string): number[] | null {
+  const normalized = normalizeHostname(hostname).toLowerCase();
+  if (isIP(normalized) !== 6) {
+    return null;
+  }
+
+  const [head = '', tail = ''] = normalized.split('::');
+  const headParts = head ? head.split(':') : [];
+  const tailParts = tail ? tail.split(':') : [];
+  const missingCount = 8 - headParts.length - tailParts.length;
+  const parts = [
+    ...headParts,
+    ...Array(Math.max(0, missingCount)).fill('0'),
+    ...tailParts,
+  ];
+
+  if (parts.length !== 8 || parts.some((part) => part.includes('.'))) {
+    return null;
+  }
+
+  const hextets = parts.map((part) => Number.parseInt(part || '0', 16));
+  if (hextets.some((part) => !Number.isInteger(part) || part < 0 || part > 0xffff)) {
+    return null;
+  }
+
+  return hextets;
 }
 
 function getConfigValue(key: AlertDeliveryConfigKey): { value: string | null; source: ConfigSource } {
@@ -291,28 +366,49 @@ async function sendWebhookAlert(config: AlertDeliveryConfig, payload: AlertNotif
   }
 }
 
-function isPrivateIpv4(hostname: string): boolean {
+function isNonPublicIpv4(hostname: string): boolean {
   const normalized = getIpv4MappedIpv6(hostname) ?? normalizeHostname(hostname);
   if (isIP(normalized) !== 4) {
     return false;
   }
 
   const value = ipv4ToInt(normalized);
-  return PRIVATE_IPV4_RANGES.some((range) => value >= range.start && value <= range.end);
+  return NON_PUBLIC_IPV4_RANGES.some((range) => value >= range.start && value <= range.end);
 }
 
-function isPrivateIpv6(hostname: string): boolean {
+function isNonPublicIpv6(hostname: string): boolean {
   const normalized = normalizeHostname(hostname).toLowerCase();
   if (isIP(normalized) !== 6) {
     return false;
   }
 
-  return normalized === '::1' ||
+  if (getIpv4MappedIpv6(normalized) !== null || getIpv4CompatibleIpv6(normalized) !== null) {
+    return true;
+  }
+
+  const hextets = parseIpv6Hextets(normalized);
+  if (!hextets) {
+    return true;
+  }
+
+  const [first, second, third, fourth] = hextets;
+
+  return (
     normalized === '::' ||
-    getIpv4MappedIpv6(normalized) !== null ||
-    normalized.startsWith('fc') ||
-    normalized.startsWith('fd') ||
-    normalized.startsWith('fe80:');
+    normalized === '::1' ||
+    (first === 0x64 && second === 0xff9b && (third === 0 || third === 1)) ||
+    (first === 0x100 && second === 0 && third === 0 && fourth === 0) ||
+    (first === 0x2001 && (
+      second === 0 ||
+      second === 0x2 ||
+      second === 0xdb8 ||
+      (second >= 0x10 && second <= 0x1f)
+    )) ||
+    first === 0x2002 ||
+    (first >= 0xfc00 && first <= 0xfdff) ||
+    (first >= 0xfe80 && first <= 0xfebf) ||
+    (first >= 0xff00 && first <= 0xffff)
+  );
 }
 
 function normalizeHostname(hostname: string): string {
@@ -344,8 +440,8 @@ function validateWebhookUrl(webhookUrl: string): void {
     hostname.endsWith('.local') ||
     hostname.endsWith('.internal') ||
     hostname.endsWith('.lan') ||
-    isPrivateIpv4(hostname) ||
-    isPrivateIpv6(hostname)
+    isNonPublicIpv4(hostname) ||
+    isNonPublicIpv6(hostname)
   ) {
     throw new Error('Webhook URL must use a public host');
   }
@@ -376,7 +472,7 @@ async function resolveWebhookTarget(webhookUrl: string): Promise<ResolvedWebhook
 
   if (
     addresses.length === 0 ||
-    addresses.some(({ address }) => isPrivateIpv4(address) || isPrivateIpv6(address))
+    addresses.some(({ address }) => isNonPublicIpv4(address) || isNonPublicIpv6(address))
   ) {
     throw new Error('Webhook URL must use a public host');
   }

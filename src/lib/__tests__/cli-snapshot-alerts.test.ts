@@ -139,6 +139,7 @@ describe('CLI snapshot alerts', () => {
     httpsRequestMock.mockReset();
     mockHttpsResponse();
     lookupMock.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
+    delete process.env.ALERT_WEBHOOK_URL;
   });
 
   it('processes alert rules for snapshots created by the standalone CLI path', async () => {
@@ -225,7 +226,40 @@ describe('CLI snapshot alerts', () => {
     'https://[::ffff:127.0.0.1]/seo-alerts',
     'https://[::ffff:0a00:1]/seo-alerts',
     'https://[::ffff:c0a8:1]/seo-alerts',
-  ])('rejects IPv4-mapped IPv6 webhook URL %s before fetch', async (webhookUrl) => {
+    'https://[::c0a8:1]/seo-alerts',
+  ])('rejects IPv4-mapped or compatible IPv6 webhook URL %s before fetch', async (webhookUrl) => {
+    db.prepare('UPDATE alert_rules SET channels_json = ? WHERE site_id = ?').run(
+      JSON.stringify(['webhook']),
+      'site-a',
+    );
+    db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run(
+      'alert_webhook_url',
+      webhookUrl,
+    );
+
+    const result = await processSnapshotAlertsForCli(db, '2026-05-17');
+
+    expect(result).toEqual({
+      fired: 1,
+      errors: ['Alert site-a/sc_clicks: webhook: Webhook URL must use a public host'],
+    });
+    expect(httpsRequestMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'https://100.64.0.1/seo-alerts',
+    'https://192.0.2.1/seo-alerts',
+    'https://198.18.0.1/seo-alerts',
+    'https://198.51.100.1/seo-alerts',
+    'https://203.0.113.1/seo-alerts',
+    'https://224.0.0.1/seo-alerts',
+    'https://240.0.0.1/seo-alerts',
+    'https://[64:ff9b::c000:201]/seo-alerts',
+    'https://[100::]/seo-alerts',
+    'https://[2001:db8::1]/seo-alerts',
+    'https://[2002:c000:0201::]/seo-alerts',
+    'https://[ff02::1]/seo-alerts',
+  ])('rejects non-public webhook URL %s before fetch', async (webhookUrl) => {
     db.prepare('UPDATE alert_rules SET channels_json = ? WHERE site_id = ?').run(
       JSON.stringify(['webhook']),
       'site-a',
@@ -273,6 +307,48 @@ describe('CLI snapshot alerts', () => {
       'https://hooks.example.com/seo-alerts',
     );
     lookupMock.mockResolvedValue([{ address: '10.0.0.5', family: 4 }]);
+
+    const result = await processSnapshotAlertsForCli(db, '2026-05-17');
+
+    expect(result).toEqual({
+      fired: 1,
+      errors: ['Alert site-a/sc_clicks: webhook: Webhook URL must use a public host'],
+    });
+    expect(httpsRequestMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    '100.64.0.5',
+    '192.0.2.10',
+    '198.18.0.10',
+    '203.0.113.10',
+    '2001:db8::10',
+  ])('rejects webhook hostnames that resolve to non-public address %s', async (address) => {
+    db.prepare('UPDATE alert_rules SET channels_json = ? WHERE site_id = ?').run(
+      JSON.stringify(['webhook']),
+      'site-a',
+    );
+    db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run(
+      'alert_webhook_url',
+      'https://hooks.example.com/seo-alerts',
+    );
+    lookupMock.mockResolvedValue([{ address, family: address.includes(':') ? 6 : 4 }]);
+
+    const result = await processSnapshotAlertsForCli(db, '2026-05-17');
+
+    expect(result).toEqual({
+      fired: 1,
+      errors: ['Alert site-a/sc_clicks: webhook: Webhook URL must use a public host'],
+    });
+    expect(httpsRequestMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-public webhook URLs from env fallback before fetch', async () => {
+    db.prepare('UPDATE alert_rules SET channels_json = ? WHERE site_id = ?').run(
+      JSON.stringify(['webhook']),
+      'site-a',
+    );
+    process.env.ALERT_WEBHOOK_URL = 'https://100.64.0.1/seo-alerts';
 
     const result = await processSnapshotAlertsForCli(db, '2026-05-17');
 

@@ -172,10 +172,23 @@ describe('alert delivery config', () => {
     ['https://10.0.0.1/seo-alerts', 'Webhook URL must use a public host'],
     ['https://172.20.0.1/seo-alerts', 'Webhook URL must use a public host'],
     ['https://192.168.0.1/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://100.64.0.1/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://192.0.2.1/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://198.18.0.1/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://198.51.100.1/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://203.0.113.1/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://224.0.0.1/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://240.0.0.1/seo-alerts', 'Webhook URL must use a public host'],
     ['https://[::1]/seo-alerts', 'Webhook URL must use a public host'],
     ['https://[::ffff:127.0.0.1]/seo-alerts', 'Webhook URL must use a public host'],
     ['https://[::ffff:0a00:1]/seo-alerts', 'Webhook URL must use a public host'],
     ['https://[::ffff:c0a8:1]/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://[::c0a8:1]/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://[64:ff9b::c000:201]/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://[100::]/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://[2001:db8::1]/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://[2002:c000:0201::]/seo-alerts', 'Webhook URL must use a public host'],
+    ['https://[ff02::1]/seo-alerts', 'Webhook URL must use a public host'],
     ['https://hooks.local/seo-alerts', 'Webhook URL must use a public host'],
     ['https://hooks.example.com:secret@hooks.example.com/seo-alerts', 'Webhook URL must not include credentials'],
   ])('rejects unsafe webhook URL %s', (webhookUrl, message) => {
@@ -308,6 +321,37 @@ describe('alert delivery config', () => {
   it('rejects webhook hostnames that resolve to private addresses', async () => {
     lookupMock.mockResolvedValue([{ address: '10.0.0.5', family: 4 }]);
     setConfig('alert_webhook_url', 'https://hooks.example.com/seo-alerts');
+
+    const result = await sendAlertNotifications(['webhook'], payload);
+
+    expect(result).toEqual({
+      deliveredChannels: [],
+      deliveryError: 'webhook: Webhook URL must use a public host',
+    });
+    expect(httpsRequestMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    '100.64.0.5',
+    '192.0.2.10',
+    '198.18.0.10',
+    '203.0.113.10',
+    '2001:db8::10',
+  ])('rejects webhook hostnames that resolve to non-public address %s', async (address) => {
+    lookupMock.mockResolvedValue([{ address, family: address.includes(':') ? 6 : 4 }]);
+    setConfig('alert_webhook_url', 'https://hooks.example.com/seo-alerts');
+
+    const result = await sendAlertNotifications(['webhook'], payload);
+
+    expect(result).toEqual({
+      deliveredChannels: [],
+      deliveryError: 'webhook: Webhook URL must use a public host',
+    });
+    expect(httpsRequestMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-public webhook URLs from env fallback at delivery time', async () => {
+    process.env.ALERT_WEBHOOK_URL = 'https://100.64.0.1/seo-alerts';
 
     const result = await sendAlertNotifications(['webhook'], payload);
 
