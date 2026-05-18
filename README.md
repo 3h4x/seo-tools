@@ -11,7 +11,8 @@ Unified SEO dashboard for tracking Search Console + GA4 data across multiple sit
 - **Gaps** — cross-site gap analysis with prioritised recommendations
 - **Decay** — detect declining pages across all sites (7d/30d toggle)
 - **Trends** — historical SC + GA4 + audit score charts from SQLite snapshots
-- **Config** — manage your Google Service Account key and sites via the UI
+- **Alerts** — snapshot-triggered drop alerts with email and webhook delivery
+- **Config** — manage your Google Service Account key, alert delivery, alert rules, and sites via the UI
 
 ## Quick Start
 
@@ -86,13 +87,26 @@ The key is stored in SQLite and takes priority over the `GOOGLE_SA_KEY_JSON` env
 
 Sites are stored in SQLite and managed via the **Config** tab → Managed Sites. Use the **Discover sites** button to import from Google Search Console + GA4 automatically. No site config is hardcoded in source.
 
+## Alerts
+
+Alert rules are configured in the **Config** tab and recent fired alerts appear on the **Alerts** page. Rules fire after `pnpm seo snapshot` when the latest snapshot drops past the configured threshold versus the previous snapshot for Search Console clicks or GA4 sessions.
+
+Email delivery uses Resend. Webhook delivery requires a public HTTPS URL and does not follow redirects. Delivery settings are stored in SQLite from the Config tab, with these optional env var fallbacks:
+
+```bash
+ALERT_RESEND_API_KEY=re_...
+ALERT_FROM_EMAIL=alerts@example.com
+ALERT_TO_EMAIL=ops@example.com,seo@example.com
+ALERT_WEBHOOK_URL=https://hooks.example.com/seo-alerts
+```
+
 ## Dev
 
 ```bash
 pnpm test          # run tests
 pnpm type-check    # TypeScript check
 pnpm lint          # ESLint
-pnpm seo snapshot  # take SC + GA4 snapshot for trend tracking
+pnpm seo snapshot  # take SC + GA4 snapshot and process alerts
 pnpm seo check     # reachability check for all sites
 ```
 

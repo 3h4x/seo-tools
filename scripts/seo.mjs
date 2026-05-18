@@ -6,6 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { openDatabase } from '../src/lib/sqlite-driver.js';
 import { normalizeGa4PropertyId } from './ga4-property.mjs';
+import { ALERT_SCHEMA_SQL, processSnapshotAlertsForCli } from './snapshot-alerts.mjs';
 
 // Init DB and load SA key
 const dbDir = path.join(process.cwd(), 'data');
@@ -167,6 +168,7 @@ async function takeSnapshot() {
     -- keyword_history is also created in src/lib/db.ts (app initSchema); keep schemas in sync
     CREATE TABLE IF NOT EXISTS keyword_history (site_id TEXT NOT NULL, date TEXT NOT NULL, query TEXT NOT NULL, clicks INTEGER NOT NULL DEFAULT 0, impressions INTEGER NOT NULL DEFAULT 0, ctr REAL NOT NULL DEFAULT 0, position REAL NOT NULL DEFAULT 0, PRIMARY KEY (site_id, date, query));
     CREATE INDEX IF NOT EXISTS idx_kw_history_site_query ON keyword_history(site_id, query, date);
+    ${ALERT_SCHEMA_SQL}
   `);
   try { db.exec(`ALTER TABLE snapshot_runs ADD COLUMN lock_owner TEXT`); } catch { /* already exists */ }
 
@@ -271,6 +273,14 @@ async function takeSnapshot() {
       } catch (e) {
         console.log(`  GA4 ${site.id}: error - ${e.message.slice(0, 60)}`);
       }
+    }
+
+    const alertResult = await processSnapshotAlertsForCli(db, today);
+    if (alertResult.fired > 0) {
+      console.log(`  Alerts: ${alertResult.fired} fired`);
+    }
+    for (const error of alertResult.errors) {
+      console.log(`  Alerts: ${error}`);
     }
 
     finishSnapshotRun({ lockOwner, success: true });
@@ -438,7 +448,7 @@ Commands:
   sitemaps          List sitemaps for all sites
   submit-sitemap    Submit a sitemap (domain + url)
   stats             Show 7-day Search Console stats
-  snapshot          Take a data snapshot (SC + GA4) for trend tracking
+  snapshot          Take a data snapshot (SC + GA4) and process alerts
   check [id]        Check reachability of all sites (or one) with different UAs
   help              Show this help`);
 }

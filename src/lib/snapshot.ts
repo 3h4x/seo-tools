@@ -8,6 +8,7 @@ import { normalizeGa4PropertyId } from './ga4-property';
 import { getSCUrl } from './sites';
 import { runSiteAudit } from './audit';
 import { normalizeSkipChecks } from './skip-checks';
+import { processSnapshotAlerts } from './alerts';
 
 export interface SnapshotResult {
   date: string;
@@ -353,6 +354,9 @@ async function doSnapshot(): Promise<SnapshotResult> {
       errors.push(`Audit ${site.id}: ${String(e).slice(0, 80)}`);
     }
   }
+
+  const alertResult = await processSnapshotAlerts(today);
+  errors.push(...alertResult.errors);
 
   return { date: today, sc: scCount, keywords: kwCount, ga4: ga4Count, ttfb: ttfbCount, errors };
 }
