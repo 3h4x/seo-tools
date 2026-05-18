@@ -14,8 +14,8 @@ describe('AlertDeliveryForm helpers', () => {
       config: {
         fromEmail: 'alerts@example.com',
         toEmail: 'ops@example.com,seo@example.com',
-        webhookUrl: 'https://hooks.example.com/seo-alerts',
         hasResendApiKey: true,
+        hasWebhookUrl: true,
       },
       sources: {
         resendApiKey: 'env',
@@ -29,6 +29,7 @@ describe('AlertDeliveryForm helpers', () => {
       .mockResolvedValueOnce(jsonResponse(envConfig));
 
     await expect(clearAlertDeliveryOverrides(fetchMock)).resolves.toEqual(envConfig);
+    expect(JSON.stringify(envConfig)).not.toContain('hooks.example.com');
 
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/config/alerts', { method: 'DELETE' });
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/config/alerts');

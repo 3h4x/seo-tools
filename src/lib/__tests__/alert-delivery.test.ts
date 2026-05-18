@@ -105,8 +105,8 @@ describe('alert delivery config', () => {
       config: {
         fromEmail: 'alerts@example.com',
         toEmail: 'ops@example.com',
-        webhookUrl: 'https://hooks.example.com/seo-alerts',
         hasResendApiKey: true,
+        hasWebhookUrl: true,
       },
       sources: {
         resendApiKey: 'db',
@@ -115,6 +115,54 @@ describe('alert delivery config', () => {
         webhookUrl: 'db',
       },
     });
+  });
+
+  it('redacts webhook URLs from config responses and preserves stored URL on blank saves', () => {
+    setConfig('alert_webhook_url', 'https://hooks.example.com/secret-token');
+
+    const normalized = validateAlertDeliveryInput({
+      resendApiKey: '',
+      fromEmail: 'alerts@example.com',
+      toEmail: 'ops@example.com',
+      webhookUrl: '',
+    });
+    saveAlertDeliveryConfig(normalized);
+
+    const response = getAlertDeliveryConfigResponse();
+    expect(getConfig('alert_webhook_url')).toBe('https://hooks.example.com/secret-token');
+    expect(response).toMatchObject({
+      config: {
+        fromEmail: 'alerts@example.com',
+        toEmail: 'ops@example.com',
+        hasResendApiKey: false,
+        hasWebhookUrl: true,
+      },
+      sources: {
+        webhookUrl: 'db',
+      },
+    });
+    expect(JSON.stringify(response)).not.toContain('secret-token');
+  });
+
+  it('redacts env fallback webhook URLs from config responses', () => {
+    process.env.ALERT_WEBHOOK_URL = 'https://hooks.example.com/env-secret-token';
+
+    const response = getAlertDeliveryConfigResponse();
+
+    expect(response.config.hasWebhookUrl).toBe(true);
+    expect(response.sources.webhookUrl).toBe('env');
+    expect(JSON.stringify(response)).not.toContain('env-secret-token');
+  });
+
+  it('stores a replacement webhook URL when the save payload includes one', () => {
+    setConfig('alert_webhook_url', 'https://hooks.example.com/old-token');
+
+    const normalized = validateAlertDeliveryInput({
+      webhookUrl: 'https://hooks.example.com/new-token',
+    });
+    saveAlertDeliveryConfig(normalized);
+
+    expect(getConfig('alert_webhook_url')).toBe('https://hooks.example.com/new-token');
   });
 
   it.each([

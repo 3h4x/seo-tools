@@ -21,8 +21,8 @@ export interface AlertDeliveryConfigResponse {
   config: {
     fromEmail: string;
     toEmail: string;
-    webhookUrl: string;
     hasResendApiKey: boolean;
+    hasWebhookUrl: boolean;
   };
   sources: Record<AlertDeliveryConfigKey, ConfigSource>;
 }
@@ -413,8 +413,8 @@ export function getAlertDeliveryConfigResponse(): AlertDeliveryConfigResponse {
     config: {
       fromEmail: fromEmail.value ?? '',
       toEmail: toEmail.value ?? '',
-      webhookUrl: webhookUrl.value ?? '',
       hasResendApiKey: Boolean(resendApiKey.value),
+      hasWebhookUrl: Boolean(webhookUrl.value),
     },
     sources: {
       resendApiKey: resendApiKey.source,
@@ -459,7 +459,7 @@ export function saveAlertDeliveryConfig(config: AlertDeliveryStored): void {
     const dbKey = CONFIG_KEYS[field].db;
     if (value) {
       setConfig(dbKey, value);
-    } else if (field !== 'resendApiKey') {
+    } else if (field !== 'resendApiKey' && field !== 'webhookUrl') {
       deleteConfig(dbKey);
     }
   }

@@ -15,8 +15,8 @@ export type AlertConfigResponse = {
   config: {
     fromEmail: string;
     toEmail: string;
-    webhookUrl: string;
     hasResendApiKey: boolean;
+    hasWebhookUrl: boolean;
   };
   sources: {
     resendApiKey: Source;
@@ -58,6 +58,7 @@ export default function AlertDeliveryForm() {
   });
   const [sources, setSources] = useState<AlertConfigResponse['sources'] | null>(null);
   const [hasResendApiKey, setHasResendApiKey] = useState(false);
+  const [hasWebhookUrl, setHasWebhookUrl] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -67,10 +68,11 @@ export default function AlertDeliveryForm() {
       resendApiKey: '',
       fromEmail: data.config.fromEmail,
       toEmail: data.config.toEmail,
-      webhookUrl: data.config.webhookUrl,
+      webhookUrl: '',
     });
     setSources(data.sources);
     setHasResendApiKey(data.config.hasResendApiKey);
+    setHasWebhookUrl(data.config.hasWebhookUrl);
   }
 
   useEffect(() => {
@@ -139,6 +141,13 @@ export default function AlertDeliveryForm() {
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-neutral-900 border border-neutral-700 text-sm text-neutral-400">
           <span className="text-green-500">●</span>
           Resend key configured
+        </div>
+      )}
+
+      {hasWebhookUrl && !form.webhookUrl && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-neutral-900 border border-neutral-700 text-sm text-neutral-400">
+          <span className="text-green-500">●</span>
+          Webhook URL configured
         </div>
       )}
 

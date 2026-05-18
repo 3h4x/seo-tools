@@ -36,16 +36,18 @@ beforeEach(() => {
 describe('GET /api/config/alerts', () => {
   it('returns the current delivery config payload', async () => {
     mockGetAlertDeliveryConfigResponse.mockReturnValue({
-      config: { fromEmail: 'alerts@example.com', toEmail: 'ops@example.com', webhookUrl: '', hasResendApiKey: true },
-      sources: { resendApiKey: 'db', fromEmail: 'db', toEmail: 'env', webhookUrl: 'none' },
+      config: { fromEmail: 'alerts@example.com', toEmail: 'ops@example.com', hasResendApiKey: true, hasWebhookUrl: true },
+      sources: { resendApiKey: 'db', fromEmail: 'db', toEmail: 'env', webhookUrl: 'db' },
     });
 
     const res = await GET();
 
-    expect(await res.json()).toEqual({
-      config: { fromEmail: 'alerts@example.com', toEmail: 'ops@example.com', webhookUrl: '', hasResendApiKey: true },
-      sources: { resendApiKey: 'db', fromEmail: 'db', toEmail: 'env', webhookUrl: 'none' },
+    const payload = await res.json();
+    expect(payload).toEqual({
+      config: { fromEmail: 'alerts@example.com', toEmail: 'ops@example.com', hasResendApiKey: true, hasWebhookUrl: true },
+      sources: { resendApiKey: 'db', fromEmail: 'db', toEmail: 'env', webhookUrl: 'db' },
     });
+    expect(JSON.stringify(payload)).not.toContain('hooks.example.com');
   });
 });
 
