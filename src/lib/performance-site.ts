@@ -123,6 +123,15 @@ function fromPsi(psi: PsiData | null): { metrics: PerformanceMetricMap; source: 
   };
 }
 
+async function providerOrNull<T>(label: string, promise: Promise<T | null>): Promise<T | null> {
+  try {
+    return await promise;
+  } catch (error) {
+    console.error(`[PerformanceSite] ${label}:`, error);
+    return null;
+  }
+}
+
 export async function getPerformanceSiteData(siteId: string, requestedDays?: number): Promise<PerformanceSiteData | null> {
   const site = await getManagedSite(siteId);
   if (!site) return null;
@@ -133,12 +142,20 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
   const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
 
   const [rum, byPage, trend, eventCount, psiMobile, psiDesktop] = await Promise.all([
-    propertyId ? cachedGetRumCoreWebVitals(propertyId, days) : Promise.resolve(null),
-    propertyId ? cachedGetRumCwvByPage(propertyId, days, 20) : Promise.resolve(null),
-    propertyId ? cachedGetRumCwvTrend(propertyId, Math.max(days, 30)) : Promise.resolve(null),
-    propertyId ? cachedGetCwvEventCount(propertyId, days) : Promise.resolve(null),
-    cachedGetPagespeed(url, 'mobile'),
-    cachedGetPagespeed(url, 'desktop'),
+    propertyId
+      ? providerOrNull(`RUM ${site.id}`, cachedGetRumCoreWebVitals(propertyId, days))
+      : Promise.resolve(null),
+    propertyId
+      ? providerOrNull(`RUM pages ${site.id}`, cachedGetRumCwvByPage(propertyId, days, 20))
+      : Promise.resolve(null),
+    propertyId
+      ? providerOrNull(`RUM trend ${site.id}`, cachedGetRumCwvTrend(propertyId, Math.max(days, 30)))
+      : Promise.resolve(null),
+    propertyId
+      ? providerOrNull(`CWV event count ${site.id}`, cachedGetCwvEventCount(propertyId, days))
+      : Promise.resolve(null),
+    providerOrNull(`PSI mobile ${site.id}`, cachedGetPagespeed(url, 'mobile')),
+    providerOrNull(`PSI desktop ${site.id}`, cachedGetPagespeed(url, 'desktop')),
   ]);
 
   const hasRum = !!rum?.hasData;
@@ -197,8 +214,10 @@ export async function getCwvAuditSummary(siteId: string): Promise<CwvAuditSummar
   const propertyId = discovered.find(c => c.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
 
   const [rum, psiMobile] = await Promise.all([
-    propertyId ? cachedGetRumCoreWebVitals(propertyId, 7) : Promise.resolve(null),
-    cachedGetPagespeed(url, 'mobile'),
+    propertyId
+      ? providerOrNull(`audit RUM ${site.id}`, cachedGetRumCoreWebVitals(propertyId, 7))
+      : Promise.resolve(null),
+    providerOrNull(`audit PSI mobile ${site.id}`, cachedGetPagespeed(url, 'mobile')),
   ]);
 
   if (rum?.hasData) {

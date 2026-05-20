@@ -92,4 +92,75 @@ describe('getPerformanceOverviewRows', () => {
     expect(vi.mocked(cachedGetRumCoreWebVitals)).toHaveBeenCalledWith('ga4-rum', 28);
     expect(vi.mocked(cachedGetRumCoreWebVitals)).toHaveBeenCalledWith('ga4-psi', 28);
   });
+
+  it('does not label empty PSI payloads as lab data', async () => {
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValue(null);
+    vi.mocked(cachedGetPagespeed).mockResolvedValue({
+      url: 'https://psi.example.com',
+      strategy: 'mobile',
+      performanceScore: 91,
+      field: {},
+      lab: {},
+      fetchedAt: 123,
+    });
+
+    const rows = await getPerformanceOverviewRows(7);
+
+    expect(rows[0]).toMatchObject({
+      source: 'none',
+      metrics: {},
+      perfScore: 91,
+    });
+    expect(rows[1]).toMatchObject({
+      source: 'none',
+      metrics: {},
+      perfScore: 91,
+    });
+  });
+
+  it('returns neutral rows when individual providers throw', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(cachedGetRumCoreWebVitals).mockImplementation(async (propertyId) => {
+      if (propertyId === 'ga4-rum') throw new Error('rum unavailable');
+      return null;
+    });
+    vi.mocked(cachedGetCwvEventCount).mockImplementation(async (propertyId) => {
+      if (propertyId === 'ga4-psi') throw new Error('event count unavailable');
+      return 4;
+    });
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (url) => {
+      if (url === 'https://psi.example.com') throw new Error('psi unavailable');
+      return {
+        url,
+        strategy: 'mobile',
+        performanceScore: 78,
+        field: {
+          LCP: { value: 2500, rating: 'ni' },
+        },
+        lab: {},
+        fetchedAt: 123,
+      };
+    });
+
+    const rows = await getPerformanceOverviewRows(7);
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
+      id: 'rum-site',
+      source: 'rum-pending',
+      cwvEventCount: 4,
+      perfScore: 78,
+    });
+    expect(rows[1]).toMatchObject({
+      id: 'psi-site',
+      source: 'none',
+      metrics: {},
+      perfScore: null,
+      cwvEventCount: 0,
+    });
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceOverview] RUM rum-site:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceOverview] CWV event count psi-site:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceOverview] PSI psi-site:', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });

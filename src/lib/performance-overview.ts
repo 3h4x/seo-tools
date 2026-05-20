@@ -8,6 +8,8 @@ import {
   type CwvRating,
 } from './constants';
 
+type PerformanceOverviewSite = Awaited<ReturnType<typeof discoverPropertyIds>>[number];
+
 export interface PerformanceOverviewRow {
   id: string;
   name: string;
@@ -17,6 +19,23 @@ export interface PerformanceOverviewRow {
   perfScore: number | null;
   needsKey: boolean;
   cwvEventCount: number;
+}
+
+function emptyRow(
+  site: PerformanceOverviewSite,
+  cwvEventCount: number = 0,
+  needsKey: boolean = false,
+): PerformanceOverviewRow {
+  return {
+    id: site.id,
+    name: site.name,
+    domain: site.domain,
+    source: cwvEventCount > 0 ? 'rum-pending' : 'none',
+    metrics: {},
+    perfScore: null,
+    needsKey,
+    cwvEventCount,
+  };
 }
 
 function fromRum(map: CwvMetricMap): PerformanceOverviewRow['metrics'] {
@@ -32,7 +51,7 @@ function fromRum(map: CwvMetricMap): PerformanceOverviewRow['metrics'] {
 
 function fromPsi(psi: PsiData): {
   metrics: PerformanceOverviewRow['metrics'];
-  source: 'psi-field' | 'psi-lab';
+  source: 'psi-field' | 'psi-lab' | 'none';
 } {
   const out: PerformanceOverviewRow['metrics'] = {};
   if (psi.field) {
@@ -54,19 +73,32 @@ function fromPsi(psi: PsiData): {
     }
   }
 
-  return { metrics: out, source: 'psi-lab' };
+  return {
+    metrics: out,
+    source: Object.keys(out).length > 0 ? 'psi-lab' : 'none',
+  };
 }
 
 async function getPerformanceOverviewRow(
-  site: Awaited<ReturnType<typeof discoverPropertyIds>>[number],
+  site: PerformanceOverviewSite,
   days: number,
 ): Promise<PerformanceOverviewRow> {
   const propertyId = site.ga4PropertyId || '';
   const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
 
   const [rum, eventCount] = await Promise.all([
-    propertyId ? cachedGetRumCoreWebVitals(propertyId, days) : Promise.resolve(null),
-    propertyId ? cachedGetCwvEventCount(propertyId, days) : Promise.resolve(null),
+    propertyId
+      ? cachedGetRumCoreWebVitals(propertyId, days).catch((error) => {
+          console.error(`[PerformanceOverview] RUM ${site.id}:`, error);
+          return null;
+        })
+      : Promise.resolve(null),
+    propertyId
+      ? cachedGetCwvEventCount(propertyId, days).catch((error) => {
+          console.error(`[PerformanceOverview] CWV event count ${site.id}:`, error);
+          return null;
+        })
+      : Promise.resolve(null),
   ]);
 
   const cwvEventCount = eventCount ?? 0;
@@ -84,7 +116,10 @@ async function getPerformanceOverviewRow(
     };
   }
 
-  const psi = await cachedGetPagespeed(url, 'mobile');
+  const psi = await cachedGetPagespeed(url, 'mobile').catch((error) => {
+    console.error(`[PerformanceOverview] PSI ${site.id}:`, error);
+    return null;
+  });
 
   if (psi && (psi.field || Object.keys(psi.lab).length > 0)) {
     const { metrics, source } = fromPsi(psi);
@@ -100,16 +135,7 @@ async function getPerformanceOverviewRow(
     };
   }
 
-  return {
-    id: site.id,
-    name: site.name,
-    domain: site.domain,
-    source: cwvEventCount > 0 ? 'rum-pending' : 'none',
-    metrics: {},
-    perfScore: null,
-    needsKey: !!psi?.needsKey,
-    cwvEventCount,
-  };
+  return emptyRow(site, cwvEventCount, !!psi?.needsKey);
 }
 
 export async function getPerformanceOverviewRows(days: number): Promise<PerformanceOverviewRow[]> {

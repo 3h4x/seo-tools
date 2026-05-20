@@ -143,6 +143,43 @@ describe('getPerformanceSiteData', () => {
       { date: '2026-05-09', metrics: { INP: { value: 180, rating: 'good', sampleCount: 3 } } },
     ]);
   });
+
+  it('keeps the detail payload usable when individual providers throw', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(cachedGetRumCoreWebVitals).mockRejectedValueOnce(new Error('rum unavailable'));
+    vi.mocked(cachedGetRumCwvByPage).mockRejectedValueOnce(new Error('pages unavailable'));
+    vi.mocked(cachedGetRumCwvTrend).mockRejectedValueOnce(new Error('trend unavailable'));
+    vi.mocked(cachedGetCwvEventCount).mockResolvedValueOnce(8);
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => {
+      if (strategy === 'desktop') throw new Error('desktop PSI unavailable');
+      return {
+        url: 'https://borged.io',
+        strategy,
+        performanceScore: 82,
+        field: {
+          LCP: { value: 2400, rating: 'good' },
+        },
+        lab: {},
+        fetchedAt: 123,
+      };
+    });
+
+    const result = await getPerformanceSiteData('borged-io', 7);
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('rum-pending');
+    expect(result!.propagating).toBe(true);
+    expect(result!.eventCount).toBe(8);
+    expect(result!.overall.LCP).toEqual({ value: 2400, rating: 'good', sampleCount: 0 });
+    expect(result!.slowestPages).toEqual([]);
+    expect(result!.trend).toEqual([]);
+    expect(result!.psi.desktop).toBeNull();
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] RUM borged-io:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] RUM pages borged-io:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] RUM trend borged-io:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] PSI desktop borged-io:', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });
 
 describe('getCwvAuditSummary', () => {
@@ -189,6 +226,29 @@ describe('getCwvAuditSummary', () => {
     expect(result!.metrics.CLS).toEqual({ value: 0.08, rating: 'good', sampleCount: 0 });
     expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'mobile');
     expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to PSI when audit RUM throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(cachedGetRumCoreWebVitals).mockRejectedValueOnce(new Error('audit rum unavailable'));
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => ({
+      url: 'https://borged.io',
+      strategy,
+      performanceScore: null,
+      field: null,
+      lab: {
+        LCP: 2800,
+      },
+      fetchedAt: 123,
+    }));
+
+    const result = await getCwvAuditSummary('borged-io');
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('psi-lab');
+    expect(result!.metrics.LCP).toEqual({ value: 2800, rating: 'ni', sampleCount: 0 });
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] audit RUM borged-io:', expect.any(Error));
+    consoleError.mockRestore();
   });
 
   it('returns null for unknown site', async () => {
