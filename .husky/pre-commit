@@ -1,3 +1,10 @@
+#!/usr/bin/env sh
+set -e
+
+if [ ! -x node_modules/.bin/eslint ] || [ ! -x node_modules/.bin/tsc ] || [ ! -x node_modules/.bin/vitest ]; then
+  HUSKY=0 pnpm install --frozen-lockfile
+fi
+
 pnpm lint
 pnpm type-check
 pnpm test

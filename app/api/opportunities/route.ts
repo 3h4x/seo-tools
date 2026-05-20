@@ -17,7 +17,15 @@ export async function GET(req: NextRequest) {
 
   const results: SiteOpportunities[] = await Promise.all(
     scSites.map(async (site) => {
-      const opportunities = await cachedGetKeywordOpportunities(getSCUrl(site), site.id, days);
+      let opportunities: Awaited<ReturnType<typeof cachedGetKeywordOpportunities>>;
+
+      try {
+        opportunities = await cachedGetKeywordOpportunities(getSCUrl(site), site.id, days);
+      } catch (error) {
+        console.error('[GET /api/opportunities]', site.id, error);
+        opportunities = [];
+      }
+
       return {
         siteId: site.id,
         domain: site.domain,
