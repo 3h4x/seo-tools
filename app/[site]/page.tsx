@@ -10,7 +10,7 @@ import {
   cachedGetSearchConsoleQueries,
   cachedGetSitemapSubmissions,
 } from '@/lib/search-console';
-import { cachedAuditSite, normalizeSiteAuditResult } from '@/lib/audit';
+import { cachedAuditSite, createFailedSiteAuditResult, normalizeSiteAuditResult } from '@/lib/audit';
 import { analyzeSiteGaps, createSiteGapSignals } from '@/lib/gaps';
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getScDaily, getGa4Daily, getKeywordDeltas } from '@/lib/db';
@@ -79,6 +79,15 @@ function urlInspectionTone(status: 'pass' | 'warn' | 'fail' | 'error'): string {
   return 'text-neutral-500';
 }
 
+async function providerOr<T>(label: string, promise: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await promise;
+  } catch (error) {
+    console.error(`[SiteDashboard] ${label}:`, error);
+    return fallback;
+  }
+}
+
 export default async function SiteDashboardPage({
   params,
   searchParams,
@@ -94,19 +103,19 @@ export default async function SiteDashboardPage({
   const days = parseAllowedIntegerParam(sp.days, VALID_DAYS, 7);
 
   // Discover GA4 property ID
-  const discovered = await discoverPropertyIds();
+  const discovered = await providerOr('GA4 discovery', discoverPropertyIds(), []);
   const propertyId = discovered.find((s) => s.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
 
   const scUrl = getSCUrl(site);
 
   const [rawAudit, sitemapSubmissions, scComparison, scQueries, scTopPages, ga4Data, cwvSummary] = await Promise.all([
-    cachedAuditSite(site),
-    site.searchConsole ? cachedGetSitemapSubmissions(scUrl) : Promise.resolve([]),
-    site.searchConsole ? cachedGetSearchConsoleDataWithComparison(scUrl, days) : null,
-    site.searchConsole ? cachedGetSearchConsoleQueries(scUrl, days) : null,
-    site.searchConsole ? cachedGetSearchConsolePages(scUrl, days) : null,
-    cachedGetAnalytics(propertyId, days),
-    getCwvAuditSummary(siteId),
+    providerOr(`audit ${siteId}`, cachedAuditSite(site), createFailedSiteAuditResult(site)),
+    site.searchConsole ? providerOr(`sitemap submissions ${siteId}`, cachedGetSitemapSubmissions(scUrl), []) : Promise.resolve([]),
+    site.searchConsole ? providerOr(`Search Console comparison ${siteId}`, cachedGetSearchConsoleDataWithComparison(scUrl, days), { data: null, error: true }) : null,
+    site.searchConsole ? providerOr(`Search Console queries ${siteId}`, cachedGetSearchConsoleQueries(scUrl, days), null) : null,
+    site.searchConsole ? providerOr(`Search Console pages ${siteId}`, cachedGetSearchConsolePages(scUrl, days), null) : null,
+    providerOr(`GA4 ${siteId}`, cachedGetAnalytics(propertyId, days), { data: null, error: Boolean(propertyId) }),
+    providerOr(`CWV ${siteId}`, getCwvAuditSummary(siteId), null),
   ]);
 
   const audit = normalizeSiteAuditResult(rawAudit);

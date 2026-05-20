@@ -24,7 +24,9 @@ vi.mock('../sites', () => ({
   getSCUrl: vi.fn((site: { scUrl?: string; domain: string }) => site.scUrl ?? `sc-domain:${site.domain}`),
 }));
 
-import { cachedAuditSite } from '../audit';
+import { cachedAuditAllSites, cachedAuditSite } from '../audit';
+import { withCache } from '../db';
+import { getManagedSites } from '../sites';
 import type { Site } from '../sites';
 
 function makeSite(overrides: Partial<Site> = {}): Site {
@@ -47,6 +49,34 @@ function makeResponse(
     headers: { 'content-type': 'text/html', ...headers },
   });
 }
+
+describe('cachedAuditAllSites', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns an error audit row when one site audit rejects', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const site = makeSite({ id: 'bad-site', domain: 'bad.example.com' });
+      vi.mocked(getManagedSites).mockResolvedValueOnce([site]);
+      vi.mocked(withCache).mockRejectedValueOnce(new Error('audit failed'));
+
+      const result = await cachedAuditAllSites();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        siteId: 'bad-site',
+        domain: 'bad.example.com',
+        robotsTxt: { status: 'error', message: 'Audit unavailable' },
+        score: { pass: 0, warn: 0, fail: 0, error: 1, total: 1 },
+      });
+      expect(consoleError).toHaveBeenCalledWith('[Audit] bad-site:', expect.any(Error));
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+});
 
 // ---------------------------------------------------------------------------
 // robots.txt checks

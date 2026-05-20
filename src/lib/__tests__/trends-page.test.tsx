@@ -143,6 +143,17 @@ vi.mock('@/lib/search-console', () => ({
 
 vi.mock('@/lib/audit', () => ({
   cachedAuditSite: vi.fn(async () => makeAuditResult()),
+  createFailedSiteAuditResult: vi.fn((site: { id: string; domain: string; testPages?: string[] }) => ({
+    ...makeAuditResult(),
+    siteId: site.id,
+    domain: site.domain,
+    robotsTxt: {
+      ...makeCheckResult({ status: 'error', label: 'robots.txt', message: 'Audit unavailable' }),
+      hasSitemapDirective: false,
+    },
+    score: { pass: 0, warn: 0, fail: 0, error: 1, total: 1 },
+    sampledPages: site.testPages ?? [],
+  })),
   normalizeSiteAuditResult: vi.fn((audit) => ({
     ...audit,
     redirectChains: audit.redirectChains ?? [],
@@ -450,6 +461,45 @@ describe('SiteDashboardPage', () => {
       searchParams: Promise.resolve({}),
     }));
     expect(zeroHtml).not.toContain('data unavailable');
+  });
+
+  it('keeps rendering the site detail page when providers reject', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const { cachedAuditSite, createFailedSiteAuditResult } = await import('@/lib/audit');
+      const { cachedGetAnalytics } = await import('@/lib/ga4');
+      const {
+        cachedGetSearchConsoleDataWithComparison,
+        cachedGetSearchConsolePages,
+        cachedGetSearchConsoleQueries,
+        cachedGetSitemapSubmissions,
+      } = await import('@/lib/search-console');
+      const { getCwvAuditSummary } = await import('@/lib/performance-site');
+
+      vi.mocked(cachedAuditSite).mockRejectedValueOnce(new Error('audit unavailable'));
+      vi.mocked(cachedGetSitemapSubmissions).mockRejectedValueOnce(new Error('sitemaps unavailable'));
+      vi.mocked(cachedGetSearchConsoleDataWithComparison).mockRejectedValueOnce(new Error('SC unavailable'));
+      vi.mocked(cachedGetSearchConsoleQueries).mockRejectedValueOnce(new Error('queries unavailable'));
+      vi.mocked(cachedGetSearchConsolePages).mockRejectedValueOnce(new Error('pages unavailable'));
+      vi.mocked(cachedGetAnalytics).mockRejectedValueOnce(new Error('GA4 unavailable'));
+      vi.mocked(getCwvAuditSummary).mockRejectedValueOnce(new Error('CWV unavailable'));
+
+      const html = renderToStaticMarkup(await SiteDashboardPage({
+        params: Promise.resolve({ site: 'site-1' }),
+        searchParams: Promise.resolve({}),
+      }));
+
+      expect(html).toContain('Site One');
+      expect(html).toContain('Audit unavailable');
+      expect(html).toContain('data unavailable');
+      expect(vi.mocked(createFailedSiteAuditResult)).toHaveBeenCalledWith(managedSite);
+      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] audit site-1:', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] Search Console comparison site-1:', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] GA4 site-1:', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] CWV site-1:', expect.any(Error));
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   it('shows skipped canonical checks as N/A instead of valid self-referential canonicals', async () => {
