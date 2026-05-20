@@ -204,6 +204,51 @@ describe('Overview page', () => {
     ]);
   });
 
+  it('keeps rendering other sites when a per-site provider throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockCachedGetAnalytics.mockReset();
+    mockCachedGetSearchConsoleData.mockReset();
+    mockCachedGetAnalytics
+      .mockResolvedValueOnce(makeAnalytics({
+        current: { users: 10, sessions: 12, views: 18, bounceRate: 0.3, avgSessionDuration: 90 },
+        previous: { users: 8, sessions: 11, views: 16 },
+      }))
+      .mockRejectedValueOnce(new Error('GA4 timeout'));
+    mockCachedGetSearchConsoleData.mockRejectedValueOnce(new Error('SC timeout'));
+
+    const page = await Overview({
+      searchParams: Promise.resolve({ days: '7' }),
+    });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain('Last 7 days');
+    expect(consoleError).toHaveBeenCalledWith('[OverviewPage] Search Console site-a:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[OverviewPage] GA4 site-b:', expect.any(Error));
+
+    const firstCall = (mockSortablePerformanceTable.mock.calls as unknown as Array<[{
+      rows: Array<Record<string, unknown>>;
+    }]>).at(0);
+    expect(firstCall).toBeDefined();
+    expect(firstCall![0].rows).toEqual([
+      expect.objectContaining({
+        id: 'site-a',
+        users: 10,
+        scClicks: null,
+        scPosition: null,
+        hasData: true,
+      }),
+      expect.objectContaining({
+        id: 'site-b',
+        users: 0,
+        scClicks: 0,
+        scPosition: 0,
+        hasData: false,
+      }),
+    ]);
+
+    consoleError.mockRestore();
+  });
+
   it('aggregates traffic sources across sites before rendering the chart', async () => {
     const page = await Overview({
       searchParams: Promise.resolve({ days: '30' }),
