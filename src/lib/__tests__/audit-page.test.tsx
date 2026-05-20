@@ -317,4 +317,66 @@ describe('Audit page', () => {
     expect(html).toContain('RUM');
     expect(html).toContain('Checked moments ago');
   });
+
+  it('keeps rendering when optional per-site audit augmentations fail', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      mockCachedAuditAllSites.mockResolvedValue([
+        makeAudit({ siteId: 'site-a', domain: 'a.test', pass: 9, total: 10 }),
+        makeAudit({ siteId: 'site-b', domain: 'b.test', pass: 7, warn: 1, total: 8 }),
+      ]);
+      mockGetManagedSites.mockResolvedValue([
+        { id: 'site-a', name: 'Site A', domain: 'a.test', ga4PropertyId: 'site-prop-a', testPages: [] },
+        { id: 'site-b', name: 'Site B', domain: 'b.test', ga4PropertyId: 'site-prop-b', testPages: [] },
+      ]);
+      mockLoadSiteGapSignals
+        .mockRejectedValueOnce(new Error('SC pages unavailable'))
+        .mockResolvedValueOnce({ days: 7 });
+      mockAnalyzeSiteGaps.mockReturnValueOnce({
+        gaps: [
+          { severity: 'low', category: 'content', title: 'Refresh content' },
+        ],
+      });
+      mockDetectAllDecay.mockResolvedValue([]);
+      mockGetCwvAuditSummary
+        .mockResolvedValueOnce({
+          metrics: {
+            LCP: { value: 1410, rating: 'good', sampleCount: 8 },
+          },
+          source: 'rum',
+        })
+        .mockRejectedValueOnce(new Error('PSI unavailable'));
+
+      const page = await AuditPage({
+        searchParams: Promise.resolve({ period: '7' }),
+      });
+
+      const html = renderToStaticMarkup(page);
+
+      expect(mockAnalyzeSiteGaps).toHaveBeenCalledTimes(1);
+      expect(mockAnalyzeSiteGaps).toHaveBeenCalledWith(
+        expect.objectContaining({ siteId: 'site-b' }),
+        expect.objectContaining({ id: 'site-b' }),
+        { days: 7 },
+      );
+      expect(consoleError).toHaveBeenCalledWith('[AuditPage] gaps site-a:', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[AuditPage] CWV site-b:', expect.any(Error));
+      expect(html).toContain('a.test');
+      expect(html).toContain('b.test');
+      expect(html).toContain('1410ms');
+      expect(mockGapsClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          allSiteGaps: [
+            expect.objectContaining({
+              siteId: 'site-b',
+              gap: expect.objectContaining({ title: 'Refresh content' }),
+            }),
+          ],
+        }),
+        undefined,
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
 });

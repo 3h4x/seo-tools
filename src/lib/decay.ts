@@ -123,7 +123,14 @@ export async function detectSiteDecay(site: Site, days: 7 | 30): Promise<SiteDec
 export async function detectAllDecay(days: 7 | 30): Promise<SiteDecayResult[]> {
   const sites = await getManagedSites();
   const results = await Promise.all(
-    sites.filter(s => s.searchConsole).map(s => detectSiteDecay(s, days)),
+    sites.filter(s => s.searchConsole).map(async (site) => {
+      try {
+        return await detectSiteDecay(site, days);
+      } catch (error) {
+        console.error(`[decay] ${site.id}:`, error);
+        return null;
+      }
+    }),
   );
   return results.filter((r): r is SiteDecayResult => r !== null);
 }

@@ -63,6 +63,15 @@ function checksSummary(
   return { status: 'pass', label: labels.pass };
 }
 
+async function loadCwvSummaryForAudit(siteId: string): Promise<[string, CwvAuditSummary | null]> {
+  try {
+    return [siteId, await getCwvAuditSummary(siteId)];
+  } catch (error) {
+    console.error(`[AuditPage] CWV ${siteId}:`, error);
+    return [siteId, null];
+  }
+}
+
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const sp = await searchParams;
   const period = sp.period === '30' ? 30 : 7;
@@ -80,7 +89,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
 
   const cwvSummaries = Object.fromEntries(
     await Promise.all(
-      managedSites.map(async (s) => [s.id, await getCwvAuditSummary(s.id)] as [string, CwvAuditSummary | null])
+      managedSites.map((site) => loadCwvSummaryForAudit(site.id))
     )
   );
 
@@ -98,10 +107,15 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     if (!site) return null;
 
     const propertyId = propertyIdBySite.get(site.id) || site.ga4PropertyId || '';
-    const signals = await loadSiteGapSignals(site, propertyId, period);
-    const { gaps } = analyzeSiteGaps(audit, site, signals);
+    try {
+      const signals = await loadSiteGapSignals(site, propertyId, period);
+      const { gaps } = analyzeSiteGaps(audit, site, signals);
 
-    return { site, gaps };
+      return { site, gaps };
+    } catch (error) {
+      console.error(`[AuditPage] gaps ${site.id}:`, error);
+      return { site, gaps: [] };
+    }
   }));
 
   for (const row of siteGapRows) {

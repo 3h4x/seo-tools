@@ -164,4 +164,26 @@ describe('detectAllDecay', () => {
     expect(result.map(r => r.siteId)).toContain('site1');
     expect(result.map(r => r.siteId)).toContain('site2');
   });
+
+  it('keeps other sites when one site decay check throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const site2 = { ...SITE, id: 'site2', domain: 'site2.com' };
+      vi.mocked(getManagedSites).mockResolvedValue([SITE, site2] as never);
+      vi.mocked(getSearchConsolePagesForPeriod).mockImplementation(async (siteUrl) => {
+        if (siteUrl === 'sc-domain:site1.com') {
+          throw new Error('SC unavailable');
+        }
+        return [];
+      });
+
+      const result = await detectAllDecay(7);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].siteId).toBe('site2');
+      expect(consoleError).toHaveBeenCalledWith('[decay] site1:', expect.any(Error));
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
 });
