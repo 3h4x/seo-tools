@@ -7,8 +7,94 @@ import PagespeedKeyForm from '../components/pagespeed-key-form';
 import SitesManager from '../components/sites-manager';
 import AlertDeliveryForm from '../components/alert-delivery-form';
 import AlertRulesManager from '../components/alert-rules-manager';
+import { Skeleton } from '../components/skeletons';
 import type { OperationalStatus } from '@/lib/db';
 import type { Site } from '@/lib/sites';
+
+function FormSectionSkeleton({ compact = false }: { compact?: boolean }) {
+  return (
+    <section className="space-y-4 max-w-2xl">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-5 w-56" />
+        <Skeleton className="h-5 w-28 rounded-full" />
+      </div>
+      <Skeleton className="h-4 w-full max-w-xl" />
+      <Skeleton className={compact ? 'h-11 w-full' : 'h-48 w-full'} />
+      <div className="flex gap-2">
+        <Skeleton className="h-9 w-20" />
+        <Skeleton className="h-9 w-24" />
+      </div>
+    </section>
+  );
+}
+
+function StatusSectionSkeleton() {
+  return (
+    <section className="space-y-3 max-w-5xl">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-5 w-24 rounded-full" />
+      </div>
+      <Skeleton className="h-4 w-full max-w-3xl" />
+      <div className="grid gap-3 md:grid-cols-2">
+        {[...Array(4)].map((_, index) => (
+          <div key={index} className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-3 w-36" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SitesSectionSkeleton() {
+  return (
+    <section className="space-y-4 max-w-6xl">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-36" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <Skeleton className="h-9 w-32" />
+      </div>
+      <div className="grid gap-3">
+        {[...Array(3)].map((_, index) => (
+          <div key={index} className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+            <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-center">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-8 w-20" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ConfigPageSkeleton() {
+  return (
+    <div className="p-6 space-y-10" aria-label="Loading configuration">
+      <FormSectionSkeleton />
+      <hr className="border-neutral-800" />
+      <StatusSectionSkeleton />
+      <hr className="border-neutral-800" />
+      <FormSectionSkeleton compact />
+      <hr className="border-neutral-800" />
+      <FormSectionSkeleton compact />
+      <hr className="border-neutral-800" />
+      <SitesSectionSkeleton />
+      <hr className="border-neutral-800" />
+      <SitesSectionSkeleton />
+    </div>
+  );
+}
 
 export default function ConfigPage() {
   const [source, setSource] = useState<'db' | 'env' | 'none'>('none');
@@ -66,7 +152,7 @@ export default function ConfigPage() {
   }, []);
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return <ConfigPageSkeleton />;
   }
 
   const hasAuth = source !== 'none';
