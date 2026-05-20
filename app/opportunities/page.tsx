@@ -48,7 +48,15 @@ export default async function OpportunitiesPage({
 
   await Promise.all(
     scSites.map(async (site) => {
-      const opps = await cachedGetKeywordOpportunities(getSCUrl(site), site.id, days);
+      let opps: Awaited<ReturnType<typeof cachedGetKeywordOpportunities>>;
+
+      try {
+        opps = await cachedGetKeywordOpportunities(getSCUrl(site), site.id, days);
+      } catch (error) {
+        console.error('[OpportunitiesPage]', site.id, error);
+        opps = [];
+      }
+
       if (!opps) return;
       for (const opp of opps) {
         allOpportunities.push({ domain: site.domain, opportunity: opp });

@@ -89,4 +89,39 @@ describe('Opportunities page', () => {
 
     expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:a.test', 'site-a', 90);
   });
+
+  it('keeps rendering other site opportunities when one provider call fails', async () => {
+    mockGetManagedSites.mockResolvedValue([
+      { id: 'site-a', name: 'Site A', domain: 'a.test', searchConsole: true, testPages: ['/'] },
+      { id: 'site-b', name: 'Site B', domain: 'b.test', searchConsole: true, testPages: ['/'] },
+    ]);
+    mockCachedGetKeywordOpportunities
+      .mockResolvedValueOnce([opportunity])
+      .mockRejectedValueOnce(new Error('Search Console timeout'));
+
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const page = await OpportunitiesPage({
+      searchParams: Promise.resolve({ days: '28' }),
+    });
+    renderToStaticMarkup(page);
+
+    expect(mockDataTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rows: expect.arrayContaining([
+          expect.arrayContaining([
+            expect.objectContaining({ props: expect.objectContaining({ children: 'seo dashboard' }) }),
+          ]),
+        ]),
+      }),
+      undefined,
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      '[OpportunitiesPage]',
+      'site-b',
+      expect.any(Error),
+    );
+
+    consoleError.mockRestore();
+  });
 });
