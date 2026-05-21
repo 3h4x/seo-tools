@@ -56,6 +56,19 @@ function buildUnavailableTargets(
     }));
 }
 
+function buildSourceUnavailableMatrix(site: Site, managedSites: Site[]): CrossLinkSourceMatrix {
+  return {
+    sourceSiteId: site.id,
+    sourceSiteName: site.name,
+    sourceDomain: site.domain,
+    status: 'search-console-unavailable',
+    attemptedPages: 0,
+    crawledPages: 0,
+    failedPages: 0,
+    targets: buildUnavailableTargets(site.id, managedSites),
+  };
+}
+
 function normalizePageUrl(domain: string, page: string): string | null {
   if (!page) return null;
   try {
@@ -248,6 +261,9 @@ export async function getCrossLinkMatrix(sites: Site[]): Promise<CrossLinkSource
       site.id,
       () => getCrossLinksForSourceSite(site, sites),
       CROSS_LINK_TTL_MS,
-    )),
+    ).catch((error) => {
+      console.error(`[cross-links] ${site.id}:`, error);
+      return buildSourceUnavailableMatrix(site, sites);
+    })),
   ).then((rows) => rows.filter((row): row is CrossLinkSourceMatrix => row !== null));
 }

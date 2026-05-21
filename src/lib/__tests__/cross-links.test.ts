@@ -220,6 +220,110 @@ describe('getCrossLinkMatrix', () => {
     ]);
   });
 
+  it('keeps other source rows when one source-level provider call rejects', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockCachedGetSearchConsolePages.mockImplementation((siteUrl: string) => {
+      if (siteUrl === 'sc-domain:alpha.test') {
+        throw new Error('Search Console failed');
+      }
+      if (siteUrl === 'sc-domain:beta.test') {
+        return [{ page: '/home' }];
+      }
+      if (siteUrl === 'sc-domain:gamma.test') {
+        return [];
+      }
+      return [];
+    });
+
+    const matrix = await getCrossLinkMatrix(sites);
+
+    expect(matrix).toEqual([
+      {
+        sourceSiteId: 'alpha',
+        sourceSiteName: 'Alpha',
+        sourceDomain: 'alpha.test',
+        status: 'search-console-unavailable',
+        attemptedPages: 0,
+        crawledPages: 0,
+        failedPages: 0,
+        targets: [
+          {
+            targetSiteId: 'beta',
+            targetSiteName: 'Beta',
+            targetDomain: 'beta.test',
+            linkedPages: null,
+            missingPages: null,
+            linkedExamples: [],
+          },
+          {
+            targetSiteId: 'gamma',
+            targetSiteName: 'Gamma',
+            targetDomain: 'gamma.test',
+            linkedPages: null,
+            missingPages: null,
+            linkedExamples: [],
+          },
+        ],
+      },
+      {
+        sourceSiteId: 'beta',
+        sourceSiteName: 'Beta',
+        sourceDomain: 'beta.test',
+        status: 'ok',
+        attemptedPages: 1,
+        crawledPages: 1,
+        failedPages: 0,
+        targets: [
+          {
+            targetSiteId: 'alpha',
+            targetSiteName: 'Alpha',
+            targetDomain: 'alpha.test',
+            linkedPages: 1,
+            missingPages: 0,
+            linkedExamples: ['https://beta.test/home'],
+          },
+          {
+            targetSiteId: 'gamma',
+            targetSiteName: 'Gamma',
+            targetDomain: 'gamma.test',
+            linkedPages: 0,
+            missingPages: 1,
+            linkedExamples: [],
+          },
+        ],
+      },
+      {
+        sourceSiteId: 'gamma',
+        sourceSiteName: 'Gamma',
+        sourceDomain: 'gamma.test',
+        status: 'no-pages',
+        attemptedPages: 0,
+        crawledPages: 0,
+        failedPages: 0,
+        targets: [
+          {
+            targetSiteId: 'alpha',
+            targetSiteName: 'Alpha',
+            targetDomain: 'alpha.test',
+            linkedPages: null,
+            missingPages: null,
+            linkedExamples: [],
+          },
+          {
+            targetSiteId: 'beta',
+            targetSiteName: 'Beta',
+            targetDomain: 'beta.test',
+            linkedPages: null,
+            missingPages: null,
+            linkedExamples: [],
+          },
+        ],
+      },
+    ]);
+    expect(consoleError).toHaveBeenCalledWith('[cross-links] alpha:', expect.any(Error));
+    consoleError.mockRestore();
+  });
+
   it('excludes failed page fetches from missing-page counts and marks fully failed crawls unavailable', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: string | URL) => {
       const url = String(input);
