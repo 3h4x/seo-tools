@@ -2,11 +2,30 @@
 
 import React, { useState, useEffect } from 'react';
 import { PositionBadge } from './position-badge';
+import { Skeleton } from './skeletons';
 import type { SCQueryRow, PageQueryResult } from '@/lib/search-console';
 
 interface PageQueriesTableProps {
   siteId: string;
   days: number;
+}
+
+function PageQueriesSkeleton() {
+  return (
+    <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4 space-y-3" aria-label="Loading page query data">
+      {[...Array(5)].map((_, index) => (
+        <div key={index} className="grid grid-cols-[1fr_4rem_4rem] items-center gap-4 md:grid-cols-[1fr_4rem_4rem_4rem]">
+          <div className="flex items-center gap-2">
+            <Skeleton className="size-2 rounded-sm" />
+            <Skeleton className="h-3 w-full max-w-56" />
+          </div>
+          <Skeleton className="h-3 w-12 justify-self-end" />
+          <Skeleton className="hidden h-3 w-12 justify-self-end md:block" />
+          <Skeleton className="h-5 w-12 justify-self-end rounded-full" />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
@@ -45,7 +64,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
         Top Pages (Search Console)
       </h2>
       {loading ? (
-        <p className="text-neutral-600 text-sm">Loading…</p>
+        <PageQueriesSkeleton />
       ) : rows.length === 0 ? (
         <p className="text-neutral-600 text-sm">No page data available.</p>
       ) : (

@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import ClientChart from './client-chart';
 import TrendChart from './trend-chart';
+import { Skeleton } from './skeletons';
 import { formatDateShort } from '@/lib/format';
 import { METRIC_COLORS } from '@/lib/constants';
 
@@ -32,6 +33,27 @@ interface SiteMeta {
   id: string;
   name: string;
   color: string;
+}
+
+function DailyTrafficSkeleton() {
+  return (
+    <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 space-y-4" aria-label="Loading daily traffic data">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="mr-auto space-y-2">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-3 w-56" />
+        </div>
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-8 w-24" />
+      </div>
+      <Skeleton className="h-80 w-full" />
+      <div className="flex flex-wrap gap-2">
+        {[...Array(4)].map((_, index) => (
+          <Skeleton key={index} className="h-5 w-24 rounded-full" />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function DailyTrafficChart({ days }: { days: number }) {
@@ -64,11 +86,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
   }, [days]);
 
   if (!data) {
-    return (
-      <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
-        <div className="h-80 flex items-center justify-center text-neutral-600 text-sm">Loading daily data...</div>
-      </div>
-    );
+    return <DailyTrafficSkeleton />;
   }
 
   const collectedDates = Object.keys(data).sort();

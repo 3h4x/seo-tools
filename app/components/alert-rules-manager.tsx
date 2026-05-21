@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
+import { Skeleton } from './skeletons';
 
 type FormState = {
   id?: number;
@@ -27,6 +28,22 @@ function emptyForm(siteId: string): FormState {
     thresholdPct: '25',
     channels: ['email'],
   };
+}
+
+function AlertRulesSkeleton() {
+  return (
+    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 space-y-3" aria-label="Loading alert rules">
+      {[...Array(3)].map((_, index) => (
+        <div key={index} className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_1fr_4rem]">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function AlertRulesManager({ sites }: { sites: Site[] }) {
@@ -117,7 +134,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
       </div>
 
       {loading ? (
-        <p className="text-sm text-neutral-500">Loading rules…</p>
+        <AlertRulesSkeleton />
       ) : rules.length === 0 ? (
         <p className="text-sm text-neutral-500">No rules yet.</p>
       ) : (

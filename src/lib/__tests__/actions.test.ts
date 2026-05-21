@@ -1,0 +1,208 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const {
+  mockCachedAuditAllSites,
+  mockDetectAllDecay,
+  mockGetKeywordDropActions,
+  mockAnalyzeSiteGaps,
+  mockLoadSiteGapSignals,
+  mockDiscoverPropertyIds,
+  mockGetManagedSites,
+} = vi.hoisted(() => ({
+  mockCachedAuditAllSites: vi.fn(),
+  mockDetectAllDecay: vi.fn(),
+  mockGetKeywordDropActions: vi.fn(),
+  mockAnalyzeSiteGaps: vi.fn(),
+  mockLoadSiteGapSignals: vi.fn(),
+  mockDiscoverPropertyIds: vi.fn(),
+  mockGetManagedSites: vi.fn(),
+}));
+
+vi.mock('../audit', () => ({
+  cachedAuditAllSites: mockCachedAuditAllSites,
+}));
+
+vi.mock('../decay', () => ({
+  detectAllDecay: mockDetectAllDecay,
+}));
+
+vi.mock('../db', () => ({
+  getKeywordDropActions: mockGetKeywordDropActions,
+}));
+
+vi.mock('../gaps', () => ({
+  analyzeSiteGaps: mockAnalyzeSiteGaps,
+  createSiteGapSignals: ({
+    ga4TopPages,
+    scTopPages,
+    days,
+  }: {
+    ga4TopPages?: unknown;
+    scTopPages?: unknown;
+    days?: number;
+  } = {}) => ({
+    ga4TopPages,
+    scTopPages,
+    days,
+  }),
+  loadSiteGapSignals: mockLoadSiteGapSignals,
+}));
+
+vi.mock('../ga4', () => ({
+  discoverPropertyIds: mockDiscoverPropertyIds,
+}));
+
+vi.mock('../sites', () => ({
+  getManagedSites: mockGetManagedSites,
+}));
+
+import { loadActionQueue } from '../actions';
+
+const siteA = {
+  id: 'site-a',
+  name: 'Site A',
+  domain: 'a.test',
+  searchConsole: true,
+  testPages: ['/'],
+};
+
+const siteB = {
+  id: 'site-b',
+  name: 'Site B',
+  domain: 'b.test',
+  searchConsole: true,
+  testPages: ['/'],
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockGetManagedSites.mockResolvedValue([siteA, siteB]);
+  mockDiscoverPropertyIds.mockResolvedValue([
+    { ...siteA, ga4PropertyId: 'properties/111' },
+    { ...siteB, ga4PropertyId: 'properties/222' },
+  ]);
+  mockCachedAuditAllSites.mockResolvedValue([]);
+  mockDetectAllDecay.mockResolvedValue([]);
+  mockLoadSiteGapSignals.mockResolvedValue({ scTopPages: [], days: 7 });
+  mockAnalyzeSiteGaps.mockReturnValue({ gaps: [] });
+  mockGetKeywordDropActions.mockReturnValue([]);
+});
+
+describe('loadActionQueue', () => {
+  it('keeps keyword actions when external aggregate sources fail', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockDiscoverPropertyIds.mockRejectedValueOnce(new Error('GA4 unavailable'));
+    mockCachedAuditAllSites.mockRejectedValueOnce(new Error('audit unavailable'));
+    mockDetectAllDecay.mockRejectedValueOnce(new Error('decay unavailable'));
+    mockGetKeywordDropActions.mockReturnValueOnce([
+      {
+        query: 'seo report',
+        clicks: 12,
+        impressions: 100,
+        currentPosition: 8,
+        previousPosition: 4,
+        delta: -4,
+        window: '7d',
+      },
+    ]);
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        kind: 'keyword',
+        priority: 'medium',
+        siteId: 'site-a',
+        title: 'Recover ranking drop',
+      }),
+    ]);
+    expect(result.counts).toEqual({
+      critical: 0,
+      high: 0,
+      medium: 1,
+      low: 0,
+    });
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] GA4 discovery:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] audits:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] decay:', expect.any(Error));
+
+    consoleError.mockRestore();
+  });
+
+  it('keeps gap actions when one site signal load fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockCachedAuditAllSites.mockResolvedValueOnce([
+      { siteId: 'site-a' },
+      { siteId: 'site-b' },
+    ]);
+    mockLoadSiteGapSignals
+      .mockRejectedValueOnce(new Error('Search Console timeout'))
+      .mockResolvedValueOnce({
+        days: 7,
+        scTopPages: [
+          { page: '/target', clicks: 12, impressions: 120, ctr: 0.1, position: 3 },
+        ],
+      });
+    mockAnalyzeSiteGaps.mockImplementation((audit: { siteId: string }) => ({
+      gaps: [
+        {
+          id: 'missing-jsonld',
+          title: `Fix ${audit.siteId}`,
+          description: 'Add structured data.',
+          severity: 'high',
+          category: 'structured-data',
+          hint: 'Add JSON-LD.',
+          affectedPages: audit.siteId === 'site-b' ? ['/target'] : undefined,
+        },
+      ],
+    }));
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        siteId: 'site-b',
+        impactLabel: '12 clicks at risk',
+      }),
+      expect.objectContaining({
+        siteId: 'site-a',
+        impactLabel: 'Structural issue',
+      }),
+    ]);
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] gap signals site-a:', expect.any(Error));
+
+    consoleError.mockRestore();
+  });
+
+  it('skips one site when keyword history reads fail', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockGetKeywordDropActions
+      .mockImplementationOnce(() => {
+        throw new Error('keyword DB unavailable');
+      })
+      .mockReturnValueOnce([
+        {
+          query: 'technical seo',
+          clicks: 140,
+          impressions: 300,
+          currentPosition: 9,
+          previousPosition: 3,
+          delta: -6,
+          window: '30d',
+        },
+      ]);
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        kind: 'keyword',
+        priority: 'high',
+        siteId: 'site-b',
+      }),
+    ]);
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] keyword drops site-a:', expect.any(Error));
+
+    consoleError.mockRestore();
+  });
+});

@@ -21,4 +21,22 @@ describe('AlertRulesManager', () => {
     expect(html).toContain('GA4 sessions');
     expect(html).not.toContain('Audit score');
   });
+
+  it('renders a structured skeleton while rules are loading', () => {
+    const html = renderToStaticMarkup(
+      <AlertRulesManager
+        sites={[
+          {
+            id: 'site-a',
+            name: 'Site A',
+            domain: 'a.example.com',
+            testPages: ['/'],
+          },
+        ]}
+      />,
+    );
+
+    expect(html).toContain('aria-label="Loading alert rules"');
+    expect(html).not.toContain('Loading rules');
+  });
 });

@@ -1,7 +1,7 @@
 import { cachedAuditAllSites } from './audit';
 import { detectAllDecay, type DecaySeverity } from './decay';
 import { getKeywordDropActions } from './db';
-import { analyzeSiteGaps, loadSiteGapSignals, type GapRecommendation, type GapSeverity } from './gaps';
+import { analyzeSiteGaps, createSiteGapSignals, loadSiteGapSignals, type GapRecommendation, type GapSeverity } from './gaps';
 import { discoverPropertyIds } from './ga4';
 import { getManagedSites } from './sites';
 
@@ -43,6 +43,19 @@ const EMPTY_PRIORITY_COUNTS: Record<ActionQueueItem['priority'], number> = {
   medium: 0,
   low: 0,
 };
+
+async function loadOrFallback<T>(
+  label: string,
+  promise: Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await promise;
+  } catch (error) {
+    console.error(`[ActionQueue] ${label}:`, error);
+    return fallback;
+  }
+}
 
 function normalizePageKey(value: string): string {
   try {
@@ -93,11 +106,11 @@ function priorityFromDecay(severity: DecaySeverity): ActionQueueItem['priority']
 }
 
 export async function loadActionQueue(days: number = 7): Promise<ActionQueueData> {
-  const [managedSites, discoveredSites, audits, decayResults] = await Promise.all([
-    getManagedSites(),
-    discoverPropertyIds(),
-    cachedAuditAllSites(),
-    detectAllDecay(days === 30 ? 30 : 7),
+  const managedSites = await getManagedSites();
+  const [discoveredSites, audits, decayResults] = await Promise.all([
+    loadOrFallback('GA4 discovery', discoverPropertyIds(), []),
+    loadOrFallback('audits', cachedAuditAllSites(), []),
+    loadOrFallback('decay', detectAllDecay(days === 30 ? 30 : 7), []),
   ]);
 
   const propertyIdBySite = new Map(
@@ -111,7 +124,11 @@ export async function loadActionQueue(days: number = 7): Promise<ActionQueueData
         const site = siteById.get(audit.siteId);
         if (!site) return [];
 
-        const signals = await loadSiteGapSignals(site, propertyIdBySite.get(site.id) ?? '', days);
+        const signals = await loadSiteGapSignals(site, propertyIdBySite.get(site.id) ?? '', days)
+          .catch((error) => {
+            console.error(`[ActionQueue] gap signals ${site.id}:`, error);
+            return createSiteGapSignals({ days });
+          });
         const impactPages = signals.scTopPages ?? [];
 
         return analyzeSiteGaps(audit, site, signals).gaps.map((gap) => {
@@ -159,7 +176,7 @@ export async function loadActionQueue(days: number = 7): Promise<ActionQueueData
   });
 
   const keywordItems = managedSites.flatMap((site) => (
-    getKeywordDropActions(site.id, 5).map((keyword) => ({
+    loadKeywordDropActions(site.id).map((keyword) => ({
       id: `${site.id}-keyword-${keyword.query}`,
       kind: 'keyword' as const,
       priority: priorityFromKeyword(keyword.delta, keyword.clicks),
@@ -188,4 +205,13 @@ export async function loadActionQueue(days: number = 7): Promise<ActionQueueData
   );
 
   return { items, counts };
+}
+
+function loadKeywordDropActions(siteId: string): ReturnType<typeof getKeywordDropActions> {
+  try {
+    return getKeywordDropActions(siteId, 5);
+  } catch (error) {
+    console.error(`[ActionQueue] keyword drops ${siteId}:`, error);
+    return [];
+  }
 }
