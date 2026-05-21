@@ -41,8 +41,14 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
 
   const triggerRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetch('/api/cache', { method: 'DELETE' });
-    // Update timestamp after refresh
+    try {
+      const res = await fetch('/api/cache', { method: 'DELETE' });
+      if (!res.ok) {
+        console.error(`[RefreshContext] cache clear failed (${res.status})`);
+      }
+    } catch (err) {
+      console.error('[RefreshContext] cache clear:', err);
+    }
     const now = Date.now();
     setLastUpdated(now);
     localStorage.setItem('seo-tools:lastUpdated', now.toString());

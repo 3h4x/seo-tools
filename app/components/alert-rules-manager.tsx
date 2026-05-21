@@ -30,6 +30,22 @@ function emptyForm(siteId: string): FormState {
   };
 }
 
+export async function readAlertRulesResponse(res: Response): Promise<AlertRule[]> {
+  if (!res.ok) {
+    throw new Error(`Failed to load alert rules (${res.status})`);
+  }
+  let payload: unknown = null;
+  try {
+    payload = await res.json();
+  } catch {
+    throw new Error('Alert rules response was invalid');
+  }
+  if (!payload || typeof payload !== 'object' || !Array.isArray((payload as { rules?: unknown }).rules)) {
+    throw new Error('Alert rules response was invalid');
+  }
+  return (payload as { rules: AlertRule[] }).rules;
+}
+
 function AlertRulesSkeleton() {
   return (
     <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 space-y-3" aria-label="Loading alert rules">
@@ -54,14 +70,15 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
   const [error, setError] = useState('');
 
   const loadRules = useCallback(async () => {
-    const res = await fetch('/api/alerts/rules');
-    const data = await res.json() as { rules: AlertRule[] };
-    setRules(data.rules);
+    setRules(await readAlertRulesResponse(await fetch('/api/alerts/rules')));
   }, []);
 
   useEffect(() => {
     loadRules()
-      .catch(() => setError('Failed to load alert rules'))
+      .catch((err) => {
+        console.error('[AlertRulesManager] load:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load alert rules');
+      })
       .finally(() => setLoading(false));
   }, [loadRules]);
 
@@ -108,13 +125,19 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
   }
 
   async function handleDelete(id: number) {
-    const res = await fetch(`/api/alerts/rules?id=${id}`, { method: 'DELETE' });
-    const result = await getMutationResult(res, 'Delete failed');
-    if (!result.ok) {
-      setError(result.error ?? 'Delete failed');
-      return;
+    setError('');
+    try {
+      const res = await fetch(`/api/alerts/rules?id=${id}`, { method: 'DELETE' });
+      const result = await getMutationResult(res, 'Delete failed');
+      if (!result.ok) {
+        setError(result.error ?? 'Delete failed');
+        return;
+      }
+      await loadRules();
+    } catch (err) {
+      console.error('[AlertRulesManager] delete:', err);
+      setError(err instanceof Error ? err.message : 'Delete failed');
     }
-    await loadRules();
   }
 
   if (sites.length === 0) {
@@ -238,7 +261,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
           ))}
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
 
         <button
           onClick={() => void handleSave()}

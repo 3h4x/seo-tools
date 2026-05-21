@@ -210,12 +210,15 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderedIds: nextSites.map(site => site.id) }),
       });
-      const data = await res.json() as { ok: boolean; error?: string };
-      if (!data.ok) {
-        throw new Error(data.error ?? 'Failed to reorder sites');
+      const result = await getMutationResult(res, 'Failed to reorder sites');
+      if (!result.ok) {
+        setSites(previousSites);
+        setError(result.error ?? 'Failed to reorder sites');
+        return;
       }
       await reloadSites();
     } catch (err) {
+      console.error('[SitesManager] persistSiteOrder:', err);
       setSites(previousSites);
       setError(err instanceof Error ? err.message : 'Reorder failed');
     } finally {
