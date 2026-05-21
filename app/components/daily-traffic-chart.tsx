@@ -36,6 +36,12 @@ interface SiteMeta {
   color: string;
 }
 
+interface DailyApiResponse {
+  data?: DailyData;
+  sites?: SiteMeta[];
+  error?: string;
+}
+
 function DailyTrafficSkeleton() {
   return (
     <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 space-y-4" aria-label="Loading daily traffic data">
@@ -57,8 +63,20 @@ function DailyTrafficSkeleton() {
   );
 }
 
+function DailyTrafficError({ message }: { message: string }) {
+  return (
+    <div className="bg-neutral-900 rounded-lg border border-red-950 p-5" role="alert">
+      <div className="h-40 flex flex-col items-center justify-center text-center">
+        <h2 className="text-xs uppercase tracking-wider text-red-300 font-semibold">Daily Traffic Unavailable</h2>
+        <p className="mt-2 max-w-md text-sm text-neutral-400">{message}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function DailyTrafficChart({ days }: { days: number }) {
   const [data, setData] = useState<DailyData | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [sitesMap, setSitesMap] = useState<Map<string, SiteMeta>>(new Map());
   const [activeMetrics, setActiveMetrics] = useState<Set<Metric>>(new Set(['views', 'clicks']));
   const [chartType, setChartType] = useState<ChartType>('area');
@@ -75,16 +93,39 @@ export default function DailyTrafficChart({ days }: { days: number }) {
   };
 
   useEffect(() => {
+    let cancelled = false;
+    setData(null);
+    setLoadError(null);
+
     fetch(`/api/daily?days=${days}`)
-      .then(r => r.json())
+      .then(async r => {
+        const payload = await r.json() as DailyApiResponse;
+        if (!r.ok) {
+          throw new Error(payload.error ?? `Daily traffic request failed with status ${r.status}`);
+        }
+        return payload;
+      })
       .then(d => {
-        setData(d.data);
+        if (cancelled) return;
+        setData(d.data ?? {});
         const map = new Map<string, SiteMeta>();
         for (const s of (d.sites ?? []) as SiteMeta[]) map.set(s.id, s);
         setSitesMap(map);
       })
-      .catch(() => {});
+      .catch(error => {
+        if (cancelled) return;
+        console.error('[DailyTrafficChart]', error);
+        setLoadError('Daily traffic data could not be loaded. Refresh the dashboard to try again.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [days]);
+
+  if (loadError) {
+    return <DailyTrafficError message={loadError} />;
+  }
 
   if (!data) {
     return <DailyTrafficSkeleton />;
