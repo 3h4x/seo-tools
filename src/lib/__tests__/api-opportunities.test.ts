@@ -103,4 +103,17 @@ describe('GET /api/opportunities', () => {
       expect.any(Error),
     );
   });
+
+  it('returns a JSON 500 when the managed sites list cannot be loaded', async () => {
+    mockGetManagedSites.mockRejectedValueOnce(new Error('sites table unavailable'));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await GET(req('28'));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'failed_to_load_sites' });
+    expect(consoleError).toHaveBeenCalledWith('[GET /api/opportunities] load sites', expect.any(Error));
+    expect(mockCachedGetKeywordOpportunities).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
 });

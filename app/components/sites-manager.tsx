@@ -273,8 +273,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       }
       await reloadSites();
       setEditMode('none');
-    } catch {
-      setError('Request failed');
+    } catch (err) {
+      console.error('[SitesManager] save:', err);
+      setError(err instanceof Error ? err.message : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -292,8 +293,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       setSites(prev => prev.filter(s => s.id !== id));
       setDeleteConfirm(null);
       if (editMode === id) setEditMode('none');
-    } catch {
-      setError('Delete failed');
+    } catch (err) {
+      console.error('[SitesManager] delete:', err);
+      setError(err instanceof Error ? err.message : 'Delete failed');
     }
   }
 

@@ -117,8 +117,9 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
 
       await loadRules();
       resetForm();
-    } catch {
-      setError('Request failed');
+    } catch (err) {
+      console.error('[AlertRulesManager] save:', err);
+      setError(err instanceof Error ? err.message : 'Save failed');
     } finally {
       setSaving(false);
     }

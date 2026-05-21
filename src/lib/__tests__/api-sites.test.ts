@@ -514,6 +514,33 @@ describe('PUT /api/sites/order', () => {
     expect(res.status).toBe(400);
     expect(data).toEqual({ ok: false, error: 'orderedIds must include every configured site exactly once' });
   });
+
+  it('returns 400 when storage reports an unknown site id', async () => {
+    vi.mocked(dbReorderSites).mockImplementation(() => {
+      throw new Error('unknown site id: site-x');
+    });
+
+    const res = await PUT_ORDER(putOrderReq({ orderedIds: ['site-x'] }));
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data).toEqual({ ok: false, error: 'unknown site id: site-x' });
+  });
+
+  it('returns a JSON 500 when storage fails unexpectedly', async () => {
+    vi.mocked(dbReorderSites).mockImplementation(() => {
+      throw new Error('SQLITE_IOERR: disk I/O error');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await PUT_ORDER(putOrderReq({ orderedIds: ['site-a', 'site-b', 'site-c'] }));
+    const data = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(data).toEqual({ ok: false, error: 'failed_to_reorder_sites' });
+    expect(consoleError).toHaveBeenCalledWith('[PUT /api/sites/order]', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });
 
 describe('DELETE /api/sites', () => {

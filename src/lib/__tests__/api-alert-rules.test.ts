@@ -143,6 +143,43 @@ describe('POST /api/alerts/rules', () => {
     expect(dbUpsertAlertRule).not.toHaveBeenCalled();
   });
 
+  it('returns 400 when the siteId is unknown', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'site-b', name: 'Site B', domain: 'b.example.com', testPages: ['/'] },
+    ]);
+
+    const res = await POST(postReq({
+      siteId: 'site-a',
+      metric: 'sc_clicks',
+      thresholdPct: 25,
+      channels: ['email'],
+    }));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'Unknown site' });
+    expect(dbUpsertAlertRule).not.toHaveBeenCalled();
+  });
+
+  it('returns a JSON 500 when the sites list cannot be loaded', async () => {
+    vi.mocked(dbGetSites).mockImplementation(() => {
+      throw new Error('sites table unavailable');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await POST(postReq({
+      siteId: 'site-a',
+      metric: 'sc_clicks',
+      thresholdPct: 25,
+      channels: ['email'],
+    }));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ ok: false, error: 'failed_to_load_sites' });
+    expect(consoleError).toHaveBeenCalledWith('[POST /api/alerts/rules] load sites', expect.any(Error));
+    expect(dbUpsertAlertRule).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
   it('returns a JSON 500 when persistence fails after validation passes', async () => {
     vi.mocked(dbUpsertAlertRule).mockImplementation(() => {
       throw new Error('storage failure');

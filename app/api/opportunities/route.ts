@@ -12,7 +12,14 @@ export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const days = parseAllowedIntegerParam(params.get('days'), OPPORTUNITIES_VALID_DAYS, OPPORTUNITIES_DEFAULT_DAYS);
 
-  const sites = await getManagedSites();
+  let sites;
+  try {
+    sites = await getManagedSites();
+  } catch (error) {
+    console.error('[GET /api/opportunities] load sites', error);
+    return NextResponse.json({ error: 'failed_to_load_sites' }, { status: 500 });
+  }
+
   const scSites = sites.filter(s => s.searchConsole !== false);
 
   const results: SiteOpportunities[] = await Promise.all(

@@ -27,10 +27,6 @@ function validateRuleInput(raw: unknown) {
     throw new Error('siteId is required');
   }
 
-  if (!dbGetSites().some((site) => site.id === siteId)) {
-    throw new Error('Unknown site');
-  }
-
   if (!VALID_METRICS.includes(metric as AlertMetric)) {
     throw new Error('metric must be one of sc_clicks, ga4_sessions');
   }
@@ -72,6 +68,21 @@ export async function POST(req: Request) {
     normalized = validateRuleInput(parsed.body);
   } catch (error) {
     return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 400 });
+  }
+
+  let knownSiteIds: Set<string>;
+  try {
+    knownSiteIds = new Set(dbGetSites().map((site) => site.id));
+  } catch (error) {
+    console.error('[POST /api/alerts/rules] load sites', error);
+    return NextResponse.json(
+      { ok: false, error: 'failed_to_load_sites' },
+      { status: 500 },
+    );
+  }
+
+  if (!knownSiteIds.has(normalized.siteId)) {
+    return NextResponse.json({ ok: false, error: 'Unknown site' }, { status: 400 });
   }
 
   try {
