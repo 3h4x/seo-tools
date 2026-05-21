@@ -7,6 +7,74 @@ type PingState = {
   message: string;
 } | null;
 
+type IndexNowPayload = {
+  ok?: boolean;
+  error?: string;
+  details?: string;
+  submittedCount?: number;
+  totalUrls?: number;
+  truncated?: boolean;
+};
+
+type IndexNowResponse =
+  | { ok: true; message: string }
+  | { ok: false; error: string };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function parseIndexNowPayload(value: unknown): IndexNowPayload {
+  if (!isRecord(value)) return {};
+
+  return {
+    ok: typeof value.ok === 'boolean' ? value.ok : undefined,
+    error: typeof value.error === 'string' ? value.error : undefined,
+    details: typeof value.details === 'string' ? value.details : undefined,
+    submittedCount: typeof value.submittedCount === 'number' ? value.submittedCount : undefined,
+    totalUrls: typeof value.totalUrls === 'number' ? value.totalUrls : undefined,
+    truncated: typeof value.truncated === 'boolean' ? value.truncated : undefined,
+  };
+}
+
+function formatIndexNowError(payload: IndexNowPayload, status: number): string {
+  const error = payload.error?.trim() || `IndexNow request failed (${status})`;
+  const details = payload.details?.trim();
+  return details ? `${error}: ${details}` : error;
+}
+
+function formatIndexNowSuccess(payload: IndexNowPayload): string {
+  const submittedCount = payload.submittedCount;
+  const totalUrls = payload.totalUrls;
+
+  if (payload.truncated && typeof submittedCount === 'number' && typeof totalUrls === 'number') {
+    return `IndexNow ping submitted (submitted first ${submittedCount.toLocaleString()} of ${totalUrls.toLocaleString()} sitemap URLs)`;
+  }
+
+  if (typeof submittedCount === 'number') {
+    return `IndexNow ping submitted (${submittedCount.toLocaleString()} URLs)`;
+  }
+
+  return 'IndexNow ping submitted';
+}
+
+export async function readIndexNowResponse(response: Response): Promise<IndexNowResponse> {
+  let rawPayload: unknown = {};
+  try {
+    rawPayload = await response.json();
+  } catch {
+    rawPayload = {};
+  }
+
+  const payload = parseIndexNowPayload(rawPayload);
+
+  if (!response.ok || payload.ok !== true) {
+    return { ok: false, error: formatIndexNowError(payload, response.status) };
+  }
+
+  return { ok: true, message: formatIndexNowSuccess(payload) };
+}
+
 export function IndexNowButton({
   siteId,
   configured,
@@ -27,34 +95,25 @@ export function IndexNowButton({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ siteId }),
       });
-      const payload = await response.json() as {
-        ok?: boolean;
-        error?: string;
-        submittedCount?: number;
-        totalUrls?: number;
-        truncated?: boolean;
-      };
+      const result = await readIndexNowResponse(response);
 
-      if (!response.ok || payload.ok !== true) {
+      if (!result.ok) {
         setResult({
           tone: 'error',
-          message: payload.error?.trim() || `Request failed (${response.status})`,
+          message: result.error,
         });
         return;
       }
 
-      const suffix = payload.truncated
-        ? ` (submitted first ${payload.submittedCount?.toLocaleString()} of ${payload.totalUrls?.toLocaleString()} sitemap URLs)`
-        : ` (${payload.submittedCount?.toLocaleString()} URLs)`;
-
       setResult({
         tone: 'success',
-        message: `IndexNow ping submitted${suffix}`,
+        message: result.message,
       });
-    } catch {
+    } catch (error) {
+      console.error('[IndexNowButton]', error);
       setResult({
         tone: 'error',
-        message: 'Request failed',
+        message: 'IndexNow request failed. Check your connection and try again.',
       });
     } finally {
       setSubmitting(false);
@@ -75,7 +134,10 @@ export function IndexNowButton({
         <span className="text-xs text-neutral-500">Add an IndexNow key in Config first.</span>
       )}
       {result && (
-        <span className={`text-xs ${result.tone === 'success' ? 'text-emerald-300' : result.tone === 'error' ? 'text-red-400' : 'text-neutral-400'}`}>
+        <span
+          className={`text-xs ${result.tone === 'success' ? 'text-emerald-300' : result.tone === 'error' ? 'text-red-400' : 'text-neutral-400'}`}
+          role={result.tone === 'error' ? 'alert' : 'status'}
+        >
           {result.message}
         </span>
       )}
