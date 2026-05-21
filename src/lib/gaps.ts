@@ -63,18 +63,37 @@ export function createSiteGapSignals({
   };
 }
 
+async function loadGapSignalOr<T>(
+  label: string,
+  promise: Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await promise;
+  } catch (error) {
+    console.error(`[Gaps] ${label}:`, error);
+    return fallback;
+  }
+}
+
 export async function loadSiteGapSignals(
   site: Site,
   propertyId: string,
   days: number,
 ): Promise<SiteGapSignals> {
-  const [scTopPages, ga4Data] = await Promise.all([
-    site.searchConsole ? cachedGetSearchConsolePages(getSCUrl(site), days) : Promise.resolve(null),
-    cachedGetAnalytics(propertyId, days),
+  const [scTopPages, ga4TopPages] = await Promise.all([
+    site.searchConsole
+      ? loadGapSignalOr(`SC pages ${site.id}`, cachedGetSearchConsolePages(getSCUrl(site), days), null)
+      : Promise.resolve(null),
+    loadGapSignalOr(
+      `GA4 ${site.id}`,
+      cachedGetAnalytics(propertyId, days).then((result) => result.data?.topPages),
+      undefined,
+    ),
   ]);
 
   return createSiteGapSignals({
-    ga4TopPages: ga4Data.data?.topPages,
+    ga4TopPages,
     scTopPages: scTopPages ?? undefined,
     days,
   });

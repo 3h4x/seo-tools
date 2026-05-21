@@ -1,8 +1,31 @@
-import { describe, it, expect } from 'vitest';
-import { analyzeSiteGaps, gapsBySection } from '../gaps';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+
+const {
+  mockCachedGetAnalytics,
+  mockCachedGetSearchConsolePages,
+} = vi.hoisted(() => ({
+  mockCachedGetAnalytics: vi.fn(),
+  mockCachedGetSearchConsolePages: vi.fn(),
+}));
+
+vi.mock('../ga4', () => ({
+  cachedGetAnalytics: mockCachedGetAnalytics,
+}));
+
+vi.mock('../search-console', () => ({
+  cachedGetSearchConsolePages: mockCachedGetSearchConsolePages,
+}));
+
+import { analyzeSiteGaps, gapsBySection, loadSiteGapSignals } from '../gaps';
 import { parseMetaTags, type FetchResult, type SiteAuditResult } from '../audit';
 import type { Site } from '../sites';
 import { getSkipCheckId } from '../skip-checks';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockCachedGetAnalytics.mockResolvedValue({ data: null, error: false });
+  mockCachedGetSearchConsolePages.mockResolvedValue(null);
+});
 
 function makeCheckResult(status: 'pass' | 'warn' | 'fail' | 'error', label: string = '') {
   return { status, label, message: `${status} result` };
@@ -65,6 +88,51 @@ function makeSite(overrides: Partial<Site> = {}): Site {
     ...overrides,
   };
 }
+
+describe('loadSiteGapSignals', () => {
+  it('keeps Search Console pages when GA4 signal loading throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const scPages = [
+      { page: 'https://example.com/pricing', clicks: 42, impressions: 420, ctr: 0.1, position: 3.4 },
+    ];
+    mockCachedGetSearchConsolePages.mockResolvedValueOnce(scPages);
+    mockCachedGetAnalytics.mockRejectedValueOnce(new Error('GA4 unavailable'));
+
+    const result = await loadSiteGapSignals(makeSite({ id: 'site-a' }), 'properties/123', 7);
+
+    expect(result).toEqual({
+      scTopPages: scPages,
+      ga4TopPages: undefined,
+      days: 7,
+    });
+    expect(consoleError).toHaveBeenCalledWith('[Gaps] GA4 site-a:', expect.any(Error));
+
+    consoleError.mockRestore();
+  });
+
+  it('keeps GA4 top pages when Search Console signal loading throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const ga4TopPages = [
+      { path: '/pricing', views: 120, users: 80, engagementRate: 0.35, avgSessionDuration: 48 },
+    ];
+    mockCachedGetSearchConsolePages.mockRejectedValueOnce(new Error('SC unavailable'));
+    mockCachedGetAnalytics.mockResolvedValueOnce({
+      data: { topPages: ga4TopPages },
+      error: false,
+    });
+
+    const result = await loadSiteGapSignals(makeSite({ id: 'site-b' }), 'properties/456', 30);
+
+    expect(result).toEqual({
+      scTopPages: undefined,
+      ga4TopPages,
+      days: 30,
+    });
+    expect(consoleError).toHaveBeenCalledWith('[Gaps] SC pages site-b:', expect.any(Error));
+
+    consoleError.mockRestore();
+  });
+});
 
 describe('analyzeSiteGaps', () => {
   it('returns no gaps for a fully passing audit', () => {
