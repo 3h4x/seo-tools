@@ -5,38 +5,43 @@ import { CHART_COLORS } from '@/lib/constants';
 import { dateOnlyDaysBack } from '@/lib/date-only';
 
 export async function GET(req: NextRequest) {
-  const parsedDays = parseInt(req.nextUrl.searchParams.get('days') || '30');
-  const days = Number.isFinite(parsedDays) ? Math.min(365, Math.max(1, parsedDays)) : 30;
+  try {
+    const parsedDays = parseInt(req.nextUrl.searchParams.get('days') || '30');
+    const days = Number.isFinite(parsedDays) ? Math.min(365, Math.max(1, parsedDays)) : 30;
 
-  const cutoffStr = dateOnlyDaysBack(days);
+    const cutoffStr = dateOnlyDaysBack(days);
 
-  const result: Record<string, Record<string, { users: number; views: number; clicks: number; impressions: number }>> = {};
+    const result: Record<string, Record<string, { users: number; views: number; clicks: number; impressions: number }>> = {};
 
-  const sites = await getManagedSites();
-  for (const site of sites) {
-    const sc = getScDaily(site.id, days);
-    const ga4 = getGa4Daily(site.id, days);
+    const sites = await getManagedSites();
+    for (const site of sites) {
+      const sc = getScDaily(site.id, days);
+      const ga4 = getGa4Daily(site.id, days);
 
-    for (const row of sc) {
-      if (row.date < cutoffStr) continue;
-      if (!result[row.date]) result[row.date] = {};
-      if (!result[row.date][site.id]) result[row.date][site.id] = { users: 0, views: 0, clicks: 0, impressions: 0 };
-      result[row.date][site.id].clicks = row.clicks;
-      result[row.date][site.id].impressions = row.impressions;
+      for (const row of sc) {
+        if (row.date < cutoffStr) continue;
+        if (!result[row.date]) result[row.date] = {};
+        if (!result[row.date][site.id]) result[row.date][site.id] = { users: 0, views: 0, clicks: 0, impressions: 0 };
+        result[row.date][site.id].clicks = row.clicks;
+        result[row.date][site.id].impressions = row.impressions;
+      }
+
+      for (const row of ga4) {
+        if (row.date < cutoffStr) continue;
+        if (!result[row.date]) result[row.date] = {};
+        if (!result[row.date][site.id]) result[row.date][site.id] = { users: 0, views: 0, clicks: 0, impressions: 0 };
+        result[row.date][site.id].users = row.users;
+        result[row.date][site.id].views = row.views;
+      }
     }
 
-    for (const row of ga4) {
-      if (row.date < cutoffStr) continue;
-      if (!result[row.date]) result[row.date] = {};
-      if (!result[row.date][site.id]) result[row.date][site.id] = { users: 0, views: 0, clicks: 0, impressions: 0 };
-      result[row.date][site.id].users = row.users;
-      result[row.date][site.id].views = row.views;
-    }
+    const sitesMeta = sites.map((s, i) => ({
+      id: s.id, name: s.name, color: s.color ?? CHART_COLORS[i % CHART_COLORS.length],
+    }));
+
+    return NextResponse.json({ data: result, sites: sitesMeta });
+  } catch (error) {
+    console.error('[GET /api/daily]', error);
+    return NextResponse.json({ error: 'failed_to_load_daily_data' }, { status: 500 });
   }
-
-  const sitesMeta = sites.map((s, i) => ({
-    id: s.id, name: s.name, color: s.color ?? CHART_COLORS[i % CHART_COLORS.length],
-  }));
-
-  return NextResponse.json({ data: result, sites: sitesMeta });
 }

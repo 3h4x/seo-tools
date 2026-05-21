@@ -190,4 +190,19 @@ describe('GET /api/daily', () => {
     expect(body.data['2026-03-28']?.site1?.clicks).toBe(10);
     expect(body.data['2026-03-29']?.site1?.clicks).toBe(20);
   });
+
+  it('returns a JSON 500 when daily data cannot be loaded', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(getScDaily).mockImplementationOnce(() => {
+      throw new Error('daily table unavailable');
+    });
+
+    const res = await GET(getReq(7));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'failed_to_load_daily_data' });
+    expect(consoleError).toHaveBeenCalledWith('[GET /api/daily]', expect.any(Error));
+
+    consoleError.mockRestore();
+  });
 });
