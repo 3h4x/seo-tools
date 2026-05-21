@@ -191,6 +191,34 @@ describe('Audit page', () => {
     expect(mockDataTable).not.toHaveBeenCalled();
   });
 
+  it('keeps the audit page available when aggregate sources fail', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      mockCachedAuditAllSites.mockRejectedValueOnce(new Error('audit cache unavailable'));
+      mockGetManagedSites.mockResolvedValue([
+        { id: 'site-a', name: 'Site A', domain: 'a.test', ga4PropertyId: 'site-prop-a', testPages: [] },
+      ]);
+      mockDetectAllDecay.mockRejectedValueOnce(new Error('decay unavailable'));
+      mockDiscoverPropertyIds.mockRejectedValueOnce(new Error('GA4 unavailable'));
+
+      const page = await AuditPage({
+        searchParams: Promise.resolve({ period: '30' }),
+      });
+
+      const html = renderToStaticMarkup(page);
+
+      expect(html).toContain('No audit data available');
+      expect(html).toContain('Live checks · 1 sites');
+      expect(html).not.toContain('No sites configured');
+      expect(mockGetCwvAuditSummary).not.toHaveBeenCalled();
+      expect(consoleError).toHaveBeenCalledWith('[AuditPage] audits:', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[AuditPage] decay:', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[AuditPage] GA4 discovery:', expect.any(Error));
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   it('aggregates gaps, decay stats, and CWV summaries for configured sites', async () => {
     const siteADuplicatedScRows = [
       { page: 'https://a.test/pricing', clicks: 28, impressions: 400, ctr: 0.07, position: 4.1 },

@@ -72,16 +72,60 @@ async function loadCwvSummaryForAudit(siteId: string): Promise<[string, CwvAudit
   }
 }
 
+async function loadOrFallback<T>(
+  label: string,
+  promise: Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await promise;
+  } catch (error) {
+    console.error(`[AuditPage] ${label}:`, error);
+    return fallback;
+  }
+}
+
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const sp = await searchParams;
   const period = sp.period === '30' ? 30 : 7;
 
   const [audits, managedSites, decayResults, discoveredSites] = await Promise.all([
-    cachedAuditAllSites(),
-    getManagedSites(),
-    detectAllDecay(period as 7 | 30),
-    discoverPropertyIds(),
+    loadOrFallback('audits', cachedAuditAllSites(), []),
+    loadOrFallback('managed sites', getManagedSites(), []),
+    loadOrFallback('decay', detectAllDecay(period as 7 | 30), []),
+    loadOrFallback('GA4 discovery', discoverPropertyIds(), []),
   ]);
+
+  if (managedSites.length === 0) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
+        </div>
+        <p className="text-neutral-500 text-sm">
+          No sites configured —{' '}
+          <Link href="/config" className="text-white underline">add sites in the Config tab</Link>.
+        </p>
+      </div>
+    );
+  }
+
+  if (audits.length === 0) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
+          <p className="text-neutral-500 text-sm mt-1">Live checks · {managedSites.length} sites</p>
+        </div>
+        <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-6">
+          <p className="text-amber-400 font-semibold">No audit data available</p>
+          <p className="text-neutral-500 text-sm mt-2">
+            Audit results could not be loaded for the configured sites. Use Refresh to retry the cached checks.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const propertyIdBySite = new Map(
     discoveredSites.map((site) => [site.id, site.ga4PropertyId || '']),
@@ -146,20 +190,6 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const allDecaying = decayResults.flatMap(r => r.decayingPages);
   const severeCount = allDecaying.filter(p => p.severity === 'severe').length;
   const decaySitesAffected = new Set(allDecaying.map(p => p.siteId)).size;
-
-  if (audits.length === 0) {
-    return (
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
-        </div>
-        <p className="text-neutral-500 text-sm">
-          No sites configured —{' '}
-          <Link href="/config" className="text-white underline">add sites in the Config tab</Link>.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">
