@@ -23,7 +23,8 @@ export default function TimeRange({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const current = searchParams.get(param) || defaultValue;
+  const requestedValue = searchParams.get(param);
+  const current = options.some((option) => option.value === requestedValue) ? requestedValue : defaultValue;
 
   return (
     <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
