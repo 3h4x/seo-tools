@@ -124,4 +124,37 @@ describe('Opportunities page', () => {
 
     consoleError.mockRestore();
   });
+
+  it('fetches only the selected Search Console site', async () => {
+    mockGetManagedSites.mockResolvedValue([
+      { id: 'site-a', name: 'Site A', domain: 'a.test', searchConsole: true, testPages: ['/'] },
+      { id: 'site-b', name: 'Site B', domain: 'b.test', searchConsole: true, testPages: ['/'] },
+    ]);
+
+    const page = await OpportunitiesPage({
+      searchParams: Promise.resolve({ days: '28', site: 'b.test' }),
+    });
+    const html = renderToStaticMarkup(page);
+
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledTimes(1);
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:b.test', 'site-b', 28);
+    expect(html).toContain('Showing 1 of 1 opportunities for b.test');
+  });
+
+  it('falls back to all sites for an unknown site filter', async () => {
+    mockGetManagedSites.mockResolvedValue([
+      { id: 'site-a', name: 'Site A', domain: 'a.test', searchConsole: true, testPages: ['/'] },
+      { id: 'site-b', name: 'Site B', domain: 'b.test', searchConsole: true, testPages: ['/'] },
+    ]);
+
+    const page = await OpportunitiesPage({
+      searchParams: Promise.resolve({ days: '28', site: 'missing.test' }),
+    });
+    const html = renderToStaticMarkup(page);
+
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledTimes(2);
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:a.test', 'site-a', 28);
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:b.test', 'site-b', 28);
+    expect(html).toContain('Showing 2 of 2 opportunities across all sites');
+  });
 });

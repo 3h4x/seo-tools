@@ -27,6 +27,12 @@ function pct(v: number) {
   return (v * 100).toFixed(1) + '%';
 }
 
+function opportunitiesHref(days: number, site?: string): string {
+  const params = new URLSearchParams({ days: String(days) });
+  if (site) params.set('site', site);
+  return `/opportunities?${params.toString()}`;
+}
+
 interface SiteOpportunity {
   domain: string;
   opportunity: KeywordOpportunity;
@@ -39,15 +45,17 @@ export default async function OpportunitiesPage({
 }) {
   const params = await searchParams;
   const days = parseAllowedIntegerParam(params.days, OPPORTUNITIES_VALID_DAYS, OPPORTUNITIES_DEFAULT_DAYS);
-  const siteFilter = params.site ?? '';
 
   const sites = await getManagedSites();
   const scSites = sites.filter(s => s.searchConsole !== false);
+  const selectedSite = params.site ? scSites.find(site => site.domain === params.site) : undefined;
+  const siteFilter = selectedSite?.domain ?? '';
+  const targetSites = selectedSite ? [selectedSite] : scSites;
 
   const allOpportunities: SiteOpportunity[] = [];
 
   await Promise.all(
-    scSites.map(async (site) => {
+    targetSites.map(async (site) => {
       let opps: Awaited<ReturnType<typeof cachedGetKeywordOpportunities>>;
 
       try {
@@ -66,11 +74,7 @@ export default async function OpportunitiesPage({
 
   allOpportunities.sort((a, b) => b.opportunity.estimatedClicks - a.opportunity.estimatedClicks);
 
-  const filtered = siteFilter
-    ? allOpportunities.filter(o => o.domain === siteFilter)
-    : allOpportunities;
-
-  const top = filtered.slice(0, 100);
+  const top = allOpportunities.slice(0, 100);
 
   const rows = top.map(({ domain, opportunity: o }) => [
     <span key="q" className="font-medium text-neutral-200">{o.query}</span>,
@@ -98,7 +102,7 @@ export default async function OpportunitiesPage({
       {scSites.length > 1 && (
         <div className="flex gap-2 flex-wrap">
           <a
-            href={`/opportunities?days=${days}`}
+            href={opportunitiesHref(days)}
             className={`px-3 py-1 rounded text-sm ${!siteFilter ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
           >
             All sites
@@ -106,7 +110,7 @@ export default async function OpportunitiesPage({
           {scSites.map(site => (
             <a
               key={site.id}
-              href={`/opportunities?days=${days}&site=${site.domain}`}
+              href={opportunitiesHref(days, site.domain)}
               className={`px-3 py-1 rounded text-sm ${siteFilter === site.domain ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
             >
               {site.domain}
@@ -123,7 +127,7 @@ export default async function OpportunitiesPage({
       ) : (
         <>
           <div className="text-xs text-neutral-500">
-            Showing {top.length} of {filtered.length} opportunities
+            Showing {top.length} of {allOpportunities.length} opportunities
             {siteFilter ? ` for ${siteFilter}` : ' across all sites'}
           </div>
           <DataTable
