@@ -48,6 +48,20 @@ describe('GET /api/alerts/rules', () => {
       ],
     });
   });
+
+  it('returns a JSON 500 when rules cannot be loaded', async () => {
+    vi.mocked(dbGetAlertRules).mockImplementation(() => {
+      throw new Error('rules table unavailable');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await GET();
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'failed_to_load_alert_rules' });
+    expect(consoleError).toHaveBeenCalledWith('[GET /api/alerts/rules]', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });
 
 describe('POST /api/alerts/rules', () => {
@@ -56,6 +70,15 @@ describe('POST /api/alerts/rules', () => {
 
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ ok: false, error: 'Invalid JSON body' });
+    expect(dbGetSites).not.toHaveBeenCalled();
+    expect(dbUpsertAlertRule).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for non-object JSON without touching storage', async () => {
+    const res = await POST(rawPostReq('null'));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'Request body must be an object' });
     expect(dbGetSites).not.toHaveBeenCalled();
     expect(dbUpsertAlertRule).not.toHaveBeenCalled();
   });
@@ -129,5 +152,20 @@ describe('DELETE /api/alerts/rules', () => {
 
     expect(res.status).toBe(200);
     expect(dbDeleteAlertRule).toHaveBeenCalledWith(7);
+  });
+
+  it('returns a JSON 500 when the selected rule cannot be deleted', async () => {
+    vi.mocked(dbDeleteAlertRule).mockImplementation(() => {
+      throw new Error('delete failed');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const req = new NextRequest('http://localhost/api/alerts/rules?id=7', { method: 'DELETE' });
+
+    const res = await DELETE(req);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ ok: false, error: 'delete_failed' });
+    expect(consoleError).toHaveBeenCalledWith('[DELETE /api/alerts/rules]', expect.any(Error));
+    consoleError.mockRestore();
   });
 });

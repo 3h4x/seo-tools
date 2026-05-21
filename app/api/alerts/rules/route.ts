@@ -5,8 +5,16 @@ import { readJsonBody } from '@/lib/json-body';
 const VALID_METRICS: AlertMetric[] = ['sc_clicks', 'ga4_sessions'];
 const VALID_CHANNELS: AlertChannel[] = ['email', 'webhook'];
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
 function validateRuleInput(raw: unknown) {
-  const body = raw as Record<string, unknown>;
+  if (!isRecord(raw)) {
+    throw new Error('Request body must be an object');
+  }
+
+  const body = raw;
   const siteId = typeof body.siteId === 'string' ? body.siteId.trim() : '';
   const metric = typeof body.metric === 'string' ? body.metric : '';
   const thresholdPct = Number(body.thresholdPct);
@@ -45,7 +53,12 @@ function validateRuleInput(raw: unknown) {
 }
 
 export function GET() {
-  return NextResponse.json({ rules: dbGetAlertRules() });
+  try {
+    return NextResponse.json({ rules: dbGetAlertRules() });
+  } catch (error) {
+    console.error('[GET /api/alerts/rules]', error);
+    return NextResponse.json({ error: 'failed_to_load_alert_rules' }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
@@ -69,6 +82,11 @@ export function DELETE(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'id query param required' }, { status: 400 });
   }
 
-  dbDeleteAlertRule(id);
-  return NextResponse.json({ ok: true });
+  try {
+    dbDeleteAlertRule(id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('[DELETE /api/alerts/rules]', error);
+    return NextResponse.json({ ok: false, error: 'delete_failed' }, { status: 500 });
+  }
 }
