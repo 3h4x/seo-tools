@@ -31,6 +31,14 @@ function postReq(body: object): NextRequest {
   });
 }
 
+function malformedPostReq(): NextRequest {
+  return new NextRequest('http://localhost/api/sites', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: '{"id":',
+  });
+}
+
 function deleteReq(id: string): NextRequest {
   return new NextRequest(`http://localhost/api/sites?id=${id}`, { method: 'DELETE' });
 }
@@ -40,6 +48,14 @@ function putOrderReq(body: object): NextRequest {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
+  });
+}
+
+function malformedPutOrderReq(): NextRequest {
+  return new NextRequest('http://localhost/api/sites/order', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: '{"orderedIds":',
   });
 }
 
@@ -68,6 +84,18 @@ describe('GET /api/sites', () => {
 });
 
 describe('POST /api/sites', () => {
+  it('returns 400 for malformed JSON without touching storage', async () => {
+    const res = await POST(malformedPostReq());
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data).toEqual({ ok: false, error: 'Invalid JSON body' });
+    expect(dbGetSites).not.toHaveBeenCalled();
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+  });
+
   it('upserts a valid site and returns { ok: true }', async () => {
     const site = { id: 'site1', name: 'Site 1', domain: 'site1.com' };
     const res = await POST(postReq(site));
@@ -378,6 +406,15 @@ describe('POST /api/sites', () => {
 });
 
 describe('PUT /api/sites/order', () => {
+  it('returns 400 for malformed JSON without reordering sites', async () => {
+    const res = await PUT_ORDER(malformedPutOrderReq());
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data).toEqual({ ok: false, error: 'Invalid JSON body' });
+    expect(dbReorderSites).not.toHaveBeenCalled();
+  });
+
   it('persists a valid full site id order', async () => {
     const res = await PUT_ORDER(putOrderReq({ orderedIds: ['site-c', 'site-a', 'site-b'] }));
     const data = await res.json();

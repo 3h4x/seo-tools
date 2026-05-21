@@ -41,6 +41,14 @@ function postReq(body: object): Request {
   });
 }
 
+function malformedPostReq(): Request {
+  return new Request('http://localhost/api/config', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: '{"key":',
+  });
+}
+
 function mockScList(impl: () => Promise<unknown>) {
   vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
     return { sites: { list: impl } };
@@ -89,6 +97,16 @@ describe('GET /api/config', () => {
 });
 
 describe('POST /api/config', () => {
+  it('returns 400 when the request body is malformed JSON', async () => {
+    const res = await POST(malformedPostReq());
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'Invalid JSON body' });
+    expect(setConfig).not.toHaveBeenCalled();
+    expect(clearCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when key is not valid JSON', async () => {
     const res = await POST(postReq({ key: 'not-json', testOnly: true }));
     expect(res.status).toBe(400);

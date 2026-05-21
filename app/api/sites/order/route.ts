@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbReorderSites } from '@/lib/db';
+import { readJsonBody } from '@/lib/json-body';
 import { parseOrderedSiteIds, siteRouteError, siteRouteOk } from '@/lib/site-route';
 
 export async function PUT(req: NextRequest) {
-  const body = await req.json() as { orderedIds?: unknown };
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return siteRouteError('Invalid JSON body');
+  }
+
+  const body = parsed.body as { orderedIds?: unknown };
   const orderedIds = parseOrderedSiteIds(body.orderedIds);
 
   if (!orderedIds) {

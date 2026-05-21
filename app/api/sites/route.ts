@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbGetSites, dbUpsertSite, dbDeleteSite } from '@/lib/db';
 import { clearGa4DiscoveryCache } from '@/lib/ga4';
+import { readJsonBody } from '@/lib/json-body';
 import { invalidateManagedSiteCache } from '@/lib/site-cache';
 import { validateAndNormalizeSiteInput } from '@/lib/sites';
 import { getRequiredQueryParam, siteRouteError, siteRouteOk, siteValidationError } from '@/lib/site-route';
@@ -11,9 +12,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return siteRouteError('Invalid JSON body');
+  }
+
   const existingSites = dbGetSites();
-  const result = validateAndNormalizeSiteInput(body, existingSites);
+  const result = validateAndNormalizeSiteInput(parsed.body, existingSites);
   if (result.errors) {
     return siteValidationError(result.errors);
   }

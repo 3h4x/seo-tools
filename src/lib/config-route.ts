@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { clearCache, deleteConfig, getConfig, setConfig } from '@/lib/db';
+import { readJsonBody } from '@/lib/json-body';
 
 type ConfigSource = 'db' | 'env' | 'none';
 
@@ -35,7 +36,12 @@ export function createConfigRouteHandlers({
     },
 
     async POST(req: Request) {
-      const { key, testOnly } = await req.json() as { key?: string; testOnly?: boolean };
+      const parsed = await readJsonBody(req);
+      if (!parsed.ok) {
+        return NextResponse.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
+      }
+
+      const { key, testOnly } = parsed.body as { key?: string; testOnly?: boolean };
 
       try {
         const normalizedKey = await validateAndNormalize(key ?? '');
