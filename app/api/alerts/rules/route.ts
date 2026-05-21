@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbDeleteAlertRule, dbGetAlertRules, dbGetSites, dbUpsertAlertRule, type AlertChannel, type AlertMetric } from '@/lib/db';
+import { parseIntegerParam } from '@/lib/days';
 import { readJsonBody } from '@/lib/json-body';
 
 const VALID_METRICS: AlertMetric[] = ['sc_clicks', 'ga4_sessions'];
@@ -98,9 +99,8 @@ export async function POST(req: Request) {
 }
 
 export function DELETE(req: NextRequest) {
-  const rawId = req.nextUrl.searchParams.get('id');
-  const id = rawId ? Number(rawId) : NaN;
-  if (!Number.isFinite(id)) {
+  const id = parseIntegerParam(req.nextUrl.searchParams.get('id'), Number.NaN);
+  if (!Number.isSafeInteger(id) || id <= 0) {
     return NextResponse.json({ ok: false, error: 'id query param required' }, { status: 400 });
   }
 

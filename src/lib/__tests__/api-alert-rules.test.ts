@@ -213,6 +213,25 @@ describe('DELETE /api/alerts/rules', () => {
     expect(dbDeleteAlertRule).toHaveBeenCalledWith(7);
   });
 
+  it.each([
+    ['missing', 'http://localhost/api/alerts/rules'],
+    ['empty', 'http://localhost/api/alerts/rules?id='],
+    ['non-numeric', 'http://localhost/api/alerts/rules?id=abc'],
+    ['decimal', 'http://localhost/api/alerts/rules?id=7.5'],
+    ['exponent', 'http://localhost/api/alerts/rules?id=1e3'],
+    ['hex', 'http://localhost/api/alerts/rules?id=0x10'],
+    ['zero', 'http://localhost/api/alerts/rules?id=0'],
+    ['negative', 'http://localhost/api/alerts/rules?id=-5'],
+  ])('rejects %s id with 400 and does not touch storage', async (_label, url) => {
+    const req = new NextRequest(url, { method: 'DELETE' });
+
+    const res = await DELETE(req);
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'id query param required' });
+    expect(dbDeleteAlertRule).not.toHaveBeenCalled();
+  });
+
   it('returns a JSON 500 when the selected rule cannot be deleted', async () => {
     vi.mocked(dbDeleteAlertRule).mockImplementation(() => {
       throw new Error('delete failed');
