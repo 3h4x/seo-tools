@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getMutationResult } from '../request-result';
+import { formatNetworkError, getMutationResult } from '../request-result';
 
 describe('getMutationResult', () => {
   it('returns ok for successful mutation payloads', async () => {
@@ -42,5 +42,16 @@ describe('getMutationResult', () => {
       ok: false,
       error: 'Delete failed',
     });
+  });
+});
+
+describe('formatNetworkError', () => {
+  it('surfaces Error messages from failed browser requests', () => {
+    expect(formatNetworkError(new TypeError('Failed to fetch'))).toBe('Failed to fetch');
+  });
+
+  it('falls back when the thrown value is not an Error with a message', () => {
+    expect(formatNetworkError('offline', 'Request failed')).toBe('Request failed');
+    expect(formatNetworkError(new Error(''), 'Request failed')).toBe('Request failed');
   });
 });

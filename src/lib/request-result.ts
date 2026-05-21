@@ -8,6 +8,10 @@ export type MutationResult = {
   error?: string;
 };
 
+export function formatNetworkError(error: unknown, fallback = 'Network error — could not reach the server'): string {
+  return error instanceof Error && error.message.trim() ? error.message : fallback;
+}
+
 export async function getMutationResult(response: Response, fallbackError: string): Promise<MutationResult> {
   let payload: MutationPayload | null = null;
 

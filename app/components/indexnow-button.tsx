@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatNetworkError } from '@/lib/request-result';
 
 type PingState = {
   tone: 'neutral' | 'success' | 'error';
@@ -113,7 +114,7 @@ export function IndexNowButton({
       console.error('[IndexNowButton]', error);
       setResult({
         tone: 'error',
-        message: 'IndexNow request failed. Check your connection and try again.',
+        message: formatNetworkError(error, 'IndexNow request failed. Check your connection and try again.'),
       });
     } finally {
       setSubmitting(false);

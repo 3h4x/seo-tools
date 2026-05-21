@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { getMutationResult } from '@/lib/request-result';
+import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
 
@@ -50,7 +50,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
     } catch (error) {
       console.error('[ConfigForm] test:', error);
       setTestState('error');
-      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
+      setErrorMsg(formatNetworkError(error));
     }
   }
 
@@ -73,7 +73,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
     } catch (error) {
       console.error('[ConfigForm] save:', error);
       setTestState('error');
-      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
+      setErrorMsg(formatNetworkError(error));
     } finally {
       setSaving(false);
     }
@@ -94,7 +94,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
     } catch (error) {
       console.error('[ConfigForm] remove:', error);
       setTestState('error');
-      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
+      setErrorMsg(formatNetworkError(error));
     } finally {
       setRemoving(false);
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getMutationResult } from '@/lib/request-result';
+import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
 type TestState = 'idle' | 'testing' | 'ok' | 'error';
@@ -49,7 +49,7 @@ export default function PagespeedKeyForm() {
       .then((nextSource) => { setSource(nextSource); })
       .catch((error) => {
         console.error('[PagespeedKeyForm] load:', error);
-        setErrorMsg(error instanceof Error ? error.message : 'Failed to load PageSpeed config');
+        setErrorMsg(formatNetworkError(error, 'Failed to load PageSpeed config'));
         setTestState('error');
       })
       .finally(() => setLoading(false));
@@ -71,7 +71,7 @@ export default function PagespeedKeyForm() {
     } catch (error) {
       console.error('[PagespeedKeyForm] test:', error);
       setTestState('error');
-      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
+      setErrorMsg(formatNetworkError(error));
     }
   }
 
@@ -90,7 +90,7 @@ export default function PagespeedKeyForm() {
     } catch (error) {
       console.error('[PagespeedKeyForm] save:', error);
       setTestState('error');
-      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
+      setErrorMsg(formatNetworkError(error));
     } finally {
       setSaving(false);
     }
@@ -107,7 +107,7 @@ export default function PagespeedKeyForm() {
     } catch (error) {
       console.error('[PagespeedKeyForm] remove:', error);
       setTestState('error');
-      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
+      setErrorMsg(formatNetworkError(error));
     } finally {
       setSaving(false);
     }

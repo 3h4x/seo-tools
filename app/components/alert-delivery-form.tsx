@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getMutationResult } from '@/lib/request-result';
+import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
 
@@ -104,7 +104,7 @@ export default function AlertDeliveryForm() {
       .then(applyConfigResponse)
       .catch((err) => {
         console.error('[AlertDeliveryForm] load:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load alert delivery config');
+        setError(formatNetworkError(err, 'Failed to load alert delivery config'));
       });
   }, []);
 
@@ -128,7 +128,7 @@ export default function AlertDeliveryForm() {
       applyConfigResponse(await loadAlertDeliveryConfig());
     } catch (err) {
       console.error('[AlertDeliveryForm] save:', err);
-      setError(err instanceof Error ? err.message : 'Request failed');
+      setError(formatNetworkError(err, 'Request failed'));
     } finally {
       setSaving(false);
     }
@@ -144,7 +144,7 @@ export default function AlertDeliveryForm() {
       setSuccess('Alert delivery config cleared');
     } catch (err) {
       console.error('[AlertDeliveryForm] clear:', err);
-      setError(err instanceof Error ? err.message : 'Request failed');
+      setError(formatNetworkError(err, 'Request failed'));
     } finally {
       setSaving(false);
     }

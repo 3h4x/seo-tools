@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { applyImportResults, buildImportSummary, getImportResult, type DiscoverySite, type ImportResult, type ImportSummary } from '@/lib/discovery-import';
-import { getMutationResult } from '@/lib/request-result';
+import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
@@ -188,7 +188,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       setSites(await fetchSitesList());
     } catch (err) {
       console.error('[SitesManager] reloadSites:', err);
-      setError(err instanceof Error ? err.message : 'Failed to reload sites');
+      setError(formatNetworkError(err, 'Failed to reload sites'));
       return;
     }
     await loadDiagnostics();
@@ -220,7 +220,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     } catch (err) {
       console.error('[SitesManager] persistSiteOrder:', err);
       setSites(previousSites);
-      setError(err instanceof Error ? err.message : 'Reorder failed');
+      setError(formatNetworkError(err, 'Reorder failed'));
     } finally {
       setSaving(false);
     }
@@ -275,7 +275,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       setEditMode('none');
     } catch (err) {
       console.error('[SitesManager] save:', err);
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(formatNetworkError(err, 'Save failed'));
     } finally {
       setSaving(false);
     }
@@ -295,7 +295,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       if (editMode === id) setEditMode('none');
     } catch (err) {
       console.error('[SitesManager] delete:', err);
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      setError(formatNetworkError(err, 'Delete failed'));
     }
   }
 
@@ -339,7 +339,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       setSelected(new Set(discoveredSites.map(s => s.id)));
     } catch (err) {
       console.error('[SitesManager] discover:', err);
-      setDiscoverError(err instanceof Error ? err.message : 'Request failed');
+      setDiscoverError(formatNetworkError(err, 'Request failed'));
     } finally {
       setDiscovering(false);
     }
@@ -390,11 +390,11 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             id: site.id,
             ...(await getImportResult(res)),
           };
-        } catch {
+        } catch (err) {
           return {
             id: site.id,
             ok: false,
-            error: 'Request failed',
+            error: formatNetworkError(err, 'Request failed'),
           };
         }
       }));
@@ -410,7 +410,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       setImportSummary(buildImportSummary(nextState.successCount, nextState.failureCount));
     } catch (err) {
       console.error('[SitesManager] import:', err);
-      setDiscoverError(err instanceof Error ? err.message : 'Import failed');
+      setDiscoverError(formatNetworkError(err, 'Import failed'));
     } finally {
       setImporting(false);
     }

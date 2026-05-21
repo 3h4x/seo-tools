@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatNetworkError } from '@/lib/request-result';
 import type { SnapshotResult } from '@/lib/snapshot';
 
 type State = 'idle' | 'running' | 'done' | 'error';
@@ -77,7 +78,7 @@ export function SnapshotButton() {
       setState('done');
     } catch (error) {
       console.error('[SnapshotButton]', error);
-      setErrorMsg('Network error');
+      setErrorMsg(formatNetworkError(error));
       setState('error');
     }
   }

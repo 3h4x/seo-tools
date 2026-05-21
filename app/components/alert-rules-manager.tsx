@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { getMutationResult } from '@/lib/request-result';
+import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
 import { Skeleton } from './skeletons';
@@ -77,7 +77,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
     loadRules()
       .catch((err) => {
         console.error('[AlertRulesManager] load:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load alert rules');
+        setError(formatNetworkError(err, 'Failed to load alert rules'));
       })
       .finally(() => setLoading(false));
   }, [loadRules]);
@@ -119,7 +119,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
       resetForm();
     } catch (err) {
       console.error('[AlertRulesManager] save:', err);
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(formatNetworkError(err, 'Save failed'));
     } finally {
       setSaving(false);
     }
@@ -137,7 +137,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
       await loadRules();
     } catch (err) {
       console.error('[AlertRulesManager] delete:', err);
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      setError(formatNetworkError(err, 'Delete failed'));
     }
   }
 
