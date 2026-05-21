@@ -5,15 +5,20 @@ import {
   saveAlertDeliveryConfig,
   validateAlertDeliveryInput,
 } from '@/lib/alert-delivery';
+import { readJsonBody } from '@/lib/json-body';
 
 export function GET() {
   return NextResponse.json(getAlertDeliveryConfigResponse());
 }
 
 export async function POST(req: Request) {
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return NextResponse.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   try {
-    const body = await req.json();
-    const normalized = validateAlertDeliveryInput(body);
+    const normalized = validateAlertDeliveryInput(parsed.body);
     saveAlertDeliveryConfig(normalized);
     return NextResponse.json({ ok: true });
   } catch (error) {

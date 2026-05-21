@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbDeleteAlertRule, dbGetAlertRules, dbGetSites, dbUpsertAlertRule, type AlertChannel, type AlertMetric } from '@/lib/db';
+import { readJsonBody } from '@/lib/json-body';
 
 const VALID_METRICS: AlertMetric[] = ['sc_clicks', 'ga4_sessions'];
 const VALID_CHANNELS: AlertChannel[] = ['email', 'webhook'];
@@ -48,9 +49,13 @@ export function GET() {
 }
 
 export async function POST(req: Request) {
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return NextResponse.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   try {
-    const body = await req.json();
-    const rule = dbUpsertAlertRule(validateRuleInput(body));
+    const rule = dbUpsertAlertRule(validateRuleInput(parsed.body));
     return NextResponse.json({ ok: true, rule });
   } catch (error) {
     return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 400 });

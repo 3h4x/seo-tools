@@ -19,6 +19,14 @@ function postReq(body: object): Request {
   });
 }
 
+function rawPostReq(body: string): Request {
+  return new Request('http://localhost/api/alerts/rules', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body,
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(dbGetSites).mockReturnValue([
@@ -43,6 +51,15 @@ describe('GET /api/alerts/rules', () => {
 });
 
 describe('POST /api/alerts/rules', () => {
+  it('returns 400 for malformed JSON without touching storage', async () => {
+    const res = await POST(rawPostReq('{'));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'Invalid JSON body' });
+    expect(dbGetSites).not.toHaveBeenCalled();
+    expect(dbUpsertAlertRule).not.toHaveBeenCalled();
+  });
+
   it('validates and saves a rule', async () => {
     vi.mocked(dbUpsertAlertRule).mockReturnValue({
       id: 1,

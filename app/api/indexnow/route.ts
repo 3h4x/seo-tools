@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getManagedSite } from '@/lib/sites';
 import { clearCacheEntry } from '@/lib/db';
 import { checkIndexNowKey, submitIndexNowForSite } from '@/lib/indexnow.js';
+import { readJsonBody } from '@/lib/json-body';
 
 function getSiteId(body: unknown): string {
   if (typeof body !== 'object' || body === null || !('siteId' in body)) {
@@ -13,14 +14,12 @@ function getSiteId(body: unknown): string {
 }
 
 export async function POST(req: NextRequest) {
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const siteId = getSiteId(body);
+  const siteId = getSiteId(parsed.body);
 
   if (!siteId) {
     return NextResponse.json({ error: 'siteId is required' }, { status: 400 });

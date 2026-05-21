@@ -29,6 +29,14 @@ function postReq(body: object): Request {
   });
 }
 
+function rawPostReq(body: string): Request {
+  return new Request('http://localhost/api/config/alerts', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body,
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -52,6 +60,15 @@ describe('GET /api/config/alerts', () => {
 });
 
 describe('POST /api/config/alerts', () => {
+  it('returns 400 for malformed JSON without validating or saving', async () => {
+    const res = await POST(rawPostReq('{'));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'Invalid JSON body' });
+    expect(mockValidateAlertDeliveryInput).not.toHaveBeenCalled();
+    expect(mockSaveAlertDeliveryConfig).not.toHaveBeenCalled();
+  });
+
   it('validates and saves delivery config', async () => {
     mockValidateAlertDeliveryInput.mockReturnValue({
       resendApiKey: 're_123',
