@@ -39,6 +39,14 @@ function malformedPostReq(): NextRequest {
   });
 }
 
+function rawPostReq(body: string): NextRequest {
+  return new NextRequest('http://localhost/api/sites', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body,
+  });
+}
+
 function deleteReq(id: string): NextRequest {
   return new NextRequest(`http://localhost/api/sites?id=${id}`, { method: 'DELETE' });
 }
@@ -81,6 +89,21 @@ describe('GET /api/sites', () => {
     const data = await res.json();
     expect(data).toEqual([]);
   });
+
+  it('returns a JSON 500 when sites cannot be loaded', async () => {
+    vi.mocked(dbGetSites).mockImplementationOnce(() => {
+      throw new Error('sites table unavailable');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await GET();
+    const data = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(data).toEqual({ error: 'failed_to_load_sites' });
+    expect(consoleError).toHaveBeenCalledWith('[GET /api/sites]', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });
 
 describe('POST /api/sites', () => {
@@ -96,6 +119,36 @@ describe('POST /api/sites', () => {
     expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
   });
 
+  it('returns 400 for non-object JSON without touching storage', async () => {
+    const res = await POST(rawPostReq('null'));
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data).toEqual({ ok: false, error: 'Request body must be an object' });
+    expect(dbGetSites).not.toHaveBeenCalled();
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+  });
+
+  it('returns a JSON 500 when existing sites cannot be loaded before save', async () => {
+    vi.mocked(dbGetSites).mockImplementationOnce(() => {
+      throw new Error('sites table unavailable');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com' }));
+    const data = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(data).toEqual({ ok: false, error: 'failed_to_load_sites' });
+    expect(dbUpsertSite).not.toHaveBeenCalled();
+    expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith('[POST /api/sites] load', expect.any(Error));
+    consoleError.mockRestore();
+  });
+
   it('upserts a valid site and returns { ok: true }', async () => {
     const site = { id: 'site1', name: 'Site 1', domain: 'site1.com' };
     const res = await POST(postReq(site));
@@ -104,6 +157,23 @@ describe('POST /api/sites', () => {
     expect(dbUpsertSite).toHaveBeenCalledWith({ ...site, testPages: [] });
     expect(invalidateManagedSiteCache).toHaveBeenCalledWith(null, { ...site, testPages: [] });
     expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns a JSON 500 when a valid site cannot be saved', async () => {
+    vi.mocked(dbUpsertSite).mockImplementationOnce(() => {
+      throw new Error('site save failed');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com' }));
+    const data = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(data).toEqual({ ok: false, error: 'failed_to_save_site' });
+    expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith('[POST /api/sites]', expect.any(Error));
+    consoleError.mockRestore();
   });
 
   it('normalizes URL domains before saving', async () => {
@@ -457,6 +527,25 @@ describe('DELETE /api/sites', () => {
     expect(dbDeleteSite).toHaveBeenCalledWith('site1');
     expect(invalidateManagedSiteCache).toHaveBeenCalledWith(existingSite, null);
     expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns a JSON 500 when a site cannot be deleted', async () => {
+    const existingSite = { id: 'site1', name: 'Site 1', domain: 'site1.com', testPages: [] };
+    vi.mocked(dbGetSites).mockReturnValue([existingSite] as never);
+    vi.mocked(dbDeleteSite).mockImplementationOnce(() => {
+      throw new Error('delete failed');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await DELETE(deleteReq('site1'));
+    const data = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(data).toEqual({ ok: false, error: 'failed_to_delete_site' });
+    expect(invalidateManagedSiteCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith('[DELETE /api/sites]', expect.any(Error));
+    consoleError.mockRestore();
   });
 
   it('returns 400 when id query param is missing', async () => {
