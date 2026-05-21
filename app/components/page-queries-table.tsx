@@ -10,6 +10,11 @@ interface PageQueriesTableProps {
   days: number;
 }
 
+interface PageQueriesApiResponse {
+  data?: PageQueryResult[];
+  error?: string;
+}
+
 function PageQueriesSkeleton() {
   return (
     <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4 space-y-3" aria-label="Loading page query data">
@@ -28,18 +33,52 @@ function PageQueriesSkeleton() {
   );
 }
 
+function PageQueriesError({ message }: { message: string }) {
+  return (
+    <div className="bg-neutral-900 rounded-lg border border-red-950 p-4" role="alert">
+      <div className="h-32 flex flex-col items-center justify-center text-center">
+        <h3 className="text-xs uppercase tracking-wider text-red-300 font-semibold">Page Queries Unavailable</h3>
+        <p className="mt-2 max-w-md text-sm text-neutral-400">{message}</p>
+      </div>
+    </div>
+  );
+}
+
 export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
   const [rows, setRows] = useState<PageQueryResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
+    setLoadError(null);
     fetch(`/api/${siteId}/page-queries?days=${days}`)
-      .then((r) => r.json())
-      .then((body) => setRows(body.data ?? []))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
+      .then(async (r) => {
+        const body = await r.json() as PageQueriesApiResponse;
+        if (!r.ok) {
+          throw new Error(body.error ?? `Page queries request failed with status ${r.status}`);
+        }
+        return body;
+      })
+      .then((body) => {
+        if (cancelled) return;
+        setRows(body.data ?? []);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error('[PageQueriesTable]', error);
+        setRows([]);
+        setLoadError('Search Console page query data could not be loaded. Refresh the dashboard to try again.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [siteId, days]);
 
   function toggle(page: string) {
@@ -65,6 +104,8 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
       </h2>
       {loading ? (
         <PageQueriesSkeleton />
+      ) : loadError ? (
+        <PageQueriesError message={loadError} />
       ) : rows.length === 0 ? (
         <p className="text-neutral-600 text-sm">No page data available.</p>
       ) : (
