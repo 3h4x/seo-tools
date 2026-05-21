@@ -49,6 +49,14 @@ function malformedPostReq(): Request {
   });
 }
 
+function rawPostReq(body: string): Request {
+  return new Request('http://localhost/api/config', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body,
+  });
+}
+
 function mockScList(impl: () => Promise<unknown>) {
   vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
     return { sites: { list: impl } };
@@ -94,6 +102,21 @@ describe('GET /api/config', () => {
     expect(body).toEqual({ source: 'db' });
     delete process.env.GOOGLE_SA_KEY_JSON;
   });
+
+  it('returns a JSON 500 when config source cannot be loaded', async () => {
+    vi.mocked(getConfig).mockImplementationOnce(() => {
+      throw new Error('config table unavailable');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await GET();
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body).toEqual({ error: 'failed_to_load_config_source' });
+    expect(consoleError).toHaveBeenCalledWith('[GET config:google_sa_key]', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });
 
 describe('POST /api/config', () => {
@@ -102,6 +125,28 @@ describe('POST /api/config', () => {
 
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ ok: false, error: 'Invalid JSON body' });
+    expect(setConfig).not.toHaveBeenCalled();
+    expect(clearCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when the request body is not an object', async () => {
+    const res = await POST(rawPostReq('null'));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'Request body must be an object' });
+    expect(setConfig).not.toHaveBeenCalled();
+    expect(clearCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when testOnly is not a boolean', async () => {
+    const res = await POST(postReq({ key: VALID_KEY, testOnly: 'true' }));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'testOnly must be a boolean' });
+    expect(GoogleAuth).not.toHaveBeenCalled();
+    expect(searchconsole_v1.Searchconsole).not.toHaveBeenCalled();
     expect(setConfig).not.toHaveBeenCalled();
     expect(clearCache).not.toHaveBeenCalled();
     expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
@@ -163,6 +208,23 @@ describe('POST /api/config', () => {
     expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
   });
 
+  it('returns a JSON 500 when a valid key cannot be saved', async () => {
+    vi.mocked(setConfig).mockImplementationOnce(() => {
+      throw new Error('config table unavailable');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await POST(postReq({ key: VALID_KEY, testOnly: false }));
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body).toEqual({ ok: false, error: 'failed_to_save_config' });
+    expect(clearCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith('[POST config:google_sa_key]', expect.any(Error));
+    consoleError.mockRestore();
+  });
+
   it('normalizes escaped newlines in private_key before validation', async () => {
     const keyWithEscaped = JSON.stringify({
       type: 'service_account',
@@ -191,5 +253,22 @@ describe('DELETE /api/config', () => {
     expect(deleteConfig).toHaveBeenCalledWith('google_sa_key');
     expect(clearCache).toHaveBeenCalledTimes(1);
     expect(clearGa4DiscoveryCache).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns a JSON 500 when the key cannot be removed', async () => {
+    vi.mocked(deleteConfig).mockImplementationOnce(() => {
+      throw new Error('config table unavailable');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await DELETE();
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body).toEqual({ ok: false, error: 'failed_to_delete_config' });
+    expect(clearCache).not.toHaveBeenCalled();
+    expect(clearGa4DiscoveryCache).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith('[DELETE config:google_sa_key]', expect.any(Error));
+    consoleError.mockRestore();
   });
 });

@@ -71,6 +71,16 @@ describe('POST /api/config/pagespeed', () => {
     expect(setConfig).not.toHaveBeenCalled();
   });
 
+  it('returns 400 when testOnly is not a boolean', async () => {
+    const res = await POST(postReq({ key: 'good', testOnly: 'true' }));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'testOnly must be a boolean' });
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(setConfig).not.toHaveBeenCalled();
+    expect(clearCache).not.toHaveBeenCalled();
+  });
+
   it('saves and clears psi cache when valid', async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) } as Response);
     const res = await POST(postReq({ key: 'good' }));
