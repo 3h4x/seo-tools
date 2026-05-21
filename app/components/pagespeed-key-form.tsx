@@ -70,7 +70,8 @@ export default function PagespeedKeyForm() {
       else { setTestState('error'); setErrorMsg(result.error ?? 'Test failed'); }
     } catch (error) {
       console.error('[PagespeedKeyForm] test:', error);
-      setTestState('error'); setErrorMsg('Request failed');
+      setTestState('error');
+      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
     }
   }
 
@@ -88,7 +89,8 @@ export default function PagespeedKeyForm() {
       else { setTestState('error'); setErrorMsg(result.error ?? 'Save failed'); }
     } catch (error) {
       console.error('[PagespeedKeyForm] save:', error);
-      setTestState('error'); setErrorMsg('Request failed');
+      setTestState('error');
+      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
     } finally {
       setSaving(false);
     }
@@ -104,7 +106,8 @@ export default function PagespeedKeyForm() {
       else { setTestState('error'); setErrorMsg(result.error ?? 'Remove failed'); }
     } catch (error) {
       console.error('[PagespeedKeyForm] remove:', error);
-      setTestState('error'); setErrorMsg('Request failed');
+      setTestState('error');
+      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
     } finally {
       setSaving(false);
     }

@@ -50,7 +50,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
     } catch (error) {
       console.error('[ConfigForm] test:', error);
       setTestState('error');
-      setErrorMsg('Request failed — check console');
+      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
     }
   }
 
@@ -73,7 +73,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
     } catch (error) {
       console.error('[ConfigForm] save:', error);
       setTestState('error');
-      setErrorMsg('Request failed — check console');
+      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
     } finally {
       setSaving(false);
     }
@@ -94,7 +94,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
     } catch (error) {
       console.error('[ConfigForm] remove:', error);
       setTestState('error');
-      setErrorMsg('Request failed — check console');
+      setErrorMsg(error instanceof Error ? error.message : 'Network error — could not reach the server');
     } finally {
       setRemoving(false);
     }
