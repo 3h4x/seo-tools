@@ -113,6 +113,19 @@ describe('computeKeywordDeltas', () => {
     expect(delta.delta30d).toBeCloseTo(5.0);
   });
 
+  it('calculates comparison targets across DST-sensitive date windows', () => {
+    const today = '2026-03-30';
+    const history = [
+      { date: '2026-03-23', query: 'test', position: 9.0 },
+      { date: '2026-03-30', query: 'test', position: 5.0 },
+    ];
+
+    const [delta] = computeKeywordDeltas(history, today);
+
+    expect(delta.position7d).toBe(9.0);
+    expect(delta.delta7d).toBeCloseTo(4.0);
+  });
+
   it('does not use today row as the 7d historical comparison', () => {
     const today = '2024-01-30';
     const history = [

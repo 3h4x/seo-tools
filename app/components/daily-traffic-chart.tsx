@@ -15,6 +15,7 @@ import TrendChart from './trend-chart';
 import { Skeleton } from './skeletons';
 import { formatDateShort } from '@/lib/format';
 import { METRIC_COLORS } from '@/lib/constants';
+import { todayDateOnly } from '@/lib/date-only';
 
 const METRICS = ['views', 'users', 'clicks', 'impressions'] as const;
 type Metric = (typeof METRICS)[number];
@@ -90,7 +91,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
   }
 
   const collectedDates = Object.keys(data).sort();
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayDateOnly();
   const latestCollected = collectedDates[collectedDates.length - 1];
   const dates = collectedDates.includes(today) ? collectedDates : [...collectedDates, today];
   if (collectedDates.length < 2) {

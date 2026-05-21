@@ -1,3 +1,5 @@
+import { dateOnlyDaysBack } from './date-only';
+
 export function pluralize(count: number, singular: string): string {
   return `${count.toLocaleString()} ${count === 1 ? singular : singular + 's'}`;
 }
@@ -35,9 +37,7 @@ export function formatBounce(rate: number): string {
 }
 
 export function daysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().split('T')[0];
+  return dateOnlyDaysBack(n);
 }
 
 export function formatRelativeTime(timestampMs: number): string {

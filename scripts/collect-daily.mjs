@@ -81,11 +81,17 @@ const auth = new GoogleAuth({
 const sc = new searchconsole_v1.Searchconsole({ auth });
 
 function dateStr(d) {
-  return d.toISOString().split('T')[0];
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function parseDateOnly(value) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day, 12);
 }
 
 function daysBack(n) {
   const d = new Date();
+  d.setHours(12, 0, 0, 0);
   d.setDate(d.getDate() - n);
   return d;
 }
@@ -106,8 +112,8 @@ function getMissing(table, siteId) {
   const existingSet = new Set(existing.map(r => r.date));
 
   const missing = [];
-  const cur = new Date(startDate);
-  const end = new Date(endDate);
+  const cur = parseDateOnly(startDate);
+  const end = parseDateOnly(endDate);
   while (cur <= end) {
     const d = dateStr(cur);
     if (!existingSet.has(d)) missing.push(d);
@@ -125,7 +131,7 @@ function batchRanges(dates) {
   let prev = sorted[0];
 
   for (let i = 1; i < sorted.length; i++) {
-    const expected = new Date(prev);
+    const expected = parseDateOnly(prev);
     expected.setDate(expected.getDate() + 1);
     if (sorted[i] !== dateStr(expected)) {
       ranges.push({ start: rangeStart, end: prev });

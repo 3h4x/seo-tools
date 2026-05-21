@@ -28,6 +28,17 @@ const sc = new searchconsole_v1.Searchconsole({ auth });
 const SNAPSHOT_JOB_KEY = 'daily';
 const SNAPSHOT_STALE_LOCK_MS = 6 * 60 * 60 * 1000;
 
+function dateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function daysBack(days) {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() - days);
+  return dateStr(date);
+}
+
 function loadSites() {
   try {
     return db.prepare('SELECT id, domain, sc_url, ga4_property_id, test_pages FROM sites ORDER BY sort_order ASC').all().map(r => ({
@@ -86,10 +97,8 @@ async function submitSitemap() {
 }
 
 async function showStats() {
-  const end = new Date(); end.setDate(end.getDate() - 1);
-  const start = new Date(); start.setDate(start.getDate() - 7);
-  const startDate = start.toISOString().split('T')[0];
-  const endDate = end.toISOString().split('T')[0];
+  const startDate = daysBack(7);
+  const endDate = daysBack(1);
 
   const res = await sc.sites.list();
   console.log(`Search Console stats (${startDate} → ${endDate})\n`);
@@ -123,14 +132,11 @@ async function showPages() {
   }
   const siteUrl = domain.startsWith('sc-domain:') || domain.startsWith('http') ? domain : `sc-domain:${domain}`;
 
-  const end = new Date(); end.setDate(end.getDate() - 1);
-  const start = new Date(); start.setDate(start.getDate() - 30);
-
   const res = await sc.searchanalytics.query({
     siteUrl,
     requestBody: {
-      startDate: start.toISOString().split('T')[0],
-      endDate: end.toISOString().split('T')[0],
+      startDate: daysBack(30),
+      endDate: daysBack(1),
       dimensions: ['page'],
       rowLimit: 50,
     },
@@ -148,7 +154,7 @@ async function showPages() {
 async function takeSnapshot() {
   const { BetaAnalyticsDataClient } = await import('@google-analytics/data');
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = daysBack(0);
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS sc_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, site_id TEXT NOT NULL, date TEXT NOT NULL, page_url TEXT NOT NULL, clicks INTEGER NOT NULL DEFAULT 0, impressions INTEGER NOT NULL DEFAULT 0, ctr REAL NOT NULL DEFAULT 0, position REAL NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
@@ -180,10 +186,8 @@ async function takeSnapshot() {
 
   const lockOwner = acquireSnapshotLock();
   try {
-    const end = new Date(); end.setDate(end.getDate() - 1);
-    const start = new Date(); start.setDate(start.getDate() - 7);
-    const startDate = start.toISOString().split('T')[0];
-    const endDate = end.toISOString().split('T')[0];
+    const startDate = daysBack(7);
+    const endDate = daysBack(1);
 
     console.log(`Taking snapshot for ${today}...\n`);
 

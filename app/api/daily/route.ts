@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getScDaily, getGa4Daily } from '@/lib/db';
 import { getManagedSites } from '@/lib/sites';
 import { CHART_COLORS } from '@/lib/constants';
+import { dateOnlyDaysBack } from '@/lib/date-only';
 
 export async function GET(req: NextRequest) {
   const parsedDays = parseInt(req.nextUrl.searchParams.get('days') || '30');
   const days = Number.isFinite(parsedDays) ? Math.min(365, Math.max(1, parsedDays)) : 30;
 
-  // Calculate the cutoff date
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
-  const cutoffStr = cutoff.toISOString().split('T')[0];
+  const cutoffStr = dateOnlyDaysBack(days);
 
   const result: Record<string, Record<string, { users: number; views: number; clicks: number; impressions: number }>> = {};
 

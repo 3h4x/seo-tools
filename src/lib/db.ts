@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { computeKeywordDeltas, type KeywordDelta } from './keyword-history';
 import { openDatabase } from './sqlite-driver.js';
 import { normalizeSkipChecks } from './skip-checks';
+import { dateOnlyDaysBack } from './date-only';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'seo-tools.db');
 
@@ -1313,9 +1314,7 @@ export interface KeywordDropAction {
 
 function getKeywordHistory(siteId: string, days: number = 35): KeywordHistoryPoint[] {
   const db = getDb();
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
-  const cutoffDate = cutoff.toISOString().split('T')[0];
+  const cutoffDate = dateOnlyDaysBack(days);
   return db.prepare(
     `SELECT date, query, clicks, impressions, ctr, position
      FROM keyword_history
@@ -1330,9 +1329,7 @@ export function getTopKeywordsWithHistory(
   days: number = 30,
 ): { topQueries: string[]; history: KeywordHistoryPoint[] } {
   const db = getDb();
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
-  const cutoffDate = cutoff.toISOString().split('T')[0];
+  const cutoffDate = dateOnlyDaysBack(days);
 
   const topRows = db.prepare(
     `SELECT query, SUM(impressions) as total

@@ -5,21 +5,14 @@ import { getDb, upsertScDaily, upsertGa4Daily } from './db';
 import { getManagedSites, getSCUrl } from './sites';
 import { discoverPropertyIds } from './ga4';
 import { normalizeGa4PropertyId } from './ga4-property';
+import { dateStr, parseDateOnly } from './date-only';
 
 const LOOKBACK_DAYS = 90;
 const COLLECT_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
-function dateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function parseDateOnly(value: string): Date {
-  const [year, month, day] = value.split('-').map(Number);
-  return new Date(year, month - 1, day, 12);
-}
-
 function daysBack(n: number): Date {
   const d = new Date();
+  d.setHours(12, 0, 0, 0);
   d.setDate(d.getDate() - n);
   return d;
 }

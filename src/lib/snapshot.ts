@@ -9,6 +9,7 @@ import { getSCUrl } from './sites';
 import { runSiteAudit } from './audit';
 import { normalizeSkipChecks } from './skip-checks';
 import { processSnapshotAlerts } from './alerts';
+import { dateOnlyDaysBack, todayDateOnly } from './date-only';
 
 export interface SnapshotResult {
   date: string;
@@ -202,7 +203,7 @@ function finishSnapshotRun({
 }
 
 async function doSnapshot(): Promise<SnapshotResult> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayDateOnly();
   const errors: string[] = [];
 
   const sites = await discoverPropertyIds();
@@ -213,16 +214,8 @@ async function doSnapshot(): Promise<SnapshotResult> {
   const sc = new searchconsole_v1.Searchconsole({ auth: getAuth() });
   const db = getDb();
 
-  const endDate = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
-  })();
-  const startDate = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString().split('T')[0];
-  })();
+  const endDate = dateOnlyDaysBack(1);
+  const startDate = dateOnlyDaysBack(7);
 
   const scDelete = db.prepare('DELETE FROM sc_snapshots WHERE site_id = ? AND date = ?');
   const scInsert = db.prepare(

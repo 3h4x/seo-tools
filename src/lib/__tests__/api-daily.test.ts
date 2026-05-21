@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../db', () => ({
   getScDaily: vi.fn(),
@@ -15,6 +15,7 @@ import { getManagedSites } from '../sites';
 import { GET } from '../../../app/api/daily/route';
 import { NextRequest } from 'next/server';
 import { CHART_COLORS } from '../constants';
+import { dateOnlyDaysBack, todayDateOnly } from '../date-only';
 
 function getReq(days?: number): NextRequest {
   const url = days !== undefined ? `http://localhost/api/daily?days=${days}` : 'http://localhost/api/daily';
@@ -34,6 +35,10 @@ beforeEach(() => {
   vi.mocked(getGa4Daily).mockReturnValue([]);
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('GET /api/daily', () => {
   it('returns data and sites metadata', async () => {
     const res = await GET(getReq());
@@ -44,7 +49,7 @@ describe('GET /api/daily', () => {
   });
 
   it('aggregates SC daily clicks and impressions', async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayDateOnly();
     vi.mocked(getScDaily).mockReturnValue([{ date: today, clicks: 10, impressions: 100 }] as never);
 
     const res = await GET(getReq(7));
@@ -54,7 +59,7 @@ describe('GET /api/daily', () => {
   });
 
   it('aggregates GA4 daily users and views', async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayDateOnly();
     vi.mocked(getGa4Daily).mockReturnValue([{ date: today, users: 50, views: 200 }] as never);
 
     const res = await GET(getReq(7));
@@ -64,7 +69,7 @@ describe('GET /api/daily', () => {
   });
 
   it('merges SC and GA4 data for the same date', async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayDateOnly();
     vi.mocked(getScDaily).mockReturnValue([{ date: today, clicks: 5, impressions: 50 }] as never);
     vi.mocked(getGa4Daily).mockReturnValue([{ date: today, users: 20, views: 80 }] as never);
 
@@ -75,13 +80,8 @@ describe('GET /api/daily', () => {
   });
 
   it('filters out rows older than the requested window', async () => {
-    const recent = new Date();
-    recent.setDate(recent.getDate() - 6);
-    const stale = new Date();
-    stale.setDate(stale.getDate() - 8);
-
-    const recentDate = recent.toISOString().split('T')[0];
-    const staleDate = stale.toISOString().split('T')[0];
+    const recentDate = dateOnlyDaysBack(6);
+    const staleDate = dateOnlyDaysBack(8);
 
     vi.mocked(getScDaily).mockReturnValue([
       { date: staleDate, clicks: 99, impressions: 999 },
@@ -140,7 +140,7 @@ describe('GET /api/daily', () => {
   });
 
   it('aggregates rows independently for multiple sites on the same date', async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayDateOnly();
     vi.mocked(getManagedSites).mockResolvedValue([
       SITE,
       { id: 'site2', name: 'Site Two', domain: 'site2.com', testPages: [] },
@@ -171,5 +171,23 @@ describe('GET /api/daily', () => {
       { id: 'site1', name: 'Site One', color: CHART_COLORS[0] },
       { id: 'site2', name: 'Site Two', color: CHART_COLORS[1] },
     ]);
+  });
+
+  it('filters with local date-only math across DST-sensitive windows', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 2, 30, 1, 30));
+
+    vi.mocked(getScDaily).mockReturnValue([
+      { date: '2026-03-27', clicks: 99, impressions: 999 },
+      { date: '2026-03-28', clicks: 10, impressions: 100 },
+      { date: '2026-03-29', clicks: 20, impressions: 200 },
+    ] as never);
+
+    const res = await GET(getReq(2));
+    const body = await res.json();
+
+    expect(body.data['2026-03-27']).toBeUndefined();
+    expect(body.data['2026-03-28']?.site1?.clicks).toBe(10);
+    expect(body.data['2026-03-29']?.site1?.clicks).toBe(20);
   });
 });

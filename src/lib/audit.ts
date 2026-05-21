@@ -3,6 +3,7 @@ import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { getAuth } from './google-auth';
 import { normalizeSkipChecks, type SkipCheckId } from './skip-checks';
 import { checkIndexNowKey } from './indexnow.js';
+import { dateOnlyDaysBack, dateStr } from './date-only';
 
 export type CheckStatus = 'pass' | 'warn' | 'fail' | 'error';
 
@@ -1530,14 +1531,14 @@ async function checkScSitemapFreshness(site: Site): Promise<CheckResult> {
     if (daysSince > SC_STALE_DAYS) {
       return {
         status: 'fail', label: 'SC Sitemap',
-        message: `Google last downloaded ${daysSince}d ago (${mostRecentDownload.toISOString().split('T')[0]})`,
+        message: `Google last downloaded ${daysSince}d ago (${dateStr(mostRecentDownload)})`,
         details: mostRecentPath,
       };
     }
 
     return {
       status: 'pass', label: 'SC Sitemap',
-      message: `Google downloaded ${daysSince}d ago (${mostRecentDownload.toISOString().split('T')[0]})`,
+      message: `Google downloaded ${daysSince}d ago (${dateStr(mostRecentDownload)})`,
       details: mostRecentPath,
     };
   } catch (e) {
@@ -1554,17 +1555,11 @@ async function checkIndexingCoverage(site: Site, sitemapUrlCount?: number): Prom
     const scUrl = getSCUrl(site);
     const formattedUrl = scUrl.startsWith('sc-domain:') || scUrl.startsWith('http') ? scUrl : `sc-domain:${scUrl}`;
 
-    // Get pages with any impressions in last 90 days = indexed pages
-    const end = new Date();
-    end.setDate(end.getDate() - 1);
-    const start = new Date();
-    start.setDate(start.getDate() - 90);
-
     const res = await getSc().searchanalytics.query({
       siteUrl: formattedUrl,
       requestBody: {
-        startDate: start.toISOString().split('T')[0],
-        endDate: end.toISOString().split('T')[0],
+        startDate: dateOnlyDaysBack(90),
+        endDate: dateOnlyDaysBack(1),
         dimensions: ['page'],
         rowLimit: 5000,
       },
@@ -1618,15 +1613,11 @@ async function fetchScTopPageUrls(site: Site): Promise<string[]> {
   try {
     const scUrl = getSCUrl(site);
     const formattedUrl = scUrl.startsWith('sc-domain:') || scUrl.startsWith('http') ? scUrl : `sc-domain:${scUrl}`;
-    const end = new Date();
-    end.setDate(end.getDate() - 1);
-    const start = new Date();
-    start.setDate(start.getDate() - 30);
     const res = await getSc().searchanalytics.query({
       siteUrl: formattedUrl,
       requestBody: {
-        startDate: start.toISOString().split('T')[0],
-        endDate: end.toISOString().split('T')[0],
+        startDate: dateOnlyDaysBack(30),
+        endDate: dateOnlyDaysBack(1),
         dimensions: ['page'],
         rowLimit: SC_SAMPLE_LIMIT * 2,
       },

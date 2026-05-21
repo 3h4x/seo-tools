@@ -1,3 +1,5 @@
+import { addDateOnlyDays, parseDateOnly } from './date-only';
+
 export interface KeywordDelta {
   query: string;
   currentPosition: number;
@@ -17,12 +19,12 @@ function findClosest(
   windowDays: number,
   excludeDate?: string,
 ): number | null {
-  const targetMs = new Date(targetDate).getTime();
+  const targetMs = parseDateOnly(targetDate).getTime();
   let best: { position: number; diffMs: number } | null = null;
   for (const row of rows) {
     if (excludeDate && row.date === excludeDate) continue;
-    const diffMs = Math.abs(new Date(row.date).getTime() - targetMs);
-    const diffDays = diffMs / 86_400_000;
+    const diffMs = Math.abs(parseDateOnly(row.date).getTime() - targetMs);
+    const diffDays = Math.round(diffMs / 86_400_000);
     if (diffDays <= windowDays && (!best || diffMs < best.diffMs)) {
       best = { position: row.position, diffMs };
     }
@@ -38,9 +40,8 @@ export function computeKeywordDeltas(history: HistoryRow[], today: string): Keyw
     byQuery.set(row.query, existing);
   }
 
-  const todayMs = new Date(today).getTime();
-  const target7d = new Date(todayMs - 7 * 86_400_000).toISOString().split('T')[0];
-  const target30d = new Date(todayMs - 30 * 86_400_000).toISOString().split('T')[0];
+  const target7d = addDateOnlyDays(today, -7);
+  const target30d = addDateOnlyDays(today, -30);
 
   const results: KeywordDelta[] = [];
 
