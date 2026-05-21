@@ -67,11 +67,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
   }
 
+  let normalized;
   try {
-    const rule = dbUpsertAlertRule(validateRuleInput(parsed.body));
-    return NextResponse.json({ ok: true, rule });
+    normalized = validateRuleInput(parsed.body);
   } catch (error) {
     return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 400 });
+  }
+
+  try {
+    const rule = dbUpsertAlertRule(normalized);
+    return NextResponse.json({ ok: true, rule });
+  } catch (error) {
+    console.error('[POST /api/alerts/rules]', error);
+    return NextResponse.json(
+      { ok: false, error: 'failed_to_save_alert_rule' },
+      { status: 500 },
+    );
   }
 }
 

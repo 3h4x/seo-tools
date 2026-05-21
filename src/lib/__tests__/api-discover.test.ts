@@ -66,6 +66,23 @@ describe('GET /api/sites/discover', () => {
     expect(body.error).toBe('No SA key configured');
   });
 
+  it('returns a JSON 500 when loading existing sites throws', async () => {
+    vi.mocked(dbGetSites).mockImplementation(() => {
+      throw new Error('sites table unavailable');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await GET(getReq());
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'failed_to_load_existing_sites' });
+    expect(consoleError).toHaveBeenCalledWith(
+      '[GET /api/sites/discover] load sites',
+      expect.any(Error),
+    );
+    consoleError.mockRestore();
+  });
+
   it('returns 500 when SC API call fails', async () => {
     vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
       return { sites: { list: vi.fn().mockRejectedValue(new Error('Quota exceeded')) } };

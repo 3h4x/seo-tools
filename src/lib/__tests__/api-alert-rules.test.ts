@@ -142,6 +142,28 @@ describe('POST /api/alerts/rules', () => {
     });
     expect(dbUpsertAlertRule).not.toHaveBeenCalled();
   });
+
+  it('returns a JSON 500 when persistence fails after validation passes', async () => {
+    vi.mocked(dbUpsertAlertRule).mockImplementation(() => {
+      throw new Error('storage failure');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await POST(postReq({
+      siteId: 'site-a',
+      metric: 'sc_clicks',
+      thresholdPct: 25,
+      channels: ['email'],
+    }));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({
+      ok: false,
+      error: 'failed_to_save_alert_rule',
+    });
+    expect(consoleError).toHaveBeenCalledWith('[POST /api/alerts/rules]', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });
 
 describe('DELETE /api/alerts/rules', () => {

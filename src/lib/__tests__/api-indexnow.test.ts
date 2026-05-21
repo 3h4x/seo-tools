@@ -120,6 +120,27 @@ describe('POST /api/indexnow', () => {
     expect(mockClearCacheEntry).not.toHaveBeenCalled();
   });
 
+  it('returns a JSON 500 when site loading throws', async () => {
+    mockGetManagedSite.mockRejectedValue(new Error('sites table locked'));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await POST(postReq({ siteId: 'site-a' }));
+    const data = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(data).toEqual({ error: 'failed_to_load_site' });
+    expect(mockGetManagedSite).toHaveBeenCalledWith('site-a');
+    expect(mockCheckIndexNowKey).not.toHaveBeenCalled();
+    expect(mockSubmitIndexNowForSite).not.toHaveBeenCalled();
+    expect(mockClearCacheEntry).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(
+      '[POST /api/indexnow] load site',
+      'site-a',
+      expect.any(Error),
+    );
+    consoleError.mockRestore();
+  });
+
   it('returns 400 when IndexNow key verification fails', async () => {
     mockCheckIndexNowKey.mockResolvedValue({
       status: 'fail',

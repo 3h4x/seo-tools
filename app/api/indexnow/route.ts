@@ -25,7 +25,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'siteId is required' }, { status: 400 });
   }
 
-  const site = await getManagedSite(siteId);
+  let site;
+  try {
+    site = await getManagedSite(siteId);
+  } catch (error) {
+    console.error('[POST /api/indexnow] load site', siteId, error);
+    return NextResponse.json({ error: 'failed_to_load_site' }, { status: 500 });
+  }
   if (!site) {
     return NextResponse.json({ error: `Unknown site: ${siteId}` }, { status: 404 });
   }

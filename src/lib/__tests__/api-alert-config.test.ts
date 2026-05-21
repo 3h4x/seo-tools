@@ -57,6 +57,20 @@ describe('GET /api/config/alerts', () => {
     });
     expect(JSON.stringify(payload)).not.toContain('hooks.example.com');
   });
+
+  it('returns a JSON 500 when the config payload cannot be loaded', async () => {
+    mockGetAlertDeliveryConfigResponse.mockImplementation(() => {
+      throw new Error('config unavailable');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await GET();
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ ok: false, error: 'failed_to_load_alert_config' });
+    expect(consoleError).toHaveBeenCalledWith('[GET /api/config/alerts]', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });
 
 describe('POST /api/config/alerts', () => {
@@ -100,6 +114,26 @@ describe('POST /api/config/alerts', () => {
     expect(await res.json()).toEqual({ ok: false, error: 'Webhook URL must be a valid absolute URL' });
     expect(mockSaveAlertDeliveryConfig).not.toHaveBeenCalled();
   });
+
+  it('returns a JSON 500 when persistence fails after validation passes', async () => {
+    mockValidateAlertDeliveryInput.mockReturnValue({
+      resendApiKey: 're_123',
+      fromEmail: 'alerts@example.com',
+      toEmail: 'ops@example.com',
+      webhookUrl: '',
+    });
+    mockSaveAlertDeliveryConfig.mockImplementation(() => {
+      throw new Error('disk full');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await POST(postReq({ resendApiKey: 're_123' }));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ ok: false, error: 'failed_to_save_alert_config' });
+    expect(consoleError).toHaveBeenCalledWith('[POST /api/config/alerts]', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });
 
 describe('DELETE /api/config/alerts', () => {
@@ -108,5 +142,19 @@ describe('DELETE /api/config/alerts', () => {
 
     expect(res.status).toBe(200);
     expect(mockClearAlertDeliveryConfig).toHaveBeenCalled();
+  });
+
+  it('returns a JSON 500 when storage clear fails', async () => {
+    mockClearAlertDeliveryConfig.mockImplementation(() => {
+      throw new Error('storage unavailable');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await DELETE();
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ ok: false, error: 'failed_to_clear_alert_config' });
+    expect(consoleError).toHaveBeenCalledWith('[DELETE /api/config/alerts]', expect.any(Error));
+    consoleError.mockRestore();
   });
 });

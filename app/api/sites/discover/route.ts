@@ -112,7 +112,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'No SA key configured' }, { status: 400 });
   }
 
-  const existingSites = dbGetSites();
+  let existingSites;
+  try {
+    existingSites = dbGetSites();
+  } catch (error) {
+    console.error('[GET /api/sites/discover] load sites', error);
+    return NextResponse.json({ error: 'failed_to_load_existing_sites' }, { status: 500 });
+  }
   const existingSiteIds = new Set(existingSites.map(site => site.id));
   const existingDomains = new Set(existingSites.map(s => getExistingDomainIdentity(s.domain)));
   const existingScIdentities = new Set(existingSites.flatMap(getSiteSearchConsoleIdentities));

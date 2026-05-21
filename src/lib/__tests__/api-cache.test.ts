@@ -29,4 +29,18 @@ describe('DELETE /api/cache', () => {
     const res = await DELETE();
     expect(res.status).toBe(200);
   });
+
+  it('returns a JSON 500 when clearing caches throws', async () => {
+    vi.mocked(clearCache).mockImplementation(() => {
+      throw new Error('db locked');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await DELETE();
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ cleared: false, error: 'failed_to_clear_cache' });
+    expect(consoleError).toHaveBeenCalledWith('[DELETE /api/cache]', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });

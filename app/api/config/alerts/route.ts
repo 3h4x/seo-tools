@@ -8,7 +8,15 @@ import {
 import { readJsonBody } from '@/lib/json-body';
 
 export function GET() {
-  return NextResponse.json(getAlertDeliveryConfigResponse());
+  try {
+    return NextResponse.json(getAlertDeliveryConfigResponse());
+  } catch (error) {
+    console.error('[GET /api/config/alerts]', error);
+    return NextResponse.json(
+      { ok: false, error: 'failed_to_load_alert_config' },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(req: Request) {
@@ -17,16 +25,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
   }
 
+  let normalized;
   try {
-    const normalized = validateAlertDeliveryInput(parsed.body);
+    normalized = validateAlertDeliveryInput(parsed.body);
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 400 });
+  }
+
+  try {
     saveAlertDeliveryConfig(normalized);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 400 });
+    console.error('[POST /api/config/alerts]', error);
+    return NextResponse.json(
+      { ok: false, error: 'failed_to_save_alert_config' },
+      { status: 500 },
+    );
   }
 }
 
 export function DELETE() {
-  clearAlertDeliveryConfig();
-  return NextResponse.json({ ok: true });
+  try {
+    clearAlertDeliveryConfig();
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('[DELETE /api/config/alerts]', error);
+    return NextResponse.json(
+      { ok: false, error: 'failed_to_clear_alert_config' },
+      { status: 500 },
+    );
+  }
 }
