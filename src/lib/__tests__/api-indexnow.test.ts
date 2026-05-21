@@ -44,6 +44,14 @@ function postReq(body: object): NextRequest {
   });
 }
 
+function rawPostReq(body: string): NextRequest {
+  return new NextRequest('http://localhost/api/indexnow', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body,
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetManagedSite.mockResolvedValue(site);
@@ -62,6 +70,30 @@ beforeEach(() => {
 });
 
 describe('POST /api/indexnow', () => {
+  it('returns 400 when the JSON body is malformed', async () => {
+    const res = await POST(rawPostReq('{'));
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data).toEqual({ error: 'Invalid JSON body' });
+    expect(mockGetManagedSite).not.toHaveBeenCalled();
+    expect(mockCheckIndexNowKey).not.toHaveBeenCalled();
+    expect(mockSubmitIndexNowForSite).not.toHaveBeenCalled();
+    expect(mockClearCacheEntry).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when the JSON body is not an object', async () => {
+    const res = await POST(rawPostReq('null'));
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data).toEqual({ error: 'siteId is required' });
+    expect(mockGetManagedSite).not.toHaveBeenCalled();
+    expect(mockCheckIndexNowKey).not.toHaveBeenCalled();
+    expect(mockSubmitIndexNowForSite).not.toHaveBeenCalled();
+    expect(mockClearCacheEntry).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when siteId is missing', async () => {
     const res = await POST(postReq({}));
     const data = await res.json();
@@ -104,6 +136,19 @@ describe('POST /api/indexnow', () => {
       error: 'Key file unreachable (404)',
       details: 'Expected https://a.test/indexnow-key-123.txt to return the configured key.',
     });
+    expect(mockCheckIndexNowKey).toHaveBeenCalledWith(site);
+    expect(mockSubmitIndexNowForSite).not.toHaveBeenCalled();
+    expect(mockClearCacheEntry).not.toHaveBeenCalled();
+  });
+
+  it('returns 502 when IndexNow key verification throws', async () => {
+    mockCheckIndexNowKey.mockRejectedValue(new Error('Key verification timed out'));
+
+    const res = await POST(postReq({ siteId: 'site-a' }));
+    const data = await res.json();
+
+    expect(res.status).toBe(502);
+    expect(data).toEqual({ error: 'Key verification timed out' });
     expect(mockCheckIndexNowKey).toHaveBeenCalledWith(site);
     expect(mockSubmitIndexNowForSite).not.toHaveBeenCalled();
     expect(mockClearCacheEntry).not.toHaveBeenCalled();
