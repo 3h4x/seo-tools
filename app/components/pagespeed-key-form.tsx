@@ -1,9 +1,39 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
 type TestState = 'idle' | 'testing' | 'ok' | 'error';
+
+type PagespeedConfigResponse = {
+  source?: Source;
+  error?: string;
+};
+
+function isSource(value: unknown): value is Source {
+  return value === 'db' || value === 'env' || value === 'none';
+}
+
+export async function readPagespeedConfigResponse(response: Response): Promise<Source> {
+  let payload: PagespeedConfigResponse | null = null;
+
+  try {
+    payload = await response.json() as PagespeedConfigResponse;
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error?.trim() || `PageSpeed config request failed (${response.status})`);
+  }
+
+  if (!isSource(payload?.source)) {
+    throw new Error('PageSpeed config response was invalid');
+  }
+
+  return payload.source;
+}
 
 export default function PagespeedKeyForm() {
   const [source, setSource] = useState<Source>('none');
@@ -15,9 +45,14 @@ export default function PagespeedKeyForm() {
 
   useEffect(() => {
     fetch('/api/config/pagespeed')
-      .then(r => r.json() as Promise<{ source: Source }>)
-      .then(d => { setSource(d.source); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(readPagespeedConfigResponse)
+      .then((nextSource) => { setSource(nextSource); })
+      .catch((error) => {
+        console.error('[PagespeedKeyForm] load:', error);
+        setErrorMsg(error instanceof Error ? error.message : 'Failed to load PageSpeed config');
+        setTestState('error');
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleTest() {
@@ -30,34 +65,49 @@ export default function PagespeedKeyForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: input, testOnly: true }),
       });
-      const data = await res.json() as { ok: boolean; error?: string };
-      if (data.ok) setTestState('ok');
-      else { setTestState('error'); setErrorMsg(data.error ?? 'Test failed'); }
-    } catch {
+      const result = await getMutationResult(res, 'Test failed');
+      if (result.ok) setTestState('ok');
+      else { setTestState('error'); setErrorMsg(result.error ?? 'Test failed'); }
+    } catch (error) {
+      console.error('[PagespeedKeyForm] test:', error);
       setTestState('error'); setErrorMsg('Request failed');
     }
   }
 
   async function handleSave() {
     setSaving(true);
+    setErrorMsg('');
     try {
       const res = await fetch('/api/config/pagespeed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: input, testOnly: false }),
       });
-      const data = await res.json() as { ok: boolean; error?: string };
-      if (data.ok) window.location.reload();
-      else { setTestState('error'); setErrorMsg(data.error ?? 'Save failed'); }
+      const result = await getMutationResult(res, 'Save failed');
+      if (result.ok) window.location.reload();
+      else { setTestState('error'); setErrorMsg(result.error ?? 'Save failed'); }
+    } catch (error) {
+      console.error('[PagespeedKeyForm] save:', error);
+      setTestState('error'); setErrorMsg('Request failed');
     } finally {
       setSaving(false);
     }
   }
 
   async function handleRemove() {
-    const res = await fetch('/api/config/pagespeed', { method: 'DELETE' });
-    const data = await res.json() as { ok: boolean };
-    if (data.ok) window.location.reload();
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/config/pagespeed', { method: 'DELETE' });
+      const result = await getMutationResult(res, 'Remove failed');
+      if (result.ok) window.location.reload();
+      else { setTestState('error'); setErrorMsg(result.error ?? 'Remove failed'); }
+    } catch (error) {
+      console.error('[PagespeedKeyForm] remove:', error);
+      setTestState('error'); setErrorMsg('Request failed');
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) return null;
@@ -100,7 +150,7 @@ export default function PagespeedKeyForm() {
       />
 
       {testState === 'ok' && <p className="text-sm text-green-400">Key works</p>}
-      {testState === 'error' && <p className="text-sm text-red-400">{errorMsg}</p>}
+      {testState === 'error' && <p className="text-sm text-red-400" role="alert">{errorMsg}</p>}
 
       <div className="flex gap-2 flex-wrap">
         <button
