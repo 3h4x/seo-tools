@@ -5,6 +5,57 @@ import type { SnapshotResult } from '@/lib/snapshot';
 
 type State = 'idle' | 'running' | 'done' | 'error';
 
+type SnapshotResponse =
+  | { ok: true; result: SnapshotResult }
+  | { ok: false; error: string };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isSnapshotResult(value: unknown): value is SnapshotResult {
+  return (
+    isRecord(value) &&
+    typeof value.date === 'string' &&
+    typeof value.sc === 'number' &&
+    typeof value.keywords === 'number' &&
+    typeof value.ga4 === 'number' &&
+    typeof value.ttfb === 'number' &&
+    Array.isArray(value.errors) &&
+    value.errors.every((error) => typeof error === 'string')
+  );
+}
+
+export function formatSnapshotError(error: string | undefined, status: number): string {
+  if (error === 'snapshot_in_progress') {
+    return 'Snapshot already running';
+  }
+  if (error === 'snapshot_failed') {
+    return 'Snapshot failed';
+  }
+  return error?.trim() || `Snapshot request failed (${status})`;
+}
+
+export async function readSnapshotResponse(response: Response): Promise<SnapshotResponse> {
+  let payload: unknown = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    const error = isRecord(payload) && typeof payload.error === 'string' ? payload.error : undefined;
+    return { ok: false, error: formatSnapshotError(error, response.status) };
+  }
+
+  if (!isSnapshotResult(payload)) {
+    return { ok: false, error: 'Snapshot response was invalid' };
+  }
+
+  return { ok: true, result: payload };
+}
+
 export function SnapshotButton() {
   const [state, setState] = useState<State>('idle');
   const [result, setResult] = useState<SnapshotResult | null>(null);
@@ -16,20 +67,16 @@ export function SnapshotButton() {
     setErrorMsg('');
     try {
       const res = await fetch('/api/snapshot', { method: 'POST' });
-      if (res.status === 409) {
-        setErrorMsg('Snapshot already running');
+      const snapshot = await readSnapshotResponse(res);
+      if (!snapshot.ok) {
+        setErrorMsg(snapshot.error);
         setState('error');
         return;
       }
-      if (!res.ok) {
-        setErrorMsg('Snapshot failed');
-        setState('error');
-        return;
-      }
-      const data: SnapshotResult = await res.json();
-      setResult(data);
+      setResult(snapshot.result);
       setState('done');
-    } catch {
+    } catch (error) {
+      console.error('[SnapshotButton]', error);
       setErrorMsg('Network error');
       setState('error');
     }
@@ -62,7 +109,7 @@ export function SnapshotButton() {
         </p>
       )}
       {state === 'error' && (
-        <p className="text-xs text-red-400">{errorMsg}</p>
+        <p className="text-xs text-red-400" role="alert">{errorMsg}</p>
       )}
     </div>
   );
