@@ -125,6 +125,12 @@ describe('GET /api/daily', () => {
     expect(getGa4Daily).toHaveBeenCalledWith('site1', 30);
   });
 
+  it('defaults to 30 days when days param has trailing text', async () => {
+    await GET(getReqRaw('days=30abc'));
+    expect(getScDaily).toHaveBeenCalledWith('site1', 30);
+    expect(getGa4Daily).toHaveBeenCalledWith('site1', 30);
+  });
+
   it('assigns a default color to sites metadata', async () => {
     const res = await GET(getReq());
     const body = await res.json();

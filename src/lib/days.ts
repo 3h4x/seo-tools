@@ -1,6 +1,9 @@
 export function parseIntegerParam(value: string | null | undefined, fallback: number): number {
-  const parsed = Number.parseInt(value ?? String(fallback), 10);
-  return Number.isNaN(parsed) ? Number.NaN : parsed;
+  const candidate = value ?? String(fallback);
+  if (!/^[+-]?\d+$/.test(candidate.trim())) return Number.NaN;
+
+  const parsed = Number(candidate);
+  return Number.isSafeInteger(parsed) ? parsed : Number.NaN;
 }
 
 export function normalizeAllowedNumber(

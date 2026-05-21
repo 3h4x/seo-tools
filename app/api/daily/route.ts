@@ -3,11 +3,12 @@ import { getScDaily, getGa4Daily } from '@/lib/db';
 import { getManagedSites } from '@/lib/sites';
 import { CHART_COLORS } from '@/lib/constants';
 import { dateOnlyDaysBack } from '@/lib/date-only';
+import { parseIntegerParam } from '@/lib/days';
 
 export async function GET(req: NextRequest) {
   try {
-    const parsedDays = parseInt(req.nextUrl.searchParams.get('days') || '30');
-    const days = Number.isFinite(parsedDays) ? Math.min(365, Math.max(1, parsedDays)) : 30;
+    const parsedDays = parseIntegerParam(req.nextUrl.searchParams.get('days'), 30);
+    const days = Number.isNaN(parsedDays) ? 30 : Math.min(365, Math.max(1, parsedDays));
 
     const cutoffStr = dateOnlyDaysBack(days);
 

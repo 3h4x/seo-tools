@@ -5,6 +5,10 @@ describe('days helpers', () => {
   it('parses integer query params', () => {
     expect(parseIntegerParam('28', 7)).toBe(28);
     expect(Number.isNaN(parseIntegerParam('abc', 7))).toBe(true);
+    expect(Number.isNaN(parseIntegerParam('28abc', 7))).toBe(true);
+    expect(Number.isNaN(parseIntegerParam('28.5', 7))).toBe(true);
+    expect(Number.isNaN(parseIntegerParam('1e2', 7))).toBe(true);
+    expect(Number.isNaN(parseIntegerParam('', 7))).toBe(true);
     expect(parseIntegerParam(undefined, 7)).toBe(7);
   });
 
