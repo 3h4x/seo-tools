@@ -96,6 +96,15 @@ describe('Performance site detail page', () => {
     expect(html).toContain('Trend Chart:integer');
   });
 
+  it('normalizes invalid days before loading site performance', async () => {
+    await PerfSiteDetail({
+      params: Promise.resolve({ site: 'borged-io' }),
+      searchParams: Promise.resolve({ days: 'abc' }),
+    });
+
+    expect(mockGetPerformanceSiteData).toHaveBeenCalledWith('borged-io', 7);
+  });
+
   it('throws notFound for unknown sites', async () => {
     mockGetPerformanceSiteData.mockResolvedValueOnce(null);
 

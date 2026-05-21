@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PERF_VALID_DAYS } from '@/lib/constants';
 import { getPerformanceSiteData } from '@/lib/performance-site';
-import { parseIntegerParam } from '@/lib/days';
+import { parseAllowedIntegerParam } from '@/lib/days';
 import { getRouteSiteParam, siteNotFoundError } from '@/lib/site-route';
 
 export async function GET(
@@ -9,9 +10,9 @@ export async function GET(
 ) {
   try {
     const site = await getRouteSiteParam(context);
-    const rawDays = parseIntegerParam(req.nextUrl.searchParams.get('days'), 7);
+    const days = parseAllowedIntegerParam(req.nextUrl.searchParams.get('days'), PERF_VALID_DAYS, 7);
 
-    const data = await getPerformanceSiteData(site, rawDays);
+    const data = await getPerformanceSiteData(site, days);
     if (!data) {
       return siteNotFoundError();
     }

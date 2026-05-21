@@ -3,9 +3,11 @@ import { notFound } from 'next/navigation';
 import { getPerformanceSiteData } from '@/lib/performance-site';
 import {
   CWV_METRIC_ORDER,
+  PERF_VALID_DAYS,
   CWV_THRESHOLDS,
   rateCwv,
 } from '@/lib/constants';
+import { parseAllowedIntegerParam } from '@/lib/days';
 import TimeRange from '../../components/time-range';
 import TrendChart from '../../components/trend-chart';
 import CwvSetupGuide from '../../components/cwv-setup-guide';
@@ -23,7 +25,8 @@ export default async function PerfSiteDetail({
 }) {
   const { site: siteId } = await params;
   const sp = await searchParams;
-  const perf = await getPerformanceSiteData(siteId, parseInt(sp.days || '7'));
+  const requestedDays = parseAllowedIntegerParam(sp.days, PERF_VALID_DAYS, 7);
+  const perf = await getPerformanceSiteData(siteId, requestedDays);
   if (!perf) notFound();
 
   const { site, days, hasRum, propagating, eventCount, heroSource, overall, byDevice, slowestPages, trend, psi } = perf;

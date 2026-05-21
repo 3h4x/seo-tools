@@ -49,7 +49,7 @@ describe('GET /api/performance/[site]', () => {
     });
   });
 
-  it('falls back invalid days to helper normalization', async () => {
+  it('normalizes invalid days before calling the data helper', async () => {
     vi.mocked(getPerformanceSiteData).mockResolvedValueOnce({
       site: { id: 'borged-io', name: 'Borged', domain: 'borged.io' },
       days: 7,
@@ -73,7 +73,7 @@ describe('GET /api/performance/[site]', () => {
     });
 
     expect(res.status).toBe(200);
-    expect(vi.mocked(getPerformanceSiteData)).toHaveBeenCalledWith('borged-io', Number.NaN);
+    expect(vi.mocked(getPerformanceSiteData)).toHaveBeenCalledWith('borged-io', 7);
   });
 
   it('returns 404 when the site does not exist', async () => {
