@@ -17,6 +17,14 @@ A multi-project SEO manager that:
 - **Auth:** Google service account (stored in SQLite via Config tab, with `GOOGLE_SA_KEY_JSON` env fallback)
 - **Package manager:** pnpm 11
 
+## Docs Reference
+
+| File | Topic | Load when |
+| --- | --- | --- |
+| `README.md` | Product overview, quick start, Docker workflow, alerts, and service-account setup | Load when you need onboarding, local boot steps, container usage, or operator-facing setup details. |
+
+No repo-level `docs/` directory exists right now. If `docs/*.md` files are added later, add them to this table with a short topic and "Load when" note.
+
 ## Managed Sites
 
 Sites are stored in SQLite (`data/seo-tools.db`) and managed via the Config tab UI. No site names, domains, or GA4 property IDs are hardcoded in source code.
