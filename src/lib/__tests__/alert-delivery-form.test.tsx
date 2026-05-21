@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { clearAlertDeliveryOverrides, type AlertConfigResponse } from '../../../app/components/alert-delivery-form';
+import {
+  clearAlertDeliveryOverrides,
+  readAlertConfigResponse,
+  type AlertConfigResponse,
+} from '../../../app/components/alert-delivery-form';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -7,6 +11,26 @@ function jsonResponse(body: unknown, status = 200): Response {
     headers: { 'content-type': 'application/json' },
   });
 }
+
+describe('readAlertConfigResponse', () => {
+  it('returns a valid alert config response payload', async () => {
+    const payload: AlertConfigResponse = {
+      config: { fromEmail: 'a@x', toEmail: 'b@x', hasResendApiKey: false, hasWebhookUrl: false },
+      sources: { resendApiKey: 'none', fromEmail: 'none', toEmail: 'none', webhookUrl: 'none' },
+    };
+    await expect(readAlertConfigResponse(jsonResponse(payload))).resolves.toEqual(payload);
+  });
+
+  it('surfaces server-provided error on failure', async () => {
+    await expect(
+      readAlertConfigResponse(jsonResponse({ error: 'boom' }, 500)),
+    ).rejects.toThrow('boom');
+  });
+
+  it('rejects malformed successful responses', async () => {
+    await expect(readAlertConfigResponse(jsonResponse({ config: null }))).rejects.toThrow('Alert config response was invalid');
+  });
+});
 
 describe('AlertDeliveryForm helpers', () => {
   it('reloads effective env fallback config after clearing DB overrides', async () => {

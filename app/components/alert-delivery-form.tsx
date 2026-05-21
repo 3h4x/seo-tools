@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
 
@@ -28,11 +29,34 @@ export type AlertConfigResponse = {
 
 const INPUT_CLS = 'w-full bg-neutral-900 border border-neutral-700 rounded-md p-2.5 text-sm text-neutral-200 focus:outline-none focus:border-neutral-500';
 
-async function readAlertConfigResponse(res: Response): Promise<AlertConfigResponse> {
-  if (!res.ok) {
-    throw new Error('load');
+function isAlertConfigResponse(value: unknown): value is AlertConfigResponse {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<AlertConfigResponse>;
+  return (
+    !!candidate.config &&
+    typeof candidate.config === 'object' &&
+    !!candidate.sources &&
+    typeof candidate.sources === 'object'
+  );
+}
+
+export async function readAlertConfigResponse(res: Response): Promise<AlertConfigResponse> {
+  let payload: unknown = null;
+  try {
+    payload = await res.json();
+  } catch {
+    payload = null;
   }
-  return res.json() as Promise<AlertConfigResponse>;
+  if (!res.ok) {
+    const error = (payload && typeof payload === 'object' && 'error' in payload && typeof (payload as { error?: unknown }).error === 'string')
+      ? (payload as { error: string }).error
+      : `Alert config request failed (${res.status})`;
+    throw new Error(error);
+  }
+  if (!isAlertConfigResponse(payload)) {
+    throw new Error('Alert config response was invalid');
+  }
+  return payload;
 }
 
 async function loadAlertDeliveryConfig(fetcher: typeof fetch = fetch): Promise<AlertConfigResponse> {
@@ -41,9 +65,9 @@ async function loadAlertDeliveryConfig(fetcher: typeof fetch = fetch): Promise<A
 
 export async function clearAlertDeliveryOverrides(fetcher: typeof fetch = fetch): Promise<AlertConfigResponse> {
   const res = await fetcher('/api/config/alerts', { method: 'DELETE' });
-  const data = await res.json() as { ok: boolean };
-  if (!res.ok || !data.ok) {
-    throw new Error('Clear failed');
+  const result = await getMutationResult(res, 'Clear failed');
+  if (!result.ok) {
+    throw new Error(result.error ?? 'Clear failed');
   }
 
   return loadAlertDeliveryConfig(fetcher);
@@ -78,8 +102,9 @@ export default function AlertDeliveryForm() {
   useEffect(() => {
     loadAlertDeliveryConfig()
       .then(applyConfigResponse)
-      .catch(() => {
-        setError('Failed to load alert delivery config');
+      .catch((err) => {
+        console.error('[AlertDeliveryForm] load:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load alert delivery config');
       });
   }, []);
 
@@ -94,15 +119,16 @@ export default function AlertDeliveryForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const data = await res.json() as { ok: boolean; error?: string };
-      if (!data.ok) {
-        setError(data.error ?? 'Save failed');
+      const result = await getMutationResult(res, 'Save failed');
+      if (!result.ok) {
+        setError(result.error ?? 'Save failed');
         return;
       }
       setSuccess('Alert delivery config saved');
       applyConfigResponse(await loadAlertDeliveryConfig());
-    } catch {
-      setError('Request failed');
+    } catch (err) {
+      console.error('[AlertDeliveryForm] save:', err);
+      setError(err instanceof Error ? err.message : 'Request failed');
     } finally {
       setSaving(false);
     }
@@ -116,8 +142,9 @@ export default function AlertDeliveryForm() {
     try {
       applyConfigResponse(await clearAlertDeliveryOverrides());
       setSuccess('Alert delivery config cleared');
-    } catch {
-      setError('Request failed');
+    } catch (err) {
+      console.error('[AlertDeliveryForm] clear:', err);
+      setError(err instanceof Error ? err.message : 'Request failed');
     } finally {
       setSaving(false);
     }
@@ -183,8 +210,8 @@ export default function AlertDeliveryForm() {
         />
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {success && <p className="text-sm text-emerald-400">{success}</p>}
+      {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
+      {success && <p className="text-sm text-emerald-400" role="status">{success}</p>}
 
       <div className="flex gap-2 flex-wrap">
         <button

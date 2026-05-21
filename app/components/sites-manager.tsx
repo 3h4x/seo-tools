@@ -64,11 +64,26 @@ function buildDiagnosticMap(diagnostics: SiteDiagnosticResult[]): Record<string,
 async function fetchSiteDiagnostics(): Promise<Record<string, SiteDiagnosticResult>> {
   const res = await fetch('/api/config/site-diagnostics', { cache: 'no-store' });
   if (!res.ok) {
-    throw new Error('diagnostics');
+    throw new Error(`diagnostics request failed (${res.status})`);
   }
 
-  const data = await res.json() as { diagnostics: SiteDiagnosticResult[] };
+  const data = await res.json() as { diagnostics?: SiteDiagnosticResult[] };
+  if (!Array.isArray(data?.diagnostics)) {
+    throw new Error('diagnostics response was invalid');
+  }
   return buildDiagnosticMap(data.diagnostics);
+}
+
+async function fetchSitesList(): Promise<Site[]> {
+  const res = await fetch('/api/sites');
+  if (!res.ok) {
+    throw new Error(`sites request failed (${res.status})`);
+  }
+  const data = await res.json();
+  if (!Array.isArray(data)) {
+    throw new Error('sites response was invalid');
+  }
+  return data as Site[];
 }
 
 function StatusBadge({
@@ -159,7 +174,8 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     try {
       setDiagnostics(await fetchSiteDiagnostics());
       setDiagnosticsError(false);
-    } catch {
+    } catch (err) {
+      console.error('[SitesManager] diagnostics:', err);
       setDiagnostics({});
       setDiagnosticsError(true);
     } finally {
@@ -168,9 +184,13 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   }, [hasAuth]);
 
   async function reloadSites() {
-    const res = await fetch('/api/sites');
-    const data = await res.json() as Site[];
-    setSites(data);
+    try {
+      setSites(await fetchSitesList());
+    } catch (err) {
+      console.error('[SitesManager] reloadSites:', err);
+      setError(err instanceof Error ? err.message : 'Failed to reload sites');
+      return;
+    }
     await loadDiagnostics();
   }
 
@@ -288,15 +308,33 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     setSelected(new Set());
     try {
       const res = await fetch('/api/sites/discover');
-      const data = await res.json() as DiscoveredSite[] | { error: string };
-      if ('error' in data) {
-        setDiscoverError(data.error);
-      } else {
-        setDiscovered(data);
-        setSelected(new Set(data.map(s => s.id)));
+      let data: unknown = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
       }
-    } catch {
-      setDiscoverError('Request failed');
+      if (!res.ok) {
+        const message = (data && typeof data === 'object' && 'error' in data && typeof (data as { error?: unknown }).error === 'string')
+          ? (data as { error: string }).error
+          : `Discovery failed (${res.status})`;
+        setDiscoverError(message);
+        return;
+      }
+      if (data && typeof data === 'object' && 'error' in data && typeof (data as { error?: unknown }).error === 'string') {
+        setDiscoverError((data as { error: string }).error);
+        return;
+      }
+      if (!Array.isArray(data)) {
+        setDiscoverError('Discovery response was invalid');
+        return;
+      }
+      const discoveredSites = data as DiscoveredSite[];
+      setDiscovered(discoveredSites);
+      setSelected(new Set(discoveredSites.map(s => s.id)));
+    } catch (err) {
+      console.error('[SitesManager] discover:', err);
+      setDiscoverError(err instanceof Error ? err.message : 'Request failed');
     } finally {
       setDiscovering(false);
     }
@@ -365,8 +403,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       }
 
       setImportSummary(buildImportSummary(nextState.successCount, nextState.failureCount));
-    } catch {
-      setDiscoverError('Import failed');
+    } catch (err) {
+      console.error('[SitesManager] import:', err);
+      setDiscoverError(err instanceof Error ? err.message : 'Import failed');
     } finally {
       setImporting(false);
     }
@@ -396,6 +435,10 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
         <p className="text-sm text-neutral-500">
           No sites configured — add a site or use Discover to import from Google.
         </p>
+      )}
+
+      {error && !isEditing && (
+        <p className="text-sm text-red-400" role="alert">{error}</p>
       )}
 
       {sites.length > 0 && (
@@ -520,7 +563,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
         </div>
       )}
       {diagnosticsError && hasAuth && (
-        <p className="text-xs text-red-400">Could not load per-site diagnostics.</p>
+        <p className="text-xs text-red-400" role="alert">Could not load per-site diagnostics.</p>
       )}
       {isEditing && (
         <div className="border border-neutral-700 rounded-lg p-4 space-y-4 bg-neutral-900/50">
@@ -653,7 +696,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
 
           <div className="flex gap-2">
             <button
@@ -685,7 +728,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </button>
           </div>
 
-          {discoverError && <p className="text-sm text-red-400">{discoverError}</p>}
+          {discoverError && <p className="text-sm text-red-400" role="alert">{discoverError}</p>}
           {importSummary && (
             <p className={`text-sm ${importSummary.tone === 'warning' ? 'text-amber-300' : 'text-emerald-300'}`}>
               {importSummary.message}

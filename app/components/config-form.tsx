@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
 
@@ -12,20 +13,19 @@ type TestState = 'idle' | 'testing' | 'ok' | 'error';
 
 export default function ConfigForm({ source: initialSource }: Props) {
   const [input, setInput] = useState('');
-  const [source, setSource] = useState<Source>(initialSource);
+  const [source] = useState<Source>(initialSource);
   const [testState, setTestState] = useState<TestState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   const hasKey = source !== 'none';
   const canTest = input.trim().length > 0;
   const canSave = testState === 'ok';
 
   async function handleTest() {
-    let parsed: unknown;
     try {
-      parsed = JSON.parse(input);
-      void parsed;
+      JSON.parse(input);
     } catch {
       setTestState('error');
       setErrorMsg('Invalid JSON');
@@ -40,14 +40,15 @@ export default function ConfigForm({ source: initialSource }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: input, testOnly: true }),
       });
-      const data = await res.json() as { ok: boolean; error?: string };
-      if (data.ok) {
+      const result = await getMutationResult(res, 'Connection failed');
+      if (result.ok) {
         setTestState('ok');
       } else {
         setTestState('error');
-        setErrorMsg(data.error ?? 'Connection failed');
+        setErrorMsg(result.error ?? 'Connection failed');
       }
-    } catch {
+    } catch (error) {
+      console.error('[ConfigForm] test:', error);
       setTestState('error');
       setErrorMsg('Request failed — check console');
     }
@@ -55,20 +56,22 @@ export default function ConfigForm({ source: initialSource }: Props) {
 
   async function handleSave() {
     setSaving(true);
+    setErrorMsg('');
     try {
       const res = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: input, testOnly: false }),
       });
-      const data = await res.json() as { ok: boolean; error?: string };
-      if (data.ok) {
+      const result = await getMutationResult(res, 'Save failed');
+      if (result.ok) {
         window.location.reload();
-      } else {
-        setTestState('error');
-        setErrorMsg(data.error ?? 'Save failed');
+        return;
       }
-    } catch {
+      setTestState('error');
+      setErrorMsg(result.error ?? 'Save failed');
+    } catch (error) {
+      console.error('[ConfigForm] save:', error);
       setTestState('error');
       setErrorMsg('Request failed — check console');
     } finally {
@@ -77,10 +80,23 @@ export default function ConfigForm({ source: initialSource }: Props) {
   }
 
   async function handleRemove() {
-    const res = await fetch('/api/config', { method: 'DELETE' });
-    const data = await res.json() as { ok: boolean };
-    if (data.ok) {
-      window.location.reload();
+    setRemoving(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/config', { method: 'DELETE' });
+      const result = await getMutationResult(res, 'Remove failed');
+      if (result.ok) {
+        window.location.reload();
+        return;
+      }
+      setTestState('error');
+      setErrorMsg(result.error ?? 'Remove failed');
+    } catch (error) {
+      console.error('[ConfigForm] remove:', error);
+      setTestState('error');
+      setErrorMsg('Request failed — check console');
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -124,7 +140,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
         <p className="text-sm text-green-400">Connection OK</p>
       )}
       {testState === 'error' && (
-        <p className="text-sm text-red-400">{errorMsg}</p>
+        <p className="text-sm text-red-400" role="alert">{errorMsg}</p>
       )}
 
       <div className="flex gap-2 flex-wrap">
@@ -147,9 +163,10 @@ export default function ConfigForm({ source: initialSource }: Props) {
         {source === 'db' && (
           <button
             onClick={handleRemove}
-            className="px-4 py-2 rounded-md text-sm bg-neutral-800 text-red-400 hover:bg-neutral-700 transition-colors"
+            disabled={removing}
+            className="px-4 py-2 rounded-md text-sm bg-neutral-800 text-red-400 hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Remove
+            {removing ? 'Removing…' : 'Remove'}
           </button>
         )}
       </div>
