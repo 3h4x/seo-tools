@@ -139,7 +139,8 @@ export async function GET(req: Request) {
       .filter((site): site is { scUrl: string; domain: string } => site !== null);
     scSites = dedupeScSites(rawScSites);
   } catch (err) {
-    return NextResponse.json({ error: `SC API error: ${(err as Error).message}` }, { status: 500 });
+    console.error('[GET /api/sites/discover] SC API error', err);
+    return NextResponse.json({ error: 'search_console_api_failed' }, { status: 500 });
   }
 
   // Fetch GA4 properties (best-effort)

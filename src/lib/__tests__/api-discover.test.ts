@@ -83,17 +83,24 @@ describe('GET /api/sites/discover', () => {
     consoleError.mockRestore();
   });
 
-  it('returns 500 when SC API call fails', async () => {
+  it('returns 500 with a sanitized error when SC API call fails', async () => {
     vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
-      return { sites: { list: vi.fn().mockRejectedValue(new Error('Quota exceeded')) } };
+      return { sites: { list: vi.fn().mockRejectedValue(new Error('Quota exceeded for project foo@bar.iam.gserviceaccount.com')) } };
     } as never);
     mockGa4([]);
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const res = await GET(getReq());
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.error).toContain('SC API error');
-    expect(body.error).toContain('Quota exceeded');
+    expect(body).toEqual({ error: 'search_console_api_failed' });
+    expect(JSON.stringify(body)).not.toContain('Quota exceeded');
+    expect(JSON.stringify(body)).not.toContain('iam.gserviceaccount.com');
+    expect(consoleError).toHaveBeenCalledWith(
+      '[GET /api/sites/discover] SC API error',
+      expect.any(Error),
+    );
+    consoleError.mockRestore();
   });
 
   it('returns proposed sites for SC domains not in DB', async () => {
