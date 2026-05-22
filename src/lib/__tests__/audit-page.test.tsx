@@ -191,6 +191,22 @@ describe('Audit page', () => {
     expect(mockDataTable).not.toHaveBeenCalled();
   });
 
+  it('reads the first repeated period value and falls back when the value is unknown', async () => {
+    mockCachedAuditAllSites.mockResolvedValue([]);
+    mockGetManagedSites.mockResolvedValue([]);
+    mockDetectAllDecay.mockResolvedValue([]);
+
+    await AuditPage({
+      searchParams: Promise.resolve({ period: ['30', '7'] }),
+    });
+    expect(mockDetectAllDecay).toHaveBeenLastCalledWith(30);
+
+    await AuditPage({
+      searchParams: Promise.resolve({ period: ['bogus', '30'] }),
+    });
+    expect(mockDetectAllDecay).toHaveBeenLastCalledWith(7);
+  });
+
   it('keeps the audit page available when aggregate sources fail', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
