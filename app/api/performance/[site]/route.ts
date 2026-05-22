@@ -19,7 +19,7 @@ export async function GET(
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching performance site data:', error);
-    return NextResponse.json({ error: 'Failed to fetch performance site data' }, { status: 500 });
+    console.error('[GET /api/performance/[site]]', error);
+    return NextResponse.json({ error: 'failed_to_fetch_performance_site_data' }, { status: 500 });
   }
 }

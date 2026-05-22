@@ -112,6 +112,6 @@ describe('GET /api/[site]/page-queries', () => {
     const res = await GET(getReq(), { params: Promise.resolve({ site: 'borged-io' }) });
 
     expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: 'Failed to fetch page queries' });
+    expect(await res.json()).toEqual({ error: 'failed_to_fetch_page_queries' });
   });
 });

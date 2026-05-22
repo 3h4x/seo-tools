@@ -26,7 +26,7 @@ export async function GET(
     const data = await cachedGetTopPagesWithQueries(scUrl, days);
     return NextResponse.json({ data: data ?? [] });
   } catch (error) {
-    console.error('Error fetching page queries:', error);
-    return NextResponse.json({ error: 'Failed to fetch page queries' }, { status: 500 });
+    console.error('[GET /api/[site]/page-queries]', error);
+    return NextResponse.json({ error: 'failed_to_fetch_page_queries' }, { status: 500 });
   }
 }

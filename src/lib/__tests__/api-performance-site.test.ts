@@ -95,6 +95,6 @@ describe('GET /api/performance/[site]', () => {
     });
 
     expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: 'Failed to fetch performance site data' });
+    expect(await res.json()).toEqual({ error: 'failed_to_fetch_performance_site_data' });
   });
 });
