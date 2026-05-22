@@ -29,6 +29,7 @@ import { ScTable } from '../components/sc-table';
 import { PageQueriesTable } from '../components/page-queries-table';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
+import { loadOrFallback } from '@/lib/page-helpers';
 
 export const revalidate = 300;
 
@@ -79,15 +80,6 @@ function urlInspectionTone(status: 'pass' | 'warn' | 'fail' | 'error'): string {
   return 'text-neutral-500';
 }
 
-async function providerOr<T>(label: string, promise: Promise<T>, fallback: T): Promise<T> {
-  try {
-    return await promise;
-  } catch (error) {
-    console.error(`[SiteDashboard] ${label}:`, error);
-    return fallback;
-  }
-}
-
 export default async function SiteDashboardPage({
   params,
   searchParams,
@@ -96,26 +88,26 @@ export default async function SiteDashboardPage({
   searchParams: Promise<{ days?: QueryParamValue }>;
 }) {
   const { site: siteId } = await params;
-  const site = await getManagedSite(siteId);
+  const site = await loadOrFallback(`SiteDashboard site ${siteId}`, getManagedSite(siteId), null);
   if (!site) notFound();
 
   const sp = await searchParams;
   const days = parseAllowedIntegerParam(sp.days, VALID_DAYS, 7);
 
   // Discover GA4 property ID
-  const discovered = await providerOr('GA4 discovery', discoverPropertyIds(), []);
+  const discovered = await loadOrFallback('SiteDashboard GA4 discovery', discoverPropertyIds(), []);
   const propertyId = discovered.find((s) => s.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
 
   const scUrl = getSCUrl(site);
 
   const [rawAudit, sitemapSubmissions, scComparison, scQueries, scTopPages, ga4Data, cwvSummary] = await Promise.all([
-    providerOr(`audit ${siteId}`, cachedAuditSite(site), createFailedSiteAuditResult(site)),
-    site.searchConsole ? providerOr(`sitemap submissions ${siteId}`, cachedGetSitemapSubmissions(scUrl), []) : Promise.resolve([]),
-    site.searchConsole ? providerOr(`Search Console comparison ${siteId}`, cachedGetSearchConsoleDataWithComparison(scUrl, days), { data: null, error: true }) : null,
-    site.searchConsole ? providerOr(`Search Console queries ${siteId}`, cachedGetSearchConsoleQueries(scUrl, days), null) : null,
-    site.searchConsole ? providerOr(`Search Console pages ${siteId}`, cachedGetSearchConsolePages(scUrl, days), null) : null,
-    providerOr(`GA4 ${siteId}`, cachedGetAnalytics(propertyId, days), { data: null, error: Boolean(propertyId) }),
-    providerOr(`CWV ${siteId}`, getCwvAuditSummary(siteId), null),
+    loadOrFallback(`SiteDashboard audit ${siteId}`, cachedAuditSite(site), createFailedSiteAuditResult(site)),
+    site.searchConsole ? loadOrFallback(`SiteDashboard sitemap submissions ${siteId}`, cachedGetSitemapSubmissions(scUrl), []) : Promise.resolve([]),
+    site.searchConsole ? loadOrFallback(`SiteDashboard Search Console comparison ${siteId}`, cachedGetSearchConsoleDataWithComparison(scUrl, days), { data: null, error: true }) : null,
+    site.searchConsole ? loadOrFallback(`SiteDashboard Search Console queries ${siteId}`, cachedGetSearchConsoleQueries(scUrl, days), null) : null,
+    site.searchConsole ? loadOrFallback(`SiteDashboard Search Console pages ${siteId}`, cachedGetSearchConsolePages(scUrl, days), null) : null,
+    loadOrFallback(`SiteDashboard GA4 ${siteId}`, cachedGetAnalytics(propertyId, days), { data: null, error: Boolean(propertyId) }),
+    loadOrFallback(`SiteDashboard CWV ${siteId}`, getCwvAuditSummary(siteId), null),
   ]);
 
   const audit = normalizeSiteAuditResult(rawAudit);

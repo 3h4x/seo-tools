@@ -227,9 +227,9 @@ describe('Audit page', () => {
       expect(html).toContain('Live checks · 1 sites');
       expect(html).not.toContain('No sites configured');
       expect(mockGetCwvAuditSummary).not.toHaveBeenCalled();
-      expect(consoleError).toHaveBeenCalledWith('[AuditPage] audits:', expect.any(Error));
-      expect(consoleError).toHaveBeenCalledWith('[AuditPage] decay:', expect.any(Error));
-      expect(consoleError).toHaveBeenCalledWith('[AuditPage] GA4 discovery:', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[AuditPage audits]', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[AuditPage decay]', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[AuditPage GA4 discovery]', expect.any(Error));
     } finally {
       consoleError.mockRestore();
     }
@@ -403,8 +403,8 @@ describe('Audit page', () => {
         expect.objectContaining({ id: 'site-b' }),
         { days: 7 },
       );
-      expect(consoleError).toHaveBeenCalledWith('[AuditPage] gaps site-a:', expect.any(Error));
-      expect(consoleError).toHaveBeenCalledWith('[AuditPage] CWV site-b:', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[AuditPage gaps site-a]', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[AuditPage CWV site-b]', expect.any(Error));
       expect(html).toContain('a.test');
       expect(html).toContain('b.test');
       expect(html).toContain('1410ms');

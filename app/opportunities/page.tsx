@@ -7,6 +7,7 @@ import {
   type KeywordOpportunity,
 } from '@/lib/opportunities';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
+import { loadOrFallback } from '@/lib/page-helpers';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
 
@@ -46,7 +47,7 @@ export default async function OpportunitiesPage({
   const params = await searchParams;
   const days = parseAllowedIntegerParam(params.days, OPPORTUNITIES_VALID_DAYS, OPPORTUNITIES_DEFAULT_DAYS);
 
-  const sites = await getManagedSites();
+  const sites = await loadOrFallback('OpportunitiesPage managed sites', getManagedSites(), []);
   const scSites = sites.filter(s => s.searchConsole !== false);
   const siteParam = Array.isArray(params.site) ? params.site[0] : params.site;
   const selectedSite = siteParam ? scSites.find(site => site.domain === siteParam) : undefined;

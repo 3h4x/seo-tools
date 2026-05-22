@@ -3,6 +3,7 @@ import { detectAllDecay, type DecaySeverity } from './decay';
 import { getKeywordDropActions } from './db';
 import { analyzeSiteGaps, createSiteGapSignals, loadSiteGapSignals, type GapRecommendation, type GapSeverity } from './gaps';
 import { discoverPropertyIds } from './ga4';
+import { loadOrFallback } from './page-helpers';
 import { getManagedSites } from './sites';
 
 export interface ActionQueueItem {
@@ -43,19 +44,6 @@ const EMPTY_PRIORITY_COUNTS: Record<ActionQueueItem['priority'], number> = {
   medium: 0,
   low: 0,
 };
-
-async function loadOrFallback<T>(
-  label: string,
-  promise: Promise<T>,
-  fallback: T,
-): Promise<T> {
-  try {
-    return await promise;
-  } catch (error) {
-    console.error(`[ActionQueue] ${label}:`, error);
-    return fallback;
-  }
-}
 
 function normalizePageKey(value: string): string {
   try {
@@ -107,10 +95,10 @@ function priorityFromDecay(severity: DecaySeverity): ActionQueueItem['priority']
 
 export async function loadActionQueue(days: number = 7): Promise<ActionQueueData> {
   const [managedSites, discoveredSites, audits, decayResults] = await Promise.all([
-    loadOrFallback('managed sites', getManagedSites(), []),
-    loadOrFallback('GA4 discovery', discoverPropertyIds(), []),
-    loadOrFallback('audits', cachedAuditAllSites(), []),
-    loadOrFallback('decay', detectAllDecay(days === 30 ? 30 : 7), []),
+    loadOrFallback('ActionQueue managed sites', getManagedSites(), []),
+    loadOrFallback('ActionQueue GA4 discovery', discoverPropertyIds(), []),
+    loadOrFallback('ActionQueue audits', cachedAuditAllSites(), []),
+    loadOrFallback('ActionQueue decay', detectAllDecay(days === 30 ? 30 : 7), []),
   ]);
 
   if (managedSites.length === 0) {
@@ -128,11 +116,11 @@ export async function loadActionQueue(days: number = 7): Promise<ActionQueueData
         const site = siteById.get(audit.siteId);
         if (!site) return [];
 
-        const signals = await loadSiteGapSignals(site, propertyIdBySite.get(site.id) ?? '', days)
-          .catch((error) => {
-            console.error(`[ActionQueue] gap signals ${site.id}:`, error);
-            return createSiteGapSignals({ days });
-          });
+        const signals = await loadOrFallback(
+          `ActionQueue gap signals ${site.id}`,
+          loadSiteGapSignals(site, propertyIdBySite.get(site.id) ?? '', days),
+          createSiteGapSignals({ days }),
+        );
         const impactPages = signals.scTopPages ?? [];
 
         return analyzeSiteGaps(audit, site, signals).gaps.map((gap) => {

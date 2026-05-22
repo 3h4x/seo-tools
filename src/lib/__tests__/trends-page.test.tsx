@@ -493,10 +493,10 @@ describe('SiteDashboardPage', () => {
       expect(html).toContain('Audit unavailable');
       expect(html).toContain('data unavailable');
       expect(vi.mocked(createFailedSiteAuditResult)).toHaveBeenCalledWith(managedSite);
-      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] audit site-1:', expect.any(Error));
-      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] Search Console comparison site-1:', expect.any(Error));
-      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] GA4 site-1:', expect.any(Error));
-      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] CWV site-1:', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard audit site-1]', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard Search Console comparison site-1]', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard GA4 site-1]', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[SiteDashboard CWV site-1]', expect.any(Error));
     } finally {
       consoleError.mockRestore();
     }

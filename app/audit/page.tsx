@@ -8,6 +8,7 @@ import { detectAllDecay, type DecaySeverity } from '@/lib/decay';
 import { formatRelativeTime } from '@/lib/format';
 import { getCwvAuditSummary, type CwvAuditSummary } from '@/lib/performance-site';
 import { CWV_RATING_COLORS, CWV_THRESHOLDS, type CwvMetricName } from '@/lib/constants';
+import { loadOrFallback } from '@/lib/page-helpers';
 import { statusDots, accentBorder, StatusBadge } from '../components/audit/check-card';
 import { MetricCard } from '../components/metric-card';
 import { CopyButton } from '../components/copy-button';
@@ -67,25 +68,7 @@ function checksSummary(
 }
 
 async function loadCwvSummaryForAudit(siteId: string): Promise<[string, CwvAuditSummary | null]> {
-  try {
-    return [siteId, await getCwvAuditSummary(siteId)];
-  } catch (error) {
-    console.error(`[AuditPage] CWV ${siteId}:`, error);
-    return [siteId, null];
-  }
-}
-
-async function loadOrFallback<T>(
-  label: string,
-  promise: Promise<T>,
-  fallback: T,
-): Promise<T> {
-  try {
-    return await promise;
-  } catch (error) {
-    console.error(`[AuditPage] ${label}:`, error);
-    return fallback;
-  }
+  return [siteId, await loadOrFallback(`AuditPage CWV ${siteId}`, getCwvAuditSummary(siteId), null)];
 }
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ period?: QueryParamValue }> }) {
@@ -93,10 +76,10 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const period = parseAllowedIntegerParam(sp.period, AUDIT_DECAY_PERIODS, 7) as 7 | 30;
 
   const [audits, managedSites, decayResults, discoveredSites] = await Promise.all([
-    loadOrFallback('audits', cachedAuditAllSites(), []),
-    loadOrFallback('managed sites', getManagedSites(), []),
-    loadOrFallback('decay', detectAllDecay(period), []),
-    loadOrFallback('GA4 discovery', discoverPropertyIds(), []),
+    loadOrFallback('AuditPage audits', cachedAuditAllSites(), []),
+    loadOrFallback('AuditPage managed sites', getManagedSites(), []),
+    loadOrFallback('AuditPage decay', detectAllDecay(period), []),
+    loadOrFallback('AuditPage GA4 discovery', discoverPropertyIds(), []),
   ]);
 
   if (managedSites.length === 0) {
@@ -154,15 +137,14 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     if (!site) return null;
 
     const propertyId = propertyIdBySite.get(site.id) || site.ga4PropertyId || '';
-    try {
-      const signals = await loadSiteGapSignals(site, propertyId, period);
-      const { gaps } = analyzeSiteGaps(audit, site, signals);
-
-      return { site, gaps };
-    } catch (error) {
-      console.error(`[AuditPage] gaps ${site.id}:`, error);
-      return { site, gaps: [] };
-    }
+    const signals = await loadOrFallback(
+      `AuditPage gaps ${site.id}`,
+      loadSiteGapSignals(site, propertyId, period),
+      null,
+    );
+    if (!signals) return { site, gaps: [] };
+    const { gaps } = analyzeSiteGaps(audit, site, signals);
+    return { site, gaps };
   }));
 
   for (const row of siteGapRows) {

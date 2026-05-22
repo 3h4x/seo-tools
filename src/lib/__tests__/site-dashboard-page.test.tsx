@@ -373,11 +373,11 @@ describe('SiteDashboardPage', () => {
     expect(html).toContain('Site Audit');
     expect(html.match(/data unavailable/g)).toHaveLength(2);
     expect(mockCreateFailedSiteAuditResult).toHaveBeenCalledWith(expect.objectContaining({ id: 'site-1' }));
-    expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] GA4 discovery:', expect.any(Error));
-    expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] audit site-1:', expect.any(Error));
-    expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] Search Console comparison site-1:', expect.any(Error));
-    expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] GA4 site-1:', expect.any(Error));
-    expect(consoleError).toHaveBeenCalledWith('[SiteDashboard] CWV site-1:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[SiteDashboard GA4 discovery]', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[SiteDashboard audit site-1]', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[SiteDashboard Search Console comparison site-1]', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[SiteDashboard GA4 site-1]', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[SiteDashboard CWV site-1]', expect.any(Error));
 
     consoleError.mockRestore();
   });

@@ -1,31 +1,23 @@
 import Link from 'next/link';
 import { dbGetAlertEvents } from '@/lib/db';
 import { formatAlertMetricValue, getAlertMetricLabel } from '@/lib/alerts';
+import { loadOrFallback } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
 
 export const revalidate = 300;
-
-async function loadOrFallback<T>(label: string, promise: Promise<T>, fallback: T): Promise<T> {
-  try {
-    return await promise;
-  } catch (error) {
-    console.error(`[AlertsPage] ${label}:`, error);
-    return fallback;
-  }
-}
 
 function safeGetAlertEvents(): ReturnType<typeof dbGetAlertEvents> {
   try {
     return dbGetAlertEvents(100);
   } catch (error) {
-    console.error('[AlertsPage] events:', error);
+    console.error('[AlertsPage events]', error);
     return [];
   }
 }
 
 export default async function AlertsPage() {
   const events = safeGetAlertEvents();
-  const managedSites = await loadOrFallback('managed sites', getManagedSites(), []);
+  const managedSites = await loadOrFallback('AlertsPage managed sites', getManagedSites(), []);
   const sitesById = new Map(managedSites.map((site) => [site.id, site]));
 
   return (

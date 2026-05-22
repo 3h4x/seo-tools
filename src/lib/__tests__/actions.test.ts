@@ -122,9 +122,9 @@ describe('loadActionQueue', () => {
       medium: 1,
       low: 0,
     });
-    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] GA4 discovery:', expect.any(Error));
-    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] audits:', expect.any(Error));
-    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] decay:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue GA4 discovery]', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue audits]', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue decay]', expect.any(Error));
 
     consoleError.mockRestore();
   });
@@ -169,7 +169,7 @@ describe('loadActionQueue', () => {
         impactLabel: 'Structural issue',
       }),
     ]);
-    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] gap signals site-a:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue gap signals site-a]', expect.any(Error));
 
     consoleError.mockRestore();
   });
@@ -182,7 +182,7 @@ describe('loadActionQueue', () => {
 
     expect(result.items).toEqual([]);
     expect(result.counts).toEqual({ critical: 0, high: 0, medium: 0, low: 0 });
-    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] managed sites:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue managed sites]', expect.any(Error));
 
     consoleError.mockRestore();
   });

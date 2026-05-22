@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { loadOrFallback } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
 import { SnapshotButton } from '../components/snapshot-button';
 import {
@@ -67,7 +68,7 @@ export default async function TrendsPage({
     );
   }
 
-  const managedSites = await getManagedSites();
+  const managedSites = await loadOrFallback('TrendsPage managed sites', getManagedSites(), []);
 
   if (managedSites.length === 0) {
     return (

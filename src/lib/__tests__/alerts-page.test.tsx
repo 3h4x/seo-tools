@@ -49,8 +49,8 @@ describe('alerts page', () => {
     const html = renderToStaticMarkup(await AlertsPage());
 
     expect(html).toContain('No alerts have fired yet.');
-    expect(consoleError).toHaveBeenCalledWith('[AlertsPage] events:', expect.any(Error));
-    expect(consoleError).toHaveBeenCalledWith('[AlertsPage] managed sites:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[AlertsPage events]', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[AlertsPage managed sites]', expect.any(Error));
 
     consoleError.mockRestore();
   });
