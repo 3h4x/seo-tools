@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDiscoverError } from '../../../app/components/sites-manager';
+import { formatDiscoverError, formatSiteMutationError } from '../../../app/components/sites-manager';
 
 describe('formatDiscoverError', () => {
   it('maps known snake_case error codes to operator-facing messages', () => {
@@ -20,5 +20,33 @@ describe('formatDiscoverError', () => {
     expect(formatDiscoverError(undefined, 503)).toBe('Discovery failed (503)');
     expect(formatDiscoverError('', 500)).toBe('Discovery failed (500)');
     expect(formatDiscoverError('   ', 500)).toBe('Discovery failed (500)');
+  });
+});
+
+describe('formatSiteMutationError', () => {
+  it('maps known managed-site API error codes to operator-facing messages', () => {
+    expect(formatSiteMutationError('failed_to_load_sites', 500, 'Save failed')).toBe(
+      'Could not load existing sites. Check server logs.',
+    );
+    expect(formatSiteMutationError('failed_to_save_site', 500, 'Save failed')).toBe(
+      'Could not save site. Check server logs.',
+    );
+    expect(formatSiteMutationError('failed_to_delete_site', 500, 'Delete failed')).toBe(
+      'Could not delete site. Check server logs.',
+    );
+    expect(formatSiteMutationError('failed_to_reorder_sites', 500, 'Failed to reorder sites')).toBe(
+      'Could not reorder sites. Check server logs.',
+    );
+  });
+
+  it('passes through validation errors unchanged', () => {
+    expect(formatSiteMutationError('domain is already used by site "other"', 400, 'Save failed')).toBe(
+      'domain is already used by site "other"',
+    );
+  });
+
+  it('falls back to the operation and status when no error string is provided', () => {
+    expect(formatSiteMutationError(undefined, 503, 'Save failed')).toBe('Save failed (503)');
+    expect(formatSiteMutationError('   ', 500, 'Delete failed')).toBe('Delete failed (500)');
   });
 });

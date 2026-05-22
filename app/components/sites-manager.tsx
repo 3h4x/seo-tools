@@ -62,12 +62,27 @@ const DISCOVER_ERROR_MESSAGES: Record<string, string> = {
   failed_to_load_existing_sites: 'Could not load existing sites. Check server logs.',
 };
 
+const SITE_MUTATION_ERROR_MESSAGES: Record<string, string> = {
+  failed_to_load_sites: 'Could not load existing sites. Check server logs.',
+  failed_to_save_site: 'Could not save site. Check server logs.',
+  failed_to_delete_site: 'Could not delete site. Check server logs.',
+  failed_to_reorder_sites: 'Could not reorder sites. Check server logs.',
+};
+
 export function formatDiscoverError(error: string | undefined, status: number): string {
   const trimmed = error?.trim();
   if (trimmed && DISCOVER_ERROR_MESSAGES[trimmed]) {
     return DISCOVER_ERROR_MESSAGES[trimmed];
   }
   return trimmed || `Discovery failed (${status})`;
+}
+
+export function formatSiteMutationError(error: string | undefined, status: number, fallback: string): string {
+  const trimmed = error?.trim();
+  if (trimmed && SITE_MUTATION_ERROR_MESSAGES[trimmed]) {
+    return SITE_MUTATION_ERROR_MESSAGES[trimmed];
+  }
+  return trimmed || `${fallback} (${status})`;
 }
 
 function buildDiagnosticMap(diagnostics: SiteDiagnosticResult[]): Record<string, SiteDiagnosticResult> {
@@ -226,7 +241,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       const result = await getMutationResult(res, 'Failed to reorder sites');
       if (!result.ok) {
         setSites(previousSites);
-        setError(result.error ?? 'Failed to reorder sites');
+        setError(formatSiteMutationError(result.error, res.status, 'Failed to reorder sites'));
         return;
       }
       await reloadSites();
@@ -281,7 +296,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       });
       const result = await getMutationResult(res, 'Save failed');
       if (!result.ok) {
-        setError(result.error ?? 'Save failed');
+        setError(formatSiteMutationError(result.error, res.status, 'Save failed'));
         return;
       }
       await reloadSites();
@@ -300,7 +315,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       const res = await fetch(`/api/sites?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       const result = await getMutationResult(res, 'Delete failed');
       if (!result.ok) {
-        setError(result.error ?? 'Delete failed');
+        setError(formatSiteMutationError(result.error, res.status, 'Delete failed'));
         return;
       }
       setSites(prev => prev.filter(s => s.id !== id));
@@ -400,9 +415,15 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               originalId: site.isUpdate ? site.id : undefined,
             }),
           });
+          const result = await getImportResult(res);
           return {
             id: site.id,
-            ...(await getImportResult(res)),
+            ...(result.ok
+              ? result
+              : {
+                ...result,
+                error: formatSiteMutationError(result.error, res.status, 'Import failed'),
+              }),
           };
         } catch (err) {
           return {
