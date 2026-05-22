@@ -52,8 +52,10 @@ beforeEach(() => {
   mockCachedGetKeywordOpportunities.mockResolvedValue([]);
 });
 
-function req(days: string): NextRequest {
-  return new NextRequest(`http://localhost/api/opportunities?days=${days}`);
+function req(days: string, site?: string): NextRequest {
+  const params = new URLSearchParams({ days });
+  if (site) params.set('site', site);
+  return new NextRequest(`http://localhost/api/opportunities?${params}`);
 }
 
 describe('GET /api/opportunities', () => {
@@ -102,6 +104,41 @@ describe('GET /api/opportunities', () => {
       'site-b',
       expect.any(Error),
     );
+  });
+
+  it('fetches only the selected Search Console site', async () => {
+    mockGetManagedSites.mockResolvedValue([
+      { id: 'site-a', name: 'Site A', domain: 'a.test', searchConsole: true, testPages: ['/'] },
+      { id: 'site-b', name: 'Site B', domain: 'b.test', searchConsole: true, testPages: ['/'] },
+    ]);
+    mockCachedGetKeywordOpportunities.mockResolvedValueOnce([{ query: 'selected' }]);
+
+    const res = await GET(req('28', 'b.test'));
+
+    expect(res.status).toBe(200);
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledTimes(1);
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:b.test', 'site-b', 28);
+    expect(await res.json()).toEqual([
+      {
+        siteId: 'site-b',
+        domain: 'b.test',
+        opportunities: [{ query: 'selected' }],
+      },
+    ]);
+  });
+
+  it('falls back to all Search Console sites for a stale site filter', async () => {
+    mockGetManagedSites.mockResolvedValue([
+      { id: 'site-a', name: 'Site A', domain: 'a.test', searchConsole: true, testPages: ['/'] },
+      { id: 'site-b', name: 'Site B', domain: 'b.test', searchConsole: true, testPages: ['/'] },
+    ]);
+
+    const res = await GET(req('28', 'missing.test'));
+
+    expect(res.status).toBe(200);
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledTimes(2);
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:a.test', 'site-a', 28);
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:b.test', 'site-b', 28);
   });
 
   it('returns a JSON 500 when the managed sites list cannot be loaded', async () => {

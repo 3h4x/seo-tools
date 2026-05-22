@@ -36,7 +36,6 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
     FCP:  { sum: 0, count: 0 }, TTFB: { sum: 0, count: 0 },
   };
   for (const row of rows) {
-    if (row.source !== 'rum') continue;
     for (const name of CWV_METRIC_ORDER) {
       const m = row.metrics[name];
       if (m) { overallAgg[name].sum += m.value; overallAgg[name].count += 1; }

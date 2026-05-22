@@ -16,12 +16,18 @@ vi.mock('next/navigation', () => ({
 
 const {
   mockGetPerformanceSiteData,
+  mockGetPerformanceOverviewRows,
 } = vi.hoisted(() => ({
   mockGetPerformanceSiteData: vi.fn(),
+  mockGetPerformanceOverviewRows: vi.fn(),
 }));
 
 vi.mock('@/lib/performance-site', () => ({
   getPerformanceSiteData: mockGetPerformanceSiteData,
+}));
+
+vi.mock('@/lib/performance-overview', () => ({
+  getPerformanceOverviewRows: mockGetPerformanceOverviewRows,
 }));
 
 vi.mock('../../../app/components/time-range', () => ({
@@ -42,6 +48,7 @@ vi.mock('../../../app/components/trend-chart', () => ({
 }));
 
 import PerfSiteDetail from '../../../app/performance/[site]/page';
+import PerformancePage from '../../../app/performance/page';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -81,6 +88,33 @@ beforeEach(() => {
       },
       desktop: null,
     },
+  });
+  mockGetPerformanceOverviewRows.mockResolvedValue([
+    {
+      id: 'psi-site',
+      name: 'PSI Site',
+      domain: 'psi.example.com',
+      source: 'psi-field',
+      metrics: {
+        LCP: { value: 2400, rating: 'good' },
+        INP: { value: 180, rating: 'good' },
+      },
+      perfScore: 82,
+      needsKey: false,
+      cwvEventCount: 0,
+    },
+  ]);
+});
+
+describe('Performance overview page', () => {
+  it('uses PSI fallback metrics in the overall summary cards', async () => {
+    const page = await PerformancePage({
+      searchParams: Promise.resolve({ days: '7' }),
+    });
+
+    const html = renderToStaticMarkup(page);
+
+    expect(html.match(/avg across 1 site/g)).toHaveLength(2);
   });
 });
 

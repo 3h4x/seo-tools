@@ -21,9 +21,14 @@ export async function GET(req: NextRequest) {
   }
 
   const scSites = sites.filter(s => s.searchConsole !== false);
+  const selectedDomain = params.get('site');
+  const selectedSite = selectedDomain
+    ? scSites.find(site => site.domain === selectedDomain)
+    : undefined;
+  const targetSites = selectedSite ? [selectedSite] : scSites;
 
   const results: SiteOpportunities[] = await Promise.all(
-    scSites.map(async (site) => {
+    targetSites.map(async (site) => {
       let opportunities: Awaited<ReturnType<typeof cachedGetKeywordOpportunities>>;
 
       try {
