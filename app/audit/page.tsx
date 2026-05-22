@@ -14,6 +14,7 @@ import { CopyButton } from '../components/copy-button';
 import { GapsClient, type SiteGap } from '../components/gaps-client';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
+import type { QueryParamValue } from '@/lib/days';
 
 export const revalidate = 300;
 
@@ -85,7 +86,7 @@ async function loadOrFallback<T>(
   }
 }
 
-export default async function AuditPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
+export default async function AuditPage({ searchParams }: { searchParams: Promise<{ period?: QueryParamValue }> }) {
   const sp = await searchParams;
   const period = sp.period === '30' ? 30 : 7;
 

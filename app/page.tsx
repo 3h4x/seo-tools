@@ -3,7 +3,7 @@ import { cachedGetSearchConsoleData } from '@/lib/search-console';
 import { getSCUrl } from '@/lib/sites';
 import { formatSource } from '@/lib/format';
 import { VALID_DAYS } from '@/lib/constants';
-import { parseAllowedIntegerParam } from '@/lib/days';
+import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import TimeRange from './components/time-range';
 import { MetricCard } from './components/metric-card';
 import { Icons } from './components/icons';
@@ -42,7 +42,7 @@ async function getSiteData(days: number) {
   return enrichedSites.sort((a, b) => (b.ga4?.data?.current.users ?? 0) - (a.ga4?.data?.current.users ?? 0));
 }
 
-export default async function Overview({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
+export default async function Overview({ searchParams }: { searchParams: Promise<{ days?: QueryParamValue }> }) {
   const params = await searchParams;
   const days = parseAllowedIntegerParam(params.days, VALID_DAYS, 7);
   const sites = await getSiteData(days);

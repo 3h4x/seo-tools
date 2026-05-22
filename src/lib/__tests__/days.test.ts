@@ -10,6 +10,8 @@ describe('days helpers', () => {
     expect(Number.isNaN(parseIntegerParam('1e2', 7))).toBe(true);
     expect(Number.isNaN(parseIntegerParam('', 7))).toBe(true);
     expect(parseIntegerParam(undefined, 7)).toBe(7);
+    expect(parseIntegerParam(['28', '90'], 7)).toBe(28);
+    expect(parseIntegerParam([], 7)).toBe(7);
   });
 
   it('normalizes values against an allowlist', () => {
@@ -21,5 +23,6 @@ describe('days helpers', () => {
     expect(parseAllowedIntegerParam('28', [7, 28] as const, 7)).toBe(28);
     expect(parseAllowedIntegerParam('abc', [7, 28] as const, 7)).toBe(7);
     expect(parseAllowedIntegerParam('90', [7, 28] as const, 7)).toBe(7);
+    expect(parseAllowedIntegerParam(['28', '90'], [7, 28] as const, 7)).toBe(28);
   });
 });

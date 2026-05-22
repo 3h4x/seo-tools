@@ -6,7 +6,7 @@ import {
   type CwvMetricName,
   type CwvRating,
 } from '@/lib/constants';
-import { parseAllowedIntegerParam } from '@/lib/days';
+import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import {
   getPerformanceOverviewRows,
   type PerformanceOverviewRow,
@@ -26,7 +26,11 @@ const SOURCE_BADGE: Record<PerformanceOverviewRow['source'], { label: string; cl
   'none':        { label: 'No data',  cls: 'bg-neutral-800 text-neutral-500 border-neutral-700',       tip: 'No RUM events and PSI returned nothing' },
 };
 
-export default async function PerformancePage({ searchParams }: { searchParams: Promise<{ days?: string; guide?: string }> }) {
+export default async function PerformancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ days?: QueryParamValue; guide?: QueryParamValue }>;
+}) {
   const params = await searchParams;
   const days = parseAllowedIntegerParam(params.days, PERF_VALID_DAYS, 7);
   const rows = await getPerformanceOverviewRows(days);

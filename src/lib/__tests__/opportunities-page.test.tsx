@@ -141,6 +141,22 @@ describe('Opportunities page', () => {
     expect(html).toContain('Showing 1 of 1 opportunities for b.test');
   });
 
+  it('handles repeated days and site searchParams without widening the fetch', async () => {
+    mockGetManagedSites.mockResolvedValue([
+      { id: 'site-a', name: 'Site A', domain: 'a.test', searchConsole: true, testPages: ['/'] },
+      { id: 'site-b', name: 'Site B', domain: 'b.test', searchConsole: true, testPages: ['/'] },
+    ]);
+
+    const page = await OpportunitiesPage({
+      searchParams: Promise.resolve({ days: ['90', '28'], site: ['b.test', 'a.test'] }),
+    });
+    const html = renderToStaticMarkup(page);
+
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledTimes(1);
+    expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:b.test', 'site-b', 90);
+    expect(html).toContain('Showing 1 of 1 opportunities for b.test');
+  });
+
   it('falls back to all sites for an unknown site filter', async () => {
     mockGetManagedSites.mockResolvedValue([
       { id: 'site-a', name: 'Site A', domain: 'a.test', searchConsole: true, testPages: ['/'] },

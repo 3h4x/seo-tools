@@ -171,6 +171,20 @@ describe('Overview page', () => {
     expect(mockDailyTrafficChart).toHaveBeenCalledWith({ days: 7 }, undefined);
   });
 
+  it('handles repeated days searchParams without crashing', async () => {
+    const page = await Overview({
+      searchParams: Promise.resolve({ days: ['30', '90'] }),
+    });
+
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain('Last 30 days');
+    expect(mockCachedGetAnalytics).toHaveBeenNthCalledWith(1, 'properties/111', 30);
+    expect(mockCachedGetAnalytics).toHaveBeenNthCalledWith(2, 'properties/222', 30);
+    expect(mockCachedGetSearchConsoleData).toHaveBeenCalledWith('sc-domain:a.test', 30);
+    expect(mockDailyTrafficChart).toHaveBeenCalledWith({ days: 30 }, undefined);
+  });
+
   it('builds sorted performance rows with SC nulls for disabled sites', async () => {
     const page = await Overview({
       searchParams: Promise.resolve({ days: '30' }),

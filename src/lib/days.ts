@@ -1,5 +1,11 @@
-export function parseIntegerParam(value: string | null | undefined, fallback: number): number {
-  const candidate = value ?? String(fallback);
+export type QueryParamValue = string | string[] | null | undefined;
+
+function firstQueryParamValue(value: QueryParamValue): string | undefined {
+  return Array.isArray(value) ? value[0] : value ?? undefined;
+}
+
+export function parseIntegerParam(value: QueryParamValue, fallback: number): number {
+  const candidate = firstQueryParamValue(value) ?? String(fallback);
   if (!/^[+-]?\d+$/.test(candidate.trim())) return Number.NaN;
 
   const parsed = Number(candidate);
@@ -15,7 +21,7 @@ export function normalizeAllowedNumber(
 }
 
 export function parseAllowedIntegerParam(
-  value: string | null | undefined,
+  value: QueryParamValue,
   validValues: readonly number[],
   fallback: number,
 ): number {

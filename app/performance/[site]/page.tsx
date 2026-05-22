@@ -7,7 +7,7 @@ import {
   CWV_THRESHOLDS,
   rateCwv,
 } from '@/lib/constants';
-import { parseAllowedIntegerParam } from '@/lib/days';
+import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import TimeRange from '../../components/time-range';
 import TrendChart from '../../components/trend-chart';
 import CwvSetupGuide from '../../components/cwv-setup-guide';
@@ -21,7 +21,7 @@ export default async function PerfSiteDetail({
   searchParams,
 }: {
   params: Promise<{ site: string }>;
-  searchParams: Promise<{ days?: string }>;
+  searchParams: Promise<{ days?: QueryParamValue }>;
 }) {
   const { site: siteId } = await params;
   const sp = await searchParams;

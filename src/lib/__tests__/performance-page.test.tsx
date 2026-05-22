@@ -139,6 +139,15 @@ describe('Performance site detail page', () => {
     expect(mockGetPerformanceSiteData).toHaveBeenCalledWith('borged-io', 7);
   });
 
+  it('handles repeated days searchParams before loading site performance', async () => {
+    await PerfSiteDetail({
+      params: Promise.resolve({ site: 'borged-io' }),
+      searchParams: Promise.resolve({ days: ['28', '7'] }),
+    });
+
+    expect(mockGetPerformanceSiteData).toHaveBeenCalledWith('borged-io', 28);
+  });
+
   it('throws notFound for unknown sites', async () => {
     mockGetPerformanceSiteData.mockResolvedValueOnce(null);
 

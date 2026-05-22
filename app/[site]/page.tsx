@@ -28,7 +28,7 @@ import { gapsBySection } from '@/lib/gaps';
 import { ScTable } from '../components/sc-table';
 import { PageQueriesTable } from '../components/page-queries-table';
 import { VALID_DAYS } from '@/lib/constants';
-import { parseAllowedIntegerParam } from '@/lib/days';
+import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 
 export const revalidate = 300;
 
@@ -93,7 +93,7 @@ export default async function SiteDashboardPage({
   searchParams,
 }: {
   params: Promise<{ site: string }>;
-  searchParams: Promise<{ days?: string }>;
+  searchParams: Promise<{ days?: QueryParamValue }>;
 }) {
   const { site: siteId } = await params;
   const site = await getManagedSite(siteId);
