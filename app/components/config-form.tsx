@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatNetworkError, getMutationResult } from '@/lib/request-result';
+import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
 
@@ -45,7 +45,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
         setTestState('ok');
       } else {
         setTestState('error');
-        setErrorMsg(result.error ?? 'Connection failed');
+        setErrorMsg(formatConfigMutationError(result.error, 'Connection failed'));
       }
     } catch (error) {
       console.error('[ConfigForm] test:', error);
@@ -69,7 +69,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
         return;
       }
       setTestState('error');
-      setErrorMsg(result.error ?? 'Save failed');
+      setErrorMsg(formatConfigMutationError(result.error, 'Save failed'));
     } catch (error) {
       console.error('[ConfigForm] save:', error);
       setTestState('error');
@@ -90,7 +90,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
         return;
       }
       setTestState('error');
-      setErrorMsg(result.error ?? 'Remove failed');
+      setErrorMsg(formatConfigMutationError(result.error, 'Remove failed'));
     } catch (error) {
       console.error('[ConfigForm] remove:', error);
       setTestState('error');

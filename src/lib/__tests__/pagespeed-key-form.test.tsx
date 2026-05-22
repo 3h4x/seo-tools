@@ -19,6 +19,12 @@ describe('PagespeedKeyForm helpers', () => {
     await expect(readPagespeedConfigResponse(jsonResponse({ error: 'PSI config unavailable' }, 500))).rejects.toThrow('PSI config unavailable');
   });
 
+  it('maps config source load codes from failed responses', async () => {
+    await expect(readPagespeedConfigResponse(jsonResponse({ error: 'failed_to_load_config_source' }, 500))).rejects.toThrow(
+      'Could not load config source. Check server logs.',
+    );
+  });
+
   it('rejects malformed successful responses', async () => {
     await expect(readPagespeedConfigResponse(jsonResponse({ source: 'bad' }))).rejects.toThrow('PageSpeed config response was invalid');
   });

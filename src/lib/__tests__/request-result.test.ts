@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatNetworkError, getMutationResult } from '../request-result';
+import { formatConfigMutationError, formatNetworkError, getMutationResult } from '../request-result';
 
 describe('getMutationResult', () => {
   it('returns ok for successful mutation payloads', async () => {
@@ -53,5 +53,25 @@ describe('formatNetworkError', () => {
   it('falls back when the thrown value is not an Error with a message', () => {
     expect(formatNetworkError('offline', 'Request failed')).toBe('Request failed');
     expect(formatNetworkError(new Error(''), 'Request failed')).toBe('Request failed');
+  });
+});
+
+describe('formatConfigMutationError', () => {
+  it('maps config API codes to operator-facing messages', () => {
+    expect(formatConfigMutationError('failed_to_load_config_source', 'Load failed')).toBe(
+      'Could not load config source. Check server logs.',
+    );
+    expect(formatConfigMutationError('failed_to_save_config', 'Save failed')).toBe(
+      'Could not save config. Check server logs.',
+    );
+    expect(formatConfigMutationError('failed_to_delete_config', 'Remove failed')).toBe(
+      'Could not remove config. Check server logs.',
+    );
+  });
+
+  it('passes through validation messages and falls back for blank errors', () => {
+    expect(formatConfigMutationError('Invalid JSON', 'Save failed')).toBe('Invalid JSON');
+    expect(formatConfigMutationError('   ', 'Save failed')).toBe('Save failed');
+    expect(formatConfigMutationError(undefined, 'Save failed')).toBe('Save failed');
   });
 });

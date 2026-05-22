@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { formatNetworkError, getMutationResult } from '@/lib/request-result';
+import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
 type TestState = 'idle' | 'testing' | 'ok' | 'error';
@@ -25,7 +25,7 @@ export async function readPagespeedConfigResponse(response: Response): Promise<S
   }
 
   if (!response.ok) {
-    throw new Error(payload?.error?.trim() || `PageSpeed config request failed (${response.status})`);
+    throw new Error(formatConfigMutationError(payload?.error, `PageSpeed config request failed (${response.status})`));
   }
 
   if (!isSource(payload?.source)) {
@@ -67,7 +67,7 @@ export default function PagespeedKeyForm() {
       });
       const result = await getMutationResult(res, 'Test failed');
       if (result.ok) setTestState('ok');
-      else { setTestState('error'); setErrorMsg(result.error ?? 'Test failed'); }
+      else { setTestState('error'); setErrorMsg(formatConfigMutationError(result.error, 'Test failed')); }
     } catch (error) {
       console.error('[PagespeedKeyForm] test:', error);
       setTestState('error');
@@ -86,7 +86,7 @@ export default function PagespeedKeyForm() {
       });
       const result = await getMutationResult(res, 'Save failed');
       if (result.ok) window.location.reload();
-      else { setTestState('error'); setErrorMsg(result.error ?? 'Save failed'); }
+      else { setTestState('error'); setErrorMsg(formatConfigMutationError(result.error, 'Save failed')); }
     } catch (error) {
       console.error('[PagespeedKeyForm] save:', error);
       setTestState('error');
@@ -103,7 +103,7 @@ export default function PagespeedKeyForm() {
       const res = await fetch('/api/config/pagespeed', { method: 'DELETE' });
       const result = await getMutationResult(res, 'Remove failed');
       if (result.ok) window.location.reload();
-      else { setTestState('error'); setErrorMsg(result.error ?? 'Remove failed'); }
+      else { setTestState('error'); setErrorMsg(formatConfigMutationError(result.error, 'Remove failed')); }
     } catch (error) {
       console.error('[PagespeedKeyForm] remove:', error);
       setTestState('error');
