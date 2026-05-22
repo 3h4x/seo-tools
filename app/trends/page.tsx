@@ -23,6 +23,15 @@ import { KeywordRankTable } from '../components/keyword-rank-table';
 
 export const revalidate = 300;
 
+function loadSyncOrFallback<T>(label: string, read: () => T, fallback: T): T {
+  try {
+    return read();
+  } catch (error) {
+    console.error(`[TrendsPage ${label}]`, error);
+    return fallback;
+  }
+}
+
 export default async function TrendsPage({
   searchParams,
 }: {
@@ -121,10 +130,10 @@ function OverviewTab({
   const isSingle = snapshotCount === 1;
 
   const sitesData = managedSites.map((site) => {
-    const scTrends = getScTrends(site.id);
-    const ga4Trends = getGa4Trends(site.id);
-    const auditTrends = getAuditTrends(site.id);
-    const ttfbTrends = getTtfbTrends(site.id);
+    const scTrends = loadSyncOrFallback(`SC trends ${site.id}`, () => getScTrends(site.id), []);
+    const ga4Trends = loadSyncOrFallback(`GA4 trends ${site.id}`, () => getGa4Trends(site.id), []);
+    const auditTrends = loadSyncOrFallback(`audit trends ${site.id}`, () => getAuditTrends(site.id), []);
+    const ttfbTrends = loadSyncOrFallback(`TTFB trends ${site.id}`, () => getTtfbTrends(site.id), []);
     const latestGa4 = ga4Trends[ga4Trends.length - 1];
     const latestSc = scTrends[scTrends.length - 1];
     const latestTtfb = ttfbTrends[ttfbTrends.length - 1];
@@ -372,8 +381,12 @@ function KeywordsSection({
   }
 
   const sitesData = managedSites.map((site) => {
-    const { topQueries, history } = getTopKeywordsWithHistory(site.id, 5, 30);
-    const deltas = getKeywordDeltas(site.id);
+    const { topQueries, history } = loadSyncOrFallback(
+      `keyword history ${site.id}`,
+      () => getTopKeywordsWithHistory(site.id, 5, 30),
+      { topQueries: [], history: [] },
+    );
+    const deltas = loadSyncOrFallback(`keyword deltas ${site.id}`, () => getKeywordDeltas(site.id), []);
     return { site, topQueries, history, deltas };
   }).filter((s) => s.topQueries.length > 0);
 

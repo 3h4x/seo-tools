@@ -424,6 +424,42 @@ describe('TrendsPage', () => {
     expect(html).toContain('Keyword History');
     expect(html.indexOf('Keyword History')).toBeLessThan(html.indexOf('Per-Site Data'));
   });
+
+  it('keeps rendering when per-site trend queries throw', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockGetScTrends.mockImplementationOnce(() => {
+      throw new Error('sc trends unavailable');
+    });
+    mockGetGa4Trends.mockImplementationOnce(() => {
+      throw new Error('ga4 trends unavailable');
+    });
+    mockGetAuditTrends.mockImplementationOnce(() => {
+      throw new Error('audit trends unavailable');
+    });
+    mockGetTtfbTrends.mockImplementationOnce(() => {
+      throw new Error('ttfb trends unavailable');
+    });
+    mockGetTopKeywordsWithHistory.mockImplementationOnce(() => {
+      throw new Error('keyword history unavailable');
+    });
+    mockGetKeywordDeltas.mockImplementationOnce(() => {
+      throw new Error('keyword deltas unavailable');
+    });
+
+    try {
+      const html = renderToStaticMarkup(await TrendsPage({
+        searchParams: Promise.resolve({}),
+      }));
+
+      expect(html).toContain('Site One');
+      expect(html).toContain('No data captured yet.');
+      expect(html).toContain('No keyword data found for any configured site.');
+      expect(consoleError).toHaveBeenCalledWith('[TrendsPage SC trends site-1]', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[TrendsPage keyword history site-1]', expect.any(Error));
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
 });
 
 describe('SiteDashboardPage', () => {
