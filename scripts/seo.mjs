@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import { openDatabase } from '../src/lib/sqlite-driver.js';
 import { normalizeGa4PropertyId } from './ga4-property.mjs';
 import { ALERT_SCHEMA_SQL, processSnapshotAlertsForCli } from './snapshot-alerts.mjs';
+import { loadCliSites } from './seo-sites.mjs';
 
 // Init DB and load SA key
 const dbDir = path.join(process.cwd(), 'data');
@@ -40,15 +41,7 @@ function daysBack(days) {
 }
 
 function loadSites() {
-  try {
-    return db.prepare('SELECT id, domain, sc_url, ga4_property_id, test_pages FROM sites ORDER BY sort_order ASC').all().map(r => ({
-      id: r.id,
-      domain: r.domain,
-      scUrl: r.sc_url ?? `sc-domain:${r.domain}`,
-      ga4: r.ga4_property_id,
-      pages: JSON.parse(r.test_pages || '[]'),
-    }));
-  } catch { return []; }
+  return loadCliSites(db);
 }
 
 const commands = {
@@ -194,6 +187,10 @@ async function takeSnapshot() {
     const scDelete = db.prepare('DELETE FROM sc_snapshots WHERE site_id = ? AND date = ?');
     const scInsert = db.prepare('INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)');
     for (const site of sites) {
+      if (!site.searchConsole) {
+        console.log(`  SC ${site.id}: skipped (Search Console disabled)`);
+        continue;
+      }
       try {
         const q = await sc.searchanalytics.query({
           siteUrl: site.scUrl,
@@ -221,6 +218,10 @@ async function takeSnapshot() {
          ctr = excluded.ctr, position = excluded.position`,
     );
     for (const site of sites) {
+      if (!site.searchConsole) {
+        console.log(`  KW ${site.id}: skipped (Search Console disabled)`);
+        continue;
+      }
       try {
         const q = await sc.searchanalytics.query({
           siteUrl: site.scUrl,
@@ -452,6 +453,7 @@ Commands:
   sitemaps          List sitemaps for all sites
   submit-sitemap    Submit a sitemap (domain + url)
   stats             Show 7-day Search Console stats
+  pages             Show top Search Console pages for a site
   snapshot          Take a data snapshot (SC + GA4) and process alerts
   check [id]        Check reachability of all sites (or one) with different UAs
   help              Show this help`);
