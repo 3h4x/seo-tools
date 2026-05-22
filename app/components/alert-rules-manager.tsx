@@ -21,6 +21,13 @@ const METRIC_OPTIONS: Array<{ value: AlertMetric; label: string }> = [
 
 const INPUT_CLS = 'w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-500';
 
+const ALERT_RULE_ERROR_MESSAGES: Record<string, string> = {
+  failed_to_load_alert_rules: 'Could not load alert rules. Check server logs.',
+  failed_to_load_sites: 'Could not load managed sites. Check server logs.',
+  failed_to_save_alert_rule: 'Could not save alert rule. Check server logs.',
+  delete_failed: 'Could not delete alert rule. Check server logs.',
+};
+
 function emptyForm(siteId: string): FormState {
   return {
     siteId,
@@ -30,15 +37,26 @@ function emptyForm(siteId: string): FormState {
   };
 }
 
+export function formatAlertRuleError(error: string | undefined, fallback: string): string {
+  if (!error) return fallback;
+  return ALERT_RULE_ERROR_MESSAGES[error] ?? error;
+}
+
 export async function readAlertRulesResponse(res: Response): Promise<AlertRule[]> {
-  if (!res.ok) {
-    throw new Error(`Failed to load alert rules (${res.status})`);
-  }
   let payload: unknown = null;
   try {
     payload = await res.json();
   } catch {
+    if (!res.ok) {
+      throw new Error(`Failed to load alert rules (${res.status})`);
+    }
     throw new Error('Alert rules response was invalid');
+  }
+  if (!res.ok) {
+    const error = payload && typeof payload === 'object' && typeof (payload as { error?: unknown }).error === 'string'
+      ? (payload as { error: string }).error
+      : undefined;
+    throw new Error(formatAlertRuleError(error, `Failed to load alert rules (${res.status})`));
   }
   if (!payload || typeof payload !== 'object' || !Array.isArray((payload as { rules?: unknown }).rules)) {
     throw new Error('Alert rules response was invalid');
@@ -111,7 +129,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
       });
       const result = await getMutationResult(res, 'Save failed');
       if (!result.ok) {
-        setError(result.error ?? 'Save failed');
+        setError(formatAlertRuleError(result.error, 'Save failed'));
         return;
       }
 
@@ -131,7 +149,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
       const res = await fetch(`/api/alerts/rules?id=${id}`, { method: 'DELETE' });
       const result = await getMutationResult(res, 'Delete failed');
       if (!result.ok) {
-        setError(result.error ?? 'Delete failed');
+        setError(formatAlertRuleError(result.error, 'Delete failed'));
         return;
       }
       await loadRules();

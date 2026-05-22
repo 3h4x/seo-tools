@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import AlertRulesManager, { readAlertRulesResponse } from '../../../app/components/alert-rules-manager';
+import AlertRulesManager, { formatAlertRuleError, readAlertRulesResponse } from '../../../app/components/alert-rules-manager';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -58,7 +58,13 @@ describe('readAlertRulesResponse', () => {
   it('throws when the HTTP status is not ok', async () => {
     await expect(
       readAlertRulesResponse(jsonResponse({ error: 'boom' }, 500)),
-    ).rejects.toThrow('Failed to load alert rules (500)');
+    ).rejects.toThrow('boom');
+  });
+
+  it('translates alert rule load failures from the API', async () => {
+    await expect(
+      readAlertRulesResponse(jsonResponse({ error: 'failed_to_load_alert_rules' }, 500)),
+    ).rejects.toThrow('Could not load alert rules. Check server logs.');
   });
 
   it('throws when the payload is malformed', async () => {
@@ -70,5 +76,22 @@ describe('readAlertRulesResponse', () => {
   it('throws when the body is not JSON', async () => {
     const res = new Response('not json', { status: 200, headers: { 'content-type': 'text/plain' } });
     await expect(readAlertRulesResponse(res)).rejects.toThrow('Alert rules response was invalid');
+  });
+});
+
+describe('formatAlertRuleError', () => {
+  it('maps storage failure codes while preserving validation messages', () => {
+    expect(formatAlertRuleError('failed_to_load_sites', 'Save failed')).toBe(
+      'Could not load managed sites. Check server logs.',
+    );
+    expect(formatAlertRuleError('failed_to_save_alert_rule', 'Save failed')).toBe(
+      'Could not save alert rule. Check server logs.',
+    );
+    expect(formatAlertRuleError('delete_failed', 'Delete failed')).toBe(
+      'Could not delete alert rule. Check server logs.',
+    );
+    expect(formatAlertRuleError('thresholdPct must be between 1 and 100', 'Save failed')).toBe(
+      'thresholdPct must be between 1 and 100',
+    );
   });
 });

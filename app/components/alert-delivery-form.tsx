@@ -29,6 +29,17 @@ export type AlertConfigResponse = {
 
 const INPUT_CLS = 'w-full bg-neutral-900 border border-neutral-700 rounded-md p-2.5 text-sm text-neutral-200 focus:outline-none focus:border-neutral-500';
 
+const ALERT_CONFIG_ERROR_MESSAGES: Record<string, string> = {
+  failed_to_load_alert_config: 'Could not load alert delivery config. Check server logs.',
+  failed_to_save_alert_config: 'Could not save alert delivery config. Check server logs.',
+  failed_to_clear_alert_config: 'Could not clear alert delivery config. Check server logs.',
+};
+
+export function formatAlertConfigError(error: string | undefined, fallback: string): string {
+  if (!error) return fallback;
+  return ALERT_CONFIG_ERROR_MESSAGES[error] ?? error;
+}
+
 function isAlertConfigResponse(value: unknown): value is AlertConfigResponse {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<AlertConfigResponse>;
@@ -48,10 +59,10 @@ export async function readAlertConfigResponse(res: Response): Promise<AlertConfi
     payload = null;
   }
   if (!res.ok) {
-    const error = (payload && typeof payload === 'object' && 'error' in payload && typeof (payload as { error?: unknown }).error === 'string')
+    const rawError = (payload && typeof payload === 'object' && 'error' in payload && typeof (payload as { error?: unknown }).error === 'string')
       ? (payload as { error: string }).error
-      : `Alert config request failed (${res.status})`;
-    throw new Error(error);
+      : undefined;
+    throw new Error(formatAlertConfigError(rawError, `Alert config request failed (${res.status})`));
   }
   if (!isAlertConfigResponse(payload)) {
     throw new Error('Alert config response was invalid');
@@ -67,7 +78,7 @@ export async function clearAlertDeliveryOverrides(fetcher: typeof fetch = fetch)
   const res = await fetcher('/api/config/alerts', { method: 'DELETE' });
   const result = await getMutationResult(res, 'Clear failed');
   if (!result.ok) {
-    throw new Error(result.error ?? 'Clear failed');
+    throw new Error(formatAlertConfigError(result.error, 'Clear failed'));
   }
 
   return loadAlertDeliveryConfig(fetcher);
@@ -121,7 +132,7 @@ export default function AlertDeliveryForm() {
       });
       const result = await getMutationResult(res, 'Save failed');
       if (!result.ok) {
-        setError(result.error ?? 'Save failed');
+        setError(formatAlertConfigError(result.error, 'Save failed'));
         return;
       }
       setSuccess('Alert delivery config saved');
