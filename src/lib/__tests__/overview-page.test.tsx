@@ -263,6 +263,27 @@ describe('Overview page', () => {
     consoleError.mockRestore();
   });
 
+  it('renders an empty overview when site discovery throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockDiscoverPropertyIds.mockReset();
+    mockDiscoverPropertyIds.mockRejectedValueOnce(new Error('db unavailable'));
+
+    const page = await Overview({
+      searchParams: Promise.resolve({ days: '7' }),
+    });
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain('0 sites');
+    expect(consoleError).toHaveBeenCalledWith(
+      '[OverviewPage discoverPropertyIds]',
+      expect.any(Error),
+    );
+    expect(mockCachedGetAnalytics).not.toHaveBeenCalled();
+    expect(mockCachedGetSearchConsoleData).not.toHaveBeenCalled();
+
+    consoleError.mockRestore();
+  });
+
   it('aggregates traffic sources across sites before rendering the chart', async () => {
     const page = await Overview({
       searchParams: Promise.resolve({ days: '30' }),

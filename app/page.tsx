@@ -4,6 +4,7 @@ import { getSCUrl } from '@/lib/sites';
 import { formatSource } from '@/lib/format';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
+import { loadOrFallback } from '@/lib/page-helpers';
 import TimeRange from './components/time-range';
 import { MetricCard } from './components/metric-card';
 import { Icons } from './components/icons';
@@ -14,7 +15,7 @@ import { SortablePerformanceTable, type PerformanceRow } from './components/sort
 export const revalidate = 300;
 
 async function getSiteData(days: number) {
-  const sites = await discoverPropertyIds();
+  const sites = await loadOrFallback('OverviewPage discoverPropertyIds', discoverPropertyIds(), []);
 
   const enrichedSites = await Promise.all(
     sites.map(async (site) => {

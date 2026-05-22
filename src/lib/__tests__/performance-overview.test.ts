@@ -163,4 +163,18 @@ describe('getPerformanceOverviewRows', () => {
     expect(consoleError).toHaveBeenCalledWith('[PerformanceOverview] PSI psi-site:', expect.any(Error));
     consoleError.mockRestore();
   });
+
+  it('returns no rows when site discovery throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(discoverPropertyIds).mockRejectedValueOnce(new Error('db unavailable'));
+
+    const rows = await getPerformanceOverviewRows(7);
+
+    expect(rows).toEqual([]);
+    expect(consoleError).toHaveBeenCalledWith(
+      '[PerformanceOverview discoverPropertyIds]',
+      expect.any(Error),
+    );
+    consoleError.mockRestore();
+  });
 });

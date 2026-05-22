@@ -7,6 +7,7 @@ import {
   type CwvMetricName,
   type CwvRating,
 } from './constants';
+import { loadOrFallback } from './page-helpers';
 
 type PerformanceOverviewSite = Awaited<ReturnType<typeof discoverPropertyIds>>[number];
 
@@ -139,6 +140,10 @@ async function getPerformanceOverviewRow(
 }
 
 export async function getPerformanceOverviewRows(days: number): Promise<PerformanceOverviewRow[]> {
-  const sites = await discoverPropertyIds();
+  const sites = await loadOrFallback<PerformanceOverviewSite[]>(
+    'PerformanceOverview discoverPropertyIds',
+    discoverPropertyIds(),
+    [],
+  );
   return Promise.all(sites.map((site) => getPerformanceOverviewRow(site, days)));
 }
