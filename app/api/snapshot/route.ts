@@ -13,7 +13,7 @@ export async function POST() {
     if (e instanceof SnapshotAlreadyRunningError) {
       return NextResponse.json({ error: 'snapshot_in_progress' }, { status: 409 });
     }
-    console.error('Snapshot failed:', e);
+    console.error('[POST /api/snapshot]', e);
     return NextResponse.json({ error: 'snapshot_failed' }, { status: 500 });
   }
 }

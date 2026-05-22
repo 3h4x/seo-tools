@@ -54,12 +54,15 @@ describe('POST /api/snapshot', () => {
 
   it('returns 500 when snapshot throws', async () => {
     mocks.runSnapshot.mockRejectedValue(new Error('Auth failure'));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const res = await POST();
     const data = await res.json();
 
     expect(res.status).toBe(500);
     expect(data).toEqual({ error: 'snapshot_failed' });
+    expect(consoleError).toHaveBeenCalledWith('[POST /api/snapshot]', expect.any(Error));
+    consoleError.mockRestore();
   });
 
   it('returns 409 when runSnapshot rejects with SnapshotAlreadyRunningError', async () => {
