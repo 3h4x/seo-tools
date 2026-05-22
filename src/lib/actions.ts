@@ -106,12 +106,16 @@ function priorityFromDecay(severity: DecaySeverity): ActionQueueItem['priority']
 }
 
 export async function loadActionQueue(days: number = 7): Promise<ActionQueueData> {
-  const managedSites = await getManagedSites();
-  const [discoveredSites, audits, decayResults] = await Promise.all([
+  const [managedSites, discoveredSites, audits, decayResults] = await Promise.all([
+    loadOrFallback('managed sites', getManagedSites(), []),
     loadOrFallback('GA4 discovery', discoverPropertyIds(), []),
     loadOrFallback('audits', cachedAuditAllSites(), []),
     loadOrFallback('decay', detectAllDecay(days === 30 ? 30 : 7), []),
   ]);
+
+  if (managedSites.length === 0) {
+    return { items: [], counts: { ...EMPTY_PRIORITY_COUNTS } };
+  }
 
   const propertyIdBySite = new Map(
     discoveredSites.map((site) => [site.id, site.ga4PropertyId || ''] as const),

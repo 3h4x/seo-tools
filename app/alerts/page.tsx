@@ -5,9 +5,28 @@ import { getManagedSites } from '@/lib/sites';
 
 export const revalidate = 300;
 
+async function loadOrFallback<T>(label: string, promise: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await promise;
+  } catch (error) {
+    console.error(`[AlertsPage] ${label}:`, error);
+    return fallback;
+  }
+}
+
+function safeGetAlertEvents(): ReturnType<typeof dbGetAlertEvents> {
+  try {
+    return dbGetAlertEvents(100);
+  } catch (error) {
+    console.error('[AlertsPage] events:', error);
+    return [];
+  }
+}
+
 export default async function AlertsPage() {
-  const events = dbGetAlertEvents(100);
-  const sitesById = new Map((await getManagedSites()).map((site) => [site.id, site]));
+  const events = safeGetAlertEvents();
+  const managedSites = await loadOrFallback('managed sites', getManagedSites(), []);
+  const sitesById = new Map(managedSites.map((site) => [site.id, site]));
 
   return (
     <div className="space-y-6">

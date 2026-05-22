@@ -174,6 +174,19 @@ describe('loadActionQueue', () => {
     consoleError.mockRestore();
   });
 
+  it('returns an empty queue when managed sites cannot be loaded', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockGetManagedSites.mockRejectedValueOnce(new Error('sqlite locked'));
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toEqual([]);
+    expect(result.counts).toEqual({ critical: 0, high: 0, medium: 0, low: 0 });
+    expect(consoleError).toHaveBeenCalledWith('[ActionQueue] managed sites:', expect.any(Error));
+
+    consoleError.mockRestore();
+  });
+
   it('skips one site when keyword history reads fail', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockGetKeywordDropActions

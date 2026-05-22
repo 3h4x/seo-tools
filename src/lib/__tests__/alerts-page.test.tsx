@@ -39,6 +39,22 @@ describe('alerts page', () => {
     expect(html).toContain('href="/config"');
   });
 
+  it('falls back to empty state when underlying reads fail', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockDbGetAlertEvents.mockImplementation(() => {
+      throw new Error('sqlite locked');
+    });
+    mockGetManagedSites.mockRejectedValue(new Error('sites unavailable'));
+
+    const html = renderToStaticMarkup(await AlertsPage());
+
+    expect(html).toContain('No alerts have fired yet.');
+    expect(consoleError).toHaveBeenCalledWith('[AlertsPage] events:', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[AlertsPage] managed sites:', expect.any(Error));
+
+    consoleError.mockRestore();
+  });
+
   it('renders recent alert rows', async () => {
     mockDbGetAlertEvents.mockReturnValue([
       {
