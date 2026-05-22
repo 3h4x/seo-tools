@@ -57,6 +57,19 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
   return next;
 }
 
+const DISCOVER_ERROR_MESSAGES: Record<string, string> = {
+  search_console_api_failed: 'Search Console API request failed. Check server logs.',
+  failed_to_load_existing_sites: 'Could not load existing sites. Check server logs.',
+};
+
+export function formatDiscoverError(error: string | undefined, status: number): string {
+  const trimmed = error?.trim();
+  if (trimmed && DISCOVER_ERROR_MESSAGES[trimmed]) {
+    return DISCOVER_ERROR_MESSAGES[trimmed];
+  }
+  return trimmed || `Discovery failed (${status})`;
+}
+
 function buildDiagnosticMap(diagnostics: SiteDiagnosticResult[]): Record<string, SiteDiagnosticResult> {
   return Object.fromEntries(diagnostics.map((diagnostic) => [diagnostic.siteId, diagnostic]));
 }
@@ -319,15 +332,16 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       } catch {
         data = null;
       }
-      if (!res.ok) {
-        const message = (data && typeof data === 'object' && 'error' in data && typeof (data as { error?: unknown }).error === 'string')
+      const errorString =
+        data && typeof data === 'object' && 'error' in data && typeof (data as { error?: unknown }).error === 'string'
           ? (data as { error: string }).error
-          : `Discovery failed (${res.status})`;
-        setDiscoverError(message);
+          : undefined;
+      if (!res.ok) {
+        setDiscoverError(formatDiscoverError(errorString, res.status));
         return;
       }
-      if (data && typeof data === 'object' && 'error' in data && typeof (data as { error?: unknown }).error === 'string') {
-        setDiscoverError((data as { error: string }).error);
+      if (errorString) {
+        setDiscoverError(formatDiscoverError(errorString, res.status));
         return;
       }
       if (!Array.isArray(data)) {
