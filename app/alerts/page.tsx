@@ -1,22 +1,13 @@
 import Link from 'next/link';
 import { dbGetAlertEvents } from '@/lib/db';
 import { formatAlertMetricValue, getAlertMetricLabel } from '@/lib/alerts';
-import { loadOrFallback } from '@/lib/page-helpers';
+import { loadOrFallback, loadSyncOrFallback } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
 
 export const revalidate = 300;
 
-function safeGetAlertEvents(): ReturnType<typeof dbGetAlertEvents> {
-  try {
-    return dbGetAlertEvents(100);
-  } catch (error) {
-    console.error('[AlertsPage events]', error);
-    return [];
-  }
-}
-
 export default async function AlertsPage() {
-  const events = safeGetAlertEvents();
+  const events = loadSyncOrFallback('AlertsPage events', () => dbGetAlertEvents(100), []);
   const managedSites = await loadOrFallback('AlertsPage managed sites', getManagedSites(), []);
   const sitesById = new Map(managedSites.map((site) => [site.id, site]));
 

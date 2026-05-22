@@ -10,3 +10,16 @@ export async function loadOrFallback<T>(
     return fallback;
   }
 }
+
+export function loadSyncOrFallback<T>(
+  label: string,
+  read: () => T,
+  fallback: T,
+): T {
+  try {
+    return read();
+  } catch (error) {
+    console.error(`[${label}]`, error);
+    return fallback;
+  }
+}
