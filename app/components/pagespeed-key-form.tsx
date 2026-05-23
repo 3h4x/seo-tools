@@ -60,6 +60,7 @@ export default function PagespeedKeyForm() {
   const [testState, setTestState] = useState<TestState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -116,7 +117,7 @@ export default function PagespeedKeyForm() {
   }
 
   async function handleRemove() {
-    setSaving(true);
+    setRemoving(true);
     setErrorMsg('');
     try {
       const res = await fetch('/api/config/pagespeed', { method: 'DELETE' });
@@ -128,7 +129,7 @@ export default function PagespeedKeyForm() {
       setTestState('error');
       setErrorMsg(formatNetworkError(error));
     } finally {
-      setSaving(false);
+      setRemoving(false);
     }
   }
 
@@ -190,9 +191,10 @@ export default function PagespeedKeyForm() {
         {source === 'db' && (
           <FormButton
             onClick={handleRemove}
+            disabled={removing}
             variant="danger"
           >
-            Remove
+            {removing ? 'Removing…' : 'Remove'}
           </FormButton>
         )}
       </div>

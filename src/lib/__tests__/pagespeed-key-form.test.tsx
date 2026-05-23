@@ -49,11 +49,28 @@ describe('PagespeedKeyForm', () => {
       .mockImplementationOnce(() => ['error', vi.fn()])
       .mockImplementationOnce(() => ['Request failed', vi.fn()])
       .mockImplementationOnce(() => [false, vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()])
       .mockImplementationOnce(() => [false, vi.fn()]);
 
     const html = renderToStaticMarkup(<PagespeedKeyForm />);
 
     expect(html).toContain('role="alert"');
     expect(html).toContain('Request failed');
+  });
+
+  it('disables the remove button while removing a stored key', () => {
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => ['db', vi.fn()])
+      .mockImplementationOnce(() => ['', vi.fn()])
+      .mockImplementationOnce(() => ['idle', vi.fn()])
+      .mockImplementationOnce(() => ['', vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()])
+      .mockImplementationOnce(() => [true, vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()]);
+
+    const html = renderToStaticMarkup(<PagespeedKeyForm />);
+
+    expect(html).toContain('disabled');
+    expect(html).toContain('Removing…');
   });
 });
