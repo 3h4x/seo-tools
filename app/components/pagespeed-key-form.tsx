@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ConfiguredNotice } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
+import { Skeleton } from './skeletons';
 
 type Source = 'db' | 'env' | 'none';
 type TestState = 'idle' | 'testing' | 'ok' | 'error';
@@ -34,6 +35,23 @@ export async function readPagespeedConfigResponse(response: Response): Promise<S
   }
 
   return payload.source;
+}
+
+function PagespeedKeyFormSkeleton() {
+  return (
+    <div className="space-y-3 max-w-2xl" aria-label="Loading PageSpeed config">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-5 w-56" />
+        <Skeleton className="h-5 w-28 rounded-full" />
+      </div>
+      <Skeleton className="h-4 w-full max-w-xl" />
+      <Skeleton className="h-11 w-full" />
+      <div className="flex gap-2">
+        <Skeleton className="h-9 w-16" />
+        <Skeleton className="h-9 w-28" />
+      </div>
+    </div>
+  );
 }
 
 export default function PagespeedKeyForm() {
@@ -114,7 +132,7 @@ export default function PagespeedKeyForm() {
     }
   }
 
-  if (loading) return null;
+  if (loading) return <PagespeedKeyFormSkeleton />;
   const hasKey = source !== 'none';
   const sourceLabel: Record<Source, string | null> = {
     db: 'Source: database',

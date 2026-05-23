@@ -35,6 +35,13 @@ describe('PagespeedKeyForm', () => {
     vi.restoreAllMocks();
   });
 
+  it('renders a skeleton while loading PageSpeed config', () => {
+    const html = renderToStaticMarkup(<PagespeedKeyForm />);
+
+    expect(html).toContain('aria-label="Loading PageSpeed config"');
+    expect(html).toContain('animate-pulse bg-neutral-800 rounded');
+  });
+
   it('renders PageSpeed request failures as an alert', () => {
     vi.spyOn(React, 'useState')
       .mockImplementationOnce(() => ['none', vi.fn()])
