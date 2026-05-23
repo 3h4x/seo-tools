@@ -14,4 +14,15 @@ describe('FormButton', () => {
     expect(html).toContain('disabled:cursor-not-allowed');
     expect(html).toContain(' disabled>');
   });
+
+  it('supports compact sizes for existing form actions', () => {
+    const html = renderToStaticMarkup(
+      <FormButton variant="primary" size="xs">
+        Discover sites
+      </FormButton>
+    );
+
+    expect(html).toContain('px-3 py-1.5 text-xs');
+    expect(html).toContain('bg-white text-black');
+  });
 });

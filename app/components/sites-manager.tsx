@@ -464,13 +464,14 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             <p className="mt-1 text-xs text-neutral-500">Dashboards use this order across the app.</p>
           )}
         </div>
-        <button
+        <FormButton
+          variant="primary"
+          size="sm"
           onClick={startNew}
           disabled={isEditing || saving}
-          className="px-3 py-1.5 rounded-md text-sm bg-white text-black hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           + Add Site
-        </button>
+        </FormButton>
       </div>
       {sites.length === 0 && !isEditing && (
         <p className="text-sm text-neutral-500">
@@ -759,13 +760,13 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <h3 className="text-sm font-medium text-neutral-300">Discover from Google</h3>
-            <button
+            <FormButton
+              size="xs"
               onClick={handleDiscover}
               disabled={discovering || isEditing}
-              className="px-3 py-1.5 rounded-md text-xs bg-neutral-800 text-white hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {discovering ? 'Discovering…' : 'Discover sites'}
-            </button>
+            </FormButton>
           </div>
 
           {discoverError && <p className="text-sm text-red-400" role="alert">{discoverError}</p>}
