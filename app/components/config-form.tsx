@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ConfiguredNotice } from '@/components/ui';
+import { ConfiguredNotice, FormButton } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -144,30 +144,29 @@ export default function ConfigForm({ source: initialSource }: Props) {
       )}
 
       <div className="flex gap-2 flex-wrap">
-        <button
+        <FormButton
           onClick={handleTest}
           disabled={!canTest || testState === 'testing'}
-          className="px-4 py-2 rounded-md text-sm bg-neutral-800 text-white hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {testState === 'testing' ? 'Testing…' : 'Test Connection'}
-        </button>
+        </FormButton>
 
-        <button
+        <FormButton
           onClick={handleSave}
           disabled={!canSave || saving}
-          className="px-4 py-2 rounded-md text-sm bg-white text-black hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          variant="primary"
         >
           {saving ? 'Saving…' : source === 'env' ? 'Override with DB key' : 'Save'}
-        </button>
+        </FormButton>
 
         {source === 'db' && (
-          <button
+          <FormButton
             onClick={handleRemove}
             disabled={removing}
-            className="px-4 py-2 rounded-md text-sm bg-neutral-800 text-red-400 hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            variant="danger"
           >
             {removing ? 'Removing…' : 'Remove'}
-          </button>
+          </FormButton>
         )}
       </div>
 

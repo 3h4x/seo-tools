@@ -10,7 +10,7 @@ interface FormButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const VARIANT_CLASSES: Record<FormButtonVariant, string> = {
   primary: 'bg-white text-black hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed',
   secondary: 'bg-neutral-800 text-white hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed',
-  danger: 'bg-neutral-800 text-red-400 hover:bg-neutral-700',
+  danger: 'bg-neutral-800 text-red-400 hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed',
 };
 
 export function FormButton({
