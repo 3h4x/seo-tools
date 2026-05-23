@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfiguredNotice } from '@/components/ui';
+import { ConfiguredNotice, FormButton } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { Skeleton } from './skeletons';
 
@@ -174,27 +174,26 @@ export default function PagespeedKeyForm() {
       {testState === 'error' && <p className="text-sm text-red-400" role="alert">{errorMsg}</p>}
 
       <div className="flex gap-2 flex-wrap">
-        <button
+        <FormButton
           onClick={handleTest}
           disabled={!input.trim() || testState === 'testing'}
-          className="px-4 py-2 rounded-md text-sm bg-neutral-800 text-white hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {testState === 'testing' ? 'Testing…' : 'Test'}
-        </button>
-        <button
+        </FormButton>
+        <FormButton
           onClick={handleSave}
           disabled={testState !== 'ok' || saving}
-          className="px-4 py-2 rounded-md text-sm bg-white text-black hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          variant="primary"
         >
           {saving ? 'Saving…' : source === 'env' ? 'Override with DB key' : 'Save'}
-        </button>
+        </FormButton>
         {source === 'db' && (
-          <button
+          <FormButton
             onClick={handleRemove}
-            className="px-4 py-2 rounded-md text-sm bg-neutral-800 text-red-400 hover:bg-neutral-700 transition-colors"
+            variant="danger"
           >
             Remove
-          </button>
+          </FormButton>
         )}
       </div>
     </div>

@@ -6,3 +6,4 @@ Use these primitives for repeated dashboard patterns before adding local ad-hoc 
 
 Current primitives:
 - `ConfiguredNotice` — compact neutral status row with the green configured indicator used by config forms.
+- `FormButton` — compact form action button with `primary`, `secondary`, and `danger` variants.
