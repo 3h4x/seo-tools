@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { FormButton, FormCheckbox, FormInput, FormSelect, TextButton } from '@/components/ui';
+import { Badge, FormButton, FormCheckbox, FormInput, FormSelect, TextButton } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -213,9 +213,9 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
                       <div className="flex flex-wrap items-center gap-2">
                         <span>{METRIC_OPTIONS.find((option) => option.value === rule.metric)?.label ?? rule.metric}</span>
                         {metricBlocked && (
-                          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300">
+                          <Badge className="border-amber-500/40 bg-amber-500/10 text-amber-300">
                             {METRIC_DISABLED_REASONS[rule.metric] ?? 'Inactive'}
-                          </span>
+                          </Badge>
                         )}
                       </div>
                     </td>

@@ -1,3 +1,4 @@
+export { Badge } from './badge';
 export { ConfiguredNotice } from './configured-notice';
 export { FilterChipGroup } from './filter-chip-group';
 export { FormButton } from './form-button';

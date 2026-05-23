@@ -11,6 +11,7 @@ import {
   getPerformanceOverviewRows,
   type PerformanceOverviewRow,
 } from '@/lib/performance-overview';
+import { Badge } from '@/components/ui';
 import TimeRange from '../components/time-range';
 import CwvSetupGuide from '../components/cwv-setup-guide';
 import { CwvCell } from '../components/cwv-cell';
@@ -107,9 +108,9 @@ export default async function PerformancePage({
                       <div className="text-xs text-neutral-500 font-mono">{row.domain}</div>
                     </td>
                     <td className="px-3 py-2">
-                      <span title={badge.tip} className={`inline-flex items-center px-2 py-0.5 rounded border text-[10px] uppercase tracking-wider ${badge.cls}`}>
+                      <Badge title={badge.tip} shape="rounded" uppercase className={badge.cls}>
                         {badge.label}
-                      </span>
+                      </Badge>
                     </td>
                     {CWV_METRIC_ORDER.map((name) => {
                       const m = row.metrics[name];

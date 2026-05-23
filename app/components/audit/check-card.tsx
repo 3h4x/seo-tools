@@ -1,6 +1,7 @@
 import type { CheckStatus, CheckResult } from '@/lib/audit';
 import type { GapRecommendation } from '@/lib/gaps';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gaps';
+import { Badge } from '@/components/ui';
 
 const statusColors: Record<CheckStatus, string> = {
   pass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -26,9 +27,9 @@ export const accentBorder: Record<CheckStatus, string> = {
 export function StatusBadge({ status, label }: { status: CheckStatus; label?: string }) {
   const labels: Record<CheckStatus, string> = { pass: 'Pass', warn: 'Warn', fail: 'Fail', error: 'Error' };
   return (
-    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${statusColors[status]}`}>
+    <Badge className={statusColors[status]}>
       {label ?? labels[status]}
-    </span>
+    </Badge>
   );
 }
 

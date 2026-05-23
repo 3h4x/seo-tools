@@ -6,7 +6,7 @@ import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
-import { FormButton, FormCheckbox, FormInput, FormTextarea, TextButton } from '@/components/ui';
+import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, TextButton } from '@/components/ui';
 
 interface Site {
   id: string;
@@ -129,9 +129,9 @@ function StatusBadge({
   } as const;
 
   return (
-    <span className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-medium ${styles[status]}`}>
+    <Badge shape="rounded" size="sm" className={styles[status]}>
       {message}
-    </span>
+    </Badge>
   );
 }
 
@@ -143,9 +143,9 @@ function DiscoverySourceBadge({ source }: { source: DiscoverySource }) {
   } as const;
 
   return (
-    <span className={`text-xs rounded border px-1.5 py-0.5 ${styles[source]}`}>
+    <Badge shape="rounded" size="compact" className={styles[source]}>
       {source === 'sc+ga4' ? 'SC + GA4' : source.toUpperCase()}
-    </span>
+    </Badge>
   );
 }
 

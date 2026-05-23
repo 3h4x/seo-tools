@@ -5,6 +5,7 @@ Shared UI primitives live in `src/components/ui` and are exported from `src/comp
 Use these primitives for repeated dashboard patterns before adding local ad-hoc markup. App code can import them with the existing `@/components/ui` alias.
 
 Current primitives:
+- `Badge` — shared compact bordered status badge for operational labels, source tags, and small table badges. Supports `xs`, `sm`, and `compact` sizing, `rounded` or `pill` shape, and optional uppercase tracking.
 - `ConfiguredNotice` — compact neutral status row with the green configured indicator used by config forms.
 - `FilterChipGroup` — rounded-pill chip filter group with optional per-chip count badges and per-chip active styling. Clicking the active chip deselects (single-toggle). Supports `hideZeroCounts` to hide empty options.
 - `FormButton` — form action button with `primary`, `secondary`, `danger`, and transparent `ghost` variants plus `md`, `sm`, `xs`, and row-sized controls.
