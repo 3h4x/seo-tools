@@ -137,8 +137,8 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
   if (!site) return null;
 
   const days = normalizeDays(requestedDays);
-  const discovered = await discoverPropertyIds();
-  const propertyId = discovered.find(candidate => candidate.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
+  const discovered = await providerOrNull(`GA4 discovery ${site.id}`, discoverPropertyIds());
+  const propertyId = (discovered ?? []).find(candidate => candidate.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
   const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
 
   const [rum, byPage, trend, eventCount, psiMobile, psiDesktop] = await Promise.all([
@@ -210,8 +210,8 @@ export async function getCwvAuditSummary(siteId: string): Promise<CwvAuditSummar
   if (!site) return null;
 
   const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
-  const discovered = await discoverPropertyIds();
-  const propertyId = discovered.find(c => c.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
+  const discovered = await providerOrNull(`audit GA4 discovery ${site.id}`, discoverPropertyIds());
+  const propertyId = (discovered ?? []).find(c => c.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
 
   const [rum, psiMobile] = await Promise.all([
     propertyId

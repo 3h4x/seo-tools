@@ -180,6 +180,31 @@ describe('getPerformanceSiteData', () => {
     expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] PSI desktop borged-io:', expect.any(Error));
     consoleError.mockRestore();
   });
+
+  it('falls back to the configured property id when GA4 discovery fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(discoverPropertyIds).mockRejectedValueOnce(new Error('discovery unavailable'));
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce({
+      hasData: true,
+      overall: {
+        LCP: { value: 1400, rating: 'good', sampleCount: 9 },
+      },
+      byDevice: {
+        mobile: {},
+        desktop: {},
+        tablet: {},
+      },
+    });
+
+    const result = await getPerformanceSiteData('borged-io', 7);
+
+    expect(result).not.toBeNull();
+    expect(result!.propertyId).toBe('site-prop');
+    expect(result!.source).toBe('rum');
+    expect(vi.mocked(cachedGetRumCoreWebVitals)).toHaveBeenCalledWith('site-prop', 7);
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] GA4 discovery borged-io:', expect.any(Error));
+    consoleError.mockRestore();
+  });
 });
 
 describe('getCwvAuditSummary', () => {
@@ -248,6 +273,31 @@ describe('getCwvAuditSummary', () => {
     expect(result!.source).toBe('psi-lab');
     expect(result!.metrics.LCP).toEqual({ value: 2800, rating: 'ni', sampleCount: 0 });
     expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] audit RUM borged-io:', expect.any(Error));
+    consoleError.mockRestore();
+  });
+
+  it('keeps the audit summary available when GA4 discovery fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(discoverPropertyIds).mockRejectedValueOnce(new Error('discovery unavailable'));
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce({
+      hasData: true,
+      overall: {
+        INP: { value: 180, rating: 'good', sampleCount: 11 },
+      },
+      byDevice: {
+        mobile: {},
+        desktop: {},
+        tablet: {},
+      },
+    });
+
+    const result = await getCwvAuditSummary('borged-io');
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('rum');
+    expect(result!.metrics.INP).toEqual({ value: 180, rating: 'good', sampleCount: 11 });
+    expect(vi.mocked(cachedGetRumCoreWebVitals)).toHaveBeenCalledWith('site-prop', 7);
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] audit GA4 discovery borged-io:', expect.any(Error));
     consoleError.mockRestore();
   });
 
