@@ -29,7 +29,8 @@ export default async function TrendsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
-  const showKeywordsFirst = sp.tab === 'keywords';
+  const tab = Array.isArray(sp.tab) ? sp.tab[0] : sp.tab;
+  const showKeywordsFirst = tab === 'keywords';
 
   let snapshotCount: number;
   let keywordCount: number;

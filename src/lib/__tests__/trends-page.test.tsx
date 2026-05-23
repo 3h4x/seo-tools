@@ -425,6 +425,16 @@ describe('TrendsPage', () => {
     expect(html.indexOf('Keyword History')).toBeLessThan(html.indexOf('Per-Site Data'));
   });
 
+  it('uses the first tab value for repeated tab searchParams', async () => {
+    const html = renderToStaticMarkup(await TrendsPage({
+      searchParams: Promise.resolve({ tab: ['keywords', 'overview'] }),
+    }));
+
+    expect(html).toContain('Per-Site Data');
+    expect(html).toContain('Keyword History');
+    expect(html.indexOf('Keyword History')).toBeLessThan(html.indexOf('Per-Site Data'));
+  });
+
   it('does not expose stale Search Console trend data for disabled sites', async () => {
     mockGetManagedSites.mockResolvedValue([{ ...managedSite, searchConsole: false }]);
 
