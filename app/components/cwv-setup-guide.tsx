@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { FormButton } from '@/components/ui';
+
 const DATALAYER_SNIPPET = `import { onLCP, onINP, onCLS, onFCP, onTTFB } from 'web-vitals';
 
 function send({ name, value, id, rating, delta, navigationType }) {
@@ -26,17 +28,17 @@ export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: b
 
   return (
     <section className="border border-neutral-800 rounded-lg bg-neutral-900/40">
-      <button
+      <FormButton
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left text-sm text-neutral-300 hover:text-white transition-colors"
+        className="w-full flex items-center justify-between !bg-transparent !px-4 !py-3 text-left !text-sm !text-neutral-300 hover:!bg-transparent hover:!text-white"
       >
         <span className="flex items-center gap-2">
           <span className="text-neutral-500">{open ? '▾' : '▸'}</span>
           How to wire Core Web Vitals (GTM + GA4)
         </span>
         <span className="text-xs text-neutral-500">required once per project</span>
-      </button>
+      </FormButton>
       {open && (
         <div className="px-4 pb-5 space-y-5 text-sm text-neutral-300">
           <Step n={1} title="Push CWV to dataLayer in your app">
