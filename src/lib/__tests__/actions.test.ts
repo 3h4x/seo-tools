@@ -248,4 +248,142 @@ describe('loadActionQueue', () => {
       }),
     ]);
   });
+
+  it('maps decay severities to correct priorities', async () => {
+    mockDetectAllDecay.mockResolvedValueOnce([
+      {
+        siteId: 'site-a',
+        domain: 'a.test',
+        totalPages: 3,
+        decayingPages: [
+          { page: '/severe', siteId: 'site-a', domain: 'a.test', severity: 'severe', previousClicks: 200, currentClicks: 80, clicksDelta: -60, currentImpressions: 500, previousImpressions: 1200, impressionsDelta: -58 },
+          { page: '/moderate', siteId: 'site-a', domain: 'a.test', severity: 'moderate', previousClicks: 50, currentClicks: 30, clicksDelta: -40, currentImpressions: 200, previousImpressions: 400, impressionsDelta: -50 },
+          { page: '/mild', siteId: 'site-a', domain: 'a.test', severity: 'mild', previousClicks: 10, currentClicks: 8, clicksDelta: -20, currentImpressions: 50, previousImpressions: 70, impressionsDelta: -28 },
+        ],
+      },
+    ]);
+
+    const result = await loadActionQueue(7);
+
+    const decayItems = result.items.filter((i) => i.kind === 'decay');
+    expect(decayItems).toEqual([
+      expect.objectContaining({ priority: 'critical', affected: '/severe' }),
+      expect.objectContaining({ priority: 'high', affected: '/moderate' }),
+      expect.objectContaining({ priority: 'medium', affected: '/mild' }),
+    ]);
+    expect(result.counts.critical).toBe(1);
+    expect(result.counts.high).toBe(1);
+    expect(result.counts.medium).toBe(1);
+  });
+
+  it('skips decay results for sites not in managed sites list', async () => {
+    mockDetectAllDecay.mockResolvedValueOnce([
+      {
+        siteId: 'site-unknown',
+        domain: 'unknown.test',
+        totalPages: 1,
+        decayingPages: [
+          { page: '/old', siteId: 'site-unknown', domain: 'unknown.test', severity: 'severe', previousClicks: 100, currentClicks: 10, clicksDelta: -90, currentImpressions: 200, previousImpressions: 1000, impressionsDelta: -80 },
+        ],
+      },
+    ]);
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items.filter((i) => i.kind === 'decay')).toHaveLength(0);
+    expect(result.items).toHaveLength(0);
+  });
+
+  it('emits a critical gap item when severity is high and impact reaches 100+ clicks', async () => {
+    mockCachedAuditAllSites.mockResolvedValueOnce([{ siteId: 'site-a' }]);
+    mockLoadSiteGapSignals.mockResolvedValueOnce({
+      days: 7,
+      scTopPages: [
+        { page: 'https://a.test/landing', clicks: 150, impressions: 800, ctr: 0.19, position: 2 },
+      ],
+    });
+    mockAnalyzeSiteGaps.mockReturnValueOnce({
+      gaps: [{
+        id: 'missing-og-image',
+        title: 'Missing OG image',
+        description: 'No og:image set.',
+        severity: 'high',
+        category: 'social',
+        hint: 'Add og:image.',
+        affectedPages: ['https://a.test/landing'],
+      }],
+    });
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        kind: 'gap',
+        priority: 'critical',
+        impactLabel: '150 clicks at risk',
+      }),
+    ]);
+    expect(result.counts.critical).toBe(1);
+  });
+
+  it('classifies a keyword drop with small delta and low clicks as low priority', async () => {
+    mockGetKeywordDropActions.mockReturnValueOnce([
+      {
+        query: 'niche term',
+        clicks: 3,
+        impressions: 30,
+        currentPosition: 11,
+        previousPosition: 10,
+        delta: -1,
+        window: '7d',
+      },
+    ]);
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        kind: 'keyword',
+        priority: 'low',
+        affected: 'niche term',
+      }),
+    ]);
+    expect(result.counts.low).toBe(1);
+  });
+
+  it('forwards days=30 to detectAllDecay', async () => {
+    await loadActionQueue(30);
+
+    expect(mockDetectAllDecay).toHaveBeenCalledWith(30);
+  });
+
+  it('normalizes absolute SC page URLs when matching gap affectedPages', async () => {
+    mockCachedAuditAllSites.mockResolvedValueOnce([{ siteId: 'site-a' }]);
+    mockLoadSiteGapSignals.mockResolvedValueOnce({
+      days: 7,
+      scTopPages: [
+        { page: 'https://a.test/products/', clicks: 80, impressions: 400, ctr: 0.2, position: 3 },
+      ],
+    });
+    mockAnalyzeSiteGaps.mockReturnValueOnce({
+      gaps: [{
+        id: 'missing-jsonld',
+        title: 'Missing JSON-LD',
+        description: 'No structured data.',
+        severity: 'high',
+        category: 'structured-data',
+        hint: 'Add JSON-LD.',
+        affectedPages: ['/products'],
+      }],
+    });
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        kind: 'gap',
+        impactLabel: '80 clicks at risk',
+      }),
+    ]);
+  });
 });
