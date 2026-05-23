@@ -40,4 +40,24 @@ describe('ToggleButtonGroup', () => {
     expect(html).toContain('data-active="yes"');
     expect(html).toContain('data-active="no"');
   });
+
+  it('allows callers to override group and button classes', () => {
+    const html = renderToStaticMarkup(
+      <ToggleButtonGroup
+        options={[
+          { value: 'one', label: 'One' },
+          { value: 'two', label: 'Two' },
+        ]}
+        activeValues={new Set(['one'])}
+        onToggle={() => {}}
+        className="custom-group"
+        getButtonClassName={(_option, active) => active ? 'custom-active' : 'custom-inactive'}
+      />,
+    );
+
+    expect(html).toContain('class="custom-group"');
+    expect(html).toContain('class="custom-active"');
+    expect(html).toContain('class="custom-inactive"');
+    expect(html).not.toContain('bg-neutral-800');
+  });
 });

@@ -152,6 +152,18 @@ export default function DailyTrafficChart({ days }: { days: number }) {
 
   const allSiteIds = [...new Set(dates.flatMap(d => Object.keys(data[d] ?? {})))].sort();
   const siteIds = allSiteIds.filter(id => !hiddenSites.has(id));
+  const siteToggleOptions = allSiteIds
+    .filter(id => dates.some(d => {
+      const sd = data[d]?.[id];
+      return sd && [...activeMetrics].some(m => (sd[m] ?? 0) > 0);
+    }))
+    .map(id => ({
+      value: id,
+      label: sitesMap.get(id)?.name ?? id,
+    }));
+  const visibleSiteIds = new Set(siteToggleOptions
+    .filter(option => !hiddenSites.has(option.value))
+    .map(option => option.value));
 
   const toggleMetric = (m: Metric) => {
     setActiveMetrics(prev => {
@@ -296,31 +308,27 @@ export default function DailyTrafficChart({ days }: { days: number }) {
         </div>
       )}
       {viewMode === 'persite' && (
-        <div className="flex flex-wrap gap-3 mt-3">
-          {allSiteIds.filter(id => dates.some(d => {
-            const sd = data[d]?.[id];
-            return sd && [...activeMetrics].some(m => (sd[m] ?? 0) > 0);
-          })).map(id => {
-            const hidden = hiddenSites.has(id);
-            return (
-              <button
-                key={id}
-                onClick={() => toggleSite(id)}
-                className={`flex items-center gap-2 text-xs px-2 py-1 rounded transition-colors ${
-                  hidden ? 'opacity-40 hover:opacity-60' : 'hover:bg-neutral-800'
-                }`}
-              >
-                <div
-                  className="size-2 rounded-full"
-                  style={{ backgroundColor: hidden ? '#525252' : (sitesMap.get(id)?.color ?? '#737373') }}
-                />
-                <span className={hidden ? 'text-neutral-600 line-through' : 'text-neutral-400'}>
-                  {sitesMap.get(id)?.name ?? id}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <ToggleButtonGroup
+          ariaLabel="Visible sites"
+          options={siteToggleOptions}
+          activeValues={visibleSiteIds}
+          onToggle={toggleSite}
+          className="flex flex-wrap gap-3 mt-3"
+          getButtonClassName={(_option, active) => `flex items-center gap-2 text-xs px-2 py-1 rounded transition-colors ${
+            active ? 'hover:bg-neutral-800' : 'opacity-40 hover:opacity-60'
+          }`}
+          renderLabel={(option, active) => (
+            <>
+              <div
+                className="size-2 rounded-full"
+                style={{ backgroundColor: active ? (sitesMap.get(option.value)?.color ?? '#737373') : '#525252' }}
+              />
+              <span className={active ? 'text-neutral-400' : 'text-neutral-600 line-through'}>
+                {option.label}
+              </span>
+            </>
+          )}
+        />
       )}
     </div>
   );
