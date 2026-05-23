@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { FormButton } from '@/components/ui';
+import { FormButton, TextButton } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -224,7 +224,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
                     <td className="py-2 pr-4 text-neutral-300">{rule.thresholdPct}% drop</td>
                     <td className="py-2 pr-4 text-neutral-400">{rule.channels.join(', ')}</td>
                     <td className="py-2 flex gap-2">
-                      <button
+                      <TextButton
                         onClick={() => setForm({
                           id: rule.id,
                           siteId: rule.siteId,
@@ -232,16 +232,15 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
                           thresholdPct: String(rule.thresholdPct),
                           channels: rule.channels,
                         })}
-                        className="text-xs text-neutral-400 hover:text-white transition-colors"
                       >
                         Edit
-                      </button>
-                      <button
+                      </TextButton>
+                      <TextButton
+                        variant="danger"
                         onClick={() => void handleDelete(rule.id)}
-                        className="text-xs text-red-400 hover:text-red-300 transition-colors"
                       >
                         Delete
-                      </button>
+                      </TextButton>
                     </td>
                   </tr>
                 );
@@ -255,9 +254,9 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-white">{form.id ? 'Edit rule' : 'New rule'}</h3>
           {form.id && (
-            <button onClick={resetForm} className="text-xs text-neutral-500 hover:text-white transition-colors">
+            <TextButton variant="quiet" onClick={resetForm}>
               Cancel
-            </button>
+            </TextButton>
           )}
         </div>
 
