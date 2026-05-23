@@ -688,9 +688,11 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">Color</label>
               <div className="flex items-center gap-2">
-                <input
+                <FormInput
                   type="color"
-                  className="h-8 w-12 rounded cursor-pointer bg-neutral-800 border border-neutral-700"
+                  tone="dense"
+                  padding="compact"
+                  className="h-8 w-12 cursor-pointer"
                   value={form.color ?? '#737373'}
                   onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                 />
