@@ -97,6 +97,8 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const formSite = sites.find((entry) => entry.id === form.siteId);
+  const formMetricBlocked = isMetricBlockedBySite(form.metric, formSite);
 
   const loadRules = useCallback(async () => {
     setRules(await readAlertRulesResponse(await fetch('/api/alerts/rules')));
@@ -301,22 +303,18 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
           ))}
         </div>
 
-        {(() => {
-          const formSite = sites.find((entry) => entry.id === form.siteId);
-          if (!isMetricBlockedBySite(form.metric, formSite)) return null;
-          return (
-            <p className="text-xs text-amber-300">
-              Search Console is disabled for this site. {METRIC_OPTIONS.find((option) => option.value === form.metric)?.label ?? form.metric} alerts will not fire until it is re-enabled in the site settings.
-            </p>
-          );
-        })()}
+        {formMetricBlocked && (
+          <p className="text-xs text-amber-300">
+            Search Console is disabled for this site. Choose GA4 sessions or re-enable Search Console before saving this rule.
+          </p>
+        )}
 
         {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
 
         <FormButton
           variant="primary"
           onClick={() => void handleSave()}
-          disabled={saving}
+          disabled={saving || formMetricBlocked}
         >
           {saving ? 'Saving…' : form.id ? 'Update rule' : 'Create rule'}
         </FormButton>

@@ -160,6 +160,57 @@ describe('POST /api/alerts/rules', () => {
     expect(dbUpsertAlertRule).not.toHaveBeenCalled();
   });
 
+  it('rejects SC click rules when Search Console is disabled for the site', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'site-a', name: 'Site A', domain: 'a.example.com', searchConsole: false, testPages: ['/'] },
+    ]);
+
+    const res = await POST(postReq({
+      siteId: 'site-a',
+      metric: 'sc_clicks',
+      thresholdPct: 25,
+      channels: ['email'],
+    }));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      ok: false,
+      error: 'SC clicks requires Search Console enabled for this site',
+    });
+    expect(dbUpsertAlertRule).not.toHaveBeenCalled();
+  });
+
+  it('allows GA4 session rules when Search Console is disabled for the site', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      { id: 'site-a', name: 'Site A', domain: 'a.example.com', searchConsole: false, testPages: ['/'] },
+    ]);
+    vi.mocked(dbUpsertAlertRule).mockReturnValue({
+      id: 1,
+      siteId: 'site-a',
+      metric: 'ga4_sessions',
+      thresholdPct: 25,
+      channels: ['email'],
+      createdAt: '',
+      updatedAt: '',
+    });
+
+    const res = await POST(postReq({
+      siteId: 'site-a',
+      metric: 'ga4_sessions',
+      thresholdPct: 25,
+      channels: ['email'],
+    }));
+
+    expect(res.status).toBe(200);
+    expect(dbUpsertAlertRule).toHaveBeenCalledWith({
+      id: undefined,
+      siteId: 'site-a',
+      metric: 'ga4_sessions',
+      thresholdPct: 25,
+      channels: ['email'],
+    });
+  });
+
   it('returns a JSON 500 when the sites list cannot be loaded', async () => {
     vi.mocked(dbGetSites).mockImplementation(() => {
       throw new Error('sites table unavailable');

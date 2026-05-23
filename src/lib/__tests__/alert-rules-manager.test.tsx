@@ -50,6 +50,25 @@ describe('AlertRulesManager', () => {
     expect(html).toContain('aria-label="Loading alert rules"');
     expect(html).not.toContain('Loading rules');
   });
+
+  it('blocks saving an SC click rule for a site with Search Console disabled', () => {
+    const html = renderToStaticMarkup(
+      <AlertRulesManager
+        sites={[
+          {
+            id: 'site-a',
+            name: 'Site A',
+            domain: 'a.example.com',
+            searchConsole: false,
+            testPages: ['/'],
+          },
+        ]}
+      />,
+    );
+
+    expect(html).toContain('Choose GA4 sessions or re-enable Search Console before saving this rule.');
+    expect(html).toContain('disabled>Create rule</button>');
+  });
 });
 
 describe('readAlertRulesResponse', () => {

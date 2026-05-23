@@ -71,9 +71,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 400 });
   }
 
-  let knownSiteIds: Set<string>;
+  let sites;
   try {
-    knownSiteIds = new Set(dbGetSites().map((site) => site.id));
+    sites = dbGetSites();
   } catch (error) {
     console.error('[POST /api/alerts/rules] load sites', error);
     return NextResponse.json(
@@ -82,8 +82,16 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!knownSiteIds.has(normalized.siteId)) {
+  const site = sites.find((entry) => entry.id === normalized.siteId);
+  if (!site) {
     return NextResponse.json({ ok: false, error: 'Unknown site' }, { status: 400 });
+  }
+
+  if (normalized.metric === 'sc_clicks' && site.searchConsole === false) {
+    return NextResponse.json(
+      { ok: false, error: 'SC clicks requires Search Console enabled for this site' },
+      { status: 400 },
+    );
   }
 
   try {
