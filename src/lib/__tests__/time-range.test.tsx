@@ -2,8 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 import TimeRange from '../../../app/components/time-range';
 
-type TimeRangeButtonElement = ReactElement<{ className?: string; children: string }>;
-type TimeRangeElement = ReactElement<{ children: TimeRangeButtonElement[] }>;
+type SegmentedControlProps = {
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+};
 
 const {
   mockPush,
@@ -21,14 +24,8 @@ vi.mock('next/navigation', () => ({
   useSearchParams: mockUseSearchParams,
 }));
 
-function getButtons(element: TimeRangeElement): TimeRangeButtonElement[] {
-  return element.props.children;
-}
-
-function getActiveLabels(element: TimeRangeElement): string[] {
-  return getButtons(element)
-    .filter((button) => String(button.props.className).includes('bg-neutral-700'))
-    .map((button) => button.props.children);
+function getProps(element: ReactElement<SegmentedControlProps>): SegmentedControlProps {
+  return element.props;
 }
 
 beforeEach(() => {
@@ -41,16 +38,25 @@ describe('TimeRange', () => {
   it('marks the default option active when the URL value is unsupported', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams('days=999'));
 
-    const element = TimeRange() as TimeRangeElement;
+    const element = TimeRange() as ReactElement<SegmentedControlProps>;
 
-    expect(getActiveLabels(element)).toEqual(['7d']);
+    expect(getProps(element).value).toBe('7');
   });
 
   it('marks a supported URL value active', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams('days=30'));
 
-    const element = TimeRange() as TimeRangeElement;
+    const element = TimeRange() as ReactElement<SegmentedControlProps>;
 
-    expect(getActiveLabels(element)).toEqual(['30d']);
+    expect(getProps(element).value).toBe('30');
+  });
+
+  it('navigates to the new value via onChange', () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams('days=7'));
+
+    const element = TimeRange() as ReactElement<SegmentedControlProps>;
+    getProps(element).onChange('30');
+
+    expect(mockPush).toHaveBeenCalledWith('/dashboard?days=30');
   });
 });

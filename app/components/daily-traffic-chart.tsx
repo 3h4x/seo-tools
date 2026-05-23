@@ -16,6 +16,7 @@ import { Skeleton } from './skeletons';
 import { formatDateShort } from '@/lib/format';
 import { METRIC_COLORS } from '@/lib/constants';
 import { todayDateOnly } from '@/lib/date-only';
+import { SegmentedControl } from '@/components/ui';
 
 const METRICS = ['views', 'users', 'clicks', 'impressions'] as const;
 type Metric = (typeof METRICS)[number];
@@ -221,47 +222,44 @@ export default function DailyTrafficChart({ days }: { days: number }) {
           )}
         </div>
         <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
-          {METRICS.map(m => (
-            <button
-              key={m}
-              onClick={() => toggleMetric(m)}
-              className={`px-2.5 py-1 text-xs rounded transition-colors ${
-                activeMetrics.has(m)
-                  ? 'bg-neutral-700 text-white'
-                  : 'text-neutral-500 hover:text-neutral-300'
-              }`}
-            >
-              <span className="inline-block size-1.5 rounded-full mr-1.5" style={{ backgroundColor: activeMetrics.has(m) ? METRIC_COLORS[m] : '#525252' }} />
-              {m.charAt(0).toUpperCase() + m.slice(1)}
-            </button>
-          ))}
+          {METRICS.map(m => {
+            const active = activeMetrics.has(m);
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => toggleMetric(m)}
+                aria-pressed={active}
+                className={`px-2.5 py-1 text-xs rounded transition-colors ${
+                  active
+                    ? 'bg-neutral-700 text-white'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <span className="inline-block size-1.5 rounded-full mr-1.5" style={{ backgroundColor: active ? METRIC_COLORS[m] : '#525252' }} />
+                {m.charAt(0).toUpperCase() + m.slice(1)}
+              </button>
+            );
+          })}
         </div>
-        <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
-          {(['area', 'bar'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setChartType(t)}
-              className={`px-2.5 py-1 text-xs rounded transition-colors ${
-                chartType === t ? 'bg-neutral-700 text-white' : 'text-neutral-500 hover:text-neutral-300'
-              }`}
-            >
-              {t === 'area' ? 'Area' : 'Bar'}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
-          {([['cumulative', 'Cumulative'], ['persite', 'Per Site']] as const).map(([v, label]) => (
-            <button
-              key={v}
-              onClick={() => setViewMode(v)}
-              className={`px-2.5 py-1 text-xs rounded transition-colors ${
-                viewMode === v ? 'bg-neutral-700 text-white' : 'text-neutral-500 hover:text-neutral-300'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          ariaLabel="Chart type"
+          options={[
+            { value: 'area', label: 'Area' },
+            { value: 'bar', label: 'Bar' },
+          ]}
+          value={chartType}
+          onChange={setChartType}
+        />
+        <SegmentedControl
+          ariaLabel="View mode"
+          options={[
+            { value: 'cumulative', label: 'Cumulative' },
+            { value: 'persite', label: 'Per Site' },
+          ]}
+          value={viewMode}
+          onChange={setViewMode}
+        />
       </div>
       {chartType === 'area' ? (
         <TrendChart

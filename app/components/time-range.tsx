@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { SegmentedControl } from '@/components/ui';
 
 const DEFAULT_RANGES = [
   { value: '1', label: '1d' },
@@ -24,27 +25,18 @@ export default function TimeRange({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const requestedValue = searchParams.get(param);
-  const current = options.some((option) => option.value === requestedValue) ? requestedValue : defaultValue;
+  const current = options.some((option) => option.value === requestedValue) ? requestedValue! : defaultValue;
 
   return (
-    <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
-      {options.map((r) => (
-        <button
-          key={r.value}
-          onClick={() => {
-            const params = new URLSearchParams(searchParams);
-            params.set(param, r.value);
-            router.push(`${pathname}?${params.toString()}`);
-          }}
-          className={`px-2.5 py-1 text-xs rounded transition-colors ${
-            current === r.value
-              ? 'bg-neutral-700 text-white'
-              : 'text-neutral-400 hover:text-white'
-          }`}
-        >
-          {r.label}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      ariaLabel="Time range"
+      options={options}
+      value={current}
+      onChange={(value) => {
+        const params = new URLSearchParams(searchParams);
+        params.set(param, value);
+        router.push(`${pathname}?${params.toString()}`);
+      }}
+    />
   );
 }
