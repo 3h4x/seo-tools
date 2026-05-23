@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gaps';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gaps';
-import { FilterChipGroup, TextButton } from '@/components/ui';
+import { Badge, FilterChipGroup, TextButton } from '@/components/ui';
 
 export interface SiteGap {
   gap: GapRecommendation;
@@ -22,12 +22,12 @@ function GapRow({ sg }: { sg: SiteGap }) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${s.bg} ${s.text} ${s.border}`}>
+            <Badge className={`shrink-0 ${s.bg} ${s.text} ${s.border}`}>
               {s.label}
-            </span>
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-neutral-700 text-neutral-400 shrink-0">
+            </Badge>
+            <Badge className="shrink-0 border-neutral-700 text-neutral-400">
               {CATEGORY_LABELS[gap.category]}
-            </span>
+            </Badge>
             <span className="text-white font-semibold text-sm">{gap.title}</span>
           </div>
           <p className="text-neutral-500 text-xs mt-1">{gap.description}</p>
@@ -181,9 +181,9 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
               <h2 className="text-white font-semibold text-sm uppercase tracking-wider">
                 {s.label} Priority
               </h2>
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${s.bg} ${s.text} ${s.border}`}>
+              <Badge className={`${s.bg} ${s.text} ${s.border}`}>
                 {items.length}
-              </span>
+              </Badge>
             </div>
 
             <div className="space-y-2">

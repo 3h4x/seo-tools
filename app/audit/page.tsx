@@ -16,6 +16,7 @@ import { GapsClient, type SiteGap } from '../components/gaps-client';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
+import { Badge } from '@/components/ui';
 
 const AUDIT_DECAY_PERIODS = [7, 30] as const;
 
@@ -242,14 +243,14 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                   </div>
                   <StatusBadge status={worst} label={`${audit.score.pass}/${audit.score.total} passed`} />
                   {gapCount > 0 && (
-                    <span className="text-neutral-500 text-[10px] font-medium px-2 py-0.5 rounded-full border border-neutral-700">
+                    <Badge className="border-neutral-700 text-neutral-500">
                       {gapCount} {gapCount === 1 ? 'recommendation' : 'recommendations'}
-                    </span>
+                    </Badge>
                   )}
                   {audit.sampledPages.length > 0 && (
-                    <span className="text-neutral-600 text-[10px] font-medium px-2 py-0.5 rounded-full border border-neutral-800">
+                    <Badge className="border-neutral-800 text-neutral-600">
                       {audit.sampledPages.length} {audit.sampledPages.length === 1 ? 'page' : 'pages'} sampled
-                    </span>
+                    </Badge>
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-1">
@@ -357,9 +358,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                   <span className="text-neutral-400">{page.currentPosition.toFixed(1)}</span>
                   {page.positionDelta > 0 && <span className="text-red-400 text-[10px] ml-1">+{page.positionDelta}</span>}
                 </span>,
-                <span key="severity" className={`${colors.badgeBg} ${colors.badge} inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium uppercase`}>
+                <Badge key="severity" className={`${colors.badgeBg} ${colors.badge} !border-0 uppercase`}>
                   {page.severity}
-                </span>,
+                </Badge>,
               ];
             })}
             rowKeys={allDecaying.map((page) => `${page.siteId}:${page.page}`)}
