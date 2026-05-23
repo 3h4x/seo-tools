@@ -144,7 +144,12 @@ export async function processSnapshotAlerts(snapshotDate: string): Promise<{ fir
 
   const rulesById = new Map(rules.map((rule) => [rule.id, rule]));
   const sitesById = new Map(dbGetSites().map((site) => [site.id, site]));
-  const breaches = evaluateAlertRules(rules, snapshotDate);
+  const activeRules = rules.filter((rule) => {
+    const site = sitesById.get(rule.siteId);
+    if (!site) return false;
+    return rule.metric !== 'sc_clicks' || site.searchConsole !== false;
+  });
+  const breaches = evaluateAlertRules(activeRules, snapshotDate);
   let fired = 0;
   const errors: string[] = [];
 

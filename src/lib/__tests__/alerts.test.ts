@@ -183,4 +183,20 @@ describe('processSnapshotAlerts', () => {
       },
     ]);
   });
+
+  it('does not fire existing SC click rules when Search Console is disabled', async () => {
+    getDb().prepare('UPDATE sites SET search_console = 0 WHERE id = ?').run('site-a');
+    dbUpsertAlertRule({
+      siteId: 'site-a',
+      metric: 'sc_clicks',
+      thresholdPct: 25,
+      channels: ['email'],
+    });
+
+    const result = await processSnapshotAlerts('2026-05-17');
+
+    expect(result).toEqual({ fired: 0, errors: [] });
+    expect(sendAlertNotificationsMock).not.toHaveBeenCalled();
+    expect(dbGetAlertEvents()).toEqual([]);
+  });
 });

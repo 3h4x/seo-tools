@@ -549,7 +549,18 @@ function getAlertRules(db) {
 }
 
 function getSitesById(db) {
-  return new Map(db.prepare('SELECT id, name, domain FROM sites').all().map((site) => [site.id, site]));
+  const columns = db.prepare('PRAGMA table_info(sites)').all();
+  const hasSearchConsole = columns.some((column) => column.name === 'search_console');
+  const searchConsoleSelect = hasSearchConsole ? 'search_console' : '1 as search_console';
+  return new Map(
+    db.prepare(`SELECT id, name, domain, ${searchConsoleSelect} FROM sites`).all().map((site) => [
+      site.id,
+      {
+        ...site,
+        searchConsole: site.search_console !== 0,
+      },
+    ]),
+  );
 }
 
 function getMetricSnapshotPoints(db, siteId, metric, snapshotDate) {
@@ -653,7 +664,12 @@ export async function processSnapshotAlertsForCli(db, snapshotDate, options = {}
   const sendNotifications = options.sendNotifications ?? ((channels, payload) => sendAlertNotifications(db, channels, payload));
   const rulesById = new Map(rules.map((rule) => [rule.id, rule]));
   const sitesById = getSitesById(db);
-  const breaches = evaluateAlertRules(db, rules, snapshotDate);
+  const activeRules = rules.filter((rule) => {
+    const site = sitesById.get(rule.siteId);
+    if (!site) return false;
+    return rule.metric !== 'sc_clicks' || site.searchConsole !== false;
+  });
+  const breaches = evaluateAlertRules(db, activeRules, snapshotDate);
   const hasEvent = db.prepare('SELECT 1 as found FROM alert_events WHERE rule_id = ? AND snapshot_date = ?');
   const insertEvent = db.prepare(
     `INSERT OR IGNORE INTO alert_events (

@@ -164,6 +164,21 @@ describe('CLI snapshot alerts', () => {
     expect(db.prepare('SELECT COUNT(*) as count FROM alert_events').get()).toEqual({ count: 1 });
   });
 
+  it('does not fire existing SC click rules when Search Console is disabled', async () => {
+    db.exec('ALTER TABLE sites ADD COLUMN search_console INTEGER NOT NULL DEFAULT 1');
+    db.prepare('UPDATE sites SET search_console = 0 WHERE id = ?').run('site-a');
+    const sendNotifications = vi.fn(async () => ({
+      deliveredChannels: ['email'],
+      deliveryError: null,
+    }));
+
+    const result = await processSnapshotAlertsForCli(db, '2026-05-17', { sendNotifications });
+
+    expect(result).toEqual({ fired: 0, errors: [] });
+    expect(sendNotifications).not.toHaveBeenCalled();
+    expect(db.prepare('SELECT COUNT(*) as count FROM alert_events').get()).toEqual({ count: 0 });
+  });
+
   it('does not re-deliver the same rule for an already recorded snapshot event', async () => {
     const sendNotifications = vi.fn(async () => ({
       deliveredChannels: ['email'],
