@@ -3,6 +3,7 @@ import NavLinks from "./components/nav-links";
 import RefreshButton from "./components/refresh-button";
 import { RefreshProvider } from "./components/refresh-context";
 import LoadingOverlay from "./components/loading-overlay";
+import { Badge } from "@/components/ui";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,7 +25,9 @@ export default function RootLayout({
               <div className="flex items-center justify-between h-14">
                 <div className="flex items-center gap-6">
                   <span className="text-white font-bold text-lg">SEO Tools</span>
-                  <span className="text-xs font-mono bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">{process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev'}</span>
+                  <Badge size="compact" shape="rounded" className="font-mono bg-neutral-800 text-neutral-400 border-neutral-800">
+                    {process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev'}
+                  </Badge>
                   <NavLinks />
                 </div>
                 <div className="flex items-center gap-3">

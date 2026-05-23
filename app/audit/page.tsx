@@ -275,7 +275,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
               </div>
               {cwv && Object.keys(cwv.metrics).length > 0 && (
                 <div className="mt-3 pt-3 border-t border-neutral-800 flex items-center gap-4 flex-wrap">
-                  <span className="text-neutral-600 text-[10px] uppercase tracking-wider font-medium shrink-0">CWV</span>
+                  <Badge uppercase className="shrink-0 border-neutral-800 text-neutral-600">
+                    CWV
+                  </Badge>
                   {(['LCP', 'INP', 'CLS'] as CwvMetricName[]).map(name => {
                     const metric = cwv.metrics[name];
                     if (!metric) return null;

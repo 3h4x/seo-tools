@@ -30,6 +30,7 @@ import { PageQueriesTable } from '../components/page-queries-table';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFallback, loadSyncOrFallback } from '@/lib/page-helpers';
+import { Badge } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -701,9 +702,9 @@ export default async function SiteDashboardPage({
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-white font-semibold text-sm">Core Web Vitals</h2>
                 <div className="flex items-center gap-3">
-                  <span className="text-neutral-600 text-[10px] uppercase tracking-wider">
+                  <Badge uppercase shape="rounded" className="border-neutral-800 text-neutral-600">
                     {cwvSummary.source === 'rum' ? 'RUM · GA4' : cwvSummary.source === 'psi-field' ? 'CrUX field' : cwvSummary.source === 'psi-lab' ? 'Lighthouse lab' : ''}
-                  </span>
+                  </Badge>
                   <Link
                     href={`/performance/${encodeURIComponent(siteId)}`}
                     className="text-neutral-500 hover:text-neutral-300 text-xs transition-colors"
