@@ -22,8 +22,7 @@ A multi-project SEO manager that:
 | File | Topic | Load when |
 | --- | --- | --- |
 | `README.md` | Product overview, quick start, Docker workflow, alerts, and service-account setup | Load when you need onboarding, local boot steps, container usage, or operator-facing setup details. |
-
-No repo-level `docs/` directory exists right now. If `docs/*.md` files are added later, add them to this table with a short topic and "Load when" note.
+| `docs/UI.md` | Shared UI primitives (`src/components/ui`): ConfiguredNotice, FormButton, SegmentedControl, TextButton, ToggleButtonGroup | Load when adding or editing dashboard UI components — check here before writing ad-hoc markup for repeated patterns. |
 
 ## Managed Sites
 
