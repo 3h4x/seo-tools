@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { FormButton, TextButton } from '@/components/ui';
+import { FormButton, FormInput, TextButton } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -279,11 +279,10 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
-          <input
+          <FormInput
             type="number"
             min={1}
             max={100}
-            className={INPUT_CLS}
             value={form.thresholdPct}
             onChange={(e) => setForm((current) => ({ ...current, thresholdPct: e.target.value }))}
           />
