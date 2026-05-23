@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfiguredNotice, FormButton } from '@/components/ui';
+import { ConfiguredNotice, FormButton, FormInput } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { Skeleton } from './skeletons';
 
@@ -161,9 +161,9 @@ export default function PagespeedKeyForm() {
         </ConfiguredNotice>
       )}
 
-      <input
+      <FormInput
         type="password"
-        className="w-full bg-neutral-900 border border-neutral-700 rounded-md p-2.5 text-sm font-mono text-neutral-200 focus:outline-none focus:border-neutral-500"
+        monospace
         placeholder="AIzaSy..."
         value={input}
         onChange={(e) => { setInput(e.target.value); setTestState('idle'); setErrorMsg(''); }}
