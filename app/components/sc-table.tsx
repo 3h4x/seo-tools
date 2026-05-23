@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FormButton } from '@/components/ui';
 import { PositionBadge } from './position-badge';
 import { DataTable, type DataTableColumn } from './data-table';
 
@@ -46,13 +47,14 @@ function ExportButton({ data, filename, label = 'Export CSV' }: {
   };
 
   return (
-    <button
+    <FormButton
       onClick={handleExport}
       title={`Download ${filename} as CSV`}
-      className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded border transition-colors ${
+      size="xs"
+      className={`inline-flex items-center gap-1.5 !text-[10px] font-medium !px-2 !py-1 !rounded border ${
         done
-          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-          : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:text-neutral-200 hover:border-neutral-600'
+          ? '!bg-emerald-500/10 !text-emerald-400 !border-emerald-500/20'
+          : '!bg-neutral-800 !text-neutral-400 !border-neutral-700 hover:!text-neutral-200 hover:!border-neutral-600'
       }`}
     >
       {done ? (
@@ -70,7 +72,7 @@ function ExportButton({ data, filename, label = 'Export CSV' }: {
           {label}
         </>
       )}
-    </button>
+    </FormButton>
   );
 }
 
