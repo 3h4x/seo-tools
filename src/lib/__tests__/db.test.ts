@@ -485,6 +485,27 @@ describe('operational status helpers', () => {
     expect((await getSnapshotOperationalStatus()).details).not.toContain('audit');
   });
 
+  it('uses the latest date row timestamp for freshness checks', () => {
+    const db = getDb();
+    insertSite({ id: 'site-a', domain: 'a.example' });
+
+    db.prepare(
+      'INSERT INTO sc_daily (site_id, date, clicks, impressions, ctr, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-10', 10, 100, 0.1, 4.2, '2026-05-10 00:00:00');
+    db.prepare(
+      'INSERT INTO sc_daily (site_id, date, clicks, impressions, ctr, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-09', 9, 90, 0.1, 4.3, '2026-05-12 11:00:00');
+    db.prepare(
+      'INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-11', 'https://a.example/', 10, 100, 0.1, 4.2, '2026-05-10 00:00:00');
+    db.prepare(
+      'INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', '2026-05-10', 'https://a.example/', 9, 90, 0.1, 4.3, '2026-05-12 11:00:00');
+
+    expect(getScDailyOperationalStatus().state).toBe('stale');
+    expect(getSnapshotOperationalStatus().state).toBe('stale');
+  });
+
   it('excludes sites without ga4PropertyId from GA4 daily and snapshot status without live API calls', () => {
     const db = getDb();
     insertSite({ id: 'site-a', domain: 'a.example', searchConsole: false });

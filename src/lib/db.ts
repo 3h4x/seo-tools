@@ -647,9 +647,17 @@ function getPerSiteDateFreshness(
 ): Map<string, PerSiteDateFreshnessRow> {
   const db = getDb();
   const rows = db.prepare(
-    `SELECT site_id, MAX(date) as latest_date, MAX(created_at) as latest_created_at
-     FROM ${table}
-     GROUP BY site_id`,
+    `WITH latest_dates AS (
+       SELECT site_id, MAX(date) as latest_date
+       FROM ${table}
+       GROUP BY site_id
+     )
+     SELECT rows.site_id, latest_dates.latest_date, MAX(rows.created_at) as latest_created_at
+     FROM latest_dates
+     JOIN ${table} rows
+       ON rows.site_id = latest_dates.site_id
+      AND rows.date = latest_dates.latest_date
+     GROUP BY rows.site_id, latest_dates.latest_date`,
   ).all() as PerSiteDateFreshnessRow[];
   return new Map(rows.map((row) => [row.site_id, row]));
 }
