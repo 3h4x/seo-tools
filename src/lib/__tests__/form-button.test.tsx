@@ -25,4 +25,16 @@ describe('FormButton', () => {
     expect(html).toContain('px-3 py-1.5 text-xs');
     expect(html).toContain('bg-white text-black');
   });
+
+  it('supports ghost row controls without local important overrides', () => {
+    const html = renderToStaticMarkup(
+      <FormButton variant="ghost" size="row">
+        Toggle setup
+      </FormButton>
+    );
+
+    expect(html).toContain('px-4 py-3 text-sm');
+    expect(html).toContain('bg-transparent text-neutral-300');
+    expect(html).toContain('hover:text-white');
+  });
 });

@@ -30,8 +30,10 @@ export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: b
     <section className="border border-neutral-800 rounded-lg bg-neutral-900/40">
       <FormButton
         type="button"
+        variant="ghost"
+        size="row"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between !bg-transparent !px-4 !py-3 text-left !text-sm !text-neutral-300 hover:!bg-transparent hover:!text-white"
+        className="w-full flex items-center justify-between text-left"
       >
         <span className="flex items-center gap-2">
           <span className="text-neutral-500">{open ? '▾' : '▸'}</span>
