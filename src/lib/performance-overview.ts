@@ -80,6 +80,29 @@ function fromPsi(psi: PsiData): {
   };
 }
 
+function emptyPsiFallback(psi: PsiData | null = null): {
+  psi: PsiData | null;
+  metrics: PerformanceOverviewRow['metrics'];
+  source: 'psi-field' | 'psi-lab' | 'none';
+} {
+  if (!psi) return { psi: null, metrics: {}, source: 'none' };
+  return { psi, ...fromPsi(psi) };
+}
+
+function firstPsiWithMetrics(...results: Array<PsiData | null>): ReturnType<typeof emptyPsiFallback> {
+  let firstFallback: ReturnType<typeof emptyPsiFallback> | null = null;
+
+  for (const result of results) {
+    const fallback = emptyPsiFallback(result);
+    firstFallback ??= fallback;
+    if (fallback.source !== 'none') {
+      return fallback;
+    }
+  }
+
+  return firstFallback ?? emptyPsiFallback();
+}
+
 async function getPerformanceOverviewRow(
   site: PerformanceOverviewSite,
   days: number,
@@ -117,26 +140,35 @@ async function getPerformanceOverviewRow(
     };
   }
 
-  const psi = await cachedGetPagespeed(url, 'mobile').catch((error) => {
+  const psiMobile = await cachedGetPagespeed(url, 'mobile').catch((error) => {
     console.error(`[PerformanceOverview] PSI ${site.id}:`, error);
     return null;
   });
+  let psiDesktop: PsiData | null = null;
+  let psiFallback = firstPsiWithMetrics(psiMobile);
 
-  if (psi && (psi.field || Object.keys(psi.lab).length > 0)) {
-    const { metrics, source } = fromPsi(psi);
+  if (psiFallback.source === 'none') {
+    psiDesktop = await cachedGetPagespeed(url, 'desktop').catch((error) => {
+      console.error(`[PerformanceOverview] PSI desktop ${site.id}:`, error);
+      return null;
+    });
+    psiFallback = firstPsiWithMetrics(psiMobile, psiDesktop);
+  }
+
+  if (psiFallback.psi) {
     return {
       id: site.id,
       name: site.name,
       domain: site.domain,
-      source: cwvEventCount > 0 ? 'rum-pending' : source,
-      metrics,
-      perfScore: psi.performanceScore,
-      needsKey: !!psi.needsKey,
+      source: cwvEventCount > 0 ? 'rum-pending' : psiFallback.source,
+      metrics: psiFallback.metrics,
+      perfScore: psiFallback.psi.performanceScore,
+      needsKey: !!(psiMobile?.needsKey || psiDesktop?.needsKey),
       cwvEventCount,
     };
   }
 
-  return emptyRow(site, cwvEventCount, !!psi?.needsKey);
+  return emptyRow(site, cwvEventCount, !!(psiMobile?.needsKey || psiDesktop?.needsKey));
 }
 
 export async function getPerformanceOverviewRows(days: number): Promise<PerformanceOverviewRow[]> {

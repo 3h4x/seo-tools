@@ -100,7 +100,7 @@ function fromPsi(psi: PsiData | null): { metrics: PerformanceMetricMap; source: 
       return {
         metrics: fieldMetrics,
         source: 'psi-field',
-        heroSource: 'CrUX field (mobile)',
+        heroSource: `CrUX field (${psi.strategy})`,
       };
     }
   }
@@ -119,8 +119,22 @@ function fromPsi(psi: PsiData | null): { metrics: PerformanceMetricMap; source: 
   return {
     metrics: labMetrics,
     source: Object.keys(labMetrics).length > 0 ? 'psi-lab' : 'none',
-    heroSource: Object.keys(labMetrics).length > 0 ? 'Lighthouse lab (mobile)' : 'no data',
+    heroSource: Object.keys(labMetrics).length > 0 ? `Lighthouse lab (${psi.strategy})` : 'no data',
   };
+}
+
+function firstPsiWithMetrics(...results: Array<PsiData | null>): ReturnType<typeof fromPsi> {
+  let firstFallback: ReturnType<typeof fromPsi> | null = null;
+
+  for (const result of results) {
+    const fallback = fromPsi(result);
+    firstFallback ??= fallback;
+    if (fallback.source !== 'none') {
+      return fallback;
+    }
+  }
+
+  return firstFallback ?? { metrics: {}, source: 'none', heroSource: 'no data' };
 }
 
 async function providerOrNull<T>(label: string, promise: Promise<T | null>): Promise<T | null> {
@@ -161,7 +175,7 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
   const hasRum = !!rum?.hasData;
   const cwvEventCount = eventCount ?? 0;
   const propagating = !hasRum && cwvEventCount > 0;
-  const psiFallback = fromPsi(psiMobile);
+  const psiFallback = firstPsiWithMetrics(psiMobile, psiDesktop);
 
   return {
     site: {
@@ -224,7 +238,10 @@ export async function getCwvAuditSummary(siteId: string): Promise<CwvAuditSummar
     return { metrics: cloneRumMetrics(rum.overall), source: 'rum' };
   }
 
-  const fallback = fromPsi(psiMobile);
+  const psiDesktop = psiMobile && fromPsi(psiMobile).source !== 'none'
+    ? null
+    : await providerOrNull(`audit PSI desktop ${site.id}`, cachedGetPagespeed(url, 'desktop'));
+  const fallback = firstPsiWithMetrics(psiMobile, psiDesktop);
   return { metrics: fallback.metrics, source: fallback.source };
 }
 

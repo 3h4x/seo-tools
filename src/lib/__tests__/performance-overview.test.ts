@@ -93,6 +93,45 @@ describe('getPerformanceOverviewRows', () => {
     expect(vi.mocked(cachedGetRumCoreWebVitals)).toHaveBeenCalledWith('ga4-psi', 28);
   });
 
+  it('uses desktop PSI when mobile PSI has no metrics', async () => {
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (url, strategy) => {
+      if (strategy === 'mobile') {
+        return {
+          url,
+          strategy,
+          performanceScore: 91,
+          field: null,
+          lab: {},
+          fetchedAt: 123,
+        };
+      }
+
+      return {
+        url,
+        strategy,
+        performanceScore: 96,
+        field: {
+          INP: { value: 180, rating: 'good' },
+        },
+        lab: {},
+        fetchedAt: 123,
+      };
+    });
+
+    const rows = await getPerformanceOverviewRows(7);
+
+    expect(rows[1]).toMatchObject({
+      id: 'psi-site',
+      source: 'psi-field',
+      perfScore: 96,
+      metrics: {
+        INP: { value: 180, rating: 'good' },
+      },
+    });
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://psi.example.com', 'mobile');
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://psi.example.com', 'desktop');
+  });
+
   it('does not label empty PSI payloads as lab data', async () => {
     vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValue(null);
     vi.mocked(cachedGetPagespeed).mockResolvedValue({

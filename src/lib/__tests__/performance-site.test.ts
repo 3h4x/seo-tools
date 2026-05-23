@@ -129,6 +129,40 @@ describe('getPerformanceSiteData', () => {
     expect(result!.byDevice).toBeNull();
   });
 
+  it('uses desktop PSI for overall fallback when mobile has no metrics', async () => {
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce(null);
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => {
+      if (strategy === 'mobile') {
+        return {
+          url: 'https://borged.io',
+          strategy,
+          performanceScore: 91,
+          field: null,
+          lab: {},
+          fetchedAt: 123,
+        };
+      }
+
+      return {
+        url: 'https://borged.io',
+        strategy,
+        performanceScore: 96,
+        field: {
+          INP: { value: 180, rating: 'good' },
+        },
+        lab: {},
+        fetchedAt: 123,
+      };
+    });
+
+    const result = await getPerformanceSiteData('borged-io', 7);
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('psi-field');
+    expect(result!.heroSource).toBe('CrUX field (desktop)');
+    expect(result!.overall.INP).toEqual({ value: 180, rating: 'good', sampleCount: 0 });
+  });
+
   it('normalizes trend dates to yyyy-mm-dd', async () => {
     vi.mocked(cachedGetRumCwvTrend).mockResolvedValueOnce([
       { date: '20260508', metrics: { LCP: { value: 1200, rating: 'good', sampleCount: 2 } } },
@@ -251,6 +285,41 @@ describe('getCwvAuditSummary', () => {
     expect(result!.metrics.CLS).toEqual({ value: 0.08, rating: 'good', sampleCount: 0 });
     expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'mobile');
     expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to desktop PSI in the audit summary when mobile has no metrics', async () => {
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce(null);
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => {
+      if (strategy === 'mobile') {
+        return {
+          url: 'https://borged.io',
+          strategy,
+          performanceScore: null,
+          field: null,
+          lab: {},
+          fetchedAt: 123,
+        };
+      }
+
+      return {
+        url: 'https://borged.io',
+        strategy,
+        performanceScore: 89,
+        field: null,
+        lab: {
+          LCP: 2100,
+        },
+        fetchedAt: 123,
+      };
+    });
+
+    const result = await getCwvAuditSummary('borged-io');
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('psi-lab');
+    expect(result!.metrics.LCP).toEqual({ value: 2100, rating: 'good', sampleCount: 0 });
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'mobile');
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'desktop');
   });
 
   it('falls back to PSI when audit RUM throws', async () => {
