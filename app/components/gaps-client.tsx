@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gaps';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gaps';
-import { TextButton } from '@/components/ui';
+import { FilterChipGroup, TextButton } from '@/components/ui';
 
 export interface SiteGap {
   gap: GapRecommendation;
@@ -106,83 +106,51 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
         {sites.length > 1 && (
           <div className="flex flex-wrap gap-2">
             <span className="text-neutral-600 text-xs self-center shrink-0 w-16">Sites</span>
-            <div className="flex flex-wrap gap-1.5">
-              {sites.map((site) => {
-                const count = allSiteGaps.filter(sg => sg.siteId === site.id).length;
-                const active = filterSite === site.id;
-                return (
-                  <button
-                    key={site.id}
-                    onClick={() => setFilterSite(active ? null : site.id)}
-                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                      active
-                        ? 'bg-white/10 text-white border-white/20'
-                        : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:text-white hover:border-neutral-500'
-                    }`}
-                  >
-                    {site.name}
-                    <span className={`ml-1.5 font-mono text-[10px] ${active ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <FilterChipGroup
+              ariaLabel="Filter by site"
+              value={filterSite}
+              onChange={setFilterSite}
+              options={sites.map((site) => ({
+                value: site.id,
+                label: site.name,
+                count: allSiteGaps.filter((sg) => sg.siteId === site.id).length,
+              }))}
+            />
           </div>
         )}
         {categories.length > 1 && (
           <div className="flex flex-wrap gap-2">
             <span className="text-neutral-600 text-xs self-center shrink-0 w-16">Category</span>
-            <div className="flex flex-wrap gap-1.5">
-              {categories.map((cat) => {
-                const count = allSiteGaps.filter(sg => sg.gap.category === cat).length;
-                const active = filterCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setFilterCategory(active ? null : cat)}
-                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                      active
-                        ? 'bg-white/10 text-white border-white/20'
-                        : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:text-white hover:border-neutral-500'
-                    }`}
-                  >
-                    {CATEGORY_LABELS[cat]}
-                    <span className={`ml-1.5 font-mono text-[10px] ${active ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <FilterChipGroup
+              ariaLabel="Filter by category"
+              value={filterCategory}
+              onChange={setFilterCategory}
+              options={categories.map((cat) => ({
+                value: cat,
+                label: CATEGORY_LABELS[cat],
+                count: allSiteGaps.filter((sg) => sg.gap.category === cat).length,
+              }))}
+            />
           </div>
         )}
         <div className="flex flex-wrap gap-2">
           <span className="text-neutral-600 text-xs self-center shrink-0 w-16">Severity</span>
-          <div className="flex flex-wrap gap-1.5">
-            {(['high', 'medium', 'low'] as GapSeverity[]).map((sev) => {
-              const count = allSiteGaps.filter(sg => sg.gap.severity === sev).length;
-              if (count === 0) return null;
+          <FilterChipGroup
+            ariaLabel="Filter by severity"
+            value={filterSeverity}
+            onChange={setFilterSeverity}
+            hideZeroCounts
+            options={(['high', 'medium', 'low'] as GapSeverity[]).map((sev) => {
               const s = GAP_SEVERITY_STYLES[sev];
-              const active = filterSeverity === sev;
-              return (
-                <button
-                  key={sev}
-                  onClick={() => setFilterSeverity(active ? null : sev)}
-                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                    active
-                      ? `${s.bg} ${s.text} ${s.border}`
-                      : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:text-white hover:border-neutral-500'
-                  }`}
-                >
-                  {s.label}
-                  <span className={`ml-1.5 font-mono text-[10px] ${active ? '' : 'text-neutral-600'}`}>
-                    {count}
-                  </span>
-                </button>
-              );
+              return {
+                value: sev,
+                label: s.label,
+                count: allSiteGaps.filter((sg) => sg.gap.severity === sev).length,
+                activeClassName: `${s.bg} ${s.text} ${s.border}`,
+                countActiveClassName: '',
+              };
             })}
-          </div>
+          />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-4">

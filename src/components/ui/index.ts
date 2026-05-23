@@ -1,4 +1,5 @@
 export { ConfiguredNotice } from './configured-notice';
+export { FilterChipGroup } from './filter-chip-group';
 export { FormButton } from './form-button';
 export { SegmentedControl } from './segmented-control';
 export { TextButton } from './text-button';
