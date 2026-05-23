@@ -6,7 +6,7 @@ import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
-import { FormButton } from '@/components/ui';
+import { FormButton, TextButton } from '@/components/ui';
 
 interface Site {
   id: string;
@@ -504,20 +504,22 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   <td className="py-2 pr-4 text-neutral-400">
                     <div className="flex items-center gap-2">
                       <span className="w-5 text-xs font-mono">{index + 1}</span>
-                      <button
+                      <TextButton
                         onClick={() => handleMoveSite(index, -1)}
                         disabled={isEditing || saving || index === 0}
-                        className="text-[11px] text-neutral-500 hover:text-white disabled:opacity-30 transition-colors"
+                        size="xxs"
+                        variant="reorder"
                       >
                         Up
-                      </button>
-                      <button
+                      </TextButton>
+                      <TextButton
                         onClick={() => handleMoveSite(index, 1)}
                         disabled={isEditing || saving || index === sites.length - 1}
-                        className="text-[11px] text-neutral-500 hover:text-white disabled:opacity-30 transition-colors"
+                        size="xxs"
+                        variant="reorder"
                       >
                         Down
-                      </button>
+                      </TextButton>
                     </div>
                   </td>
                   <td className="py-2 pr-4 text-white">
@@ -566,36 +568,35 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                     )}
                   </td>
                   <td className="py-2 flex gap-2">
-                    <button
+                    <TextButton
                       onClick={() => startEdit(site)}
                       disabled={isEditing || saving}
-                      className="text-xs text-neutral-400 hover:text-white disabled:opacity-40 transition-colors"
                     >
                       Edit
-                    </button>
+                    </TextButton>
                     {deleteConfirm === site.id ? (
                       <>
-                        <button
+                        <TextButton
                           onClick={() => handleDelete(site.id)}
-                          className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                          variant="danger"
                         >
                           Confirm
-                        </button>
-                        <button
+                        </TextButton>
+                        <TextButton
                           onClick={() => setDeleteConfirm(null)}
-                          className="text-xs text-neutral-500 hover:text-white transition-colors"
+                          variant="quiet"
                         >
                           Cancel
-                        </button>
+                        </TextButton>
                       </>
                     ) : (
-                      <button
+                      <TextButton
                         onClick={() => setDeleteConfirm(site.id)}
                         disabled={isEditing || saving}
-                        className="text-xs text-neutral-600 hover:text-red-400 disabled:opacity-40 transition-colors"
+                        variant="danger-muted"
                       >
                         Delete
-                      </button>
+                      </TextButton>
                     )}
                   </td>
                 </tr>
@@ -685,13 +686,13 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                 />
                 {form.color && (
-                  <button
+                  <TextButton
                     type="button"
                     onClick={() => setForm(f => ({ ...f, color: undefined }))}
-                    className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
+                    variant="muted"
                   >
                     Clear
-                  </button>
+                  </TextButton>
                 )}
               </div>
             </div>
@@ -782,12 +783,11 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             ) : (
               <div className="border border-neutral-700 rounded-lg p-4 space-y-3">
                 <div className="flex items-center gap-3">
-                  <button
+                  <TextButton
                     onClick={toggleSelectAll}
-                    className="text-xs text-neutral-400 hover:text-white transition-colors"
                   >
                     {selected.size === discovered.length ? 'Deselect All' : 'Select All'}
-                  </button>
+                  </TextButton>
                   {(() => {
                     const newCount = discovered.filter(s => !s.isUpdate).length;
                     const updateCount = discovered.filter(s => s.isUpdate).length;
