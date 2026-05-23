@@ -104,6 +104,37 @@ function hasDomainVariant(domain: string, domains: Set<string>): boolean {
   return false;
 }
 
+function findMatchingScSite(site: Site, scSites: DedupeScSite[]): DedupeScSite | undefined {
+  const siteDomains = new Set(getSafeDomainVariants(site.domain));
+  const siteScIdentities = new Set(getSiteSearchConsoleIdentities(site));
+
+  return scSites.find((scSite) => {
+    if (siteDomains.has(scSite.domain)) return true;
+
+    return scSite.scUrls.some((scUrl) => (
+      getSearchConsoleUrlIdentities(scUrl).some((identity) => siteScIdentities.has(identity))
+    ));
+  });
+}
+
+function getDiscoveredScUrlOverride(site: Site, scSite: DedupeScSite): string | undefined {
+  if (/^https?:\/\//i.test(scSite.scUrl)) return scSite.scUrl;
+
+  const siteDomain = normalizeSiteDomain(site.domain);
+  return siteDomain === scSite.domain ? undefined : scSite.scUrl;
+}
+
+function getUpdateDiscoverySource(
+  site: Site,
+  hasScUpdate: boolean,
+  hasGa4Update: boolean,
+  hasAccessibleSc: boolean,
+): DiscoverySource {
+  if (hasScUpdate && (hasGa4Update || site.ga4PropertyId)) return 'sc+ga4';
+  if (hasScUpdate) return 'sc';
+  return hasAccessibleSc ? 'sc+ga4' : 'ga4';
+}
+
 export async function GET(req: Request) {
   let auth;
   try {
@@ -224,18 +255,31 @@ export async function GET(req: Request) {
     });
   }
 
-  // Backfill existing sites that are missing a GA4 property ID but now have a discovered match
+  // Backfill existing sites that can now be connected to a discovered provider.
   const scDomains = new Set(scSites.map(site => site.domain));
   const backfill: DiscoveryCandidate[] = existingSites
-    .filter(site => !site.ga4PropertyId)
     .flatMap(site => {
-      const ga4Match = toMatchedGa4Property(findMatchingGa4Property(site.domain, ga4Properties ?? []));
-      if (!ga4Match) return [];
+      const ga4Match = !site.ga4PropertyId
+        ? toMatchedGa4Property(findMatchingGa4Property(site.domain, ga4Properties ?? []))
+        : undefined;
+      const scMatch = site.searchConsole === false ? findMatchingScSite(site, scSites) : undefined;
+      if (!ga4Match && !scMatch) return [];
+
+      const hasScUpdate = Boolean(scMatch);
+      const hasGa4Update = Boolean(ga4Match);
+      const hasAccessibleSc = hasDomainVariant(site.domain, scDomains);
       return [{
         ...site,
-        ga4PropertyId: ga4Match.propertyId,
-        ga4DisplayName: ga4Match.displayName,
-        discoverySource: hasDomainVariant(site.domain, scDomains) ? 'sc+ga4' : 'ga4',
+        scUrl: scMatch ? getDiscoveredScUrlOverride(site, scMatch) : site.scUrl,
+        searchConsole: scMatch ? true : site.searchConsole,
+        ga4PropertyId: ga4Match?.propertyId ?? site.ga4PropertyId,
+        ga4DisplayName: ga4Match?.displayName,
+        discoverySource: getUpdateDiscoverySource(
+          site,
+          hasScUpdate,
+          hasGa4Update,
+          hasAccessibleSc,
+        ),
         isUpdate: true,
       }];
     });

@@ -651,6 +651,88 @@ describe('GET /api/sites/discover', () => {
     });
   });
 
+  it('backfills an existing GA4-only site when Search Console access appears later', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      {
+        id: 'mysite-com',
+        name: 'My Site',
+        domain: 'mysite.com',
+        testPages: ['/'],
+        ga4PropertyId: 'properties/999',
+        searchConsole: false,
+      },
+    ] as never);
+    mockSc(['mysite.com']);
+    mockGa4([]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({
+      id: 'mysite-com',
+      domain: 'mysite.com',
+      ga4PropertyId: 'properties/999',
+      searchConsole: true,
+      discoverySource: 'sc+ga4',
+      isUpdate: true,
+    });
+    expect(body[0].scUrl).toBeUndefined();
+  });
+
+  it('keeps the discovered SC domain override when enabling a variant property', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      {
+        id: 'mysite-com',
+        name: 'My Site',
+        domain: 'mysite.com',
+        testPages: ['/'],
+        ga4PropertyId: 'properties/999',
+        searchConsole: false,
+      },
+    ] as never);
+    mockSc(['www.mysite.com']);
+    mockGa4([]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({
+      id: 'mysite-com',
+      domain: 'mysite.com',
+      scUrl: 'sc-domain:www.mysite.com',
+      searchConsole: true,
+      discoverySource: 'sc+ga4',
+      isUpdate: true,
+    });
+  });
+
+  it('backfills both Search Console and GA4 on one existing update', async () => {
+    vi.mocked(dbGetSites).mockReturnValue([
+      {
+        id: 'mysite-com',
+        name: 'My Site',
+        domain: 'mysite.com',
+        testPages: ['/'],
+        searchConsole: false,
+      },
+    ] as never);
+    mockSc(['mysite.com']);
+    mockGa4([{ displayName: 'mysite.com', property: 'properties/111' }]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({
+      id: 'mysite-com',
+      domain: 'mysite.com',
+      ga4PropertyId: 'properties/111',
+      ga4DisplayName: 'mysite.com',
+      searchConsole: true,
+      discoverySource: 'sc+ga4',
+      isUpdate: true,
+    });
+  });
+
   it('does not auto-assign GA4 to an SC-discovered candidate when multiple exact-domain properties match', async () => {
     mockSc(['mysite.com']);
     mockGa4([
