@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FormButton } from '@/components/ui';
 import { formatNetworkError } from '@/lib/request-result';
 
 type PingState = {
@@ -123,14 +124,15 @@ export function IndexNowButton({
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-3">
-      <button
+      <FormButton
         type="button"
         onClick={handlePing}
         disabled={!configured || submitting}
-        className="rounded-md border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-white transition-colors hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-40"
+        size="xs"
+        className="border border-neutral-700"
       >
         {submitting ? 'Pinging…' : 'Ping IndexNow'}
-      </button>
+      </FormButton>
       {!configured && (
         <span className="text-xs text-neutral-500">Add an IndexNow key in Config first.</span>
       )}

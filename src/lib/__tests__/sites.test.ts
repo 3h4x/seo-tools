@@ -239,9 +239,18 @@ describe('validateAndNormalizeSiteInput', () => {
     expect(result.normalized?.site.scUrl).toBe('sc-domain:site.com');
   });
 
-  it('returns field error for ga4PropertyId not matching properties/NNNNNN', () => {
+  it('normalizes bare numeric ga4PropertyId values', () => {
     const result = validateAndNormalizeSiteInput(
       { id: 's', name: 'S', domain: 'site.com', ga4PropertyId: '123456' },
+      [],
+    );
+    expect(result.errors).toBeNull();
+    expect(result.normalized?.site.ga4PropertyId).toBe('properties/123456');
+  });
+
+  it('returns field error for ga4PropertyId not matching a property id shape', () => {
+    const result = validateAndNormalizeSiteInput(
+      { id: 's', name: 'S', domain: 'site.com', ga4PropertyId: 'properties/not-a-number' },
       [],
     );
     expect(result.errors?.ga4PropertyId).toBeTruthy();

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FormButton } from '@/components/ui';
 import { formatNetworkError } from '@/lib/request-result';
 import type { SnapshotResult } from '@/lib/snapshot';
 
@@ -85,10 +86,12 @@ export function SnapshotButton() {
 
   return (
     <div className="flex flex-col gap-2">
-      <button
+      <FormButton
+        type="button"
         onClick={handleClick}
         disabled={state === 'running'}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700 border border-neutral-700 hover:border-neutral-600 transition-colors disabled:opacity-50 self-start"
+        size="xs"
+        className="flex items-center gap-1.5 font-medium text-neutral-300 hover:text-white border border-neutral-700 hover:border-neutral-600 disabled:opacity-50 self-start"
       >
         {state === 'running' ? (
           <svg className="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -100,7 +103,7 @@ export function SnapshotButton() {
           </svg>
         )}
         {state === 'running' ? 'Running snapshot…' : 'Run snapshot now'}
-      </button>
+      </FormButton>
       {state === 'done' && result && (
         <p className="text-xs text-neutral-400">
           Snapshot saved for {result.date} — {result.sc} SC pages, {result.keywords} keywords, {result.ga4} GA4 sites

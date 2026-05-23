@@ -77,10 +77,12 @@ export function getSiteSearchConsoleIdentities(site: SiteIdentityInput): string[
 }
 
 import { dbGetSites } from './db';
+import { normalizeGa4PropertyId } from './ga4-property';
 import { normalizeSiteDomain, isReservedSiteId, isValidSiteId, getSiteScUrlOverride } from './site-domain';
 import { normalizeSkipChecks } from './skip-checks';
 
 const GA4_PROPERTY_RE = /^properties\/\d+$/;
+const GA4_PROPERTY_NUMBER_RE = /^\d+$/;
 const INDEXNOW_KEY_RE = /^[A-Za-z0-9-]{8,128}$/;
 
 export function validateAndNormalizeSiteInput(
@@ -130,8 +132,8 @@ export function validateAndNormalizeSiteInput(
   }
 
   const rawGa4 = typeof body.ga4PropertyId === 'string' ? body.ga4PropertyId.trim() : '';
-  if (rawGa4 && !GA4_PROPERTY_RE.test(rawGa4)) {
-    errors.ga4PropertyId = 'ga4PropertyId must be in the format properties/NNNNNN';
+  if (rawGa4 && !GA4_PROPERTY_RE.test(rawGa4) && !GA4_PROPERTY_NUMBER_RE.test(rawGa4)) {
+    errors.ga4PropertyId = 'ga4PropertyId must be numeric or in the format properties/NNNNNN';
   }
 
   const rawIndexNowKey = typeof body.indexNowKey === 'string' ? body.indexNowKey.trim() : '';
@@ -170,7 +172,7 @@ export function validateAndNormalizeSiteInput(
     testPages: rawTestPages.map(p => String(p).trim()).filter(Boolean),
   };
   if (scUrl) site.scUrl = scUrl; else delete site.scUrl;
-  if (rawGa4) site.ga4PropertyId = rawGa4; else delete site.ga4PropertyId;
+  if (rawGa4) site.ga4PropertyId = normalizeGa4PropertyId(rawGa4); else delete site.ga4PropertyId;
   if (rawIndexNowKey) site.indexNowKey = rawIndexNowKey; else delete site.indexNowKey;
   if (Array.isArray(body.skipChecks)) {
     site.skipChecks = normalizeSkipChecks(body.skipChecks.filter((value): value is string => typeof value === 'string'));

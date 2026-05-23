@@ -392,8 +392,21 @@ describe('POST /api/sites', () => {
     expect(dbUpsertSite).toHaveBeenCalled();
   });
 
-  it('returns 400 for ga4PropertyId not in properties/NNNNNN format', async () => {
+  it('normalizes a bare numeric ga4PropertyId before saving', async () => {
     const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', ga4PropertyId: '123456' }));
+
+    expect(res.status).toBe(200);
+    expect(dbUpsertSite).toHaveBeenCalledWith({
+      id: 'site1',
+      name: 'Site 1',
+      domain: 'site1.com',
+      ga4PropertyId: 'properties/123456',
+      testPages: [],
+    });
+  });
+
+  it('returns 400 for ga4PropertyId not in a property id format', async () => {
+    const res = await POST(postReq({ id: 'site1', name: 'Site 1', domain: 'site1.com', ga4PropertyId: 'properties/not-a-number' }));
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.ok).toBe(false);
