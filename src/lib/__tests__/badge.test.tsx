@@ -24,11 +24,13 @@ describe('Badge', () => {
     expect(html).toContain('title="Real-user data"');
   });
 
-  it('supports compact and small dashboard badge sizes', () => {
+  it('supports compact, small, and medium dashboard badge sizes', () => {
     const compact = renderToStaticMarkup(<Badge size="compact">SC</Badge>);
     const small = renderToStaticMarkup(<Badge size="sm">Configured</Badge>);
+    const medium = renderToStaticMarkup(<Badge size="md">High 2</Badge>);
 
     expect(compact).toContain('px-1.5 py-0.5 text-xs');
     expect(small).toContain('px-2 py-0.5 text-[11px]');
+    expect(medium).toContain('px-3 py-2 text-xs');
   });
 });

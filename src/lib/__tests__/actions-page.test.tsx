@@ -59,4 +59,19 @@ describe('actions page', () => {
     expect(html).toContain('No ranked actions yet.');
     expect(html).toContain('Add managed sites, snapshots, and audit data');
   });
+
+  it('renders priority count chips with shared badge sizing', async () => {
+    mockLoadActionQueue.mockResolvedValue({
+      counts: { critical: 1, high: 2, medium: 3, low: 4 },
+      items: [],
+    });
+
+    const html = renderToStaticMarkup(await ActionsPage());
+
+    expect(html).toContain('px-3 py-2 text-xs');
+    expect(html).toContain('Critical</span><span class="font-mono">1');
+    expect(html).toContain('High</span><span class="font-mono">2');
+    expect(html).toContain('Medium</span><span class="font-mono">3');
+    expect(html).toContain('Low</span><span class="font-mono">4');
+  });
 });

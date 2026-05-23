@@ -98,9 +98,9 @@ function PriorityCountBadge({
   tone: 'critical' | 'high' | 'medium' | 'low';
 }) {
   return (
-    <div className={`rounded-md border px-3 py-2 ${PRIORITY_STYLES[tone]}`}>
+    <Badge size="md" shape="rounded" className={`gap-2 ${PRIORITY_STYLES[tone]}`}>
       <span className="font-semibold">{label}</span>
-      <span className="ml-2 font-mono">{value}</span>
-    </div>
+      <span className="font-mono">{value}</span>
+    </Badge>
   );
 }

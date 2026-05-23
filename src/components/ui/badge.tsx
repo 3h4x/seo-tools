@@ -4,6 +4,7 @@ const BADGE_SIZE = {
   xs: 'px-2 py-0.5 text-[10px]',
   sm: 'px-2 py-0.5 text-[11px]',
   compact: 'px-1.5 py-0.5 text-xs',
+  md: 'px-3 py-2 text-xs',
 } as const;
 
 const BADGE_SHAPE = {
