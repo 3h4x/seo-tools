@@ -16,9 +16,13 @@ import { Skeleton } from './skeletons';
 import { formatDateShort } from '@/lib/format';
 import { METRIC_COLORS } from '@/lib/constants';
 import { todayDateOnly } from '@/lib/date-only';
-import { SegmentedControl } from '@/components/ui';
+import { SegmentedControl, ToggleButtonGroup } from '@/components/ui';
 
 const METRICS = ['views', 'users', 'clicks', 'impressions'] as const;
+const METRIC_OPTIONS = METRICS.map(metric => ({
+  value: metric,
+  label: metric.charAt(0).toUpperCase() + metric.slice(1),
+}));
 type Metric = (typeof METRICS)[number];
 type ChartType = 'area' | 'bar';
 type ViewMode = 'persite' | 'cumulative';
@@ -221,27 +225,21 @@ export default function DailyTrafficChart({ days }: { days: number }) {
             </p>
           )}
         </div>
-        <div className="flex gap-1 bg-neutral-800 rounded-md p-0.5">
-          {METRICS.map(m => {
-            const active = activeMetrics.has(m);
-            return (
-              <button
-                key={m}
-                type="button"
-                onClick={() => toggleMetric(m)}
-                aria-pressed={active}
-                className={`px-2.5 py-1 text-xs rounded transition-colors ${
-                  active
-                    ? 'bg-neutral-700 text-white'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                <span className="inline-block size-1.5 rounded-full mr-1.5" style={{ backgroundColor: active ? METRIC_COLORS[m] : '#525252' }} />
-                {m.charAt(0).toUpperCase() + m.slice(1)}
-              </button>
-            );
-          })}
-        </div>
+        <ToggleButtonGroup
+          ariaLabel="Metrics"
+          options={METRIC_OPTIONS}
+          activeValues={activeMetrics}
+          onToggle={toggleMetric}
+          renderLabel={(option, active) => (
+            <>
+              <span
+                className="inline-block size-1.5 rounded-full mr-1.5"
+                style={{ backgroundColor: active ? METRIC_COLORS[option.value] : '#525252' }}
+              />
+              {option.label}
+            </>
+          )}
+        />
         <SegmentedControl
           ariaLabel="Chart type"
           options={[

@@ -9,3 +9,4 @@ Current primitives:
 - `FormButton` — form action button with `primary`, `secondary`, and `danger` variants plus `md`, `sm`, and `xs` sizes.
 - `SegmentedControl` — pill-style tab toggle for picking one value from a small set of options. Accepts an optional `renderLabel` for option content that depends on active state.
 - `TextButton` — small text-only action button for table row actions, inline clears, and other low-emphasis controls.
+- `ToggleButtonGroup` — segmented multi-toggle for enabling or disabling multiple compact options. Accepts an optional `renderLabel` for active-dependent labels or indicators.
