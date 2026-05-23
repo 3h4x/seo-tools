@@ -20,6 +20,16 @@ const METRIC_OPTIONS: Array<{ value: AlertMetric; label: string }> = [
   { value: 'ga4_sessions', label: 'GA4 sessions' },
 ];
 
+export function isMetricBlockedBySite(metric: AlertMetric, site: Pick<Site, 'searchConsole'> | undefined): boolean {
+  if (!site) return false;
+  if (metric !== 'sc_clicks') return false;
+  return site.searchConsole === false;
+}
+
+const METRIC_DISABLED_REASONS: Partial<Record<AlertMetric, string>> = {
+  sc_clicks: 'Search Console disabled — rule will not fire',
+};
+
 const INPUT_CLS = 'w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-500';
 
 const ALERT_RULE_ERROR_MESSAGES: Record<string, string> = {
@@ -195,10 +205,20 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
             <tbody>
               {rules.map((rule) => {
                 const site = sites.find((entry) => entry.id === rule.siteId);
+                const metricBlocked = isMetricBlockedBySite(rule.metric, site);
                 return (
                   <tr key={rule.id} className="border-b border-neutral-900">
                     <td className="py-2 pr-4 text-white">{site?.name ?? rule.siteId}</td>
-                    <td className="py-2 pr-4 text-neutral-300">{METRIC_OPTIONS.find((option) => option.value === rule.metric)?.label ?? rule.metric}</td>
+                    <td className="py-2 pr-4 text-neutral-300">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{METRIC_OPTIONS.find((option) => option.value === rule.metric)?.label ?? rule.metric}</span>
+                        {metricBlocked && (
+                          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300">
+                            {METRIC_DISABLED_REASONS[rule.metric] ?? 'Inactive'}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-2 pr-4 text-neutral-300">{rule.thresholdPct}% drop</td>
                     <td className="py-2 pr-4 text-neutral-400">{rule.channels.join(', ')}</td>
                     <td className="py-2 flex gap-2">
@@ -280,6 +300,16 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
             </label>
           ))}
         </div>
+
+        {(() => {
+          const formSite = sites.find((entry) => entry.id === form.siteId);
+          if (!isMetricBlockedBySite(form.metric, formSite)) return null;
+          return (
+            <p className="text-xs text-amber-300">
+              Search Console is disabled for this site. {METRIC_OPTIONS.find((option) => option.value === form.metric)?.label ?? form.metric} alerts will not fire until it is re-enabled in the site settings.
+            </p>
+          );
+        })()}
 
         {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
 

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import AlertRulesManager, { formatAlertRuleError, readAlertRulesResponse } from '../../../app/components/alert-rules-manager';
+import AlertRulesManager, {
+  formatAlertRuleError,
+  isMetricBlockedBySite,
+  readAlertRulesResponse,
+} from '../../../app/components/alert-rules-manager';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -76,6 +80,25 @@ describe('readAlertRulesResponse', () => {
   it('throws when the body is not JSON', async () => {
     const res = new Response('not json', { status: 200, headers: { 'content-type': 'text/plain' } });
     await expect(readAlertRulesResponse(res)).rejects.toThrow('Alert rules response was invalid');
+  });
+});
+
+describe('isMetricBlockedBySite', () => {
+  it('flags sc_clicks rules on sites with Search Console disabled', () => {
+    expect(isMetricBlockedBySite('sc_clicks', { searchConsole: false })).toBe(true);
+  });
+
+  it('allows sc_clicks rules when Search Console is enabled or unspecified', () => {
+    expect(isMetricBlockedBySite('sc_clicks', { searchConsole: true })).toBe(false);
+    expect(isMetricBlockedBySite('sc_clicks', {})).toBe(false);
+  });
+
+  it('does not flag non-SC metrics on SC-disabled sites', () => {
+    expect(isMetricBlockedBySite('ga4_sessions', { searchConsole: false })).toBe(false);
+  });
+
+  it('returns false when the site is missing', () => {
+    expect(isMetricBlockedBySite('sc_clicks', undefined)).toBe(false);
   });
 });
 
