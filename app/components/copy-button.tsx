@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FormButton } from '@/components/ui';
 
 interface CopyButtonProps {
   text: string;
@@ -25,12 +26,13 @@ export function CopyButton({ text, label, className = '' }: CopyButtonProps) {
   };
 
   return (
-    <button
+    <FormButton
       onClick={handleCopy}
-      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+      size="xs"
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
         copied
-          ? 'bg-emerald-500/20 text-emerald-400'
-          : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-300'
+          ? '!bg-emerald-500/20 !text-emerald-400'
+          : '!bg-neutral-800 !text-neutral-400 hover:!bg-neutral-700 hover:!text-neutral-300'
       } ${className}`}
       title={`Copy ${label || 'to clipboard'}`}
     >
@@ -49,6 +51,6 @@ export function CopyButton({ text, label, className = '' }: CopyButtonProps) {
           Copy
         </>
       )}
-    </button>
+    </FormButton>
   );
 }
