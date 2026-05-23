@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfiguredNotice, FormButton } from '@/components/ui';
+import { ConfiguredNotice, FormButton, FormInput, FormTextarea } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -27,8 +27,6 @@ export type AlertConfigResponse = {
     webhookUrl: Source;
   };
 };
-
-const INPUT_CLS = 'w-full bg-neutral-900 border border-neutral-700 rounded-md p-2.5 text-sm text-neutral-200 focus:outline-none focus:border-neutral-500';
 
 const ALERT_CONFIG_ERROR_MESSAGES: Record<string, string> = {
   failed_to_load_alert_config: 'Could not load alert delivery config. Check server logs.',
@@ -189,31 +187,31 @@ export default function AlertDeliveryForm() {
       )}
 
       <div className="grid gap-3 md:grid-cols-2">
-        <input
+        <FormInput
           type="password"
-          className={`${INPUT_CLS} font-mono`}
+          monospace
           placeholder="re_..."
           value={form.resendApiKey}
           onChange={(e) => { setForm((current) => ({ ...current, resendApiKey: e.target.value })); setError(''); setSuccess(''); }}
           autoComplete="off"
           spellCheck={false}
         />
-        <input
+        <FormInput
           type="email"
-          className={INPUT_CLS}
           placeholder="alerts@example.com"
           value={form.fromEmail}
           onChange={(e) => { setForm((current) => ({ ...current, fromEmail: e.target.value })); setError(''); setSuccess(''); }}
         />
-        <textarea
-          className={`${INPUT_CLS} md:col-span-2 min-h-24`}
+        <FormTextarea
+          className="md:col-span-2 min-h-24"
           placeholder="ops@example.com, seo@example.com"
           value={form.toEmail}
           onChange={(e) => { setForm((current) => ({ ...current, toEmail: e.target.value })); setError(''); setSuccess(''); }}
         />
-        <input
+        <FormInput
           type="url"
-          className={`${INPUT_CLS} md:col-span-2 font-mono`}
+          className="md:col-span-2"
+          monospace
           placeholder="https://hooks.example.com/seo-alerts"
           value={form.webhookUrl}
           onChange={(e) => { setForm((current) => ({ ...current, webhookUrl: e.target.value })); setError(''); setSuccess(''); }}
