@@ -291,7 +291,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                       </div>
                     );
                   })}
-                  <span className="text-neutral-700 text-[10px] ml-auto">{cwv.source === 'rum' ? 'RUM' : cwv.source === 'psi-field' ? 'CrUX' : 'Lab'}</span>
+                  <Badge className="ml-auto border-neutral-800 text-neutral-600">
+                    {cwv.source === 'rum' ? 'RUM' : cwv.source === 'psi-field' ? 'CrUX' : 'Lab'}
+                  </Badge>
                 </div>
               )}
             </Link>
