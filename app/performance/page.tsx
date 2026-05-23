@@ -47,7 +47,8 @@ export default async function PerformancePage({
   }
   const sitesWithRum = rows.filter(r => r.source === 'rum').length;
   const needsKey = rows.some(r => r.needsKey);
-  const guideOpen = params.guide === '1' || (rows.length > 0 && rows.every(r => r.source === 'none'));
+  const guideParam = Array.isArray(params.guide) ? params.guide[0] : params.guide;
+  const guideOpen = guideParam === '1' || (rows.length > 0 && rows.every(r => r.source === 'none'));
 
   const overallMetrics: Partial<Record<CwvMetricName, { value: number; rating: CwvRating }>> = {};
   for (const name of CWV_METRIC_ORDER) {

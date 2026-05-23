@@ -162,6 +162,19 @@ describe('Performance overview page', () => {
       undefined,
     );
   });
+
+  it('uses the first repeated guide searchParam for the setup guide state', async () => {
+    const page = await PerformancePage({
+      searchParams: Promise.resolve({ days: '7', guide: ['1', '0'] }),
+    });
+
+    renderToStaticMarkup(page);
+
+    expect(mockCwvSetupGuide).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultOpen: true }),
+      undefined,
+    );
+  });
 });
 
 describe('Performance site detail page', () => {
