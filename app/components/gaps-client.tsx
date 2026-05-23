@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gaps';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gaps';
+import { TextButton } from '@/components/ui';
 
 export interface SiteGap {
   gap: GapRecommendation;
@@ -94,12 +95,12 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
         <div className="flex items-center justify-between">
           <span className="text-neutral-500 text-xs font-semibold uppercase tracking-wider">Filter</span>
           {isFiltered && (
-            <button
+            <TextButton
+              variant="quiet"
               onClick={() => { setFilterSite(null); setFilterCategory(null); setFilterSeverity(null); }}
-              className="text-neutral-500 text-xs hover:text-white transition-colors"
             >
               Clear all ×
-            </button>
+            </TextButton>
           )}
         </div>
         {sites.length > 1 && (
@@ -234,12 +235,12 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
               <div className="text-white font-semibold">No matches</div>
               <div className="text-neutral-500 text-sm mt-1">
                 No gaps match the current filters.{' '}
-                <button
+                <TextButton
                   onClick={() => { setFilterSite(null); setFilterCategory(null); setFilterSeverity(null); }}
-                  className="text-neutral-400 hover:text-white underline transition-colors"
+                  className="!text-sm underline"
                 >
                   Clear filters
-                </button>
+                </TextButton>
               </div>
             </>
           ) : (
