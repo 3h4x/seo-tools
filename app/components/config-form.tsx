@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ConfiguredNotice, FormButton } from '@/components/ui';
+import { ConfiguredNotice, FormButton, FormTextarea } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -124,8 +124,9 @@ export default function ConfigForm({ source: initialSource }: Props) {
         </ConfiguredNotice>
       )}
 
-      <textarea
-        className="w-full h-48 bg-neutral-900 border border-neutral-700 rounded-md p-3 text-sm font-mono text-neutral-200 focus:outline-none focus:border-neutral-500 resize-y"
+      <FormTextarea
+        className="h-48 p-3 resize-y"
+        monospace
         placeholder={'{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key": "...",\n  "client_email": "..."\n}'}
         value={input}
         onChange={(e) => {
