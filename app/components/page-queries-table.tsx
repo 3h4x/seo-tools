@@ -129,10 +129,20 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                       onClick={() => toggle(row.page)}
                     >
                       <td className="px-4 py-2.5 text-neutral-300 text-xs truncate max-w-[200px]">
-                        <span className="inline-flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          aria-expanded={isOpen ? 'true' : 'false'}
+                          aria-label={`${isOpen ? 'Hide' : 'Show'} queries for ${pathname(row.page)}`}
+                          title={row.page}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            toggle(row.page);
+                          }}
+                          className="inline-flex items-center gap-1.5 text-left"
+                        >
                           <span className={`transition-transform text-neutral-600 text-[10px] ${isOpen ? 'rotate-90' : ''}`}>▶</span>
-                          <span title={row.page}>{pathname(row.page)}</span>
-                        </span>
+                          <span>{pathname(row.page)}</span>
+                        </button>
                       </td>
                       <td className="px-4 py-2.5 text-neutral-300 text-right">{row.clicks.toLocaleString()}</td>
                       <td className="px-4 py-2.5 text-neutral-400 text-right hidden md:table-cell">{row.impressions.toLocaleString()}</td>

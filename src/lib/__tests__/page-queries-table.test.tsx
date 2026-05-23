@@ -30,4 +30,24 @@ describe('PageQueriesTable', () => {
     expect(html).toContain('Search Console page query data could not be loaded.');
     expect(html).not.toContain('No page data available.');
   });
+
+  it('renders expandable page rows as keyboard-accessible controls', () => {
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => [[{
+        page: 'https://example.com/seo',
+        clicks: 12,
+        impressions: 300,
+        ctr: 0.04,
+        position: 6.2,
+        queries: [],
+      }], vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()])
+      .mockImplementationOnce(() => [null, vi.fn()])
+      .mockImplementation(() => [new Set(), vi.fn()]);
+
+    const html = renderToStaticMarkup(<PageQueriesTable siteId="site-a" days={7} />);
+
+    expect(html).toContain('<button type="button" aria-expanded="false" aria-label="Show queries for /seo"');
+    expect(html).toContain('title="https://example.com/seo"');
+  });
 });
