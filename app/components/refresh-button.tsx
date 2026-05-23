@@ -3,6 +3,7 @@
 import { useRefresh } from './refresh-context';
 import { useEffect, useState } from 'react';
 import { formatRelativeTime } from '@/lib/format';
+import { FormButton } from '@/components/ui';
 
 export default function RefreshButton() {
   const { refreshing, triggerRefresh, lastUpdated } = useRefresh();
@@ -26,10 +27,12 @@ export default function RefreshButton() {
           Updated {displayTime}
         </span>
       )}
-      <button
+      <FormButton
+        type="button"
         onClick={triggerRefresh}
         disabled={refreshing}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700 border border-neutral-700 hover:border-neutral-600 transition-colors disabled:opacity-50"
+        size="xs"
+        className="flex items-center gap-1.5 font-medium text-neutral-300 hover:text-white border border-neutral-700 hover:border-neutral-600 disabled:opacity-50"
         title="Clear cache and refresh data"
       >
         {refreshing ? (
@@ -42,7 +45,7 @@ export default function RefreshButton() {
           </svg>
         )}
         {refreshing ? 'Refreshing...' : 'Refresh'}
-      </button>
+      </FormButton>
     </div>
   );
 }
