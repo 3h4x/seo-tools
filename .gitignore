@@ -10,7 +10,8 @@ data/*
 .env.*.local
 .env.docker
 .envrc
-docs/
+docs/*
+!docs/UI.md
 tsconfig.tsbuildinfo
 .claude/
 scripts/migrate-sites.mjs

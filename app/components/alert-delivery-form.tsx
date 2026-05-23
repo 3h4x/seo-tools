@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ConfiguredNotice } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -176,17 +177,15 @@ export default function AlertDeliveryForm() {
       </p>
 
       {hasResendApiKey && !form.resendApiKey && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-neutral-900 border border-neutral-700 text-sm text-neutral-400">
-          <span className="text-green-500">●</span>
+        <ConfiguredNotice>
           Resend key configured
-        </div>
+        </ConfiguredNotice>
       )}
 
       {hasWebhookUrl && !form.webhookUrl && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-neutral-900 border border-neutral-700 text-sm text-neutral-400">
-          <span className="text-green-500">●</span>
+        <ConfiguredNotice>
           Webhook URL configured
-        </div>
+        </ConfiguredNotice>
       )}
 
       <div className="grid gap-3 md:grid-cols-2">

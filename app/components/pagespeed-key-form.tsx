@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ConfiguredNotice } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -136,10 +137,9 @@ export default function PagespeedKeyForm() {
       </p>
 
       {hasKey && !input && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-neutral-900 border border-neutral-700 text-sm text-neutral-400">
-          <span className="text-green-500">●</span>
+        <ConfiguredNotice>
           Key configured — paste a new key below to replace it
-        </div>
+        </ConfiguredNotice>
       )}
 
       <input
