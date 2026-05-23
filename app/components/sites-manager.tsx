@@ -6,7 +6,7 @@ import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
-import { FormButton, FormInput, FormTextarea, TextButton } from '@/components/ui';
+import { FormButton, FormCheckbox, FormInput, FormTextarea, TextButton } from '@/components/ui';
 
 interface Site {
   id: string;
@@ -723,8 +723,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               <div className="grid grid-cols-3 gap-x-4 gap-y-1.5 pt-1">
                 {SKIP_CHECK_OPTIONS.map(({ id, label }) => (
                   <label key={id} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
+                    <FormCheckbox
                       checked={hasSkipCheck(form.skipChecks, id)}
                       onChange={e => setForm(f => {
                         return {
@@ -732,7 +731,6 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                           skipChecks: toggleSkipCheck(f.skipChecks, id, e.target.checked),
                         };
                       })}
-                      className="rounded border-neutral-600"
                     />
                     <span className="text-xs text-neutral-300">{label}</span>
                   </label>
@@ -740,12 +738,10 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               </div>
             </div>
             <div className="flex items-center gap-2 col-span-2">
-              <input
-                type="checkbox"
+              <FormCheckbox
                 id="sc-toggle"
                 checked={form.searchConsole !== false}
                 onChange={e => setForm(f => ({ ...f, searchConsole: e.target.checked }))}
-                className="rounded border-neutral-600"
               />
               <label htmlFor="sc-toggle" className="text-sm text-neutral-300">Search Console enabled</label>
             </div>
@@ -813,11 +809,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   {discovered.map(site => (
                     <div key={site.id} className="space-y-1">
                       <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
+                        <FormCheckbox
                           checked={selected.has(site.id)}
                           onChange={() => toggleSelect(site.id)}
-                          className="rounded border-neutral-600"
                         />
                         <span className="text-sm text-white">{site.domain}</span>
                         {site.isUpdate && (

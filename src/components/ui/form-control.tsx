@@ -33,6 +33,8 @@ interface FormTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> 
   tone?: keyof typeof CONTROL_TONE;
 }
 
+type FormCheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>;
+
 function getControlClassName(
   className: string | undefined,
   monospace: boolean,
@@ -66,6 +68,16 @@ export function FormTextarea({ className, monospace = false, padding = 'default'
   return (
     <textarea
       className={getControlClassName(className, monospace, padding, tone)}
+      {...props}
+    />
+  );
+}
+
+export function FormCheckbox({ className, ...props }: FormCheckboxProps) {
+  return (
+    <input
+      type="checkbox"
+      className={['rounded border-neutral-600', className].filter(Boolean).join(' ')}
       {...props}
     />
   );
