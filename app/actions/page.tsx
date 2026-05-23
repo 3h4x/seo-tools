@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Badge } from '@/components/ui';
 import { loadActionQueue, type ActionQueueItem } from '@/lib/actions';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 
@@ -31,12 +32,12 @@ export default async function ActionsPage() {
 
   const rows = items.map((item) => ([
     <div key={`${item.id}-priority`} className="flex items-center gap-2">
-      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${PRIORITY_STYLES[item.priority]}`}>
+      <Badge uppercase className={`font-semibold ${PRIORITY_STYLES[item.priority]}`}>
         {item.priority}
-      </span>
-      <span className={`hidden sm:inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${KIND_STYLES[item.kind]}`}>
+      </Badge>
+      <Badge uppercase className={`hidden sm:inline-flex font-semibold ${KIND_STYLES[item.kind]}`}>
         {item.kind}
-      </span>
+      </Badge>
     </div>,
     <div key={`${item.id}-site`} className="space-y-0.5">
       <div className="font-semibold text-white">{item.siteName}</div>
@@ -61,10 +62,10 @@ export default async function ActionsPage() {
           <p className="text-sm text-neutral-500 mt-1">Ranked fixes across all sites using existing audit, decay, and keyword snapshot signals.</p>
         </div>
         <div className="flex gap-2 flex-wrap text-xs">
-          <Badge label="Critical" value={counts.critical} tone="critical" />
-          <Badge label="High" value={counts.high} tone="high" />
-          <Badge label="Medium" value={counts.medium} tone="medium" />
-          <Badge label="Low" value={counts.low} tone="low" />
+          <PriorityCountBadge label="Critical" value={counts.critical} tone="critical" />
+          <PriorityCountBadge label="High" value={counts.high} tone="high" />
+          <PriorityCountBadge label="Medium" value={counts.medium} tone="medium" />
+          <PriorityCountBadge label="Low" value={counts.low} tone="low" />
         </div>
       </div>
 
@@ -87,7 +88,7 @@ export default async function ActionsPage() {
   );
 }
 
-function Badge({
+function PriorityCountBadge({
   label,
   value,
   tone,

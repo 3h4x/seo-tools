@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfiguredNotice, FormButton, FormInput } from '@/components/ui';
+import { Badge, ConfiguredNotice, FormButton, FormInput } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { Skeleton } from './skeletons';
 
@@ -146,7 +146,9 @@ export default function PagespeedKeyForm() {
       <div className="flex items-center gap-3">
         <h2 className="text-base font-semibold text-white">PageSpeed Insights API Key</h2>
         {sourceLabel[source] && (
-          <span className="text-xs px-2 py-0.5 rounded bg-neutral-800 text-neutral-400">{sourceLabel[source]}</span>
+          <Badge size="compact" shape="rounded" className="border-neutral-700 bg-neutral-800 text-neutral-400">
+            {sourceLabel[source]}
+          </Badge>
         )}
       </div>
       <p className="text-xs text-neutral-500">
