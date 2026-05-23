@@ -125,8 +125,9 @@ export default function ConfigForm({ source: initialSource }: Props) {
       )}
 
       <FormTextarea
-        className="h-48 p-3 resize-y"
+        className="h-48 resize-y"
         monospace
+        padding="roomy"
         placeholder={'{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key": "...",\n  "client_email": "..."\n}'}
         value={input}
         onChange={(e) => {

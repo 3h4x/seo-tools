@@ -19,4 +19,13 @@ describe('form controls', () => {
     expect(html).toContain('font-mono');
     expect(html).toContain('md:col-span-2 min-h-24');
   });
+
+  it('supports roomier textarea padding without conflicting defaults', () => {
+    const html = renderToStaticMarkup(
+      <FormTextarea padding="roomy" className="h-48 resize-y" />
+    );
+
+    expect(html).toContain('p-3');
+    expect(html).not.toContain('p-2.5');
+  });
 });
