@@ -319,9 +319,20 @@ describe('SiteDashboardPage', () => {
       searchConsole: false,
       testPages: [],
     });
-    mockGetScDaily.mockImplementationOnce(() => {
-      throw new Error('history unavailable');
-    });
+    mockGetScDaily.mockReturnValueOnce([
+      { date: '2026-05-20', clicks: 10, impressions: 100, ctr: 0.1, position: 4 },
+    ]);
+    mockGetKeywordDeltas.mockReturnValueOnce([
+      {
+        query: 'stale keyword',
+        currentPosition: 9,
+        position7d: 3,
+        position30d: null,
+        delta7d: -6,
+        delta30d: null,
+        trend: 'down',
+      },
+    ]);
 
     const page = await SiteDashboardPage({
       params: Promise.resolve({ site: 'site-1' }),
@@ -337,6 +348,9 @@ describe('SiteDashboardPage', () => {
     expect(mockCachedGetSearchConsolePages).not.toHaveBeenCalled();
     expect(mockCachedGetSearchConsoleQueries).not.toHaveBeenCalled();
     expect(mockCachedGetSitemapSubmissions).not.toHaveBeenCalled();
+    expect(mockGetScDaily).not.toHaveBeenCalled();
+    expect(mockGetKeywordDeltas).not.toHaveBeenCalled();
+    expect(html).not.toContain('Keyword Rank Table');
     expect(mockPageQueriesTable).toHaveBeenCalledWith({ siteId: 'site-1', days: 7 }, undefined);
     expect(mockCreateSiteGapSignals).toHaveBeenCalledWith({
       ga4TopPages: [],

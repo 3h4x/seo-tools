@@ -527,7 +527,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                     </div>
                   </td>
                   <td className="py-2 pr-4 text-neutral-400 font-mono text-xs">{site.domain}</td>
-                  <td className="py-2 pr-4 text-neutral-400">{site.searchConsole ? '✓' : '–'}</td>
+                  <td className="py-2 pr-4 text-neutral-400">{site.searchConsole !== false ? '✓' : '–'}</td>
                   <td className="py-2 pr-4">
                     {hasAuth ? (
                       diagnostics[site.id] ? (

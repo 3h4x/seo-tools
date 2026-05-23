@@ -68,6 +68,27 @@ describe('GET /api/daily', () => {
     expect(body.data[today]?.site1?.views).toBe(200);
   });
 
+  it('does not expose stale SC rows for sites with Search Console disabled', async () => {
+    const today = todayDateOnly();
+    vi.mocked(getManagedSites).mockResolvedValue([
+      { ...SITE, searchConsole: false },
+    ] as never);
+    vi.mocked(getScDaily).mockReturnValue([{ date: today, clicks: 10, impressions: 100 }] as never);
+    vi.mocked(getGa4Daily).mockReturnValue([{ date: today, users: 50, views: 200 }] as never);
+
+    const res = await GET(getReq(7));
+    const body = await res.json();
+
+    expect(getScDaily).not.toHaveBeenCalled();
+    expect(getGa4Daily).toHaveBeenCalledWith('site1', 7);
+    expect(body.data[today]?.site1).toMatchObject({
+      clicks: 0,
+      impressions: 0,
+      users: 50,
+      views: 200,
+    });
+  });
+
   it('merges SC and GA4 data for the same date', async () => {
     const today = todayDateOnly();
     vi.mocked(getScDaily).mockReturnValue([{ date: today, clicks: 5, impressions: 50 }] as never);

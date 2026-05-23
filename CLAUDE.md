@@ -43,7 +43,7 @@ Each site record stores: id, name, domain, SC URL override, GA4 property ID, sta
 - [x] Sitemaps submitted to Search Console (all 6 sites)
 - [x] Dashboard Overview Page (Real-time metrics)
 - [x] Navigation & Routing
-- [x] CLI tool (`pnpm seo <command>`: sites, sitemaps, submit-sitemap, stats)
+- [x] CLI tool (`pnpm seo <command>`: sites, sitemaps, submit-sitemap, stats, pages, snapshot, check)
 - [x] GA4 Analytics on Dashboard (active users, sessions, page views, traffic sources)
 - [x] SEO Health Audit Logic (robots.txt, Sitemap, Meta tags)
 - [x] Detailed Analytics Reporting Pages
@@ -211,7 +211,9 @@ pnpm seo stats      # CLI: 7-day Search Console stats
 pnpm seo sitemaps   # CLI: list submitted sitemaps
 pnpm seo sites      # CLI: list all SC sites
 pnpm seo submit-sitemap <domain> <url>  # CLI: submit a sitemap
+pnpm seo pages <domain>  # CLI: top Search Console pages for one site
 pnpm seo snapshot   # CLI: take SC + GA4 snapshot for trend tracking
+pnpm seo check      # CLI: reachability check (Googlebot UA) for all sites
 pnpm type-check     # TypeScript type checking (preferred over pnpm build for quick validation)
 ```
 

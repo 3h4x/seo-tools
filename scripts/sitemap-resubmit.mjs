@@ -19,6 +19,7 @@ import { searchconsole_v1 } from '@googleapis/searchconsole';
 import path from 'node:path';
 import fs from 'node:fs';
 import { openDatabase } from '../src/lib/sqlite-driver.js';
+import { ensureSitesSearchConsoleColumn } from './site-schema.mjs';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 const MIN_SUBMIT_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -42,11 +43,12 @@ db.exec(`
     submit_count INTEGER NOT NULL DEFAULT 0
   );
 `);
+ensureSitesSearchConsoleColumn(db);
 
 // Load sites from DB
-const siteRows = db.prepare('SELECT id, domain, sc_url FROM sites ORDER BY sort_order ASC').all();
+const siteRows = db.prepare('SELECT id, domain, sc_url FROM sites WHERE COALESCE(search_console, 1) = 1 ORDER BY sort_order ASC').all();
 if (siteRows.length === 0) {
-  console.log('No sites configured in DB — add sites via the Config tab first.');
+  console.log('No Search Console-enabled sites configured in DB — enable Search Console in the Config tab first.');
   process.exit(0);
 }
 

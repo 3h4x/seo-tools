@@ -168,7 +168,7 @@ export async function loadActionQueue(days: number = 7): Promise<ActionQueueData
   });
 
   const keywordItems = managedSites.flatMap((site) => (
-    loadKeywordDropActions(site.id).map((keyword) => ({
+    site.searchConsole === false ? [] : loadKeywordDropActions(site.id).map((keyword) => ({
       id: `${site.id}-keyword-${keyword.query}`,
       kind: 'keyword' as const,
       priority: priorityFromKeyword(keyword.delta, keyword.clicks),

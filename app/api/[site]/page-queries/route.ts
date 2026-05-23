@@ -18,7 +18,7 @@ export async function GET(
       return siteNotFoundError();
     }
 
-    if (!siteConfig.searchConsole) {
+    if (siteConfig.searchConsole === false) {
       return NextResponse.json({ data: [] });
     }
 

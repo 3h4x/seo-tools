@@ -1,3 +1,5 @@
+import { ensureSitesSearchConsoleColumn } from './site-schema.mjs';
+
 export function mapCliSiteRow(row) {
   return {
     id: row.id,
@@ -11,6 +13,7 @@ export function mapCliSiteRow(row) {
 
 export function loadCliSites(db) {
   try {
+    ensureSitesSearchConsoleColumn(db);
     return db
       .prepare(
         'SELECT id, domain, sc_url, ga4_property_id, search_console, test_pages FROM sites ORDER BY sort_order ASC, id ASC',

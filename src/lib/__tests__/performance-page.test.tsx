@@ -17,9 +17,34 @@ vi.mock('next/navigation', () => ({
 const {
   mockGetPerformanceSiteData,
   mockGetPerformanceOverviewRows,
+  mockTrendChart,
+  mockCwvSetupGuide,
+  mockCwvMetricsCards,
 } = vi.hoisted(() => ({
   mockGetPerformanceSiteData: vi.fn(),
   mockGetPerformanceOverviewRows: vi.fn(),
+  mockTrendChart: vi.fn(({ valueFormat }: { valueFormat?: string }) => <div>Trend Chart:{valueFormat ?? 'default'}</div>),
+  mockCwvSetupGuide: vi.fn(({ defaultOpen }: { defaultOpen?: boolean }) => (
+    <div>CWV Setup:{defaultOpen ? 'open' : 'closed'}</div>
+  )),
+  mockCwvMetricsCards: vi.fn(({
+    source,
+    metrics,
+    getFooter,
+  }: {
+    source?: string;
+    metrics?: Record<string, unknown>;
+    getFooter?: (name: string) => string;
+  }) => (
+    <div>
+      <div>CWV Metrics:{source ?? 'none'}</div>
+      {getFooter && metrics
+        ? Object.keys(metrics).map((name) => (
+          <div key={name}>{getFooter(name)}</div>
+        ))
+        : null}
+    </div>
+  )),
 }));
 
 vi.mock('@/lib/performance-site', () => ({
@@ -35,7 +60,7 @@ vi.mock('../../../app/components/time-range', () => ({
 }));
 
 vi.mock('../../../app/components/cwv-setup-guide', () => ({
-  default: () => <div>CWV Setup</div>,
+  default: mockCwvSetupGuide,
 }));
 
 vi.mock('../../../app/components/cwv-cell', () => ({
@@ -44,7 +69,11 @@ vi.mock('../../../app/components/cwv-cell', () => ({
 }));
 
 vi.mock('../../../app/components/trend-chart', () => ({
-  default: ({ valueFormat }: { valueFormat?: string }) => <div>Trend Chart:{valueFormat ?? 'default'}</div>,
+  default: mockTrendChart,
+}));
+
+vi.mock('../../../app/components/cwv-metrics-cards', () => ({
+  CwvMetricsCards: mockCwvMetricsCards,
 }));
 
 import PerfSiteDetail from '../../../app/performance/[site]/page';
@@ -130,6 +159,50 @@ describe('Performance site detail page', () => {
     expect(html).toContain('Trend Chart:integer');
   });
 
+  it('converts CLS trend values to chart-friendly thousandths', async () => {
+    mockGetPerformanceSiteData.mockResolvedValueOnce({
+      site: {
+        id: 'borged-io',
+        name: 'Borged',
+        domain: 'borged.io',
+      },
+      days: 7,
+      propertyId: 'prop-1',
+      url: 'https://borged.io',
+      source: 'rum',
+      heroSource: 'RUM (GA4)',
+      hasRum: true,
+      propagating: false,
+      eventCount: 10,
+      needsKey: false,
+      overall: {
+        CLS: { value: 0.12, rating: 'good', sampleCount: 10 },
+      },
+      byDevice: { mobile: {}, desktop: {}, tablet: {} },
+      slowestPages: [],
+      trend: [
+        { date: '2026-05-08', metrics: { CLS: { value: 0.123, rating: 'needs-improvement', sampleCount: 2 } } },
+        { date: '2026-05-09', metrics: { CLS: { value: 0.2, rating: 'poor', sampleCount: 2 } } },
+      ],
+      psi: { mobile: null, desktop: null },
+    });
+
+    renderToStaticMarkup(await PerfSiteDetail({
+      params: Promise.resolve({ site: 'borged-io' }),
+      searchParams: Promise.resolve({ days: '7' }),
+    }));
+
+    expect(mockTrendChart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          { date: '2026-05-08', LCP: null, INP: null, CLS: 123 },
+          { date: '2026-05-09', LCP: null, INP: null, CLS: 200 },
+        ],
+      }),
+      undefined,
+    );
+  });
+
   it('normalizes invalid days before loading site performance', async () => {
     await PerfSiteDetail({
       params: Promise.resolve({ site: 'borged-io' }),
@@ -155,5 +228,75 @@ describe('Performance site detail page', () => {
       params: Promise.resolve({ site: 'missing' }),
       searchParams: Promise.resolve({ days: '7' }),
     })).rejects.toThrow('notFound');
+  });
+
+  it('renders PSI fallback cards and opens the setup guide when RUM is unavailable', async () => {
+    mockGetPerformanceSiteData.mockResolvedValueOnce({
+      site: {
+        id: 'psi-only',
+        name: 'PSI Only',
+        domain: 'psi.example.com',
+      },
+      days: 28,
+      propertyId: null,
+      url: 'https://psi.example.com',
+      source: 'psi-field',
+      heroSource: 'CrUX',
+      hasRum: false,
+      propagating: false,
+      eventCount: 0,
+      needsKey: false,
+      overall: {
+        LCP: { value: 2400, rating: 'good', sampleCount: 0 },
+      },
+      byDevice: { mobile: {}, desktop: {}, tablet: {} },
+      slowestPages: [],
+      trend: [],
+      psi: {
+        mobile: {
+          url: 'https://psi.example.com',
+          strategy: 'mobile',
+          performanceScore: 88,
+          field: {
+            LCP: { value: 2500, rating: 'needs-improvement' },
+          },
+          lab: {},
+          fetchedAt: Date.now(),
+        },
+        desktop: {
+          url: 'https://psi.example.com',
+          strategy: 'desktop',
+          performanceScore: 96,
+          field: null,
+          lab: {
+            INP: 180,
+          },
+          fetchedAt: Date.now(),
+        },
+      },
+    });
+
+    const page = await PerfSiteDetail({
+      params: Promise.resolve({ site: 'psi-only' }),
+      searchParams: Promise.resolve({ days: '28' }),
+    });
+
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain('Mobile vs Desktop (PSI)');
+    expect(html).toContain('Mobile · score 88');
+    expect(html).toContain('Desktop · score 96');
+    expect(mockCwvMetricsCards).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'CrUX' }),
+      undefined,
+    );
+    expect(mockCwvMetricsCards).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'Lab' }),
+      undefined,
+    );
+    expect(mockCwvSetupGuide).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultOpen: true }),
+      undefined,
+    );
   });
 });

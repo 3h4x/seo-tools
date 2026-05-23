@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     const sites = await getManagedSites();
     for (const site of sites) {
-      const sc = getScDaily(site.id, days);
+      const sc = site.searchConsole === false ? [] : getScDaily(site.id, days);
       const ga4 = getGa4Daily(site.id, days);
 
       for (const row of sc) {

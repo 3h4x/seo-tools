@@ -516,6 +516,32 @@ describe('startCollector', () => {
     expect(runReport).toHaveBeenCalled();
   });
 
+  it('collects SC data when searchConsole config is omitted', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));
+
+    mockDbState();
+
+    const legacySite = {
+      id: 'site1',
+      name: 'Site One',
+      domain: 'example.com',
+      testPages: [],
+    };
+    vi.mocked(getManagedSites).mockResolvedValue([legacySite]);
+    vi.mocked(discoverPropertyIds).mockResolvedValue([{ ...legacySite, ga4PropertyId: 'properties/123' }]);
+    vi.mocked(getSCUrl).mockReturnValue('sc-domain:example.com');
+    vi.mocked(getAuth).mockReturnValue('auth' as never);
+
+    const { scQuery } = mockClients();
+    const { startCollector } = await loadCollectDailyModule();
+    startCollector();
+
+    await vi.waitFor(() => {
+      expect(scQuery).toHaveBeenCalled();
+    });
+  });
+
   it('skips GA4 collection for sites without a ga4PropertyId', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-02T12:00:00Z'));

@@ -41,6 +41,7 @@ import {
   clearCacheEntriesBySiteIdPrefix,
   clearSitemapSyncState,
   dbDeleteSite,
+  dbGetSites,
   dbUpsertSite,
   upsertScDaily,
   upsertGa4Daily,
@@ -240,6 +241,18 @@ describe('targeted cache clearing', () => {
 });
 
 describe('dbDeleteSite', () => {
+  it('stores omitted Search Console config as enabled by default', () => {
+    dbUpsertSite({ id: 'site-a', name: 'Site A', domain: 'a.example', testPages: ['/'] });
+
+    expect(dbGetSites()).toEqual([
+      expect.objectContaining({
+        id: 'site-a',
+        searchConsole: true,
+      }),
+    ]);
+    expect(getSitemapSyncOperationalStatus().reason).toBe('No sitemap sync state recorded yet for 1 site');
+  });
+
   it('deletes a site and all site-owned dependent rows in one call', () => {
     const db = getDb();
     dbUpsertSite({ id: 'site-a', name: 'Site A', domain: 'a.example', testPages: ['/'] });
@@ -426,6 +439,22 @@ describe('operational status helpers', () => {
     expect((await getSnapshotOperationalStatus()).state).toBe('stale');
     expect((await getSnapshotOperationalStatus()).details).toContain('SC');
     expect((await getSnapshotOperationalStatus()).details).toContain('GA4');
+  });
+
+  it('excludes Search Console-disabled sites from sitemap sync status', () => {
+    const db = getDb();
+    insertSite({ id: 'site-a', domain: 'a.example' });
+    insertSite({ id: 'site-b', name: 'Site B', domain: 'b.example', searchConsole: false });
+
+    db.prepare(
+      'INSERT INTO sitemap_state (site_id, sitemap_url, content_hash, url_count, latest_lastmod, last_submitted_at, last_checked_at, submit_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run('site-a', 'https://a.example/sitemap.xml', 'hash', 10, '2026-05-11', Date.parse('2026-05-12T09:00:00Z'), Date.parse('2026-05-12T10:00:00Z'), 2);
+
+    const status = getSitemapSyncOperationalStatus();
+
+    expect(status.state).toBe('fresh');
+    expect(status.reason).toBe('Checked all 1 site within 8h');
+    expect(status.details).not.toContain('site-b');
   });
 
   it('returns stale states when freshness windows are missed for existing rows', async () => {

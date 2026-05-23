@@ -1002,4 +1002,39 @@ describe('auditSite — indexing coverage', () => {
     expect(result.indexingCoverage.indexedPages).toBe(3);
     expect(result.indexingCoverage.message).toContain('2/2 sitemap URLs indexed (100%)');
   });
+
+  it('marks Search Console checks N/A when Search Console is disabled', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, opts?: { redirect?: string }) => {
+        const u = String(url);
+        if (u.includes('robots.txt')) {
+          return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+        }
+        if (u.includes('sitemap.xml')) {
+          return makeResponse({
+            body: '<urlset><url><loc>https://example.com/1</loc></url></urlset>',
+          });
+        }
+        if (u.startsWith('http://') && opts?.redirect === 'manual') {
+          return Promise.resolve(new Response('', { status: 301, headers: { location: 'https://example.com/' } }));
+        }
+        return makeResponse({ body: '<html><title>Test</title></html>' });
+      }),
+    );
+
+    const result = await cachedAuditSite(makeSite({ searchConsole: false, testPages: [] }));
+
+    expect(result.scSitemapFreshness).toMatchObject({
+      status: 'pass',
+      message: 'N/A — Search Console disabled',
+    });
+    expect(result.indexingCoverage).toMatchObject({
+      status: 'pass',
+      message: 'N/A — Search Console disabled',
+    });
+    expect(mockSitemapsList).not.toHaveBeenCalled();
+    expect(mockSearchAnalyticsQuery).not.toHaveBeenCalled();
+    expect(mockUrlInspectionInspect).not.toHaveBeenCalled();
+  });
 });

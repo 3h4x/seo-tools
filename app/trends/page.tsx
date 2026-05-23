@@ -121,7 +121,9 @@ function OverviewTab({
   const isSingle = snapshotCount === 1;
 
   const sitesData = managedSites.map((site) => {
-    const scTrends = loadSyncOrFallback(`TrendsPage SC trends ${site.id}`, () => getScTrends(site.id), []);
+    const scTrends = site.searchConsole === false
+      ? []
+      : loadSyncOrFallback(`TrendsPage SC trends ${site.id}`, () => getScTrends(site.id), []);
     const ga4Trends = loadSyncOrFallback(`TrendsPage GA4 trends ${site.id}`, () => getGa4Trends(site.id), []);
     const auditTrends = loadSyncOrFallback(`TrendsPage audit trends ${site.id}`, () => getAuditTrends(site.id), []);
     const ttfbTrends = loadSyncOrFallback(`TrendsPage TTFB trends ${site.id}`, () => getTtfbTrends(site.id), []);
@@ -371,7 +373,7 @@ function KeywordsSection({
     );
   }
 
-  const sitesData = managedSites.map((site) => {
+  const sitesData = managedSites.filter((site) => site.searchConsole !== false).map((site) => {
     const { topQueries, history } = loadSyncOrFallback(
       `TrendsPage keyword history ${site.id}`,
       () => getTopKeywordsWithHistory(site.id, 5, 30),

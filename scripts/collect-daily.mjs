@@ -14,6 +14,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { openDatabase } from '../src/lib/sqlite-driver.js';
 import { normalizeGa4PropertyId } from './ga4-property.mjs';
+import { ensureSitesSearchConsoleColumn } from './site-schema.mjs';
 
 // Init DB
 const dbDir = path.join(process.cwd(), 'data');
@@ -48,6 +49,7 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_ga4_daily_site ON ga4_daily(site_id, date);
 `);
+ensureSitesSearchConsoleColumn(db);
 
 // Load sites from DB
 const siteRows = db.prepare('SELECT id, domain, sc_url, ga4_property_id, search_console FROM sites ORDER BY sort_order ASC').all();

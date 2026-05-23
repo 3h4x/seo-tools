@@ -425,6 +425,20 @@ describe('TrendsPage', () => {
     expect(html.indexOf('Keyword History')).toBeLessThan(html.indexOf('Per-Site Data'));
   });
 
+  it('does not expose stale Search Console trend data for disabled sites', async () => {
+    mockGetManagedSites.mockResolvedValue([{ ...managedSite, searchConsole: false }]);
+
+    const html = renderToStaticMarkup(await TrendsPage({
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(html).toContain('GA4 Data');
+    expect(html).not.toContain('Search Console');
+    expect(mockGetScTrends).not.toHaveBeenCalled();
+    expect(mockGetTopKeywordsWithHistory).not.toHaveBeenCalled();
+    expect(mockGetKeywordDeltas).not.toHaveBeenCalled();
+  });
+
   it('keeps rendering when per-site trend queries throw', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockGetScTrends.mockImplementationOnce(() => {

@@ -38,6 +38,16 @@ describe('detectSiteDecay', () => {
     expect(getSearchConsolePagesForPeriod).not.toHaveBeenCalled();
   });
 
+  it('treats omitted searchConsole config as enabled', async () => {
+    const { searchConsole: _searchConsole, ...legacySite } = SITE;
+    vi.mocked(getSearchConsolePagesForPeriod).mockResolvedValue([]);
+
+    const result = await detectSiteDecay(legacySite, 7);
+
+    expect(result).not.toBeNull();
+    expect(getSearchConsolePagesForPeriod).toHaveBeenCalledTimes(2);
+  });
+
   it('returns null when current pages fetch fails', async () => {
     vi.mocked(getSearchConsolePagesForPeriod)
       .mockResolvedValueOnce(null)
@@ -144,6 +154,17 @@ describe('detectAllDecay', () => {
 
     const result = await detectAllDecay(7);
     expect(result).toEqual([]);
+  });
+
+  it('includes legacy sites with omitted searchConsole config', async () => {
+    const { searchConsole: _searchConsole, ...legacySite } = SITE;
+    vi.mocked(getManagedSites).mockResolvedValue([legacySite] as never);
+    vi.mocked(getSearchConsolePagesForPeriod).mockResolvedValue([]);
+
+    const result = await detectAllDecay(7);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].siteId).toBe('site1');
   });
 
   it('filters out sites that return null from detectSiteDecay', async () => {

@@ -34,7 +34,7 @@ export function classifySeverity(clicksDelta: number, positionDelta: number): De
 }
 
 export async function detectSiteDecay(site: Site, days: 7 | 30): Promise<SiteDecayResult | null> {
-  if (!site.searchConsole) return null;
+  if (site.searchConsole === false) return null;
 
   const currentStart = daysAgo(days);
   const currentEnd = daysAgo(1);
@@ -123,7 +123,7 @@ export async function detectSiteDecay(site: Site, days: 7 | 30): Promise<SiteDec
 export async function detectAllDecay(days: 7 | 30): Promise<SiteDecayResult[]> {
   const sites = await getManagedSites();
   const results = await Promise.all(
-    sites.filter(s => s.searchConsole).map(async (site) => {
+    sites.filter(s => s.searchConsole !== false).map(async (site) => {
       try {
         return await detectSiteDecay(site, days);
       } catch (error) {

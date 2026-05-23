@@ -20,7 +20,7 @@ async function getSiteData(days: number) {
   const enrichedSites = await Promise.all(
     sites.map(async (site) => {
       const [scResult, ga4Result] = await Promise.all([
-        site.searchConsole
+        site.searchConsole !== false
           ? cachedGetSearchConsoleData(getSCUrl(site), days).catch((error) => {
               console.error(`[OverviewPage] Search Console ${site.id}:`, error);
               return { data: null, error: true };

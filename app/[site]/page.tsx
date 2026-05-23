@@ -29,7 +29,7 @@ import { ScTable } from '../components/sc-table';
 import { PageQueriesTable } from '../components/page-queries-table';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
-import { loadOrFallback } from '@/lib/page-helpers';
+import { loadOrFallback, loadSyncOrFallback } from '@/lib/page-helpers';
 
 export const revalidate = 300;
 
@@ -93,6 +93,7 @@ export default async function SiteDashboardPage({
 
   const sp = await searchParams;
   const days = parseAllowedIntegerParam(sp.days, VALID_DAYS, 7);
+  const hasSearchConsole = site.searchConsole !== false;
 
   // Discover GA4 property ID
   const discovered = await loadOrFallback('SiteDashboard GA4 discovery', discoverPropertyIds(), []);
@@ -102,10 +103,10 @@ export default async function SiteDashboardPage({
 
   const [rawAudit, sitemapSubmissions, scComparison, scQueries, scTopPages, ga4Data, cwvSummary] = await Promise.all([
     loadOrFallback(`SiteDashboard audit ${siteId}`, cachedAuditSite(site), createFailedSiteAuditResult(site)),
-    site.searchConsole ? loadOrFallback(`SiteDashboard sitemap submissions ${siteId}`, cachedGetSitemapSubmissions(scUrl), []) : Promise.resolve([]),
-    site.searchConsole ? loadOrFallback(`SiteDashboard Search Console comparison ${siteId}`, cachedGetSearchConsoleDataWithComparison(scUrl, days), { data: null, error: true }) : null,
-    site.searchConsole ? loadOrFallback(`SiteDashboard Search Console queries ${siteId}`, cachedGetSearchConsoleQueries(scUrl, days), null) : null,
-    site.searchConsole ? loadOrFallback(`SiteDashboard Search Console pages ${siteId}`, cachedGetSearchConsolePages(scUrl, days), null) : null,
+    hasSearchConsole ? loadOrFallback(`SiteDashboard sitemap submissions ${siteId}`, cachedGetSitemapSubmissions(scUrl), []) : Promise.resolve([]),
+    hasSearchConsole ? loadOrFallback(`SiteDashboard Search Console comparison ${siteId}`, cachedGetSearchConsoleDataWithComparison(scUrl, days), { data: null, error: true }) : null,
+    hasSearchConsole ? loadOrFallback(`SiteDashboard Search Console queries ${siteId}`, cachedGetSearchConsoleQueries(scUrl, days), null) : null,
+    hasSearchConsole ? loadOrFallback(`SiteDashboard Search Console pages ${siteId}`, cachedGetSearchConsolePages(scUrl, days), null) : null,
     loadOrFallback(`SiteDashboard GA4 ${siteId}`, cachedGetAnalytics(propertyId, days), { data: null, error: Boolean(propertyId) }),
     loadOrFallback(`SiteDashboard CWV ${siteId}`, getCwvAuditSummary(siteId), null),
   ]);
@@ -128,14 +129,13 @@ export default async function SiteDashboardPage({
   const hasGa4 = ga4 && ga4.current.users > 0;
   const queryBucketStats = scQueries ? getQueryBucketStats(scQueries) : [];
 
-  let scDaily: ReturnType<typeof getScDaily> = [];
-  let ga4DailyData: ReturnType<typeof getGa4Daily> = [];
-  let keywordDeltas: KeywordDelta[] = [];
-  try {
-    scDaily = getScDaily(siteId);
-    ga4DailyData = getGa4Daily(siteId);
-    keywordDeltas = getKeywordDeltas(siteId);
-  } catch { /* no data yet */ }
+  const scDaily = hasSearchConsole
+    ? loadSyncOrFallback(`SiteDashboard SC daily ${siteId}`, () => getScDaily(siteId), [])
+    : [];
+  const ga4DailyData = loadSyncOrFallback(`SiteDashboard GA4 daily ${siteId}`, () => getGa4Daily(siteId), []);
+  const keywordDeltas: KeywordDelta[] = hasSearchConsole
+    ? loadSyncOrFallback(`SiteDashboard keyword deltas ${siteId}`, () => getKeywordDeltas(siteId), [])
+    : [];
 
   return (
     <div className="space-y-8">

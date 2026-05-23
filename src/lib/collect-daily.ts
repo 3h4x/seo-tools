@@ -89,7 +89,7 @@ async function collectDaily(): Promise<void> {
   // --- Search Console ---
   const sites = await getManagedSites();
   for (const site of sites) {
-    if (!site.searchConsole) continue;
+    if (site.searchConsole === false) continue;
     const missing = getMissingDates('sc_daily', site.id, 'sc', startDate, scEndDate);
     if (missing.length === 0) {
       console.log(`[collect-daily] SC ${site.domain}: up to date`);

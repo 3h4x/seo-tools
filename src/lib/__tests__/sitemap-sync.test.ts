@@ -11,9 +11,14 @@ import { parseSitemap, hashContent, runSitemapSync } from '../sitemap-sync';
 
 const SAMPLE_XML = `<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://example.com/</loc><lastmod>2024-01-01</lastmod></url></urlset>`;
 
-function makeDb(rows: { id: string; domain: string; sc_url: string | null }[] = [], prevState?: Record<string, unknown>) {
+function makeDb(
+  rows: { id: string; domain: string; sc_url: string | null; search_console?: number }[] = [],
+  prevState?: Record<string, unknown>,
+) {
   const stmtGet = { get: vi.fn().mockReturnValue(prevState ?? undefined) };
-  const stmtAll = { all: vi.fn().mockReturnValue(rows) };
+  const stmtAll = {
+    all: vi.fn().mockImplementation(() => rows.filter((row) => row.search_console !== 0)),
+  };
   const stmtRun = { run: vi.fn() };
   const prepare = vi.fn().mockImplementation((sql: string) => {
     if (sql.includes('SELECT id')) return stmtAll;
@@ -138,6 +143,22 @@ describe('runSitemapSync', () => {
 
     await runSitemapSync();
 
+    expect(db._stmtRun.run).not.toHaveBeenCalled();
+  });
+
+  it('does not fetch or submit sitemaps for Search Console-disabled sites', async () => {
+    const db = makeDb([
+      { id: 'disabled', domain: 'disabled.example', sc_url: null, search_console: 0 },
+    ]);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(true);
+
+    await runSitemapSync();
+
+    expect(db.prepare).toHaveBeenCalledWith(
+      'SELECT id, domain, sc_url FROM sites WHERE COALESCE(search_console, 1) = 1 ORDER BY sort_order ASC',
+    );
+    expect(fetch).not.toHaveBeenCalled();
     expect(db._stmtRun.run).not.toHaveBeenCalled();
   });
 

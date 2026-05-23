@@ -15,7 +15,9 @@ interface SitemapSite {
 function loadSites(): SitemapSite[] {
   try {
     const db = getDb();
-    const rows = db.prepare('SELECT id, domain, sc_url FROM sites ORDER BY sort_order ASC').all() as Array<{
+    const rows = db.prepare(
+      'SELECT id, domain, sc_url FROM sites WHERE COALESCE(search_console, 1) = 1 ORDER BY sort_order ASC',
+    ).all() as Array<{
       id: string; domain: string; sc_url: string | null;
     }>;
     return rows.map(r => {

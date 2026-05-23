@@ -95,6 +95,18 @@ describe('GET /api/[site]/page-queries', () => {
     expect(vi.mocked(cachedGetTopPagesWithQueries)).not.toHaveBeenCalled();
   });
 
+  it('treats omitted Search Console config as enabled', async () => {
+    const { searchConsole: _searchConsole, ...legacySite } = fakeSite;
+    vi.mocked(getManagedSite).mockResolvedValueOnce(legacySite as any);
+    vi.mocked(cachedGetTopPagesWithQueries).mockResolvedValueOnce(fakeData);
+
+    const res = await GET(getReq(), { params: Promise.resolve({ site: 'borged-io' }) });
+
+    expect(res.status).toBe(200);
+    expect(vi.mocked(cachedGetTopPagesWithQueries)).toHaveBeenCalledWith('sc-domain:borged.io', 7);
+    expect(await res.json()).toEqual({ data: fakeData });
+  });
+
   it('returns empty array when lib returns null', async () => {
     vi.mocked(getManagedSite).mockResolvedValueOnce(fakeSite as any);
     vi.mocked(cachedGetTopPagesWithQueries).mockResolvedValueOnce(null);

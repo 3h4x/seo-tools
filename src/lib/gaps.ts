@@ -82,7 +82,7 @@ export async function loadSiteGapSignals(
   days: number,
 ): Promise<SiteGapSignals> {
   const [scTopPages, ga4TopPages] = await Promise.all([
-    site.searchConsole
+    site.searchConsole !== false
       ? loadGapSignalOr(`SC pages ${site.id}`, cachedGetSearchConsolePages(getSCUrl(site), days), null)
       : Promise.resolve(null),
     loadGapSignalOr(

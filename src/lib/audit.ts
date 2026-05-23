@@ -338,7 +338,7 @@ async function checkUrlInspection(scUrl: string, pageUrl: string, page: string):
 }
 
 async function checkUrlInspectionForSite(site: Site): Promise<UrlInspectionPageResult[]> {
-  if (!site.searchConsole || site.testPages.length === 0) return [];
+  if (site.searchConsole === false || site.testPages.length === 0) return [];
 
   const scUrl = getSCUrl(site);
   return Promise.all(
@@ -1499,6 +1499,10 @@ async function checkSecurity(domain: string): Promise<SecurityResult> {
 const SC_STALE_DAYS = 30;
 
 async function checkScSitemapFreshness(site: Site): Promise<CheckResult> {
+  if (site.searchConsole === false) {
+    return { status: 'pass', label: 'SC Sitemap', message: 'N/A — Search Console disabled' };
+  }
+
   try {
     const scUrl = getSCUrl(site);
     const formattedUrl = scUrl.startsWith('sc-domain:') || scUrl.startsWith('http') ? scUrl : `sc-domain:${scUrl}`;
@@ -1547,8 +1551,8 @@ async function checkScSitemapFreshness(site: Site): Promise<CheckResult> {
 }
 
 async function checkIndexingCoverage(site: Site, sitemapUrlCount?: number): Promise<IndexingCoverageResult> {
-  if (!site.searchConsole) {
-    return { status: 'error', label: 'Indexing', message: 'No Search Console configured' };
+  if (site.searchConsole === false) {
+    return { status: 'pass', label: 'Indexing', message: 'N/A — Search Console disabled' };
   }
 
   try {
@@ -1609,7 +1613,7 @@ async function checkIndexingCoverage(site: Site, sitemapUrlCount?: number): Prom
 }
 
 async function fetchScTopPageUrls(site: Site): Promise<string[]> {
-  if (!site.searchConsole) return [];
+  if (site.searchConsole === false) return [];
   try {
     const scUrl = getSCUrl(site);
     const formattedUrl = scUrl.startsWith('sc-domain:') || scUrl.startsWith('http') ? scUrl : `sc-domain:${scUrl}`;

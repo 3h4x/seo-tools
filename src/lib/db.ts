@@ -239,6 +239,7 @@ function initSchema(db: SqliteDatabase): void {
   // Migrations for existing DBs
   try { db.exec(`ALTER TABLE sites ADD COLUMN color TEXT`); } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE sites ADD COLUMN indexnow_key TEXT`); } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE sites ADD COLUMN search_console INTEGER NOT NULL DEFAULT 1`); } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN ttfb_ms INTEGER`); } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN sitemap_urls INTEGER`); } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE audit_snapshots ADD COLUMN indexed_pages INTEGER`); } catch { /* already exists */ }
@@ -633,7 +634,7 @@ function getManagedSiteIds(filter: 'all' | 'search-console' | 'ga4'): string[] {
   const db = getDb();
   let sql = 'SELECT id FROM sites';
   if (filter === 'search-console') {
-    sql += ' WHERE search_console = 1';
+    sql += ' WHERE COALESCE(search_console, 1) = 1';
   } else if (filter === 'ga4') {
     sql += " WHERE ga4_property_id IS NOT NULL AND ga4_property_id != ''";
   }
@@ -818,9 +819,9 @@ export function getGa4DailyOperationalStatus(): OperationalStatus {
 
 export function getSitemapSyncOperationalStatus(): OperationalStatus {
   const db = getDb();
-  const expectedSiteIds = getManagedSiteIds('all');
+  const expectedSiteIds = getManagedSiteIds('search-console');
   if (expectedSiteIds.length === 0) {
-    return buildNeverStatus('sitemap-sync', 'Sitemap Sync', 'No managed sites configured yet');
+    return buildNeverStatus('sitemap-sync', 'Sitemap Sync', 'No configured Search Console sites yet');
   }
 
   const staleCutoff = Date.now() - SITEMAP_STATUS_MAX_AGE_MS;
@@ -1139,7 +1140,7 @@ interface SiteRow {
   sc_url: string | null;
   ga4_property_id: string | null;
   indexnow_key: string | null;
-  search_console: number;
+  search_console: number | null;
   color: string | null;
   test_pages: string;
   skip_checks: string;
@@ -1206,7 +1207,7 @@ function rowToSite(row: SiteRow): SiteRecord {
     scUrl: row.sc_url ?? undefined,
     ga4PropertyId: row.ga4_property_id ?? undefined,
     indexNowKey: row.indexnow_key ?? undefined,
-    searchConsole: row.search_console === 1,
+    searchConsole: row.search_console !== 0,
     color: row.color ?? undefined,
     testPages: JSON.parse(row.test_pages) as string[],
     skipChecks: JSON.parse(row.skip_checks) as string[],

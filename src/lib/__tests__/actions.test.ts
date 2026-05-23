@@ -218,4 +218,34 @@ describe('loadActionQueue', () => {
 
     consoleError.mockRestore();
   });
+
+  it('does not expose stored keyword actions for Search Console-disabled sites', async () => {
+    mockGetManagedSites.mockResolvedValueOnce([
+      siteA,
+      { ...siteB, searchConsole: false },
+    ]);
+    mockGetKeywordDropActions.mockReturnValueOnce([
+      {
+        query: 'technical seo',
+        clicks: 140,
+        impressions: 300,
+        currentPosition: 9,
+        previousPosition: 3,
+        delta: -6,
+        window: '30d',
+      },
+    ]);
+
+    const result = await loadActionQueue(7);
+
+    expect(mockGetKeywordDropActions).toHaveBeenCalledTimes(1);
+    expect(mockGetKeywordDropActions).toHaveBeenCalledWith('site-a', 5);
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        kind: 'keyword',
+        siteId: 'site-a',
+        affected: 'technical seo',
+      }),
+    ]);
+  });
 });
