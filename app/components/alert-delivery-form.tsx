@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfiguredNotice } from '@/components/ui';
+import { ConfiguredNotice, FormButton } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -224,20 +224,20 @@ export default function AlertDeliveryForm() {
       {success && <p className="text-sm text-emerald-400" role="status">{success}</p>}
 
       <div className="flex gap-2 flex-wrap">
-        <button
+        <FormButton
+          variant="primary"
           onClick={handleSave}
           disabled={saving}
-          className="px-4 py-2 rounded-md text-sm bg-white text-black hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {saving ? 'Saving…' : 'Save'}
-        </button>
-        <button
+        </FormButton>
+        <FormButton
+          variant="danger"
           onClick={handleClear}
           disabled={saving}
-          className="px-4 py-2 rounded-md text-sm bg-neutral-800 text-red-400 hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           Clear DB overrides
-        </button>
+        </FormButton>
       </div>
     </div>
   );
