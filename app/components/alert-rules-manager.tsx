@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { FormButton } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -282,13 +283,13 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
 
         {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
 
-        <button
+        <FormButton
+          variant="primary"
           onClick={() => void handleSave()}
           disabled={saving}
-          className="px-4 py-2 rounded-md text-sm bg-white text-black hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {saving ? 'Saving…' : form.id ? 'Update rule' : 'Create rule'}
-        </button>
+        </FormButton>
       </div>
     </div>
   );
