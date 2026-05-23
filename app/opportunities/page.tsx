@@ -77,6 +77,9 @@ export default async function OpportunitiesPage({
   allOpportunities.sort((a, b) => b.opportunity.estimatedClicks - a.opportunity.estimatedClicks);
 
   const top = allOpportunities.slice(0, 100);
+  const emptyMessage = scSites.length === 0
+    ? 'Enable Search Console for at least one managed site in Config to populate keyword opportunities.'
+    : 'No queries ranking in positions 5-20 for the selected period. Try a longer date range.';
 
   const rows = top.map(({ domain, opportunity: o }) => [
     <span key="q" className="font-medium text-neutral-200">{o.query}</span>,
@@ -124,7 +127,7 @@ export default async function OpportunitiesPage({
       {top.length === 0 ? (
         <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-8 text-center text-neutral-500">
           <p className="font-medium mb-1">No opportunities found</p>
-          <p className="text-sm">No queries ranking in positions 5–20 for the selected period. Try a longer date range.</p>
+          <p className="text-sm">{emptyMessage}</p>
         </div>
       ) : (
         <>

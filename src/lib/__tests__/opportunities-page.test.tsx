@@ -173,4 +173,20 @@ describe('Opportunities page', () => {
     expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:b.test', 'site-b', 28);
     expect(html).toContain('Showing 2 of 2 opportunities across all sites');
   });
+
+  it('shows a config-focused empty state when no sites have Search Console enabled', async () => {
+    mockGetManagedSites.mockResolvedValue([
+      { id: 'site-a', name: 'Site A', domain: 'a.test', searchConsole: false, testPages: ['/'] },
+      { id: 'site-b', name: 'Site B', domain: 'b.test', searchConsole: false, testPages: ['/'] },
+    ]);
+
+    const page = await OpportunitiesPage({
+      searchParams: Promise.resolve({ days: '28' }),
+    });
+    const html = renderToStaticMarkup(page);
+
+    expect(mockCachedGetKeywordOpportunities).not.toHaveBeenCalled();
+    expect(html).toContain('Enable Search Console for at least one managed site in Config to populate keyword opportunities.');
+    expect(html).not.toContain('Try a longer date range.');
+  });
 });
