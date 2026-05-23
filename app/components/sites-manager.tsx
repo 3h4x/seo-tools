@@ -6,6 +6,7 @@ import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
+import { FormButton } from '@/components/ui';
 
 interface Site {
   id: string;
@@ -739,19 +740,18 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
 
           <div className="flex gap-2">
-            <button
+            <FormButton
+              variant="primary"
               onClick={handleSave}
               disabled={!canSave}
-              className="px-4 py-2 rounded-md text-sm bg-white text-black hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {saving ? 'Saving…' : 'Save'}
-            </button>
-            <button
+            </FormButton>
+            <FormButton
               onClick={cancelEdit}
-              className="px-4 py-2 rounded-md text-sm bg-neutral-800 text-white hover:bg-neutral-700 transition-colors"
             >
               Cancel
-            </button>
+            </FormButton>
           </div>
         </div>
       )}
@@ -831,13 +831,13 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                     </div>
                   ))}
                 </div>
-                <button
+                <FormButton
+                  variant="primary"
                   onClick={handleImport}
                   disabled={importing || selected.size === 0}
-                  className="px-4 py-2 rounded-md text-sm bg-white text-black hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {importing ? 'Importing…' : `Import Selected (${selected.size})`}
-                </button>
+                </FormButton>
               </div>
             )
           )}
