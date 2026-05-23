@@ -47,7 +47,7 @@ export default async function PerformancePage({
   }
   const sitesWithRum = rows.filter(r => r.source === 'rum').length;
   const needsKey = rows.some(r => r.needsKey);
-  const guideOpen = params.guide === '1' || rows.every(r => r.source === 'none');
+  const guideOpen = params.guide === '1' || (rows.length > 0 && rows.every(r => r.source === 'none'));
 
   const overallMetrics: Partial<Record<CwvMetricName, { value: number; rating: CwvRating }>> = {};
   for (const name of CWV_METRIC_ORDER) {
@@ -128,7 +128,11 @@ export default async function PerformancePage({
                 );
               })}
               {rows.length === 0 && (
-                <tr><td colSpan={CWV_METRIC_ORDER.length + 3} className="px-3 py-6 text-center text-neutral-500">No sites configured.</td></tr>
+                <tr>
+                  <td colSpan={CWV_METRIC_ORDER.length + 3} className="px-3 py-6 text-center text-neutral-500">
+                    No sites configured — <Link href="/config" className="text-white underline">add sites in Config</Link>.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

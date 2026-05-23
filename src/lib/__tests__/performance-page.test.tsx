@@ -145,6 +145,23 @@ describe('Performance overview page', () => {
 
     expect(html.match(/avg across 1 site/g)).toHaveLength(2);
   });
+
+  it('keeps the setup guide closed when no sites are configured', async () => {
+    mockGetPerformanceOverviewRows.mockResolvedValueOnce([]);
+
+    const page = await PerformancePage({
+      searchParams: Promise.resolve({ days: '7' }),
+    });
+
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain('No sites configured');
+    expect(html).toContain('href="/config"');
+    expect(mockCwvSetupGuide).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultOpen: false }),
+      undefined,
+    );
+  });
 });
 
 describe('Performance site detail page', () => {
