@@ -6,7 +6,7 @@ import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
-import { FormButton, TextButton } from '@/components/ui';
+import { FormButton, FormInput, FormTextarea, TextButton } from '@/components/ui';
 
 interface Site {
   id: string;
@@ -35,9 +35,6 @@ interface Props {
 }
 
 type EditMode = 'none' | 'new' | string;
-
-const INPUT_CLS = 'w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-neutral-500';
-const MONO_INPUT_CLS = INPUT_CLS + ' font-mono';
 
 const EMPTY_SITE: Omit<Site, 'id'> = {
   name: '',
@@ -617,8 +614,11 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">ID{editMode !== 'new' ? ' (locked)' : ' (auto from domain)'}</label>
-              <input
-                className={MONO_INPUT_CLS + ' disabled:opacity-50'}
+              <FormInput
+                tone="dense"
+                padding="compact"
+                monospace
+                className="disabled:opacity-50"
                 value={form.id}
                 onChange={e => setForm(f => ({ ...f, id: e.target.value }))}
                 disabled={editMode !== 'new'}
@@ -627,8 +627,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">Name *</label>
-              <input
-                className={INPUT_CLS}
+              <FormInput
+                tone="dense"
+                padding="compact"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="My Site"
@@ -636,8 +637,10 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">Domain *</label>
-              <input
-                className={MONO_INPUT_CLS}
+              <FormInput
+                tone="dense"
+                padding="compact"
+                monospace
                 value={form.domain}
                 onChange={e => setForm(f => ({ ...f, domain: e.target.value }))}
                 placeholder="example.com"
@@ -648,8 +651,10 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">SC URL override</label>
-              <input
-                className={MONO_INPUT_CLS}
+              <FormInput
+                tone="dense"
+                padding="compact"
+                monospace
                 value={form.scUrl ?? ''}
                 onChange={e => setForm(f => ({ ...f, scUrl: e.target.value }))}
                 placeholder="https://example.github.io/"
@@ -657,8 +662,10 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">GA4 Property ID</label>
-              <input
-                className={MONO_INPUT_CLS}
+              <FormInput
+                tone="dense"
+                padding="compact"
+                monospace
                 value={form.ga4PropertyId ?? ''}
                 onChange={e => setForm(f => ({ ...f, ga4PropertyId: e.target.value }))}
                 placeholder="123456789"
@@ -666,8 +673,10 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs text-neutral-400">IndexNow key</label>
-              <input
-                className={MONO_INPUT_CLS}
+              <FormInput
+                tone="dense"
+                padding="compact"
+                monospace
                 value={form.indexNowKey ?? ''}
                 onChange={e => setForm(f => ({ ...f, indexNowKey: e.target.value }))}
                 placeholder="indexnow-key"
@@ -698,8 +707,11 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </div>
             <div className="space-y-1 col-span-2">
               <label className="text-xs text-neutral-400">Test pages (one path per line)</label>
-              <textarea
-                className={MONO_INPUT_CLS + ' resize-y'}
+              <FormTextarea
+                tone="dense"
+                padding="compact"
+                monospace
+                className="resize-y"
                 rows={3}
                 value={form.testPages.join('\n')}
                 onChange={e => setForm(f => ({ ...f, testPages: e.target.value.split('\n').filter(Boolean) }))}

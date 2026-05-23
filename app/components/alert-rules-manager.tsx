@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { FormButton, FormInput, TextButton } from '@/components/ui';
+import { FormButton, FormInput, FormSelect, TextButton } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -29,8 +29,6 @@ export function isMetricBlockedBySite(metric: AlertMetric, site: Pick<Site, 'sea
 const METRIC_DISABLED_REASONS: Partial<Record<AlertMetric, string>> = {
   sc_clicks: 'Search Console disabled — rule will not fire',
 };
-
-const INPUT_CLS = 'w-full bg-neutral-800 border border-neutral-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-500';
 
 const ALERT_RULE_ERROR_MESSAGES: Record<string, string> = {
   failed_to_load_alert_rules: 'Could not load alert rules. Check server logs.',
@@ -261,25 +259,29 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <select
-            className={INPUT_CLS}
+          <FormSelect
+            tone="dense"
+            padding="dense"
             value={form.siteId}
             onChange={(e) => setForm((current) => ({ ...current, siteId: e.target.value }))}
           >
             {sites.map((site) => (
               <option key={site.id} value={site.id}>{site.name}</option>
             ))}
-          </select>
-          <select
-            className={INPUT_CLS}
+          </FormSelect>
+          <FormSelect
+            tone="dense"
+            padding="dense"
             value={form.metric}
             onChange={(e) => setForm((current) => ({ ...current, metric: e.target.value as AlertMetric }))}
           >
             {METRIC_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
-          </select>
+          </FormSelect>
           <FormInput
+            tone="dense"
+            padding="dense"
             type="number"
             min={1}
             max={100}
