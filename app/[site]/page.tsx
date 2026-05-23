@@ -80,6 +80,17 @@ function urlInspectionTone(status: 'pass' | 'warn' | 'fail' | 'error'): string {
   return 'text-neutral-500';
 }
 
+function SearchConsoleDisabledNotice() {
+  return (
+    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-5">
+      <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Search Console</h2>
+      <p className="mt-2 text-sm text-neutral-500">
+        Search Console is disabled for this site in Config. Metrics, query tables, and keyword history are hidden.
+      </p>
+    </div>
+  );
+}
+
 export default async function SiteDashboardPage({
   params,
   searchParams,
@@ -169,18 +180,22 @@ export default async function SiteDashboardPage({
           </div>
         )}
       </div>
-      <div>
-        <div className="flex items-center gap-3 mb-3">
-          <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Search Console</h2>
-          {scError && <span className="text-xs text-red-400">data unavailable</span>}
+      {hasSearchConsole ? (
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Search Console</h2>
+            {scError && <span className="text-xs text-red-400">data unavailable</span>}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <MetricCard icon={Icons.clicks} label="Clicks" current={sc?.current.clicks ?? 0} previous={sc?.previous.clicks} accent="border-emerald-500" />
+            <MetricCard icon={Icons.impressions} label="Impressions" current={sc?.current.impressions ?? 0} previous={sc?.previous.impressions} accent="border-cyan-500" />
+            <MetricCard label="CTR" value={hasSc ? `${(sc!.current.ctr * 100).toFixed(2)}%` : '\u2014'} current={hasSc ? sc!.current.ctr * 100 : 0} previous={hasSc ? sc!.previous.ctr * 100 : 0} accent="border-violet-500" icon={Icons.ctr} />
+            <MetricCard label="Avg Position" value={hasSc ? sc!.current.position.toFixed(1) : '\u2014'} current={hasSc ? sc!.current.position : 0} previous={hasSc ? sc!.previous.position : 0} accent="border-amber-500" icon={Icons.position} invert />
+          </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <MetricCard icon={Icons.clicks} label="Clicks" current={sc?.current.clicks ?? 0} previous={sc?.previous.clicks} accent="border-emerald-500" />
-          <MetricCard icon={Icons.impressions} label="Impressions" current={sc?.current.impressions ?? 0} previous={sc?.previous.impressions} accent="border-cyan-500" />
-          <MetricCard label="CTR" value={hasSc ? `${(sc!.current.ctr * 100).toFixed(2)}%` : '\u2014'} current={hasSc ? sc!.current.ctr * 100 : 0} previous={hasSc ? sc!.previous.ctr * 100 : 0} accent="border-violet-500" icon={Icons.ctr} />
-          <MetricCard label="Avg Position" value={hasSc ? sc!.current.position.toFixed(1) : '\u2014'} current={hasSc ? sc!.current.position : 0} previous={hasSc ? sc!.previous.position : 0} accent="border-amber-500" icon={Icons.position} invert />
-        </div>
-      </div>
+      ) : (
+        <SearchConsoleDisabledNotice />
+      )}
       <div>
         <div className="flex items-center gap-3 mb-3">
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">GA4 Analytics</h2>
@@ -266,17 +281,19 @@ export default async function SiteDashboardPage({
           </div>
         </div>
       )}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ScTable
-          heading="Top Queries"
-          columnLabel="Query"
-          rows={(scQueries ?? []).map(r => ({ label: r.query, clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position }))}
-          emptyMessage="No query data available."
-          exportData={(scQueries ?? []).map(r => ({ query: r.query, clicks: r.clicks, impressions: r.impressions, ctr: `${(r.ctr * 100).toFixed(2)}%`, position: r.position.toFixed(1) }))}
-          filename={`${siteId}-queries-${days}d`}
-        />
-        <PageQueriesTable siteId={siteId} days={days} />
-      </div>
+      {hasSearchConsole && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ScTable
+            heading="Top Queries"
+            columnLabel="Query"
+            rows={(scQueries ?? []).map(r => ({ label: r.query, clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position }))}
+            emptyMessage="No query data available."
+            exportData={(scQueries ?? []).map(r => ({ query: r.query, clicks: r.clicks, impressions: r.impressions, ctr: `${(r.ctr * 100).toFixed(2)}%`, position: r.position.toFixed(1) }))}
+            filename={`${siteId}-queries-${days}d`}
+          />
+          <PageQueriesTable siteId={siteId} days={days} />
+        </div>
+      )}
       {keywordDeltas.length > 0 && (
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">

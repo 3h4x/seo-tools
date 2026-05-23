@@ -351,7 +351,9 @@ describe('SiteDashboardPage', () => {
     expect(mockGetScDaily).not.toHaveBeenCalled();
     expect(mockGetKeywordDeltas).not.toHaveBeenCalled();
     expect(html).not.toContain('Keyword Rank Table');
-    expect(mockPageQueriesTable).toHaveBeenCalledWith({ siteId: 'site-1', days: 7 }, undefined);
+    expect(html).toContain('Search Console is disabled for this site in Config');
+    expect(html).not.toContain('Top Queries:');
+    expect(mockPageQueriesTable).not.toHaveBeenCalled();
     expect(mockCreateSiteGapSignals).toHaveBeenCalledWith({
       ga4TopPages: [],
       scTopPages: undefined,
