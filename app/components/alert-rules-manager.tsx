@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { FormButton, FormInput, FormSelect, TextButton } from '@/components/ui';
+import { FormButton, FormCheckbox, FormInput, FormSelect, TextButton } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -262,6 +262,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
           <FormSelect
             tone="dense"
             padding="dense"
+            aria-label="Alert site"
             value={form.siteId}
             onChange={(e) => setForm((current) => ({ ...current, siteId: e.target.value }))}
           >
@@ -272,6 +273,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
           <FormSelect
             tone="dense"
             padding="dense"
+            aria-label="Alert metric"
             value={form.metric}
             onChange={(e) => setForm((current) => ({ ...current, metric: e.target.value as AlertMetric }))}
           >
@@ -285,6 +287,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
             type="number"
             min={1}
             max={100}
+            aria-label="Drop threshold percent"
             value={form.thresholdPct}
             onChange={(e) => setForm((current) => ({ ...current, thresholdPct: e.target.value }))}
           />
@@ -293,8 +296,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
         <div className="flex flex-wrap gap-4 text-sm text-neutral-300">
           {(['email', 'webhook'] as AlertChannel[]).map((channel) => (
             <label key={channel} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
+              <FormCheckbox
                 checked={form.channels.includes(channel)}
                 onChange={() => toggleChannel(channel)}
               />

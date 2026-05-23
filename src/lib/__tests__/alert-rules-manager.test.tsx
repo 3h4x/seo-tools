@@ -33,6 +33,26 @@ describe('AlertRulesManager', () => {
     expect(html).not.toContain('Audit score');
   });
 
+  it('labels compact rule controls for assistive technology', () => {
+    const html = renderToStaticMarkup(
+      <AlertRulesManager
+        sites={[
+          {
+            id: 'site-a',
+            name: 'Site A',
+            domain: 'a.example.com',
+            testPages: ['/'],
+          },
+        ]}
+      />,
+    );
+
+    expect(html).toContain('aria-label="Alert site"');
+    expect(html).toContain('aria-label="Alert metric"');
+    expect(html).toContain('aria-label="Drop threshold percent"');
+    expect(html).toContain('rounded border-neutral-600');
+  });
+
   it('renders a structured skeleton while rules are loading', () => {
     const html = renderToStaticMarkup(
       <AlertRulesManager
