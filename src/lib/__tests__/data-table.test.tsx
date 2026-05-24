@@ -37,7 +37,7 @@ describe('TrendsTable', () => {
       />
     );
 
-    expect(html).toContain('<th scope="row" class="px-3 py-2 font-normal font-mono">');
+    expect(html).toContain('<th scope="row" class="px-3 py-2 font-normal font-mono text-left">');
     expect(html).toContain('<td class="px-3 py-2 font-mono text-right">');
   });
 
@@ -55,7 +55,7 @@ describe('TrendsTable', () => {
       />
     );
 
-    expect(html).toContain('<th scope="row" class="px-3 py-2 font-normal font-mono"><span>2026-05-01</span></th>');
+    expect(html).toContain('<th scope="row" class="px-3 py-2 font-normal font-mono text-left"><span>2026-05-01</span></th>');
   });
 });
 
@@ -81,7 +81,7 @@ describe('KeywordRankTable', () => {
     expect(html).toContain('<tr class="text-neutral-600 border-b border-neutral-800">');
     expect(html).toContain('<tbody class="">');
     expect(html).toContain('<tr class="border-b border-neutral-800/50 hover:bg-neutral-800/30">');
-    expect(html).toContain('<th scope="row" class="py-1.5 pr-4 text-neutral-300 font-mono truncate max-w-xs font-normal">');
+    expect(html).toContain('<th scope="row" class="py-1.5 pr-4 text-neutral-300 font-mono truncate max-w-xs font-normal text-left">');
     expect(html).toContain('<td class="py-1.5 pl-3 text-right">');
     expect(html).not.toContain('divide-y divide-neutral-800');
   });
@@ -227,7 +227,7 @@ describe('DataTable', () => {
       />
     );
 
-    expect(html).toContain('<th scope="row" class="px-3 py-2 font-normal font-mono"><span>seo</span></th>');
+    expect(html).toContain('<th scope="row" class="px-3 py-2 font-normal font-mono text-left"><span>seo</span></th>');
     expect(html).toContain('<td class="px-3 py-2 font-mono text-right"><span>10</span></td>');
   });
 
@@ -240,7 +240,7 @@ describe('DataTable', () => {
       />
     );
 
-    expect(html).toContain('<th scope="row" class="px-3 py-2 font-semibold"><span>Missing sitemap</span></th>');
+    expect(html).toContain('<th scope="row" class="px-3 py-2 font-semibold text-left"><span>Missing sitemap</span></th>');
   });
 
   it('preserves caller-provided responsive column classes and row styling', () => {

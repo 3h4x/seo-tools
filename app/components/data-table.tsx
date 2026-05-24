@@ -35,18 +35,26 @@ export function DataTable({
 }: DataTableProps) {
   const joinClassNames = (...parts: Array<string | undefined>) => [...new Set(parts.flatMap((part) => (part ? part.split(/\s+/) : [])))].join(' ');
   const hasFontWeightClass = (className: string) => /\bfont-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)\b/.test(className);
+  const hasTextAlignClass = (className: string) => /\btext-(?:left|center|right|justify|start|end)\b/.test(className);
 
   const getAlignedClassName = (baseClassName: string | undefined, align?: DataTableColumn['align']) =>
     joinClassNames(baseClassName ?? 'px-3 py-2', align === 'right' ? 'text-right' : 'text-left');
 
   const getCellClassName = (column: DataTableColumn | undefined) => {
     const baseClassName = column?.cellClassName ?? column?.className ?? 'px-3 py-2';
+    const alignmentClass = hasTextAlignClass(baseClassName)
+      ? undefined
+      : column?.align === 'right'
+        ? 'text-right'
+        : column?.align === 'left' || column?.rowHeader
+          ? 'text-left'
+          : undefined;
 
     return joinClassNames(
       baseClassName,
       column?.rowHeader && !hasFontWeightClass(baseClassName) ? 'font-normal' : undefined,
       monospaceCells ? 'font-mono' : undefined,
-      column?.align === 'right' ? 'text-right' : undefined,
+      alignmentClass,
     );
   };
 

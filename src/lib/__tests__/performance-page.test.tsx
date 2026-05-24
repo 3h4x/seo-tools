@@ -144,8 +144,9 @@ describe('Performance overview page', () => {
     const html = renderToStaticMarkup(page);
 
     expect(html.match(/avg across 1 site/g)).toHaveLength(2);
-    expect(html).toContain('<th scope="col" class="px-3 py-2 text-left font-semibold">Site</th>');
-    expect(html).toContain('<th scope="col" class="px-3 py-2 text-right font-semibold">PSI</th>');
+    expect(html).toContain('<th scope="col" class="px-3 py-2 font-semibold text-left">Site</th>');
+    expect(html).toContain('<th scope="row" class="px-3 py-2 font-normal text-left"><div><a href="/performance/psi-site" class="text-white hover:underline">PSI Site</a>');
+    expect(html).toContain('<th scope="col" class="px-3 py-2 font-semibold text-right">PSI</th>');
   });
 
   it('keeps the setup guide closed when no sites are configured', async () => {

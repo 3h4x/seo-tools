@@ -16,6 +16,7 @@ import TimeRange from '../components/time-range';
 import CwvSetupGuide from '../components/cwv-setup-guide';
 import { CwvCell } from '../components/cwv-cell';
 import { CwvMetricsCards } from '../components/cwv-metrics-cards';
+import { DataTable, type DataTableColumn } from '../components/data-table';
 
 export const revalidate = 300;
 
@@ -57,6 +58,39 @@ export default async function PerformancePage({
     if (a.count > 0) overallMetrics[name] = { value: a.sum / a.count, rating: rateCwv(name, a.sum / a.count) };
   }
 
+  const columns: DataTableColumn[] = [
+    { label: 'Site', rowHeader: true, className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2' },
+    { label: 'Source', className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2' },
+    ...CWV_METRIC_ORDER.map((name) => ({
+      label: name,
+      align: 'right' as const,
+      className: 'px-3 py-2 font-semibold',
+      cellClassName: 'px-3 py-2',
+    })),
+    { label: 'PSI', align: 'right', className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2 text-right font-mono' },
+  ];
+
+  const tableRows = rows.map((row) => {
+    const badge = SOURCE_BADGE[row.source];
+
+    return [
+      <div key="site">
+        <Link href={`/performance/${encodeURIComponent(row.id)}`} className="text-white hover:underline">{row.name}</Link>
+        <div className="text-xs text-neutral-500 font-mono">{row.domain}</div>
+      </div>,
+      <Badge key="source" title={badge.tip} shape="rounded" uppercase className={badge.cls}>
+        {badge.label}
+      </Badge>,
+      ...CWV_METRIC_ORDER.map((name) => {
+        const m = row.metrics[name];
+        return <CwvCell key={name} name={name} value={m?.value} rating={m?.rating} />;
+      }),
+      row.perfScore == null
+        ? <span key="psi" className="text-neutral-600">—</span>
+        : <span key="psi" className={row.perfScore >= 90 ? 'text-emerald-400' : row.perfScore >= 50 ? 'text-amber-400' : 'text-red-400'}>{row.perfScore}</span>,
+    ];
+  });
+
   return (
     <div className="space-y-8">
       <div className="flex items-start justify-between">
@@ -86,59 +120,24 @@ export default async function PerformancePage({
 
       <div>
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Per-site Core Web Vitals</h2>
-        <div className="overflow-hidden rounded border border-neutral-800">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-neutral-800 text-neutral-500">
-                <th scope="col" className="px-3 py-2 text-left font-semibold">Site</th>
-                <th scope="col" className="px-3 py-2 text-left font-semibold">Source</th>
-                {CWV_METRIC_ORDER.map(n => (
-                  <th key={n} scope="col" className="px-3 py-2 text-right font-semibold">{n}</th>
-                ))}
-                <th scope="col" className="px-3 py-2 text-right font-semibold">PSI</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-800">
-              {rows.map((row) => {
-                const badge = SOURCE_BADGE[row.source];
-                return (
-                  <tr key={row.id} className="hover:bg-neutral-800/30">
-                    <td className="px-3 py-2">
-                      <Link href={`/performance/${encodeURIComponent(row.id)}`} className="text-white hover:underline">{row.name}</Link>
-                      <div className="text-xs text-neutral-500 font-mono">{row.domain}</div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <Badge title={badge.tip} shape="rounded" uppercase className={badge.cls}>
-                        {badge.label}
-                      </Badge>
-                    </td>
-                    {CWV_METRIC_ORDER.map((name) => {
-                      const m = row.metrics[name];
-                      return (
-                        <td key={name} className="px-3 py-2 text-right">
-                          <CwvCell name={name} value={m?.value} rating={m?.rating} />
-                        </td>
-                      );
-                    })}
-                    <td className="px-3 py-2 text-right font-mono">
-                      {row.perfScore == null
-                        ? <span className="text-neutral-600">—</span>
-                        : <span className={row.perfScore >= 90 ? 'text-emerald-400' : row.perfScore >= 50 ? 'text-amber-400' : 'text-red-400'}>{row.perfScore}</span>
-                      }
-                    </td>
-                  </tr>
-                );
-              })}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={CWV_METRIC_ORDER.length + 3} className="px-3 py-6 text-center text-neutral-500">
-                    No sites configured — <Link href="/config" className="text-white underline">add sites in Config</Link>.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {rows.length > 0 ? (
+          <DataTable
+            columns={columns}
+            rows={tableRows}
+            rowKeys={rows.map((row) => row.id)}
+            monospaceCells={false}
+            containerClassName="overflow-hidden rounded border border-neutral-800"
+            tableClassName="w-full text-sm"
+            headRowClassName="border-b border-neutral-800 text-neutral-500"
+            rowClassName="hover:bg-neutral-800/30"
+          />
+        ) : (
+          <div className="overflow-hidden rounded border border-neutral-800">
+            <div className="px-3 py-6 text-center text-neutral-500">
+              No sites configured — <Link href="/config" className="text-white underline">add sites in Config</Link>.
+            </div>
+          </div>
+        )}
       </div>
 
       <CwvSetupGuide defaultOpen={guideOpen} />
