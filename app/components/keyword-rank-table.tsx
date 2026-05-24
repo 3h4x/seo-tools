@@ -48,7 +48,7 @@ function KwTrendArrow({ trend }: { trend: KeywordDelta['trend'] }) {
 export function KeywordRankTable({ deltas, limit = 20 }: { deltas: KeywordDelta[]; limit?: number }) {
   const visibleDeltas = deltas.slice(0, limit);
   const columns: DataTableColumn[] = [
-    { label: 'Query', className: 'text-left py-2 pr-4 font-medium', cellClassName: 'py-1.5 pr-4 text-neutral-300 font-mono truncate max-w-xs' },
+    { label: 'Query', rowHeader: true, className: 'text-left py-2 pr-4 font-medium', cellClassName: 'py-1.5 pr-4 text-neutral-300 font-mono truncate max-w-xs' },
     { label: 'Position', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono text-neutral-300' },
     { label: '7d Δ', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono' },
     { label: '30d Δ', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono' },

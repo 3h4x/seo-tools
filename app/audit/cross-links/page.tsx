@@ -6,7 +6,7 @@ import { getManagedSites } from '@/lib/sites';
 export const revalidate = 300;
 
 const BASE_COLUMNS: DataTableColumn[] = [
-  { label: 'Source Site', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-300 text-xs' },
+  { label: 'Source Site', rowHeader: true, className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-300 text-xs' },
   { label: 'Pages Crawled', align: 'right', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-right text-neutral-400' },
 ];
 

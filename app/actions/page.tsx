@@ -21,7 +21,7 @@ const KIND_STYLES: Record<ActionQueueItem['kind'], string> = {
 const COLUMNS: DataTableColumn[] = [
   { label: 'Priority', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-3 whitespace-nowrap' },
   { label: 'Site', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-3' },
-  { label: 'Issue', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-3 min-w-[280px]' },
+  { label: 'Issue', rowHeader: true, className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-3 min-w-[280px]' },
   { label: 'Affected', className: 'px-4 py-3 font-semibold hidden lg:table-cell', cellClassName: 'px-4 py-3 hidden lg:table-cell max-w-[260px] truncate' },
   { label: 'Impact', align: 'right', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-3 text-right whitespace-nowrap' },
   { label: '', align: 'right', className: 'px-4 py-3', cellClassName: 'px-4 py-3 text-right whitespace-nowrap' },

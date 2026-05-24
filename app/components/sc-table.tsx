@@ -97,7 +97,7 @@ interface ScTableProps {
 export function ScTable({ heading, columnLabel, rows, emptyMessage, exportData, filename }: ScTableProps) {
   const showCtr = rows.some(r => r.ctr !== undefined);
   const columns: DataTableColumn[] = [
-    { label: columnLabel, className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-300 text-xs truncate max-w-[200px]' },
+    { label: columnLabel, rowHeader: true, className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-300 text-xs truncate max-w-[200px]' },
     { label: 'Clicks', align: 'right', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-300' },
     { label: 'Impr', align: 'right', className: 'px-4 py-3 font-semibold hidden md:table-cell', cellClassName: 'px-4 py-2.5 text-neutral-400 hidden md:table-cell' },
     ...(showCtr

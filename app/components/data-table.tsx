@@ -5,6 +5,7 @@ export interface DataTableColumn {
   align?: 'left' | 'right';
   className?: string;
   cellClassName?: string;
+  rowHeader?: boolean;
 }
 
 interface DataTableProps {
@@ -33,16 +34,21 @@ export function DataTable({
   rowClassName = 'hover:bg-neutral-800/30',
 }: DataTableProps) {
   const joinClassNames = (...parts: Array<string | undefined>) => [...new Set(parts.flatMap((part) => (part ? part.split(/\s+/) : [])))].join(' ');
+  const hasFontWeightClass = (className: string) => /\bfont-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)\b/.test(className);
 
   const getAlignedClassName = (baseClassName: string | undefined, align?: DataTableColumn['align']) =>
     joinClassNames(baseClassName ?? 'px-3 py-2', align === 'right' ? 'text-right' : 'text-left');
 
-  const getCellClassName = (column: DataTableColumn | undefined) =>
-    joinClassNames(
-      column?.cellClassName ?? column?.className ?? 'px-3 py-2',
+  const getCellClassName = (column: DataTableColumn | undefined) => {
+    const baseClassName = column?.cellClassName ?? column?.className ?? 'px-3 py-2';
+
+    return joinClassNames(
+      baseClassName,
+      column?.rowHeader && !hasFontWeightClass(baseClassName) ? 'font-normal' : undefined,
       monospaceCells ? 'font-mono' : undefined,
       column?.align === 'right' ? 'text-right' : undefined,
     );
+  };
 
   return (
     <div className={containerClassName}>
@@ -63,14 +69,31 @@ export function DataTable({
         <tbody className={bodyClassName}>
           {rows.map((cells, i) => (
             <tr key={rowKeys?.[i] ?? i} className={rowClassName}>
-              {cells.map((cell, j) => (
-                <td
-                  key={j}
-                  className={getCellClassName(columns[j])}
-                >
-                  {cell}
-                </td>
-              ))}
+              {cells.map((cell, j) => {
+                const column = columns[j];
+                const className = getCellClassName(column);
+
+                if (column?.rowHeader) {
+                  return (
+                    <th
+                      key={j}
+                      scope="row"
+                      className={className}
+                    >
+                      {cell}
+                    </th>
+                  );
+                }
+
+                return (
+                  <td
+                    key={j}
+                    className={className}
+                  >
+                    {cell}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>

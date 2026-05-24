@@ -8,7 +8,7 @@ import { DataTable, type DataTableColumn } from '../components/data-table';
 export const revalidate = 300;
 
 const ALERT_COLUMNS: DataTableColumn[] = [
-  { label: 'Site', className: 'px-4 py-3 font-medium', cellClassName: 'px-4 py-3' },
+  { label: 'Site', rowHeader: true, className: 'px-4 py-3 font-medium', cellClassName: 'px-4 py-3' },
   { label: 'Metric', className: 'px-4 py-3 font-medium', cellClassName: 'px-4 py-3 text-neutral-300' },
   { label: 'Threshold', className: 'px-4 py-3 font-medium', cellClassName: 'px-4 py-3 text-neutral-300' },
   { label: 'Previous', className: 'px-4 py-3 font-medium', cellClassName: 'px-4 py-3 text-neutral-300' },

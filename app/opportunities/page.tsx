@@ -16,7 +16,7 @@ import TimeRange from '../components/time-range';
 export const revalidate = 300;
 
 const COLUMNS: DataTableColumn[] = [
-  { label: 'Keyword', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 min-w-[200px]' },
+  { label: 'Keyword', rowHeader: true, className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 min-w-[200px]' },
   { label: 'Site', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-400 text-xs whitespace-nowrap' },
   { label: 'Page', className: 'px-4 py-3 font-semibold hidden lg:table-cell', cellClassName: 'px-4 py-2.5 hidden lg:table-cell max-w-[220px] truncate text-xs text-neutral-400' },
   { label: 'Rank', align: 'right', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-right' },
