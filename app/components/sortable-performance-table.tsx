@@ -35,12 +35,12 @@ const COLUMNS: { key: SortKey; label: string; defaultDir: 'asc' | 'desc'; classN
 
 function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   if (!active) return (
-    <svg className="inline ml-1 opacity-25" width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+    <svg aria-hidden="true" className="inline ml-1 opacity-25" width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
       <path d="M5 2l3 3H2l3-3zm0 6L2 5h6L5 8z" />
     </svg>
   );
   return (
-    <svg className="inline ml-1 text-emerald-400" width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+    <svg aria-hidden="true" className="inline ml-1 text-emerald-400" width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
       {dir === 'desc'
         ? <path d="M2 3h6L5 7 2 3z" />
         : <path d="M2 7h6L5 3l-3 4z" />}
@@ -51,6 +51,9 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
 export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
   const [sortKey, setSortKey] = useState<SortKey>('users');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const getNextSortDir = (key: SortKey, defaultDir: 'asc' | 'desc') =>
+    key === sortKey ? (sortDir === 'asc' ? 'desc' : 'asc') : defaultDir;
 
   const handleSort = (key: SortKey, defaultDir: 'asc' | 'desc') => {
     if (key === sortKey) {
@@ -97,12 +100,19 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
             {COLUMNS.map(col => (
               <th
                 key={col.key}
-                className={`px-5 py-3.5 font-semibold text-right cursor-pointer select-none hover:text-neutral-300 transition-colors ${col.className ?? ''} ${sortKey === col.key ? 'text-neutral-200' : ''}`}
-                onClick={() => handleSort(col.key, col.defaultDir)}
-                title={`Sort by ${col.label}`}
+                aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
+                className={`px-5 py-3.5 font-semibold text-right select-none ${col.className ?? ''} ${sortKey === col.key ? 'text-neutral-200' : ''}`}
               >
-                {col.label}
-                <SortIcon active={sortKey === col.key} dir={sortDir} />
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-end rounded-sm text-inherit transition-colors hover:text-neutral-300 focus:outline-none focus-visible:text-neutral-200 focus-visible:ring-1 focus-visible:ring-emerald-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900"
+                  onClick={() => handleSort(col.key, col.defaultDir)}
+                  title={`Sort by ${col.label}`}
+                  aria-label={`Sort by ${col.label} ${getNextSortDir(col.key, col.defaultDir) === 'asc' ? 'ascending' : 'descending'}`}
+                >
+                  {col.label}
+                  <SortIcon active={sortKey === col.key} dir={sortDir} />
+                </button>
               </th>
             ))}
           </tr>
