@@ -25,6 +25,7 @@ export default function NavLinks() {
           <Link
             key={link.href}
             href={link.href}
+            aria-current={active ? 'page' : undefined}
             className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
               active
                 ? 'text-white bg-neutral-800'
