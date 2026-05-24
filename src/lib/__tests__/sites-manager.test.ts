@@ -1,5 +1,41 @@
 import { describe, expect, it } from 'vitest';
-import { formatDiscoverError, formatSiteMutationError } from '../../../app/components/sites-manager';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import SitesManager, { formatDiscoverError, formatSiteMutationError } from '../../../app/components/sites-manager';
+
+describe('SitesManager', () => {
+  it('labels compact managed-site table controls and status glyphs', () => {
+    const html = renderToStaticMarkup(createElement(SitesManager, {
+      hasAuth: false,
+      initialSites: [
+        {
+          id: 'site-a',
+          name: 'Site A',
+          domain: 'a.example.com',
+          color: '#22c55e',
+          ga4PropertyId: '123',
+          searchConsole: true,
+          testPages: ['/'],
+        },
+        {
+          id: 'site-b',
+          name: 'Site B',
+          domain: 'b.example.com',
+          searchConsole: false,
+          testPages: ['/'],
+        },
+      ],
+    }));
+
+    expect(html).toContain('aria-label="Move Site A up"');
+    expect(html).toContain('aria-label="Move Site B down"');
+    expect(html).toContain('Search Console enabled');
+    expect(html).toContain('Search Console disabled');
+    expect(html).toContain('GA4 property configured');
+    expect(html).toContain('GA4 property missing');
+    expect(html).toContain('aria-hidden="true" class="size-2.5 rounded-full');
+  });
+});
 
 describe('formatDiscoverError', () => {
   it('maps known snake_case error codes to operator-facing messages', () => {

@@ -149,6 +149,23 @@ function DiscoverySourceBadge({ source }: { source: DiscoverySource }) {
   );
 }
 
+function AvailabilityGlyph({
+  available,
+  availableLabel,
+  missingLabel,
+}: {
+  available: boolean;
+  availableLabel: string;
+  missingLabel: string;
+}) {
+  return (
+    <span>
+      <span aria-hidden="true">{available ? '✓' : '–'}</span>
+      <span className="sr-only">{available ? availableLabel : missingLabel}</span>
+    </span>
+  );
+}
+
 export default function SitesManager({ initialSites, hasAuth }: Props) {
   const [sites, setSites] = useState<Site[]>(initialSites);
   const [diagnostics, setDiagnostics] = useState<Record<string, SiteDiagnosticResult>>({});
@@ -504,6 +521,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                       <TextButton
                         onClick={() => handleMoveSite(index, -1)}
                         disabled={isEditing || saving || index === 0}
+                        aria-label={`Move ${site.name} up`}
                         size="xxs"
                         variant="reorder"
                       >
@@ -512,6 +530,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                       <TextButton
                         onClick={() => handleMoveSite(index, 1)}
                         disabled={isEditing || saving || index === sites.length - 1}
+                        aria-label={`Move ${site.name} down`}
                         size="xxs"
                         variant="reorder"
                       >
@@ -522,13 +541,19 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   <td className="py-2 pr-4 text-white">
                     <div className="flex items-center gap-2">
                       {site.color && (
-                        <span className="size-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: site.color }} />
+                        <span aria-hidden="true" className="size-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: site.color }} />
                       )}
                       {site.name}
                     </div>
                   </td>
                   <td className="py-2 pr-4 text-neutral-400 font-mono text-xs">{site.domain}</td>
-                  <td className="py-2 pr-4 text-neutral-400">{site.searchConsole !== false ? '✓' : '–'}</td>
+                  <td className="py-2 pr-4 text-neutral-400">
+                    <AvailabilityGlyph
+                      available={site.searchConsole !== false}
+                      availableLabel="Search Console enabled"
+                      missingLabel="Search Console disabled"
+                    />
+                  </td>
                   <td className="py-2 pr-4">
                     {hasAuth ? (
                       diagnostics[site.id] ? (
@@ -546,7 +571,13 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                       <StatusBadge status="loading" message="No service account" />
                     )}
                   </td>
-                  <td className="py-2 pr-4 text-neutral-400">{site.ga4PropertyId ? '✓' : '–'}</td>
+                  <td className="py-2 pr-4 text-neutral-400">
+                    <AvailabilityGlyph
+                      available={Boolean(site.ga4PropertyId)}
+                      availableLabel="GA4 property configured"
+                      missingLabel="GA4 property missing"
+                    />
+                  </td>
                   <td className="py-2 pr-4">
                     {hasAuth ? (
                       diagnostics[site.id] ? (
