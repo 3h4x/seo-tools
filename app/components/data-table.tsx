@@ -13,6 +13,7 @@ export interface DataTableColumn {
 interface DataTableProps {
   columns: DataTableColumn[];
   rows: ReactNode[][];
+  caption?: ReactNode;
   rowKeys?: Array<string | number>;
   monospaceCells?: boolean;
   tableClassName?: string;
@@ -26,6 +27,7 @@ interface DataTableProps {
 export function DataTable({
   columns,
   rows,
+  caption,
   rowKeys,
   monospaceCells = true,
   tableClassName = 'w-full text-sm',
@@ -73,6 +75,7 @@ export function DataTable({
   return (
     <div className={containerClassName}>
       <table className={tableClassName}>
+        {caption != null && <caption className="sr-only">{caption}</caption>}
         <thead className={headClassName}>
           <tr className={headRowClassName}>
             {columns.map((col, i) => (

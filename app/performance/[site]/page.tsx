@@ -13,6 +13,7 @@ import TrendChart from '../../components/trend-chart';
 import CwvSetupGuide from '../../components/cwv-setup-guide';
 import { CwvCell } from '../../components/cwv-cell';
 import { CwvMetricsCards } from '../../components/cwv-metrics-cards';
+import { DataTable, type DataTableColumn } from '../../components/data-table';
 
 export const revalidate = 300;
 
@@ -39,6 +40,16 @@ export default async function PerfSiteDetail({
   const psiNeedsKey = perf.needsKey;
   const psiMobile = psi.mobile;
   const psiDesktop = psi.desktop;
+  const slowestPageColumns: DataTableColumn[] = [
+    { label: 'Path', rowHeader: true, className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2 font-mono text-xs font-normal text-left text-neutral-300' },
+    { label: 'Samples', align: 'right', className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2 text-right font-mono text-neutral-400' },
+    ...CWV_METRIC_ORDER.map((name) => ({
+      label: name,
+      align: 'right' as const,
+      className: 'px-3 py-2 font-semibold',
+      cellClassName: 'px-3 py-2 text-right',
+    })),
+  ];
 
   return (
     <div className="space-y-8">
@@ -138,36 +149,24 @@ export default async function PerfSiteDetail({
       {slowestPages.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Slowest pages</h2>
-          <div className="overflow-hidden rounded border border-neutral-800">
-            <table className="w-full text-sm">
-              <caption className="sr-only">Slowest pages by Core Web Vitals samples</caption>
-              <thead>
-                <tr className="border-b border-neutral-800 text-neutral-500">
-                  <th scope="col" className="px-3 py-2 text-left font-semibold">Path</th>
-                  <th scope="col" className="px-3 py-2 text-right font-semibold">Samples</th>
-                  {CWV_METRIC_ORDER.map(n => (
-                    <th key={n} scope="col" className="px-3 py-2 text-right font-semibold">{n}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-800">
-                {slowestPages.map((row) => (
-                  <tr key={row.path} className="hover:bg-neutral-800/30">
-                    <th scope="row" className="px-3 py-2 font-mono text-xs font-normal text-left text-neutral-300">{row.path}</th>
-                    <td className="px-3 py-2 text-right font-mono text-neutral-400">{row.totalSamples.toLocaleString()}</td>
-                    {CWV_METRIC_ORDER.map((name) => {
-                      const m = row.metrics[name];
-                      return (
-                        <td key={name} className="px-3 py-2 text-right">
-                          <CwvCell name={name} value={m?.value} rating={m?.rating} />
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={slowestPageColumns}
+            rows={slowestPages.map((row) => [
+              row.path,
+              row.totalSamples.toLocaleString(),
+              ...CWV_METRIC_ORDER.map((name) => {
+                const m = row.metrics[name];
+                return <CwvCell key={name} name={name} value={m?.value} rating={m?.rating} />;
+              }),
+            ])}
+            caption="Slowest pages by Core Web Vitals samples"
+            rowKeys={slowestPages.map((row) => row.path)}
+            monospaceCells={false}
+            containerClassName="overflow-hidden rounded border border-neutral-800"
+            tableClassName="w-full text-sm"
+            headRowClassName="border-b border-neutral-800 text-neutral-500"
+            rowClassName="hover:bg-neutral-800/30"
+          />
         </section>
       )}
 

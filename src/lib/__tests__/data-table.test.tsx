@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import type { ReactElement } from 'react';
 import { describe, expect, it } from 'vitest';
 import { DataTable } from '../../../app/components/data-table';
 import { TrendsTable } from '../../../app/components/trends-table';
@@ -174,7 +175,8 @@ describe('DataTable', () => {
     });
 
     const table = element.props.children;
-    const [, tbody] = table.props.children;
+    const tableChildren = Array.isArray(table.props.children) ? table.props.children : [table.props.children];
+    const tbody = tableChildren[tableChildren.length - 1] as ReactElement<{ children: ReactElement[] }>;
     const [firstRow, secondRow] = tbody.props.children;
 
     expect(firstRow.key).toBe('alpha');
@@ -271,5 +273,17 @@ describe('DataTable', () => {
     expect(html).toContain('<th scope="col" class="px-4 py-3 font-semibold hidden md:table-cell text-right">Impressions</th>');
     expect(html).toContain('<td class="px-4 py-2.5 text-right hidden md:table-cell font-mono"><span>120</span></td>');
     expect(html).toContain('<tr class="hover:bg-neutral-800/30 transition-colors">');
+  });
+
+  it('renders an accessible caption when provided', () => {
+    const html = renderToStaticMarkup(
+      <DataTable
+        columns={[{ label: 'Path' }]}
+        rows={[[<span key="path">/pricing</span>]]}
+        caption="Slowest pages by Core Web Vitals samples"
+      />
+    );
+
+    expect(html).toContain('<caption class="sr-only">Slowest pages by Core Web Vitals samples</caption>');
   });
 });
