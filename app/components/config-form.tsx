@@ -143,7 +143,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
       </div>
 
       {testState === 'ok' && (
-        <p className="text-sm text-green-400">Connection OK</p>
+        <p className="text-sm text-green-400" role="status">Connection OK</p>
       )}
       {testState === 'error' && (
         <p className="text-sm text-red-400" role="alert">{errorMsg}</p>

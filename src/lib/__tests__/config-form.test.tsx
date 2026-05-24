@@ -23,6 +23,21 @@ describe('ConfigForm', () => {
     expect(html).toContain('Request failed — check console');
   });
 
+  it('renders successful connection checks as a status update', () => {
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => ['', vi.fn()])
+      .mockImplementationOnce(() => ['db', vi.fn()])
+      .mockImplementationOnce(() => ['ok', vi.fn()])
+      .mockImplementationOnce(() => ['', vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()]);
+
+    const html = renderToStaticMarkup(<ConfigForm source="db" />);
+
+    expect(html).toContain('role="status"');
+    expect(html).toContain('Connection OK');
+  });
+
   it('renders the remove button only when source is db', () => {
     const noneHtml = renderToStaticMarkup(<ConfigForm source="none" />);
     expect(noneHtml).not.toContain('Remove');

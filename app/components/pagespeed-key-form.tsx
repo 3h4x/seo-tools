@@ -177,7 +177,7 @@ export default function PagespeedKeyForm() {
         />
       </div>
 
-      {testState === 'ok' && <p className="text-sm text-green-400">Key works</p>}
+      {testState === 'ok' && <p className="text-sm text-green-400" role="status">Key works</p>}
       {testState === 'error' && <p className="text-sm text-red-400" role="alert">{errorMsg}</p>}
 
       <div className="flex gap-2 flex-wrap">

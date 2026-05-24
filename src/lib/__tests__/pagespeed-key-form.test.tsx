@@ -58,6 +58,22 @@ describe('PagespeedKeyForm', () => {
     expect(html).toContain('Request failed');
   });
 
+  it('renders successful PageSpeed checks as a status update', () => {
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => ['none', vi.fn()])
+      .mockImplementationOnce(() => ['', vi.fn()])
+      .mockImplementationOnce(() => ['ok', vi.fn()])
+      .mockImplementationOnce(() => ['', vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()]);
+
+    const html = renderToStaticMarkup(<PagespeedKeyForm />);
+
+    expect(html).toContain('role="status"');
+    expect(html).toContain('Key works');
+  });
+
   it('disables the remove button while removing a stored key', () => {
     vi.spyOn(React, 'useState')
       .mockImplementationOnce(() => ['db', vi.fn()])

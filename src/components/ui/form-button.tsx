@@ -27,12 +27,14 @@ export function FormButton({
   children,
   className = '',
   size = 'md',
+  type = 'button',
   variant = 'secondary',
   ...props
 }: FormButtonProps) {
   return (
     <button
       className={`${SIZE_CLASSES[size]} rounded-md transition-colors ${VARIANT_CLASSES[variant]} ${className}`}
+      type={type}
       {...props}
     >
       {children}

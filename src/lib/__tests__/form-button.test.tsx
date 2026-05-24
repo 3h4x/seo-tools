@@ -3,6 +3,26 @@ import { describe, expect, it } from 'vitest';
 import { FormButton } from '../../../src/components/ui/form-button';
 
 describe('FormButton', () => {
+  it('defaults to a non-submit button type', () => {
+    const html = renderToStaticMarkup(
+      <FormButton>
+        Save
+      </FormButton>
+    );
+
+    expect(html).toContain('type="button"');
+  });
+
+  it('allows callers to opt into submit behavior', () => {
+    const html = renderToStaticMarkup(
+      <FormButton type="submit">
+        Save
+      </FormButton>
+    );
+
+    expect(html).toContain('type="submit"');
+  });
+
   it('keeps disabled affordances for danger actions', () => {
     const html = renderToStaticMarkup(
       <FormButton variant="danger" disabled>
