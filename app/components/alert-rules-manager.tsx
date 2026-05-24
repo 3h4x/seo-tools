@@ -5,6 +5,7 @@ import { Badge, FormButton, FormCheckbox, FormInput, FormSelect, TextButton } fr
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
+import { DataTable, type DataTableColumn } from './data-table';
 import { Skeleton } from './skeletons';
 
 type FormState = {
@@ -29,6 +30,36 @@ export function isMetricBlockedBySite(metric: AlertMetric, site: Pick<Site, 'sea
 const METRIC_DISABLED_REASONS: Partial<Record<AlertMetric, string>> = {
   sc_clicks: 'Search Console disabled — rule will not fire',
 };
+
+const ALERT_RULE_COLUMNS: DataTableColumn[] = [
+  {
+    label: 'Site',
+    rowHeader: true,
+    className: 'py-2 pr-4 font-medium',
+    cellClassName: 'py-2 pr-4 font-normal text-left text-white',
+  },
+  {
+    label: 'Metric',
+    className: 'py-2 pr-4 font-medium',
+    cellClassName: 'py-2 pr-4 text-neutral-300',
+  },
+  {
+    label: 'Threshold',
+    className: 'py-2 pr-4 font-medium',
+    cellClassName: 'py-2 pr-4 text-neutral-300',
+  },
+  {
+    label: 'Channels',
+    className: 'py-2 pr-4 font-medium',
+    cellClassName: 'py-2 pr-4 text-neutral-400',
+  },
+  {
+    label: <span className="sr-only">Actions</span>,
+    key: 'actions',
+    className: 'py-2 font-medium',
+    cellClassName: 'py-2',
+  },
+];
 
 const ALERT_RULE_ERROR_MESSAGES: Record<string, string> = {
   failed_to_load_alert_rules: 'Could not load alert rules. Check server logs.',
@@ -191,64 +222,54 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
       ) : rules.length === 0 ? (
         <p className="text-sm text-neutral-500">No rules yet.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <caption className="sr-only">Configured alert rules</caption>
-            <thead>
-              <tr className="text-neutral-500 border-b border-neutral-800">
-                <th scope="col" className="py-2 pr-4 font-medium">Site</th>
-                <th scope="col" className="py-2 pr-4 font-medium">Metric</th>
-                <th scope="col" className="py-2 pr-4 font-medium">Threshold</th>
-                <th scope="col" className="py-2 pr-4 font-medium">Channels</th>
-                <th scope="col" className="py-2 font-medium" aria-label="Actions"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rules.map((rule) => {
-                const site = sites.find((entry) => entry.id === rule.siteId);
-                const metricBlocked = isMetricBlockedBySite(rule.metric, site);
-                return (
-                  <tr key={rule.id} className="border-b border-neutral-900">
-                    <th scope="row" className="py-2 pr-4 font-normal text-left text-white">{site?.name ?? rule.siteId}</th>
-                    <td className="py-2 pr-4 text-neutral-300">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span>{METRIC_OPTIONS.find((option) => option.value === rule.metric)?.label ?? rule.metric}</span>
-                        {metricBlocked && (
-                          <Badge className="border-amber-500/40 bg-amber-500/10 text-amber-300">
-                            {METRIC_DISABLED_REASONS[rule.metric] ?? 'Inactive'}
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-2 pr-4 text-neutral-300">{rule.thresholdPct}% drop</td>
-                    <td className="py-2 pr-4 text-neutral-400">{rule.channels.join(', ')}</td>
-                    <td className="py-2">
-                      <div className="flex gap-2">
-                        <TextButton
-                          onClick={() => setForm({
-                            id: rule.id,
-                            siteId: rule.siteId,
-                            metric: rule.metric,
-                            thresholdPct: String(rule.thresholdPct),
-                            channels: rule.channels,
-                          })}
-                        >
-                          Edit
-                        </TextButton>
-                        <TextButton
-                          variant="danger"
-                          onClick={() => void handleDelete(rule.id)}
-                        >
-                          Delete
-                        </TextButton>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          caption="Configured alert rules"
+          columns={ALERT_RULE_COLUMNS}
+          rows={rules.map((rule) => {
+            const site = sites.find((entry) => entry.id === rule.siteId);
+            const metricBlocked = isMetricBlockedBySite(rule.metric, site);
+
+            return [
+              site?.name ?? rule.siteId,
+              <div key="metric" className="flex flex-wrap items-center gap-2">
+                <span>{METRIC_OPTIONS.find((option) => option.value === rule.metric)?.label ?? rule.metric}</span>
+                {metricBlocked && (
+                  <Badge className="border-amber-500/40 bg-amber-500/10 text-amber-300">
+                    {METRIC_DISABLED_REASONS[rule.metric] ?? 'Inactive'}
+                  </Badge>
+                )}
+              </div>,
+              `${rule.thresholdPct}% drop`,
+              rule.channels.join(', '),
+              <div key="actions" className="flex gap-2">
+                <TextButton
+                  onClick={() => setForm({
+                    id: rule.id,
+                    siteId: rule.siteId,
+                    metric: rule.metric,
+                    thresholdPct: String(rule.thresholdPct),
+                    channels: rule.channels,
+                  })}
+                >
+                  Edit
+                </TextButton>
+                <TextButton
+                  variant="danger"
+                  onClick={() => void handleDelete(rule.id)}
+                >
+                  Delete
+                </TextButton>
+              </div>,
+            ];
+          })}
+          rowKeys={rules.map((rule) => rule.id)}
+          monospaceCells={false}
+          containerClassName="overflow-x-auto"
+          tableClassName="w-full text-sm text-left"
+          headRowClassName="text-neutral-500 border-b border-neutral-800"
+          bodyClassName=""
+          rowClassName="border-b border-neutral-900"
+        />
       )}
 
       <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 space-y-4">
