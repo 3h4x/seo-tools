@@ -57,6 +57,9 @@ function ExportButton({ data, filename, label = 'Export CSV' }: {
           : '!bg-neutral-800 !text-neutral-400 !border-neutral-700 hover:!text-neutral-200 hover:!border-neutral-600'
       }`}
     >
+      <span className="sr-only" role="status" aria-live="polite">
+        {done ? `Saved ${filename}` : ''}
+      </span>
       {done ? (
         <>
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="shrink-0">

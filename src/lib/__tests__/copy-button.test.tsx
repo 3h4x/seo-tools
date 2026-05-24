@@ -18,4 +18,13 @@ describe('CopyButton', () => {
     expect(html).not.toContain('!rounded');
     expect(html).toContain('text-[10px] px-1.5 py-0.5');
   });
+
+  it('includes a polite status region for copy feedback', () => {
+    const html = renderToStaticMarkup(
+      <CopyButton text="https://example.test" label="domain" />
+    );
+
+    expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+  });
 });

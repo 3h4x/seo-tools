@@ -36,6 +36,9 @@ export function CopyButton({ text, label, className = '' }: CopyButtonProps) {
       } ${className}`}
       title={`Copy ${label || 'to clipboard'}`}
     >
+      <span className="sr-only" role="status" aria-live="polite">
+        {copied ? `Copied ${label || 'text'} to clipboard` : ''}
+      </span>
       {copied ? (
         <>
           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
