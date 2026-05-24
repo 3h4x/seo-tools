@@ -139,6 +139,8 @@ describe('Opportunities page', () => {
     expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledTimes(1);
     expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:b.test', 'site-b', 28);
     expect(html).toContain('Showing 1 of 1 opportunities for b.test');
+    expect(html).toContain('aria-label="Filter opportunities by site"');
+    expect(html).toContain('<a href="/opportunities?days=28&amp;site=b.test" aria-current="page"');
   });
 
   it('handles repeated days and site searchParams without widening the fetch', async () => {
@@ -172,6 +174,7 @@ describe('Opportunities page', () => {
     expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:a.test', 'site-a', 28);
     expect(mockCachedGetKeywordOpportunities).toHaveBeenCalledWith('sc-domain:b.test', 'site-b', 28);
     expect(html).toContain('Showing 2 of 2 opportunities across all sites');
+    expect(html).toContain('<a href="/opportunities?days=28" aria-current="page"');
   });
 
   it('shows a config-focused empty state when no sites have Search Console enabled', async () => {

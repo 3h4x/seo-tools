@@ -17,6 +17,7 @@ import { getDb, upsertGa4Daily, upsertScDaily } from '../db';
 import { discoverPropertyIds } from '../ga4';
 import { getAuth } from '../google-auth';
 import { getManagedSites, getSCUrl } from '../sites';
+import { batchRanges } from '../date-only';
 
 beforeEach(() => {
   vi.resetModules();
@@ -128,33 +129,28 @@ function mockClients(options?: {
 }
 
 describe('batchRanges', () => {
-  it('returns empty array for empty input', async () => {
-    const { batchRanges } = await loadCollectDailyModule();
+  it('returns empty array for empty input', () => {
     expect(batchRanges([])).toEqual([]);
   });
 
-  it('returns single range for a single date', async () => {
-    const { batchRanges } = await loadCollectDailyModule();
+  it('returns single range for a single date', () => {
     expect(batchRanges(['2024-01-15'])).toEqual([{ start: '2024-01-15', end: '2024-01-15' }]);
   });
 
-  it('returns single range for consecutive dates', async () => {
-    const { batchRanges } = await loadCollectDailyModule();
+  it('returns single range for consecutive dates', () => {
     expect(batchRanges(['2024-01-01', '2024-01-02', '2024-01-03'])).toEqual([
       { start: '2024-01-01', end: '2024-01-03' },
     ]);
   });
 
-  it('splits non-consecutive dates into separate ranges', async () => {
-    const { batchRanges } = await loadCollectDailyModule();
+  it('splits non-consecutive dates into separate ranges', () => {
     expect(batchRanges(['2024-01-01', '2024-01-03'])).toEqual([
       { start: '2024-01-01', end: '2024-01-01' },
       { start: '2024-01-03', end: '2024-01-03' },
     ]);
   });
 
-  it('handles multiple gaps correctly', async () => {
-    const { batchRanges } = await loadCollectDailyModule();
+  it('handles multiple gaps correctly', () => {
     const dates = ['2024-01-01', '2024-01-02', '2024-01-05', '2024-01-06', '2024-01-10'];
     expect(batchRanges(dates)).toEqual([
       { start: '2024-01-01', end: '2024-01-02' },
@@ -163,28 +159,24 @@ describe('batchRanges', () => {
     ]);
   });
 
-  it('sorts input dates before batching', async () => {
-    const { batchRanges } = await loadCollectDailyModule();
+  it('sorts input dates before batching', () => {
     const unordered = ['2024-01-03', '2024-01-01', '2024-01-02'];
     expect(batchRanges(unordered)).toEqual([{ start: '2024-01-01', end: '2024-01-03' }]);
   });
 
-  it('handles month boundary correctly', async () => {
-    const { batchRanges } = await loadCollectDailyModule();
+  it('handles month boundary correctly', () => {
     expect(batchRanges(['2024-01-31', '2024-02-01'])).toEqual([
       { start: '2024-01-31', end: '2024-02-01' },
     ]);
   });
 
-  it('handles year boundary correctly', async () => {
-    const { batchRanges } = await loadCollectDailyModule();
+  it('handles year boundary correctly', () => {
     expect(batchRanges(['2023-12-31', '2024-01-01'])).toEqual([
       { start: '2023-12-31', end: '2024-01-01' },
     ]);
   });
 
-  it('does not mutate input array', async () => {
-    const { batchRanges } = await loadCollectDailyModule();
+  it('does not mutate input array', () => {
     const input = ['2024-01-03', '2024-01-01'];
     batchRanges(input);
     expect(input).toEqual(['2024-01-03', '2024-01-01']);

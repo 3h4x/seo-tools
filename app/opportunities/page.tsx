@@ -105,9 +105,10 @@ export default async function OpportunitiesPage({
       </div>
 
       {scSites.length > 1 && (
-        <div className="flex gap-2 flex-wrap">
+        <nav className="flex gap-2 flex-wrap" aria-label="Filter opportunities by site">
           <a
             href={opportunitiesHref(days)}
+            aria-current={!siteFilter ? 'page' : undefined}
             className={`px-3 py-1 rounded text-sm ${!siteFilter ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
           >
             All sites
@@ -116,12 +117,13 @@ export default async function OpportunitiesPage({
             <a
               key={site.id}
               href={opportunitiesHref(days, site.domain)}
+              aria-current={siteFilter === site.domain ? 'page' : undefined}
               className={`px-3 py-1 rounded text-sm ${siteFilter === site.domain ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
             >
               {site.domain}
             </a>
           ))}
-        </div>
+        </nav>
       )}
 
       {top.length === 0 ? (

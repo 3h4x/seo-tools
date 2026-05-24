@@ -8,6 +8,7 @@ const config = {
     environment: 'node',
     globals: false,
     exclude: ['node_modules', 'e2e'],
+    setupFiles: ['./src/test/setup.ts'],
   },
   resolve: {
     alias: [

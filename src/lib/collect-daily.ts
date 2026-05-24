@@ -5,7 +5,8 @@ import { getDb, upsertScDaily, upsertGa4Daily } from './db';
 import { getManagedSites, getSCUrl } from './sites';
 import { discoverPropertyIds } from './ga4';
 import { normalizeGa4PropertyId } from './ga4-property';
-import { dateStr, parseDateOnly } from './date-only';
+import { batchRanges, dateStr, parseDateOnly } from './date-only';
+export { batchRanges } from './date-only';
 
 const LOOKBACK_DAYS = 90;
 const COLLECT_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
@@ -55,26 +56,6 @@ function getMissingDates(table: string, siteId: string, source: string, startDat
     cur.setDate(cur.getDate() + 1);
   }
   return missing;
-}
-
-export function batchRanges(dates: string[]): Array<{ start: string; end: string }> {
-  if (dates.length === 0) return [];
-  const sorted = [...dates].sort();
-  const ranges: Array<{ start: string; end: string }> = [];
-  let rangeStart = sorted[0];
-  let prev = sorted[0];
-
-  for (let i = 1; i < sorted.length; i++) {
-    const expected = parseDateOnly(prev);
-    expected.setDate(expected.getDate() + 1);
-    if (sorted[i] !== dateStr(expected)) {
-      ranges.push({ start: rangeStart, end: prev });
-      rangeStart = sorted[i];
-    }
-    prev = sorted[i];
-  }
-  ranges.push({ start: rangeStart, end: prev });
-  return ranges;
 }
 
 async function collectDaily(): Promise<void> {
