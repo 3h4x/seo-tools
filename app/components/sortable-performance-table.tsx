@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { TextButton } from '@/components/ui';
 import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
 import { formatBounce, formatDuration } from '@/lib/format';
@@ -103,16 +104,16 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
                 aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
                 className={`px-5 py-3.5 font-semibold text-right select-none ${col.className ?? ''} ${sortKey === col.key ? 'text-neutral-200' : ''}`}
               >
-                <button
+                <TextButton
                   type="button"
-                  className="inline-flex items-center justify-end rounded-sm text-inherit transition-colors hover:text-neutral-300 focus:outline-none focus-visible:text-neutral-200 focus-visible:ring-1 focus-visible:ring-emerald-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900"
+                  className="inline-flex items-center justify-end rounded-sm !text-inherit hover:!text-neutral-300 focus:outline-none focus-visible:!text-neutral-200 focus-visible:ring-1 focus-visible:ring-emerald-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900"
                   onClick={() => handleSort(col.key, col.defaultDir)}
                   title={`Sort by ${col.label}`}
                   aria-label={`Sort by ${col.label} ${getNextSortDir(col.key, col.defaultDir) === 'asc' ? 'ascending' : 'descending'}`}
                 >
                   {col.label}
                   <SortIcon active={sortKey === col.key} dir={sortDir} />
-                </button>
+                </TextButton>
               </th>
             ))}
           </tr>

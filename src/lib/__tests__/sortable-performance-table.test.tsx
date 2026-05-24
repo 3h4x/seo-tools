@@ -45,7 +45,7 @@ describe('SortablePerformanceTable', () => {
     const html = renderToStaticMarkup(<SortablePerformanceTable rows={rows} />);
 
     expect(html).toContain('aria-sort="descending"');
-    expect(html).toContain('<button type="button"');
+    expect(html).toMatch(/<button\b[^>]*type="button"/);
     expect(html).toContain('aria-label="Sort by Users ascending"');
     expect(html).toContain('aria-label="Sort by Sessions descending"');
     expect(html).toContain('<svg aria-hidden="true"');
