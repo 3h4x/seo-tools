@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfiguredNotice, FormButton, FormInput, FormTextarea } from '@/components/ui';
+import { Badge, ConfiguredNotice, FormButton, FormInput, FormTextarea } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -165,9 +165,9 @@ export default function AlertDeliveryForm() {
       <div className="flex items-center gap-3">
         <h2 className="text-base font-semibold text-white">Alert Delivery</h2>
         {sources && (
-          <span className="text-xs px-2 py-0.5 rounded bg-neutral-800 text-neutral-400">
+          <Badge size="compact" shape="rounded" className="border-neutral-700 bg-neutral-800 text-neutral-400">
             Email key: {sources.resendApiKey}
-          </span>
+          </Badge>
         )}
       </div>
       <p className="text-xs text-neutral-500">
