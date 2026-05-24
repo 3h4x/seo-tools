@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ConfiguredNotice, FormButton, FormTextarea } from '@/components/ui';
+import { Badge, ConfiguredNotice, FormButton, FormTextarea } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -112,9 +112,9 @@ export default function ConfigForm({ source: initialSource }: Props) {
       <div className="flex items-center gap-3">
         <h1 className="text-lg font-semibold text-white">Google Service Account Key</h1>
         {sourceBadge[source] && (
-          <span className="text-xs px-2 py-0.5 rounded bg-neutral-800 text-neutral-400">
+          <Badge size="compact" shape="rounded" className="border-neutral-700 bg-neutral-800 text-neutral-400">
             {sourceBadge[source]}
-          </span>
+          </Badge>
         )}
       </div>
 
