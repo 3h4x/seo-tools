@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
 
 export interface DataTableColumn {
-  label: string;
+  label: ReactNode;
+  key?: string;
   align?: 'left' | 'right';
   className?: string;
   cellClassName?: string;
   rowHeader?: boolean;
+  ariaSort?: 'ascending' | 'descending' | 'none' | 'other';
 }
 
 interface DataTableProps {
@@ -18,7 +20,7 @@ interface DataTableProps {
   headClassName?: string;
   headRowClassName?: string;
   bodyClassName?: string;
-  rowClassName?: string;
+  rowClassName?: string | ((row: ReactNode[], index: number) => string);
 }
 
 export function DataTable({
@@ -37,8 +39,18 @@ export function DataTable({
   const hasFontWeightClass = (className: string) => /\bfont-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)\b/.test(className);
   const hasTextAlignClass = (className: string) => /\btext-(?:left|center|right|justify|start|end)\b/.test(className);
 
-  const getAlignedClassName = (baseClassName: string | undefined, align?: DataTableColumn['align']) =>
-    joinClassNames(baseClassName ?? 'px-3 py-2', align === 'right' ? 'text-right' : 'text-left');
+  const getHeaderClassName = (column: DataTableColumn) => {
+    const baseClassName = column.className ?? 'px-3 py-2 font-semibold';
+    const alignmentClass = hasTextAlignClass(baseClassName)
+      ? undefined
+      : column.align === 'right'
+        ? 'text-right'
+        : column.align === 'left' || column.rowHeader || !column.className
+          ? 'text-left'
+          : undefined;
+
+    return joinClassNames(baseClassName, alignmentClass);
+  };
 
   const getCellClassName = (column: DataTableColumn | undefined) => {
     const baseClassName = column?.cellClassName ?? column?.className ?? 'px-3 py-2';
@@ -65,9 +77,10 @@ export function DataTable({
           <tr className={headRowClassName}>
             {columns.map((col, i) => (
               <th
-                key={`${col.label}-${i}`}
+                key={col.key ?? `${String(col.label)}-${i}`}
                 scope="col"
-                className={getAlignedClassName(col.className ?? 'px-3 py-2 font-semibold', col.align)}
+                aria-sort={col.ariaSort}
+                className={getHeaderClassName(col)}
               >
                 {col.label}
               </th>
@@ -76,7 +89,7 @@ export function DataTable({
         </thead>
         <tbody className={bodyClassName}>
           {rows.map((cells, i) => (
-            <tr key={rowKeys?.[i] ?? i} className={rowClassName}>
+            <tr key={rowKeys?.[i] ?? i} className={typeof rowClassName === 'function' ? rowClassName(cells, i) : rowClassName}>
               {cells.map((cell, j) => {
                 const column = columns[j];
                 const className = getCellClassName(column);

@@ -231,6 +231,17 @@ describe('DataTable', () => {
     expect(html).toContain('<td class="px-3 py-2 font-mono text-right"><span>10</span></td>');
   });
 
+  it('left-aligns custom styled row-header column headers', () => {
+    const html = renderToStaticMarkup(
+      <DataTable
+        columns={[{ label: 'Site', rowHeader: true, className: 'px-4 py-3 font-medium' }]}
+        rows={[[<span key="site">Example</span>]]}
+      />
+    );
+
+    expect(html).toContain('<th scope="col" class="px-4 py-3 font-medium text-left">Site</th>');
+  });
+
   it('does not force normal weight on styled row headers', () => {
     const html = renderToStaticMarkup(
       <DataTable
