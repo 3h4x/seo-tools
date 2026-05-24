@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormButton } from '@/components/ui';
+import { FormButton, Spinner } from '@/components/ui';
 import { formatNetworkError } from '@/lib/request-result';
 
 type PingState = {
@@ -129,8 +129,9 @@ export function IndexNowButton({
         onClick={handlePing}
         disabled={!configured || submitting}
         size="xs"
-        className="border border-neutral-700"
+        className="inline-flex items-center gap-1.5 border border-neutral-700"
       >
+        {submitting && <Spinner />}
         {submitting ? 'Pinging…' : 'Ping IndexNow'}
       </FormButton>
       {!configured && (

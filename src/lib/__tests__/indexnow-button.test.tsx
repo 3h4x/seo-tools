@@ -56,4 +56,15 @@ describe('IndexNowButton', () => {
     expect(html).toContain('role="alert"');
     expect(html).toContain('IndexNow rejected the submission (422)');
   });
+
+  it('uses the shared spinner while submitting', () => {
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => [true, vi.fn()])
+      .mockImplementationOnce(() => [null, vi.fn()]);
+
+    const html = renderToStaticMarkup(<IndexNowButton siteId="site-a" configured />);
+
+    expect(html).toContain('animate-spin');
+    expect(html).toContain('Pinging…');
+  });
 });
