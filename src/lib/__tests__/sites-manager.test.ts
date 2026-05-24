@@ -36,6 +36,8 @@ describe('SitesManager', () => {
     expect(html).toContain('GA4 property configured');
     expect(html).toContain('GA4 property missing');
     expect(html).toContain('aria-hidden="true" class="size-2.5 rounded-full');
+    expect(html).not.toContain('<td class="py-2 flex gap-2">');
+    expect(html).toContain('<td class="py-2"><div class="flex gap-2">');
   });
 });
 

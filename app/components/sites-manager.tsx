@@ -596,37 +596,39 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                       <StatusBadge status="loading" message="No service account" />
                     )}
                   </td>
-                  <td className="py-2 flex gap-2">
-                    <TextButton
-                      onClick={() => startEdit(site)}
-                      disabled={isEditing || saving}
-                    >
-                      Edit
-                    </TextButton>
-                    {deleteConfirm === site.id ? (
-                      <>
-                        <TextButton
-                          onClick={() => handleDelete(site.id)}
-                          variant="danger"
-                        >
-                          Confirm
-                        </TextButton>
-                        <TextButton
-                          onClick={() => setDeleteConfirm(null)}
-                          variant="quiet"
-                        >
-                          Cancel
-                        </TextButton>
-                      </>
-                    ) : (
+                  <td className="py-2">
+                    <div className="flex gap-2">
                       <TextButton
-                        onClick={() => setDeleteConfirm(site.id)}
+                        onClick={() => startEdit(site)}
                         disabled={isEditing || saving}
-                        variant="danger-muted"
                       >
-                        Delete
+                        Edit
                       </TextButton>
-                    )}
+                      {deleteConfirm === site.id ? (
+                        <>
+                          <TextButton
+                            onClick={() => handleDelete(site.id)}
+                            variant="danger"
+                          >
+                            Confirm
+                          </TextButton>
+                          <TextButton
+                            onClick={() => setDeleteConfirm(null)}
+                            variant="quiet"
+                          >
+                            Cancel
+                          </TextButton>
+                        </>
+                      ) : (
+                        <TextButton
+                          onClick={() => setDeleteConfirm(site.id)}
+                          disabled={isEditing || saving}
+                          variant="danger-muted"
+                        >
+                          Delete
+                        </TextButton>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

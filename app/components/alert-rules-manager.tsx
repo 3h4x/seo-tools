@@ -222,24 +222,26 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
                     </td>
                     <td className="py-2 pr-4 text-neutral-300">{rule.thresholdPct}% drop</td>
                     <td className="py-2 pr-4 text-neutral-400">{rule.channels.join(', ')}</td>
-                    <td className="py-2 flex gap-2">
-                      <TextButton
-                        onClick={() => setForm({
-                          id: rule.id,
-                          siteId: rule.siteId,
-                          metric: rule.metric,
-                          thresholdPct: String(rule.thresholdPct),
-                          channels: rule.channels,
-                        })}
-                      >
-                        Edit
-                      </TextButton>
-                      <TextButton
-                        variant="danger"
-                        onClick={() => void handleDelete(rule.id)}
-                      >
-                        Delete
-                      </TextButton>
+                    <td className="py-2">
+                      <div className="flex gap-2">
+                        <TextButton
+                          onClick={() => setForm({
+                            id: rule.id,
+                            siteId: rule.siteId,
+                            metric: rule.metric,
+                            thresholdPct: String(rule.thresholdPct),
+                            channels: rule.channels,
+                          })}
+                        >
+                          Edit
+                        </TextButton>
+                        <TextButton
+                          variant="danger"
+                          onClick={() => void handleDelete(rule.id)}
+                        >
+                          Delete
+                        </TextButton>
+                      </div>
                     </td>
                   </tr>
                 );
