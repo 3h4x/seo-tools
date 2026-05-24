@@ -23,26 +23,37 @@ if (typeof window !== 'undefined') {
   onLCP(send); onINP(send); onCLS(send); onFCP(send); onTTFB(send);
 }`;
 
+const SETUP_GUIDE_TRIGGER_ID = 'cwv-setup-guide-trigger';
+const SETUP_GUIDE_PANEL_ID = 'cwv-setup-guide-panel';
+
 export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
     <section className="border border-neutral-800 rounded-lg bg-neutral-900/40">
       <FormButton
+        id={SETUP_GUIDE_TRIGGER_ID}
         type="button"
         variant="ghost"
         size="row"
+        aria-controls={SETUP_GUIDE_PANEL_ID}
+        aria-expanded={open ? 'true' : 'false'}
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between text-left"
       >
         <span className="flex items-center gap-2">
-          <span className="text-neutral-500">{open ? '▾' : '▸'}</span>
+          <span className="text-neutral-500" aria-hidden="true">{open ? '▾' : '▸'}</span>
           How to wire Core Web Vitals (GTM + GA4)
         </span>
         <span className="text-xs text-neutral-500">required once per project</span>
       </FormButton>
       {open && (
-        <div className="px-4 pb-5 space-y-5 text-sm text-neutral-300">
+        <div
+          id={SETUP_GUIDE_PANEL_ID}
+          role="region"
+          aria-labelledby={SETUP_GUIDE_TRIGGER_ID}
+          className="px-4 pb-5 space-y-5 text-sm text-neutral-300"
+        >
           <Step n={1} title="Push CWV to dataLayer in your app">
             <p className="text-neutral-400">
               Install <code className="font-mono text-neutral-200">web-vitals</code> and emit each metric
