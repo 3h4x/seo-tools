@@ -817,7 +817,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                         />
                         <span className="text-sm text-white">{site.domain}</span>
                         {site.isUpdate && (
-                          <span className="text-xs text-amber-400 border border-amber-700 rounded px-1">update</span>
+                          <Badge size="compact" shape="rounded" className="border-amber-700 text-amber-400">
+                            update
+                          </Badge>
                         )}
                         <DiscoverySourceBadge source={site.discoverySource} />
                       </label>
