@@ -50,8 +50,32 @@ describe('PageQueriesTable', () => {
     expect(html).toContain('<button class="');
     expect(html).toContain('type="button"');
     expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-controls="page-query-detail-0"');
     expect(html).toContain('aria-label="Show queries for /seo"');
+    expect(html).toContain('aria-hidden="true"');
     expect(html).toContain('title="https://example.com/seo"');
     expect(html).toContain('<th scope="col" class="px-4 py-3 font-semibold text-left">Page</th>');
+  });
+
+  it('links an expanded page control to its query detail row', () => {
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => [[{
+        page: 'https://example.com/seo',
+        clicks: 12,
+        impressions: 300,
+        ctr: 0.04,
+        position: 6.2,
+        queries: [],
+      }], vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()])
+      .mockImplementationOnce(() => [null, vi.fn()])
+      .mockImplementation(() => [new Set(['https://example.com/seo']), vi.fn()]);
+
+    const html = renderToStaticMarkup(<PageQueriesTable siteId="site-a" days={7} />);
+
+    expect(html).toContain('aria-expanded="true"');
+    expect(html).toContain('aria-controls="page-query-detail-0"');
+    expect(html).toContain('<tr id="page-query-detail-0"');
+    expect(html).toContain('No query data for this page.');
   });
 });

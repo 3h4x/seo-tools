@@ -16,6 +16,10 @@ interface PageQueriesApiResponse {
   error?: string;
 }
 
+function pageQueryPanelId(index: number) {
+  return `page-query-detail-${index}`;
+}
+
 function PageQueriesSkeleton() {
   return (
     <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4 space-y-3" aria-label="Loading page query data">
@@ -121,8 +125,9 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
+              {rows.map((row, index) => {
                 const isOpen = expanded.has(row.page);
+                const panelId = pageQueryPanelId(index);
                 return (
                   <React.Fragment key={row.page}>
                     <tr
@@ -133,6 +138,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                         <TextButton
                           type="button"
                           aria-expanded={isOpen ? 'true' : 'false'}
+                          aria-controls={panelId}
                           aria-label={`${isOpen ? 'Hide' : 'Show'} queries for ${pathname(row.page)}`}
                           title={row.page}
                           onClick={(event) => {
@@ -141,7 +147,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                           }}
                           className="inline-flex items-center gap-1.5 text-left"
                         >
-                          <span className={`transition-transform text-neutral-600 text-[10px] ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+                          <span aria-hidden="true" className={`transition-transform text-neutral-600 text-[10px] ${isOpen ? 'rotate-90' : ''}`}>▶</span>
                           <span className="text-neutral-300">{pathname(row.page)}</span>
                         </TextButton>
                       </td>
@@ -152,7 +158,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                       </td>
                     </tr>
                     {isOpen && (
-                      <tr key={`${row.page}-expanded`} className="bg-neutral-950/50">
+                      <tr id={panelId} key={`${row.page}-expanded`} className="bg-neutral-950/50">
                         <td colSpan={4} className="px-6 pb-3 pt-1">
                           {row.queries.length === 0 ? (
                             <p className="text-neutral-600 text-xs">No query data for this page.</p>
