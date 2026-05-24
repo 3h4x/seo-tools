@@ -500,6 +500,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       {sites.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
+            <caption className="sr-only">Managed sites and provider access status</caption>
             <thead>
               <tr className="text-neutral-500 border-b border-neutral-800">
                 <th scope="col" className="py-2 pr-4 font-medium">Order</th>
@@ -538,14 +539,14 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                       </TextButton>
                     </div>
                   </td>
-                  <td className="py-2 pr-4 text-white">
+                  <th scope="row" className="py-2 pr-4 font-normal text-left text-white">
                     <div className="flex items-center gap-2">
                       {site.color && (
                         <span aria-hidden="true" className="size-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: site.color }} />
                       )}
                       {site.name}
                     </div>
-                  </td>
+                  </th>
                   <td className="py-2 pr-4 text-neutral-400 font-mono text-xs">{site.domain}</td>
                   <td className="py-2 pr-4 text-neutral-400">
                     <AvailabilityGlyph

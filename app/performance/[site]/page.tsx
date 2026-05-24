@@ -140,6 +140,7 @@ export default async function PerfSiteDetail({
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Slowest pages</h2>
           <div className="overflow-hidden rounded border border-neutral-800">
             <table className="w-full text-sm">
+              <caption className="sr-only">Slowest pages by Core Web Vitals samples</caption>
               <thead>
                 <tr className="border-b border-neutral-800 text-neutral-500">
                   <th scope="col" className="px-3 py-2 text-left font-semibold">Path</th>
@@ -152,7 +153,7 @@ export default async function PerfSiteDetail({
               <tbody className="divide-y divide-neutral-800">
                 {slowestPages.map((row) => (
                   <tr key={row.path} className="hover:bg-neutral-800/30">
-                    <td className="px-3 py-2 font-mono text-xs text-neutral-300">{row.path}</td>
+                    <th scope="row" className="px-3 py-2 font-mono text-xs font-normal text-left text-neutral-300">{row.path}</th>
                     <td className="px-3 py-2 text-right font-mono text-neutral-400">{row.totalSamples.toLocaleString()}</td>
                     {CWV_METRIC_ORDER.map((name) => {
                       const m = row.metrics[name];

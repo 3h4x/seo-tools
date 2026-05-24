@@ -27,6 +27,8 @@ describe('SitesManager', () => {
       ],
     }));
 
+    expect(html).toContain('<caption class="sr-only">Managed sites and provider access status</caption>');
+    expect(html).toContain('<th scope="row" class="py-2 pr-4 font-normal text-left text-white">');
     expect(html).toContain('aria-label="Move Site A up"');
     expect(html).toContain('aria-label="Move Site B down"');
     expect(html).toContain('Search Console enabled');

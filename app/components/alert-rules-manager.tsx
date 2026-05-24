@@ -193,6 +193,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
+            <caption className="sr-only">Configured alert rules</caption>
             <thead>
               <tr className="text-neutral-500 border-b border-neutral-800">
                 <th scope="col" className="py-2 pr-4 font-medium">Site</th>
@@ -208,7 +209,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
                 const metricBlocked = isMetricBlockedBySite(rule.metric, site);
                 return (
                   <tr key={rule.id} className="border-b border-neutral-900">
-                    <td className="py-2 pr-4 text-white">{site?.name ?? rule.siteId}</td>
+                    <th scope="row" className="py-2 pr-4 font-normal text-left text-white">{site?.name ?? rule.siteId}</th>
                     <td className="py-2 pr-4 text-neutral-300">
                       <div className="flex flex-wrap items-center gap-2">
                         <span>{METRIC_OPTIONS.find((option) => option.value === rule.metric)?.label ?? rule.metric}</span>

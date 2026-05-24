@@ -236,6 +236,46 @@ describe('Performance site detail page', () => {
     );
   });
 
+  it('renders slowest pages with table captions and row headers', async () => {
+    mockGetPerformanceSiteData.mockResolvedValueOnce({
+      site: {
+        id: 'borged-io',
+        name: 'Borged',
+        domain: 'borged.io',
+      },
+      days: 7,
+      propertyId: 'prop-1',
+      url: 'https://borged.io',
+      source: 'rum',
+      heroSource: 'RUM (GA4)',
+      hasRum: true,
+      propagating: false,
+      eventCount: 10,
+      needsKey: false,
+      overall: {
+        LCP: { value: 1200, rating: 'good', sampleCount: 10 },
+      },
+      byDevice: { mobile: {}, desktop: {}, tablet: {} },
+      slowestPages: [{
+        path: '/pricing',
+        totalSamples: 8,
+        metrics: {
+          LCP: { value: 3100, rating: 'needs-improvement', sampleCount: 8 },
+        },
+      }],
+      trend: [],
+      psi: { mobile: null, desktop: null },
+    });
+
+    const html = renderToStaticMarkup(await PerfSiteDetail({
+      params: Promise.resolve({ site: 'borged-io' }),
+      searchParams: Promise.resolve({ days: '7' }),
+    }));
+
+    expect(html).toContain('<caption class="sr-only">Slowest pages by Core Web Vitals samples</caption>');
+    expect(html).toContain('<th scope="row" class="px-3 py-2 font-mono text-xs font-normal text-left text-neutral-300">/pricing</th>');
+  });
+
   it('normalizes invalid days before loading site performance', async () => {
     await PerfSiteDetail({
       params: Promise.resolve({ site: 'borged-io' }),

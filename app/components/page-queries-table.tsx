@@ -116,6 +116,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
       ) : (
         <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
           <table className="w-full text-sm">
+            <caption className="sr-only">Top Search Console pages</caption>
             <thead>
               <tr className="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider">
                 <th scope="col" className="px-4 py-3 font-semibold text-left">Page</th>
@@ -134,7 +135,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                       className="hover:bg-neutral-800/30 transition-colors cursor-pointer border-b border-neutral-800/50 last:border-0"
                       onClick={() => toggle(row.page)}
                     >
-                      <td className="px-4 py-2.5 text-neutral-300 text-xs truncate max-w-[200px]">
+                      <th scope="row" className="px-4 py-2.5 font-normal text-left text-neutral-300 text-xs truncate max-w-[200px]">
                         <TextButton
                           type="button"
                           aria-expanded={isOpen ? 'true' : 'false'}
@@ -150,7 +151,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                           <span aria-hidden="true" className={`transition-transform text-neutral-600 text-[10px] ${isOpen ? 'rotate-90' : ''}`}>▶</span>
                           <span className="text-neutral-300">{pathname(row.page)}</span>
                         </TextButton>
-                      </td>
+                      </th>
                       <td className="px-4 py-2.5 text-neutral-300 text-right">{row.clicks.toLocaleString()}</td>
                       <td className="px-4 py-2.5 text-neutral-400 text-right hidden md:table-cell">{row.impressions.toLocaleString()}</td>
                       <td className="px-4 py-2.5 text-right">
@@ -164,6 +165,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                             <p className="text-neutral-600 text-xs">No query data for this page.</p>
                           ) : (
                             <table className="w-full text-xs">
+                              <caption className="sr-only">Queries for {pathname(row.page)}</caption>
                               <thead>
                                 <tr className="text-neutral-600 uppercase tracking-wider">
                                   <th scope="col" className="py-1 text-left font-medium">Query</th>
@@ -176,7 +178,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                               <tbody>
                                 {row.queries.map((q: SCQueryRow) => (
                                   <tr key={q.query} className="border-t border-neutral-800/30">
-                                    <td className="py-1 text-neutral-400 truncate max-w-[180px]">{q.query}</td>
+                                    <th scope="row" className="py-1 font-normal text-left text-neutral-400 truncate max-w-[180px]">{q.query}</th>
                                     <td className="py-1 text-neutral-400 text-right">{q.clicks.toLocaleString()}</td>
                                     <td className="py-1 text-neutral-500 text-right hidden md:table-cell">{q.impressions.toLocaleString()}</td>
                                     <td className="py-1 text-neutral-500 text-right hidden md:table-cell">{(q.ctr * 100).toFixed(1)}%</td>
