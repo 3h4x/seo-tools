@@ -3,6 +3,26 @@ import { describe, expect, it } from 'vitest';
 import { TextButton } from '../../../src/components/ui/text-button';
 
 describe('TextButton', () => {
+  it('defaults to a non-submit button type', () => {
+    const html = renderToStaticMarkup(
+      <TextButton>
+        Edit
+      </TextButton>
+    );
+
+    expect(html).toContain('type="button"');
+  });
+
+  it('allows callers to opt into submit behavior', () => {
+    const html = renderToStaticMarkup(
+      <TextButton type="submit">
+        Apply
+      </TextButton>
+    );
+
+    expect(html).toContain('type="submit"');
+  });
+
   it('renders the default low-emphasis action style', () => {
     const html = renderToStaticMarkup(
       <TextButton disabled>

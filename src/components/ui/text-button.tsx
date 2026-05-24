@@ -27,12 +27,14 @@ export function TextButton({
   children,
   className = '',
   size = 'xs',
+  type = 'button',
   variant = 'neutral',
   ...props
 }: TextButtonProps) {
   return (
     <button
       className={`${SIZE_CLASSES[size]} transition-colors ${VARIANT_CLASSES[variant]} ${className}`}
+      type={type}
       {...props}
     >
       {children}
