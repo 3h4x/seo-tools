@@ -13,10 +13,36 @@ function KwDeltaCell({ delta }: { delta: number | null }) {
 }
 
 function KwTrendArrow({ trend }: { trend: KeywordDelta['trend'] }) {
-  if (trend === 'up') return <span className="text-emerald-400">↑</span>;
-  if (trend === 'down') return <span className="text-red-400">↓</span>;
-  if (trend === 'new') return <span className="text-blue-400 text-[10px]">new</span>;
-  return <span className="text-neutral-600">→</span>;
+  if (trend === 'up') {
+    return (
+      <span className="text-emerald-400">
+        <span aria-hidden="true">↑</span>
+        <span className="sr-only">Ranking improved</span>
+      </span>
+    );
+  }
+  if (trend === 'down') {
+    return (
+      <span className="text-red-400">
+        <span aria-hidden="true">↓</span>
+        <span className="sr-only">Ranking declined</span>
+      </span>
+    );
+  }
+  if (trend === 'new') {
+    return (
+      <span className="text-blue-400 text-[10px]">
+        <span aria-hidden="true">new</span>
+        <span className="sr-only">New keyword</span>
+      </span>
+    );
+  }
+  return (
+    <span className="text-neutral-600">
+      <span aria-hidden="true">→</span>
+      <span className="sr-only">Ranking stable</span>
+    </span>
+  );
 }
 
 export function KeywordRankTable({ deltas, limit = 20 }: { deltas: KeywordDelta[]; limit?: number }) {

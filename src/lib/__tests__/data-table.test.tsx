@@ -94,6 +94,57 @@ describe('KeywordRankTable', () => {
 
     expect(element.props.rowKeys).toEqual(['alpha', 'beta']);
   });
+
+  it('exposes keyword trend labels without relying on arrows alone', () => {
+    const html = renderToStaticMarkup(
+      <KeywordRankTable
+        deltas={[
+          {
+            query: 'alpha',
+            currentPosition: 1.1,
+            position7d: 1.4,
+            position30d: 1.8,
+            delta7d: 0.3,
+            delta30d: 0.7,
+            trend: 'up',
+          },
+          {
+            query: 'beta',
+            currentPosition: 2.2,
+            position7d: 1.4,
+            position30d: 1.8,
+            delta7d: -0.8,
+            delta30d: -0.4,
+            trend: 'down',
+          },
+          {
+            query: 'gamma',
+            currentPosition: 3.3,
+            position7d: null,
+            position30d: null,
+            delta7d: null,
+            delta30d: null,
+            trend: 'new',
+          },
+          {
+            query: 'delta',
+            currentPosition: 4.4,
+            position7d: 4.5,
+            position30d: 4.6,
+            delta7d: 0.1,
+            delta30d: 0.2,
+            trend: 'flat',
+          },
+        ]}
+      />
+    );
+
+    expect(html).toContain('<span class="sr-only">Ranking improved</span>');
+    expect(html).toContain('<span class="sr-only">Ranking declined</span>');
+    expect(html).toContain('<span class="sr-only">New keyword</span>');
+    expect(html).toContain('<span class="sr-only">Ranking stable</span>');
+    expect(html).toContain('<span aria-hidden="true">↑</span>');
+  });
 });
 
 describe('DataTable', () => {
