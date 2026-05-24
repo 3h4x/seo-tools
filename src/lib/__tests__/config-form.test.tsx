@@ -30,4 +30,12 @@ describe('ConfigForm', () => {
     const dbHtml = renderToStaticMarkup(<ConfigForm source="db" />);
     expect(dbHtml).toContain('Remove');
   });
+
+  it('labels the service account JSON field', () => {
+    const html = renderToStaticMarkup(<ConfigForm source="none" />);
+
+    expect(html).toContain('for="google-sa-key-json"');
+    expect(html).toContain('id="google-sa-key-json"');
+    expect(html).toContain('Service account JSON');
+  });
 });

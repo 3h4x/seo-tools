@@ -72,5 +72,7 @@ describe('PagespeedKeyForm', () => {
 
     expect(html).toContain('disabled');
     expect(html).toContain('Removing…');
+    expect(html).toContain('for="pagespeed-api-key"');
+    expect(html).toContain('id="pagespeed-api-key"');
   });
 });

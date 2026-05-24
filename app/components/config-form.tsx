@@ -124,19 +124,23 @@ export default function ConfigForm({ source: initialSource }: Props) {
         </ConfiguredNotice>
       )}
 
-      <FormTextarea
-        className="h-48 resize-y"
-        monospace
-        padding="roomy"
-        placeholder={'{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key": "...",\n  "client_email": "..."\n}'}
-        value={input}
-        onChange={(e) => {
-          setInput(e.target.value);
-          setTestState('idle');
-          setErrorMsg('');
-        }}
-        spellCheck={false}
-      />
+      <div className="space-y-1">
+        <label htmlFor="google-sa-key-json" className="text-xs text-neutral-400">Service account JSON</label>
+        <FormTextarea
+          id="google-sa-key-json"
+          className="h-48 resize-y"
+          monospace
+          padding="roomy"
+          placeholder={'{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key": "...",\n  "client_email": "..."\n}'}
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value);
+            setTestState('idle');
+            setErrorMsg('');
+          }}
+          spellCheck={false}
+        />
+      </div>
 
       {testState === 'ok' && (
         <p className="text-sm text-green-400">Connection OK</p>

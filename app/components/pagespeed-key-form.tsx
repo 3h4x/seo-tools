@@ -163,15 +163,19 @@ export default function PagespeedKeyForm() {
         </ConfiguredNotice>
       )}
 
-      <FormInput
-        type="password"
-        monospace
-        placeholder="AIzaSy..."
-        value={input}
-        onChange={(e) => { setInput(e.target.value); setTestState('idle'); setErrorMsg(''); }}
-        spellCheck={false}
-        autoComplete="off"
-      />
+      <div className="space-y-1">
+        <label htmlFor="pagespeed-api-key" className="text-xs text-neutral-400">PageSpeed API key</label>
+        <FormInput
+          id="pagespeed-api-key"
+          type="password"
+          monospace
+          placeholder="AIzaSy..."
+          value={input}
+          onChange={(e) => { setInput(e.target.value); setTestState('idle'); setErrorMsg(''); }}
+          spellCheck={false}
+          autoComplete="off"
+        />
+      </div>
 
       {testState === 'ok' && <p className="text-sm text-green-400">Key works</p>}
       {testState === 'error' && <p className="text-sm text-red-400" role="alert">{errorMsg}</p>}

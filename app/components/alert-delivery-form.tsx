@@ -187,35 +187,50 @@ export default function AlertDeliveryForm() {
       )}
 
       <div className="grid gap-3 md:grid-cols-2">
-        <FormInput
-          type="password"
-          monospace
-          placeholder="re_..."
-          value={form.resendApiKey}
-          onChange={(e) => { setForm((current) => ({ ...current, resendApiKey: e.target.value })); setError(''); setSuccess(''); }}
-          autoComplete="off"
-          spellCheck={false}
-        />
-        <FormInput
-          type="email"
-          placeholder="alerts@example.com"
-          value={form.fromEmail}
-          onChange={(e) => { setForm((current) => ({ ...current, fromEmail: e.target.value })); setError(''); setSuccess(''); }}
-        />
-        <FormTextarea
-          className="md:col-span-2 min-h-24"
-          placeholder="ops@example.com, seo@example.com"
-          value={form.toEmail}
-          onChange={(e) => { setForm((current) => ({ ...current, toEmail: e.target.value })); setError(''); setSuccess(''); }}
-        />
-        <FormInput
-          type="url"
-          className="md:col-span-2"
-          monospace
-          placeholder="https://hooks.example.com/seo-alerts"
-          value={form.webhookUrl}
-          onChange={(e) => { setForm((current) => ({ ...current, webhookUrl: e.target.value })); setError(''); setSuccess(''); }}
-        />
+        <div className="space-y-1">
+          <label htmlFor="alert-resend-api-key" className="text-xs text-neutral-400">Resend API key</label>
+          <FormInput
+            id="alert-resend-api-key"
+            type="password"
+            monospace
+            placeholder="re_..."
+            value={form.resendApiKey}
+            onChange={(e) => { setForm((current) => ({ ...current, resendApiKey: e.target.value })); setError(''); setSuccess(''); }}
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="alert-from-email" className="text-xs text-neutral-400">Sender email</label>
+          <FormInput
+            id="alert-from-email"
+            type="email"
+            placeholder="alerts@example.com"
+            value={form.fromEmail}
+            onChange={(e) => { setForm((current) => ({ ...current, fromEmail: e.target.value })); setError(''); setSuccess(''); }}
+          />
+        </div>
+        <div className="space-y-1 md:col-span-2">
+          <label htmlFor="alert-to-email" className="text-xs text-neutral-400">Recipient emails</label>
+          <FormTextarea
+            id="alert-to-email"
+            className="min-h-24"
+            placeholder="ops@example.com, seo@example.com"
+            value={form.toEmail}
+            onChange={(e) => { setForm((current) => ({ ...current, toEmail: e.target.value })); setError(''); setSuccess(''); }}
+          />
+        </div>
+        <div className="space-y-1 md:col-span-2">
+          <label htmlFor="alert-webhook-url" className="text-xs text-neutral-400">Webhook URL</label>
+          <FormInput
+            id="alert-webhook-url"
+            type="url"
+            monospace
+            placeholder="https://hooks.example.com/seo-alerts"
+            value={form.webhookUrl}
+            onChange={(e) => { setForm((current) => ({ ...current, webhookUrl: e.target.value })); setError(''); setSuccess(''); }}
+          />
+        </div>
       </div>
 
       {error && <p className="text-sm text-red-400" role="alert">{error}</p>}

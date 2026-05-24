@@ -1,5 +1,6 @@
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import {
+import AlertDeliveryForm, {
   clearAlertDeliveryOverrides,
   formatAlertConfigError,
   readAlertConfigResponse,
@@ -85,5 +86,17 @@ describe('AlertDeliveryForm helpers', () => {
     await expect(clearAlertDeliveryOverrides(fetchMock)).rejects.toThrow(
       'Could not clear alert delivery config. Check server logs.',
     );
+  });
+});
+
+describe('AlertDeliveryForm', () => {
+  it('labels alert delivery fields', () => {
+    const html = renderToStaticMarkup(<AlertDeliveryForm />);
+
+    expect(html).toContain('for="alert-resend-api-key"');
+    expect(html).toContain('id="alert-resend-api-key"');
+    expect(html).toContain('for="alert-from-email"');
+    expect(html).toContain('for="alert-to-email"');
+    expect(html).toContain('for="alert-webhook-url"');
   });
 });

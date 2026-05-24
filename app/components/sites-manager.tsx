@@ -645,8 +645,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs text-neutral-400">ID{editMode !== 'new' ? ' (locked)' : ' (auto from domain)'}</label>
+              <label htmlFor="site-id" className="text-xs text-neutral-400">ID{editMode !== 'new' ? ' (locked)' : ' (auto from domain)'}</label>
               <FormInput
+                id="site-id"
                 tone="dense"
                 padding="compact"
                 monospace
@@ -658,8 +659,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-neutral-400">Name *</label>
+              <label htmlFor="site-name" className="text-xs text-neutral-400">Name *</label>
               <FormInput
+                id="site-name"
                 tone="dense"
                 padding="compact"
                 value={form.name}
@@ -668,8 +670,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-neutral-400">Domain *</label>
+              <label htmlFor="site-domain" className="text-xs text-neutral-400">Domain *</label>
               <FormInput
+                id="site-domain"
                 tone="dense"
                 padding="compact"
                 monospace
@@ -682,8 +685,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               )}
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-neutral-400">SC URL override</label>
+              <label htmlFor="site-sc-url" className="text-xs text-neutral-400">SC URL override</label>
               <FormInput
+                id="site-sc-url"
                 tone="dense"
                 padding="compact"
                 monospace
@@ -693,8 +697,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-neutral-400">GA4 Property ID</label>
+              <label htmlFor="site-ga4-property-id" className="text-xs text-neutral-400">GA4 Property ID</label>
               <FormInput
+                id="site-ga4-property-id"
                 tone="dense"
                 padding="compact"
                 monospace
@@ -704,8 +709,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-neutral-400">IndexNow key</label>
+              <label htmlFor="site-indexnow-key" className="text-xs text-neutral-400">IndexNow key</label>
               <FormInput
+                id="site-indexnow-key"
                 tone="dense"
                 padding="compact"
                 monospace
@@ -718,9 +724,10 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               </p>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-neutral-400">Color</label>
+              <label htmlFor="site-color" className="text-xs text-neutral-400">Color</label>
               <div className="flex items-center gap-2">
                 <FormInput
+                  id="site-color"
                   type="color"
                   tone="dense"
                   padding="compact"
@@ -740,8 +747,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               </div>
             </div>
             <div className="space-y-1 col-span-2">
-              <label className="text-xs text-neutral-400">Test pages (one path per line)</label>
+              <label htmlFor="site-test-pages" className="text-xs text-neutral-400">Test pages (one path per line)</label>
               <FormTextarea
+                id="site-test-pages"
                 tone="dense"
                 padding="compact"
                 monospace
