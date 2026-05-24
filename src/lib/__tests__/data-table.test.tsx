@@ -138,6 +138,18 @@ describe('DataTable', () => {
     expect(html).toContain('<td class="px-3 py-2 font-mono text-right">');
   });
 
+  it('marks header cells as column headers', () => {
+    const html = renderToStaticMarkup(
+      <DataTable
+        columns={[{ label: 'Query' }, { label: 'Clicks', align: 'right' }]}
+        rows={[[<span key="query">seo</span>, <span key="clicks">10</span>]]}
+      />
+    );
+
+    expect(html).toContain('<th scope="col" class="px-3 py-2 font-semibold text-left">Query</th>');
+    expect(html).toContain('<th scope="col" class="px-3 py-2 font-semibold text-right">Clicks</th>');
+  });
+
   it('preserves caller-provided responsive column classes and row styling', () => {
     const html = renderToStaticMarkup(
       <DataTable
@@ -152,7 +164,7 @@ describe('DataTable', () => {
     );
 
     expect(html).toContain('<div class="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">');
-    expect(html).toContain('<th class="px-4 py-3 font-semibold hidden md:table-cell text-right">Impressions</th>');
+    expect(html).toContain('<th scope="col" class="px-4 py-3 font-semibold hidden md:table-cell text-right">Impressions</th>');
     expect(html).toContain('<td class="px-4 py-2.5 text-right hidden md:table-cell font-mono"><span>120</span></td>');
     expect(html).toContain('<tr class="hover:bg-neutral-800/30 transition-colors">');
   });

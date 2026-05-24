@@ -52,6 +52,7 @@ export function DataTable({
             {columns.map((col, i) => (
               <th
                 key={`${col.label}-${i}`}
+                scope="col"
                 className={getAlignedClassName(col.className ?? 'px-3 py-2 font-semibold', col.align)}
               >
                 {col.label}

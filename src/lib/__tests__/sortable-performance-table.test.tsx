@@ -46,6 +46,7 @@ describe('SortablePerformanceTable', () => {
 
     expect(html).toContain('aria-sort="descending"');
     expect(html).toMatch(/<button\b[^>]*type="button"/);
+    expect(html).toContain('<th scope="col" class="px-5 py-3.5 font-semibold">Site</th>');
     expect(html).toContain('aria-label="Sort by Users ascending"');
     expect(html).toContain('aria-label="Sort by Sessions descending"');
     expect(html).toContain('<svg aria-hidden="true"');

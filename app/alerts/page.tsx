@@ -30,15 +30,15 @@ export default async function AlertsPage() {
           <table className="w-full text-sm text-left">
             <thead>
               <tr className="border-b border-neutral-800 text-neutral-500">
-                <th className="px-4 py-3 font-medium">Site</th>
-                <th className="px-4 py-3 font-medium">Metric</th>
-                <th className="px-4 py-3 font-medium">Threshold</th>
-                <th className="px-4 py-3 font-medium">Previous</th>
-                <th className="px-4 py-3 font-medium">Current</th>
-                <th className="px-4 py-3 font-medium">Drop</th>
-                <th className="px-4 py-3 font-medium">Delivered</th>
-                <th className="px-4 py-3 font-medium">Snapshot</th>
-                <th className="px-4 py-3 font-medium">Created</th>
+                <th scope="col" className="px-4 py-3 font-medium">Site</th>
+                <th scope="col" className="px-4 py-3 font-medium">Metric</th>
+                <th scope="col" className="px-4 py-3 font-medium">Threshold</th>
+                <th scope="col" className="px-4 py-3 font-medium">Previous</th>
+                <th scope="col" className="px-4 py-3 font-medium">Current</th>
+                <th scope="col" className="px-4 py-3 font-medium">Drop</th>
+                <th scope="col" className="px-4 py-3 font-medium">Delivered</th>
+                <th scope="col" className="px-4 py-3 font-medium">Snapshot</th>
+                <th scope="col" className="px-4 py-3 font-medium">Created</th>
               </tr>
             </thead>
             <tbody>

@@ -142,10 +142,10 @@ export default async function PerfSiteDetail({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-800 text-neutral-500">
-                  <th className="px-3 py-2 text-left font-semibold">Path</th>
-                  <th className="px-3 py-2 text-right font-semibold">Samples</th>
+                  <th scope="col" className="px-3 py-2 text-left font-semibold">Path</th>
+                  <th scope="col" className="px-3 py-2 text-right font-semibold">Samples</th>
                   {CWV_METRIC_ORDER.map(n => (
-                    <th key={n} className="px-3 py-2 text-right font-semibold">{n}</th>
+                    <th key={n} scope="col" className="px-3 py-2 text-right font-semibold">{n}</th>
                   ))}
                 </tr>
               </thead>

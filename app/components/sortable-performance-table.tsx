@@ -97,10 +97,11 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-neutral-800 text-neutral-500 text-left text-xs uppercase tracking-wider">
-            <th className="px-5 py-3.5 font-semibold">Site</th>
+            <th scope="col" className="px-5 py-3.5 font-semibold">Site</th>
             {COLUMNS.map(col => (
               <th
                 key={col.key}
+                scope="col"
                 aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
                 className={`px-5 py-3.5 font-semibold text-right select-none ${col.className ?? ''} ${sortKey === col.key ? 'text-neutral-200' : ''}`}
               >

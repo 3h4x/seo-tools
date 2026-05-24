@@ -195,11 +195,11 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
           <table className="w-full text-sm text-left">
             <thead>
               <tr className="text-neutral-500 border-b border-neutral-800">
-                <th className="py-2 pr-4 font-medium">Site</th>
-                <th className="py-2 pr-4 font-medium">Metric</th>
-                <th className="py-2 pr-4 font-medium">Threshold</th>
-                <th className="py-2 pr-4 font-medium">Channels</th>
-                <th className="py-2 font-medium"></th>
+                <th scope="col" className="py-2 pr-4 font-medium">Site</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Metric</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Threshold</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Channels</th>
+                <th scope="col" className="py-2 font-medium" aria-label="Actions"></th>
               </tr>
             </thead>
             <tbody>

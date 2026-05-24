@@ -79,6 +79,7 @@ describe('alerts page', () => {
     const html = renderToStaticMarkup(await AlertsPage());
 
     expect(html).toContain('Site A');
+    expect(html).toContain('<th scope="col" class="px-4 py-3 font-medium">Site</th>');
     expect(html).toContain('SC clicks');
     expect(html).toContain('40.0%');
   });

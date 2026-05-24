@@ -90,12 +90,12 @@ export default async function PerformancePage({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-neutral-800 text-neutral-500">
-                <th className="px-3 py-2 text-left font-semibold">Site</th>
-                <th className="px-3 py-2 text-left font-semibold">Source</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold">Site</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold">Source</th>
                 {CWV_METRIC_ORDER.map(n => (
-                  <th key={n} className="px-3 py-2 text-right font-semibold">{n}</th>
+                  <th key={n} scope="col" className="px-3 py-2 text-right font-semibold">{n}</th>
                 ))}
-                <th className="px-3 py-2 text-right font-semibold">PSI</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">PSI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800">

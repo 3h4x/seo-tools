@@ -113,10 +113,10 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider">
-                <th className="px-4 py-3 font-semibold text-left">Page</th>
-                <th className="px-4 py-3 font-semibold text-right">Clicks</th>
-                <th className="px-4 py-3 font-semibold text-right hidden md:table-cell">Impr</th>
-                <th className="px-4 py-3 font-semibold text-right">Pos</th>
+                <th scope="col" className="px-4 py-3 font-semibold text-left">Page</th>
+                <th scope="col" className="px-4 py-3 font-semibold text-right">Clicks</th>
+                <th scope="col" className="px-4 py-3 font-semibold text-right hidden md:table-cell">Impr</th>
+                <th scope="col" className="px-4 py-3 font-semibold text-right">Pos</th>
               </tr>
             </thead>
             <tbody>
@@ -159,11 +159,11 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                             <table className="w-full text-xs">
                               <thead>
                                 <tr className="text-neutral-600 uppercase tracking-wider">
-                                  <th className="py-1 text-left font-medium">Query</th>
-                                  <th className="py-1 text-right font-medium">Clicks</th>
-                                  <th className="py-1 text-right font-medium hidden md:table-cell">Impr</th>
-                                  <th className="py-1 text-right font-medium hidden md:table-cell">CTR</th>
-                                  <th className="py-1 text-right font-medium">Pos</th>
+                                  <th scope="col" className="py-1 text-left font-medium">Query</th>
+                                  <th scope="col" className="py-1 text-right font-medium">Clicks</th>
+                                  <th scope="col" className="py-1 text-right font-medium hidden md:table-cell">Impr</th>
+                                  <th scope="col" className="py-1 text-right font-medium hidden md:table-cell">CTR</th>
+                                  <th scope="col" className="py-1 text-right font-medium">Pos</th>
                                 </tr>
                               </thead>
                               <tbody>

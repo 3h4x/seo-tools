@@ -485,14 +485,14 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           <table className="w-full text-sm text-left">
             <thead>
               <tr className="text-neutral-500 border-b border-neutral-800">
-                <th className="py-2 pr-4 font-medium">Order</th>
-                <th className="py-2 pr-4 font-medium">Name</th>
-                <th className="py-2 pr-4 font-medium">Domain</th>
-                <th className="py-2 pr-4 font-medium">Search Console</th>
-                <th className="py-2 pr-4 font-medium">SC Access</th>
-                <th className="py-2 pr-4 font-medium">GA4</th>
-                <th className="py-2 pr-4 font-medium">GA4 Access</th>
-                <th className="py-2 font-medium"></th>
+                <th scope="col" className="py-2 pr-4 font-medium">Order</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Name</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Domain</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Search Console</th>
+                <th scope="col" className="py-2 pr-4 font-medium">SC Access</th>
+                <th scope="col" className="py-2 pr-4 font-medium">GA4</th>
+                <th scope="col" className="py-2 pr-4 font-medium">GA4 Access</th>
+                <th scope="col" className="py-2 font-medium" aria-label="Actions"></th>
               </tr>
             </thead>
             <tbody>

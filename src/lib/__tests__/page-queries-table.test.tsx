@@ -49,5 +49,6 @@ describe('PageQueriesTable', () => {
 
     expect(html).toContain('<button type="button" aria-expanded="false" aria-label="Show queries for /seo"');
     expect(html).toContain('title="https://example.com/seo"');
+    expect(html).toContain('<th scope="col" class="px-4 py-3 font-semibold text-left">Page</th>');
   });
 });
