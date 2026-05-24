@@ -7,6 +7,7 @@ import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteI
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
 import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, TextButton } from '@/components/ui';
+import { DataTable, type DataTableColumn } from './data-table';
 
 interface Site {
   id: string;
@@ -468,6 +469,124 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
 
   const isEditing = editMode !== 'none';
   const canSave = !saving && form.name.trim().length > 0 && isValidSiteDomain(form.domain);
+  const siteTableColumns: DataTableColumn[] = [
+    { label: 'Order', key: 'order', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400' },
+    { label: 'Name', key: 'name', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 font-normal text-left text-white', rowHeader: true },
+    { label: 'Domain', key: 'domain', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400 font-mono text-xs' },
+    { label: 'Search Console', key: 'search-console', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400' },
+    { label: 'SC Access', key: 'sc-access', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4' },
+    { label: 'GA4', key: 'ga4', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400' },
+    { label: 'GA4 Access', key: 'ga4-access', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4' },
+    { label: <span className="sr-only">Actions</span>, key: 'actions', className: 'py-2 font-medium', cellClassName: 'py-2' },
+  ];
+  const siteTableRows = sites.map((site, index) => [
+    <div key="order" className="flex items-center gap-2">
+      <span className="w-5 text-xs font-mono">{index + 1}</span>
+      <TextButton
+        onClick={() => handleMoveSite(index, -1)}
+        disabled={isEditing || saving || index === 0}
+        aria-label={`Move ${site.name} up`}
+        size="xxs"
+        variant="reorder"
+      >
+        Up
+      </TextButton>
+      <TextButton
+        onClick={() => handleMoveSite(index, 1)}
+        disabled={isEditing || saving || index === sites.length - 1}
+        aria-label={`Move ${site.name} down`}
+        size="xxs"
+        variant="reorder"
+      >
+        Down
+      </TextButton>
+    </div>,
+    <div key="name" className="flex items-center gap-2">
+      {site.color && (
+        <span aria-hidden="true" className="size-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: site.color }} />
+      )}
+      {site.name}
+    </div>,
+    site.domain,
+    <AvailabilityGlyph
+      key="search-console"
+      available={site.searchConsole !== false}
+      availableLabel="Search Console enabled"
+      missingLabel="Search Console disabled"
+    />,
+    hasAuth ? (
+      diagnostics[site.id] ? (
+        <StatusBadge
+          key="sc-access"
+          status={diagnostics[site.id].searchConsole.status}
+          message={diagnostics[site.id].searchConsole.message}
+        />
+      ) : (
+        <StatusBadge
+          key="sc-access"
+          status={diagnosticsLoading ? 'loading' : 'provider-error'}
+          message={diagnosticsLoading ? 'Checking…' : 'Unavailable'}
+        />
+      )
+    ) : (
+      <StatusBadge key="sc-access" status="loading" message="No service account" />
+    ),
+    <AvailabilityGlyph
+      key="ga4"
+      available={Boolean(site.ga4PropertyId)}
+      availableLabel="GA4 property configured"
+      missingLabel="GA4 property missing"
+    />,
+    hasAuth ? (
+      diagnostics[site.id] ? (
+        <StatusBadge
+          key="ga4-access"
+          status={diagnostics[site.id].ga4.status}
+          message={diagnostics[site.id].ga4.message}
+        />
+      ) : (
+        <StatusBadge
+          key="ga4-access"
+          status={diagnosticsLoading ? 'loading' : 'provider-error'}
+          message={diagnosticsLoading ? 'Checking…' : 'Unavailable'}
+        />
+      )
+    ) : (
+      <StatusBadge key="ga4-access" status="loading" message="No service account" />
+    ),
+    <div key="actions" className="flex gap-2">
+      <TextButton
+        onClick={() => startEdit(site)}
+        disabled={isEditing || saving}
+      >
+        Edit
+      </TextButton>
+      {deleteConfirm === site.id ? (
+        <>
+          <TextButton
+            onClick={() => handleDelete(site.id)}
+            variant="danger"
+          >
+            Confirm
+          </TextButton>
+          <TextButton
+            onClick={() => setDeleteConfirm(null)}
+            variant="quiet"
+          >
+            Cancel
+          </TextButton>
+        </>
+      ) : (
+        <TextButton
+          onClick={() => setDeleteConfirm(site.id)}
+          disabled={isEditing || saving}
+          variant="danger-muted"
+        >
+          Delete
+        </TextButton>
+      )}
+    </div>,
+  ]);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -498,143 +617,18 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       )}
 
       {sites.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <caption className="sr-only">Managed sites and provider access status</caption>
-            <thead>
-              <tr className="text-neutral-500 border-b border-neutral-800">
-                <th scope="col" className="py-2 pr-4 font-medium">Order</th>
-                <th scope="col" className="py-2 pr-4 font-medium">Name</th>
-                <th scope="col" className="py-2 pr-4 font-medium">Domain</th>
-                <th scope="col" className="py-2 pr-4 font-medium">Search Console</th>
-                <th scope="col" className="py-2 pr-4 font-medium">SC Access</th>
-                <th scope="col" className="py-2 pr-4 font-medium">GA4</th>
-                <th scope="col" className="py-2 pr-4 font-medium">GA4 Access</th>
-                <th scope="col" className="py-2 font-medium" aria-label="Actions"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {sites.map((site, index) => (
-                <tr key={site.id} className="border-b border-neutral-900 hover:bg-neutral-900/40">
-                  <td className="py-2 pr-4 text-neutral-400">
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 text-xs font-mono">{index + 1}</span>
-                      <TextButton
-                        onClick={() => handleMoveSite(index, -1)}
-                        disabled={isEditing || saving || index === 0}
-                        aria-label={`Move ${site.name} up`}
-                        size="xxs"
-                        variant="reorder"
-                      >
-                        Up
-                      </TextButton>
-                      <TextButton
-                        onClick={() => handleMoveSite(index, 1)}
-                        disabled={isEditing || saving || index === sites.length - 1}
-                        aria-label={`Move ${site.name} down`}
-                        size="xxs"
-                        variant="reorder"
-                      >
-                        Down
-                      </TextButton>
-                    </div>
-                  </td>
-                  <th scope="row" className="py-2 pr-4 font-normal text-left text-white">
-                    <div className="flex items-center gap-2">
-                      {site.color && (
-                        <span aria-hidden="true" className="size-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: site.color }} />
-                      )}
-                      {site.name}
-                    </div>
-                  </th>
-                  <td className="py-2 pr-4 text-neutral-400 font-mono text-xs">{site.domain}</td>
-                  <td className="py-2 pr-4 text-neutral-400">
-                    <AvailabilityGlyph
-                      available={site.searchConsole !== false}
-                      availableLabel="Search Console enabled"
-                      missingLabel="Search Console disabled"
-                    />
-                  </td>
-                  <td className="py-2 pr-4">
-                    {hasAuth ? (
-                      diagnostics[site.id] ? (
-                        <StatusBadge
-                          status={diagnostics[site.id].searchConsole.status}
-                          message={diagnostics[site.id].searchConsole.message}
-                        />
-                      ) : (
-                        <StatusBadge
-                          status={diagnosticsLoading ? 'loading' : 'provider-error'}
-                          message={diagnosticsLoading ? 'Checking…' : 'Unavailable'}
-                        />
-                      )
-                    ) : (
-                      <StatusBadge status="loading" message="No service account" />
-                    )}
-                  </td>
-                  <td className="py-2 pr-4 text-neutral-400">
-                    <AvailabilityGlyph
-                      available={Boolean(site.ga4PropertyId)}
-                      availableLabel="GA4 property configured"
-                      missingLabel="GA4 property missing"
-                    />
-                  </td>
-                  <td className="py-2 pr-4">
-                    {hasAuth ? (
-                      diagnostics[site.id] ? (
-                        <StatusBadge
-                          status={diagnostics[site.id].ga4.status}
-                          message={diagnostics[site.id].ga4.message}
-                        />
-                      ) : (
-                        <StatusBadge
-                          status={diagnosticsLoading ? 'loading' : 'provider-error'}
-                          message={diagnosticsLoading ? 'Checking…' : 'Unavailable'}
-                        />
-                      )
-                    ) : (
-                      <StatusBadge status="loading" message="No service account" />
-                    )}
-                  </td>
-                  <td className="py-2">
-                    <div className="flex gap-2">
-                      <TextButton
-                        onClick={() => startEdit(site)}
-                        disabled={isEditing || saving}
-                      >
-                        Edit
-                      </TextButton>
-                      {deleteConfirm === site.id ? (
-                        <>
-                          <TextButton
-                            onClick={() => handleDelete(site.id)}
-                            variant="danger"
-                          >
-                            Confirm
-                          </TextButton>
-                          <TextButton
-                            onClick={() => setDeleteConfirm(null)}
-                            variant="quiet"
-                          >
-                            Cancel
-                          </TextButton>
-                        </>
-                      ) : (
-                        <TextButton
-                          onClick={() => setDeleteConfirm(site.id)}
-                          disabled={isEditing || saving}
-                          variant="danger-muted"
-                        >
-                          Delete
-                        </TextButton>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={siteTableColumns}
+          rows={siteTableRows}
+          rowKeys={sites.map(site => site.id)}
+          caption="Managed sites and provider access status"
+          monospaceCells={false}
+          tableClassName="w-full text-sm text-left"
+          containerClassName="overflow-x-auto"
+          headRowClassName="text-neutral-500 border-b border-neutral-800"
+          bodyClassName=""
+          rowClassName="border-b border-neutral-900 hover:bg-neutral-900/40"
+        />
       )}
       {diagnosticsError && hasAuth && (
         <p className="text-xs text-red-400" role="alert">Could not load per-site diagnostics.</p>
