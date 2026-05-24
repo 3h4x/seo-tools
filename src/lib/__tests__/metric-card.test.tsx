@@ -22,4 +22,20 @@ describe('MetricCard', () => {
     expect(html).toContain('<span aria-hidden="true">↓20%</span>');
     expect(html).toContain('<span class="sr-only">Improved by 20%</span>');
   });
+
+  it('renders optional header and footer content', () => {
+    const html = renderToStaticMarkup(
+      <MetricCard
+        label="LCP"
+        value="1.20s"
+        current={1200}
+        accent="border-emerald-500"
+        labelAddon={<span>good</span>}
+        footer="12 samples"
+      />
+    );
+
+    expect(html).toContain('<span>good</span>');
+    expect(html).toContain('12 samples');
+  });
 });

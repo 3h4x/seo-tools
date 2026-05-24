@@ -1,12 +1,27 @@
-export function MetricCard({ label, value, current, previous = 0, accent, icon, invert, valueColor = 'text-white' }: {
+import type { ReactNode } from 'react';
+
+export function MetricCard({
+  label,
+  value,
+  current,
+  previous = 0,
+  accent,
+  icon,
+  invert,
+  valueColor = 'text-white',
+  labelAddon,
+  footer,
+}: {
   label: string;
   value?: string;
   current: number;
   previous?: number;
   accent: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   invert?: boolean;
   valueColor?: string;
+  labelAddon?: ReactNode;
+  footer?: ReactNode;
 }) {
   const displayValue = value ?? (current > 0 ? current.toLocaleString() : '\u2014');
   const diff = previous > 0 ? ((current - previous) / previous) * 100 : 0;
@@ -18,6 +33,7 @@ export function MetricCard({ label, value, current, previous = 0, accent, icon, 
       <div className="flex items-center gap-2 text-neutral-500 mb-2">
         {icon}
         <span className="text-xs uppercase tracking-wider">{label}</span>
+        {labelAddon}
       </div>
       <div className="flex items-baseline gap-2">
         <span className={`${valueColor} text-2xl font-mono font-bold`}>{displayValue}</span>
@@ -28,6 +44,7 @@ export function MetricCard({ label, value, current, previous = 0, accent, icon, 
           </span>
         )}
       </div>
+      {footer != null && <div className="text-[10px] text-neutral-500 mt-1">{footer}</div>}
     </div>
   );
 }

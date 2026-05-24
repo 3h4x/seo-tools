@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { CWV_METRIC_ORDER, CWV_RATING_COLORS, type CwvMetricName, type CwvRating } from '@/lib/constants';
 import { formatCwv } from './cwv-cell';
+import { MetricCard } from './metric-card';
 
 export function CwvMetricsCards({
   metrics,
@@ -22,16 +23,19 @@ export function CwvMetricsCards({
             ? (m?.sampleCount ? `${m.sampleCount.toLocaleString()} samples · ${source}` : source)
             : null;
         return (
-          <div key={name} className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accent} p-4`}>
-            <div className="flex items-center gap-2 text-neutral-500 mb-2">
-              <span className="text-xs uppercase tracking-wider">{name}</span>
-              {m && <span className={`text-[10px] ${CWV_RATING_COLORS[m.rating].text}`}>{CWV_RATING_COLORS[m.rating].label}</span>}
-            </div>
-            <div className="text-2xl font-mono font-bold text-white">
-              {m ? formatCwv(name, m.value) : '—'}
-            </div>
-            {footer != null && <div className="text-[10px] text-neutral-500 mt-1">{footer}</div>}
-          </div>
+          <MetricCard
+            key={name}
+            label={name}
+            value={m ? formatCwv(name, m.value) : undefined}
+            current={m?.value ?? 0}
+            accent={accent}
+            labelAddon={m && (
+              <span className={`text-[10px] ${CWV_RATING_COLORS[m.rating].text}`}>
+                {CWV_RATING_COLORS[m.rating].label}
+              </span>
+            )}
+            footer={footer}
+          />
         );
       })}
     </div>
