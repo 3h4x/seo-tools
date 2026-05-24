@@ -47,7 +47,10 @@ describe('PageQueriesTable', () => {
 
     const html = renderToStaticMarkup(<PageQueriesTable siteId="site-a" days={7} />);
 
-    expect(html).toContain('<button type="button" aria-expanded="false" aria-label="Show queries for /seo"');
+    expect(html).toContain('<button class="');
+    expect(html).toContain('type="button"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-label="Show queries for /seo"');
     expect(html).toContain('title="https://example.com/seo"');
     expect(html).toContain('<th scope="col" class="px-4 py-3 font-semibold text-left">Page</th>');
   });
