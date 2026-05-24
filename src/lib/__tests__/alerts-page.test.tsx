@@ -68,7 +68,7 @@ describe('alerts page', () => {
         deltaPct: 40,
         snapshotDate: '2026-05-17',
         deliveredChannels: ['email'],
-        deliveryError: null,
+        deliveryError: 'email: delivery failed',
         createdAt: '2026-05-17 08:30:00',
       },
     ]);
@@ -79,8 +79,10 @@ describe('alerts page', () => {
     const html = renderToStaticMarkup(await AlertsPage());
 
     expect(html).toContain('Site A');
-    expect(html).toContain('<th scope="col" class="px-4 py-3 font-medium">Site</th>');
+    expect(html).toContain('<th scope="col" class="px-4 py-3 font-medium text-left">Site</th>');
     expect(html).toContain('SC clicks');
     expect(html).toContain('40.0%');
+    expect(html).toContain('email: delivery failed');
+    expect(html).not.toContain('<span>email<div');
   });
 });
