@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { TextButton } from '@/components/ui';
+import { DataTable, type DataTableColumn } from './data-table';
 import { PositionBadge } from './position-badge';
 import { Skeleton } from './skeletons';
 import type { SCQueryRow, PageQueryResult } from '@/lib/search-console';
@@ -19,6 +20,14 @@ interface PageQueriesApiResponse {
 function pageQueryPanelId(index: number) {
   return `page-query-detail-${index}`;
 }
+
+const QUERY_COLUMNS: DataTableColumn[] = [
+  { label: 'Query', rowHeader: true, className: 'py-1 text-left font-medium', cellClassName: 'py-1 font-normal text-left text-neutral-400 truncate max-w-[180px]' },
+  { label: 'Clicks', align: 'right', className: 'py-1 text-right font-medium', cellClassName: 'py-1 text-neutral-400 text-right' },
+  { label: 'Impr', align: 'right', className: 'py-1 text-right font-medium hidden md:table-cell', cellClassName: 'py-1 text-neutral-500 text-right hidden md:table-cell' },
+  { label: 'CTR', align: 'right', className: 'py-1 text-right font-medium hidden md:table-cell', cellClassName: 'py-1 text-neutral-500 text-right hidden md:table-cell' },
+  { label: 'Pos', align: 'right', className: 'py-1 text-right font-medium', cellClassName: 'py-1 text-right' },
+];
 
 function PageQueriesSkeleton() {
   return (
@@ -164,29 +173,24 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                           {row.queries.length === 0 ? (
                             <p className="text-neutral-600 text-xs">No query data for this page.</p>
                           ) : (
-                            <table className="w-full text-xs">
-                              <caption className="sr-only">Queries for {pathname(row.page)}</caption>
-                              <thead>
-                                <tr className="text-neutral-600 uppercase tracking-wider">
-                                  <th scope="col" className="py-1 text-left font-medium">Query</th>
-                                  <th scope="col" className="py-1 text-right font-medium">Clicks</th>
-                                  <th scope="col" className="py-1 text-right font-medium hidden md:table-cell">Impr</th>
-                                  <th scope="col" className="py-1 text-right font-medium hidden md:table-cell">CTR</th>
-                                  <th scope="col" className="py-1 text-right font-medium">Pos</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {row.queries.map((q: SCQueryRow) => (
-                                  <tr key={q.query} className="border-t border-neutral-800/30">
-                                    <th scope="row" className="py-1 font-normal text-left text-neutral-400 truncate max-w-[180px]">{q.query}</th>
-                                    <td className="py-1 text-neutral-400 text-right">{q.clicks.toLocaleString()}</td>
-                                    <td className="py-1 text-neutral-500 text-right hidden md:table-cell">{q.impressions.toLocaleString()}</td>
-                                    <td className="py-1 text-neutral-500 text-right hidden md:table-cell">{(q.ctr * 100).toFixed(1)}%</td>
-                                    <td className="py-1 text-right"><PositionBadge position={q.position} /></td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                            <DataTable
+                              columns={QUERY_COLUMNS}
+                              rows={row.queries.map((q: SCQueryRow) => [
+                                q.query,
+                                q.clicks.toLocaleString(),
+                                q.impressions.toLocaleString(),
+                                `${(q.ctr * 100).toFixed(1)}%`,
+                                <PositionBadge key="position" position={q.position} />,
+                              ])}
+                              caption={<>Queries for {pathname(row.page)}</>}
+                              rowKeys={row.queries.map((q: SCQueryRow) => q.query)}
+                              monospaceCells={false}
+                              containerClassName=""
+                              tableClassName="w-full text-xs"
+                              headRowClassName="text-neutral-600 uppercase tracking-wider"
+                              bodyClassName=""
+                              rowClassName="border-t border-neutral-800/30"
+                            />
                           )}
                         </td>
                       </tr>
