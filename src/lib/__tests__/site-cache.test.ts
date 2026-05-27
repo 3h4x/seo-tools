@@ -107,6 +107,21 @@ describe('invalidateManagedSiteCache', () => {
     expect(clearSitemapSyncState).toHaveBeenCalledWith('site1');
   });
 
+  it('uses a URL-prefix Search Console override without changing the PSI domain key', () => {
+    const site = makeSite({
+      domain: 'example.github.io',
+      scUrl: 'https://example.github.io/project/',
+      ga4PropertyId: 'properties/1234',
+    });
+
+    invalidateManagedSiteCache(null, site);
+
+    expect(clearCacheEntry).toHaveBeenCalledWith('sitemap-submissions', 'https://example.github.io/project/');
+    expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('sc-data-', 'https://example.github.io/project/');
+    expect(clearCacheEntry).toHaveBeenCalledWith('psi-mobile', 'https://example.github.io');
+    expect(clearCacheEntry).toHaveBeenCalledWith('psi-desktop', 'https://example.github.io');
+  });
+
   it('does not clear sitemap sync state for non-sitemap identity changes', () => {
     const previous = makeSite({ name: 'Old Name', ga4PropertyId: 'properties/1234' });
     const next = makeSite({ name: 'New Name', ga4PropertyId: 'properties/5678' });
@@ -159,5 +174,15 @@ describe('invalidateManagedSiteCache', () => {
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('ga4-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-', 'properties/1234');
     expect(clearCacheEntriesByPrefix).toHaveBeenCalledWith('rum-cwv-events-', 'properties/1234');
+  });
+
+  it('skips GA4 cache clearing when the property id is blank', () => {
+    const site = makeSite({ ga4PropertyId: '   ' });
+
+    invalidateManagedSiteCache(null, site);
+
+    expect(clearCacheEntriesByPrefix).not.toHaveBeenCalledWith('ga4-', expect.any(String));
+    expect(clearCacheEntriesByPrefix).not.toHaveBeenCalledWith('rum-cwv-', expect.any(String));
+    expect(clearCacheEntriesByPrefix).not.toHaveBeenCalledWith('rum-cwv-events-', expect.any(String));
   });
 });
