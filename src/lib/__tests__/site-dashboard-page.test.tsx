@@ -387,6 +387,11 @@ describe('SiteDashboardPage', () => {
 
     expect(html).toContain('Site 1');
     expect(html).toContain('Site Audit');
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('GA4 discovery');
+    expect(html).toContain('site audit');
+    expect(html).toContain('Search Console metrics');
+    expect(html).toContain('Core Web Vitals');
     expect(html.match(/data unavailable/g)).toHaveLength(2);
     expect(mockCreateFailedSiteAuditResult).toHaveBeenCalledWith(expect.objectContaining({ id: 'site-1' }));
     expect(consoleError).toHaveBeenCalledWith('[SiteDashboard GA4 discovery]', expect.any(Error));

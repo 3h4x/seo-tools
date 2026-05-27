@@ -29,8 +29,9 @@ import { ScTable } from '../components/sc-table';
 import { PageQueriesTable } from '../components/page-queries-table';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
-import { loadOrFallback, loadSyncOrFallback } from '@/lib/page-helpers';
+import { loadOrFallback, loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { Badge } from '@/components/ui';
+import { PartialFailureBanner } from '../components/partial-failure-banner';
 
 export const revalidate = 300;
 
@@ -116,20 +117,28 @@ export default async function SiteDashboardPage({
   const hasSearchConsole = site.searchConsole !== false;
 
   // Discover GA4 property ID
-  const discovered = await loadOrFallback('SiteDashboard GA4 discovery', discoverPropertyIds(), []);
+  const discoveredResult = await loadOrFlag('SiteDashboard GA4 discovery', discoverPropertyIds(), []);
+  const discovered = discoveredResult.value;
   const propertyId = discovered.find((s) => s.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
 
   const scUrl = getSCUrl(site);
 
-  const [rawAudit, sitemapSubmissions, scComparison, scQueries, scTopPages, ga4Data, cwvSummary] = await Promise.all([
-    loadOrFallback(`SiteDashboard audit ${siteId}`, cachedAuditSite(site), createFailedSiteAuditResult(site)),
-    hasSearchConsole ? loadOrFallback(`SiteDashboard sitemap submissions ${siteId}`, cachedGetSitemapSubmissions(scUrl), []) : Promise.resolve([]),
-    hasSearchConsole ? loadOrFallback(`SiteDashboard Search Console comparison ${siteId}`, cachedGetSearchConsoleDataWithComparison(scUrl, days), { data: null, error: true }) : null,
-    hasSearchConsole ? loadOrFallback(`SiteDashboard Search Console queries ${siteId}`, cachedGetSearchConsoleQueries(scUrl, days), null) : null,
-    hasSearchConsole ? loadOrFallback(`SiteDashboard Search Console pages ${siteId}`, cachedGetSearchConsolePages(scUrl, days), null) : null,
-    loadOrFallback(`SiteDashboard GA4 ${siteId}`, cachedGetAnalytics(propertyId, days), { data: null, error: Boolean(propertyId) }),
-    loadOrFallback(`SiteDashboard CWV ${siteId}`, getCwvAuditSummary(siteId), null),
+  const [rawAuditResult, sitemapSubmissionsResult, scComparisonResult, scQueriesResult, scTopPagesResult, ga4DataResult, cwvSummaryResult] = await Promise.all([
+    loadOrFlag(`SiteDashboard audit ${siteId}`, cachedAuditSite(site), createFailedSiteAuditResult(site)),
+    hasSearchConsole ? loadOrFlag(`SiteDashboard sitemap submissions ${siteId}`, cachedGetSitemapSubmissions(scUrl), []) : Promise.resolve({ value: [], failed: false }),
+    hasSearchConsole ? loadOrFlag(`SiteDashboard Search Console comparison ${siteId}`, cachedGetSearchConsoleDataWithComparison(scUrl, days), { data: null, error: true }) : Promise.resolve({ value: null, failed: false }),
+    hasSearchConsole ? loadOrFlag(`SiteDashboard Search Console queries ${siteId}`, cachedGetSearchConsoleQueries(scUrl, days), null) : Promise.resolve({ value: null, failed: false }),
+    hasSearchConsole ? loadOrFlag(`SiteDashboard Search Console pages ${siteId}`, cachedGetSearchConsolePages(scUrl, days), null) : Promise.resolve({ value: null, failed: false }),
+    loadOrFlag(`SiteDashboard GA4 ${siteId}`, cachedGetAnalytics(propertyId, days), { data: null, error: Boolean(propertyId) }),
+    loadOrFlag(`SiteDashboard CWV ${siteId}`, getCwvAuditSummary(siteId), null),
   ]);
+  const rawAudit = rawAuditResult.value;
+  const sitemapSubmissions = sitemapSubmissionsResult.value;
+  const scComparison = scComparisonResult.value;
+  const scQueries = scQueriesResult.value;
+  const scTopPages = scTopPagesResult.value;
+  const ga4Data = ga4DataResult.value;
+  const cwvSummary = cwvSummaryResult.value;
 
   const audit = normalizeSiteAuditResult(rawAudit);
   const gapAnalysis = analyzeSiteGaps(audit, site, createSiteGapSignals({
@@ -149,13 +158,29 @@ export default async function SiteDashboardPage({
   const hasGa4 = ga4 && ga4.current.users > 0;
   const queryBucketStats = scQueries ? getQueryBucketStats(scQueries) : [];
 
-  const scDaily = hasSearchConsole
-    ? loadSyncOrFallback(`SiteDashboard SC daily ${siteId}`, () => getScDaily(siteId), [])
-    : [];
-  const ga4DailyData = loadSyncOrFallback(`SiteDashboard GA4 daily ${siteId}`, () => getGa4Daily(siteId), []);
-  const keywordDeltas: KeywordDelta[] = hasSearchConsole
-    ? loadSyncOrFallback(`SiteDashboard keyword deltas ${siteId}`, () => getKeywordDeltas(siteId), [])
-    : [];
+  const scDailyResult = hasSearchConsole
+    ? loadSyncOrFlag(`SiteDashboard SC daily ${siteId}`, () => getScDaily(siteId), [])
+    : { value: [], failed: false };
+  const ga4DailyResult = loadSyncOrFlag(`SiteDashboard GA4 daily ${siteId}`, () => getGa4Daily(siteId), []);
+  const keywordDeltasResult = hasSearchConsole
+    ? loadSyncOrFlag(`SiteDashboard keyword deltas ${siteId}`, () => getKeywordDeltas(siteId), [])
+    : { value: [] as KeywordDelta[], failed: false };
+  const scDaily = scDailyResult.value;
+  const ga4DailyData = ga4DailyResult.value;
+  const keywordDeltas: KeywordDelta[] = keywordDeltasResult.value;
+
+  const partialFailures: string[] = [];
+  if (discoveredResult.failed) partialFailures.push('GA4 discovery');
+  if (rawAuditResult.failed) partialFailures.push('site audit');
+  if (sitemapSubmissionsResult.failed) partialFailures.push('sitemap submissions');
+  if (scComparisonResult.failed) partialFailures.push('Search Console metrics');
+  if (scQueriesResult.failed) partialFailures.push('Search Console queries');
+  if (scTopPagesResult.failed) partialFailures.push('Search Console pages');
+  if (ga4DataResult.failed) partialFailures.push('GA4 metrics');
+  if (cwvSummaryResult.failed) partialFailures.push('Core Web Vitals');
+  if (scDailyResult.failed) partialFailures.push('Search Console trends');
+  if (ga4DailyResult.failed) partialFailures.push('GA4 trends');
+  if (keywordDeltasResult.failed) partialFailures.push('keyword history');
 
   return (
     <div className="space-y-8">
@@ -167,6 +192,7 @@ export default async function SiteDashboardPage({
         </div>
         <TimeRange />
       </div>
+      <PartialFailureBanner failures={partialFailures} />
       <div className="flex flex-wrap gap-6">
         {([
           { dot: 'bg-emerald-500', text: 'text-emerald-400', value: audit.score.pass, label: 'passed' },
