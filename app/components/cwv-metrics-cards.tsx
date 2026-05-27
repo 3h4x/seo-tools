@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { CWV_METRIC_ORDER, CWV_RATING_COLORS, type CwvMetricName, type CwvRating } from '@/lib/constants';
+import { Badge } from '@/components/ui';
 import { formatCwv } from './cwv-cell';
 import { MetricCard } from './metric-card';
 
@@ -30,9 +31,9 @@ export function CwvMetricsCards({
             current={m?.value ?? 0}
             accent={accent}
             labelAddon={m && (
-              <span className={`text-[10px] ${CWV_RATING_COLORS[m.rating].text}`}>
+              <Badge className={`!border-0 !px-0 !py-0 !text-[10px] !font-normal ${CWV_RATING_COLORS[m.rating].text}`}>
                 {CWV_RATING_COLORS[m.rating].label}
-              </span>
+              </Badge>
             )}
             footer={footer}
           />
