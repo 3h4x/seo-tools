@@ -40,6 +40,7 @@ import {
   clearCacheEntriesByPrefix,
   clearCacheEntriesBySiteIdPrefix,
   clearSitemapSyncState,
+  withCache,
   dbDeleteSite,
   dbGetSites,
   dbUpsertSite,
@@ -173,6 +174,86 @@ describe('clearCache', () => {
 
   it('is idempotent — calling twice does not throw', () => {
     expect(() => { clearCache(); clearCache(); }).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// withCache
+// ---------------------------------------------------------------------------
+
+describe('withCache', () => {
+  beforeEach(() => clearCache());
+
+  it('returns the cached value without invoking the fetcher on a hit', async () => {
+    setCache('wc-key', 'site-a', { value: 'cached' });
+    const fetcher = vi.fn().mockResolvedValue({ value: 'fresh' });
+
+    const result = await withCache('wc-key', 'site-a', fetcher);
+
+    expect(result).toEqual({ value: 'cached' });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('invokes the fetcher and caches the result on a miss', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ value: 'fresh' });
+
+    const result = await withCache('wc-key', 'site-a', fetcher);
+
+    expect(result).toEqual({ value: 'fresh' });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(getCached('wc-key', 'site-a')).toEqual({ value: 'fresh' });
+  });
+
+  it('returns null from the fetcher without persisting a cache entry', async () => {
+    const fetcher = vi.fn().mockResolvedValue(null);
+
+    const result = await withCache('wc-key', 'site-a', fetcher);
+
+    expect(result).toBeNull();
+    expect(getCached('wc-key', 'site-a')).toBeNull();
+
+    // Second call still hits the fetcher because nothing was cached.
+    await withCache('wc-key', 'site-a', fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('refetches when the cached entry is older than the custom ttlMs', async () => {
+    const db = getDb();
+    db.prepare(
+      'INSERT OR REPLACE INTO api_cache (cache_key, site_id, data_json, fetched_at) VALUES (?, ?, ?, ?)',
+    ).run('wc-key', 'site-a', JSON.stringify({ value: 'stale' }), 0);
+
+    const fetcher = vi.fn().mockResolvedValue({ value: 'fresh' });
+    const result = await withCache('wc-key', 'site-a', fetcher, 1);
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ value: 'fresh' });
+    expect(getCached('wc-key', 'site-a')).toEqual({ value: 'fresh' });
+  });
+
+  it('treats falsy-but-non-null fetcher results as cacheable (e.g. empty array)', async () => {
+    const fetcher = vi.fn().mockResolvedValue([]);
+
+    const result = await withCache('wc-list', 'site-a', fetcher);
+
+    expect(result).toEqual([]);
+    expect(getCached('wc-list', 'site-a')).toEqual([]);
+
+    await withCache('wc-list', 'site-a', fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('scopes cached values by (key, siteId)', async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce({ value: 'a' })
+      .mockResolvedValueOnce({ value: 'b' });
+
+    const a = await withCache('wc-key', 'site-a', fetcher);
+    const b = await withCache('wc-key', 'site-b', fetcher);
+
+    expect(a).toEqual({ value: 'a' });
+    expect(b).toEqual({ value: 'b' });
+    expect(fetcher).toHaveBeenCalledTimes(2);
   });
 });
 
