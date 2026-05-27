@@ -40,6 +40,10 @@ vi.mock('@/lib/audit', () => ({
   cachedAuditAllSites: mockCachedAuditAllSites,
 }));
 
+vi.mock('@/lib/google-auth', () => ({
+  hasGoogleCredentials: () => true,
+}));
+
 vi.mock('@/lib/canonical', () => ({
   summarizeCanonicalChecks: mockSummarizeCanonicalChecks,
 }));

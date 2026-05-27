@@ -17,6 +17,7 @@ import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { Badge } from '@/components/ui';
+import { NoSitesNotice } from '../components/no-sites-notice';
 
 const AUDIT_DECAY_PERIODS = [7, 30] as const;
 
@@ -89,10 +90,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         <div>
           <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
         </div>
-        <p className="text-neutral-500 text-sm">
-          No sites configured —{' '}
-          <Link href="/config" className="text-white underline">add sites in the Config tab</Link>.
-        </p>
+        <NoSitesNotice variant="inline" />
       </div>
     );
   }

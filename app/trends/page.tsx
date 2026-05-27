@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { loadOrFallback, loadSyncOrFallback } from '@/lib/page-helpers';
+import { NoSitesNotice } from '../components/no-sites-notice';
 import { getManagedSites } from '@/lib/sites';
 import { SnapshotButton } from '../components/snapshot-button';
 import {
@@ -77,10 +78,7 @@ export default async function TrendsPage({
         <div>
           <h1 className="text-2xl font-bold text-white">Trends</h1>
         </div>
-        <p className="text-neutral-500 text-sm">
-          No sites configured —{' '}
-          <Link href="/config" className="text-white underline">add sites in the Config tab</Link>.
-        </p>
+        <NoSitesNotice variant="inline" />
       </div>
     );
   }

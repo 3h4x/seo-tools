@@ -17,6 +17,7 @@ import CwvSetupGuide from '../components/cwv-setup-guide';
 import { CwvCell } from '../components/cwv-cell';
 import { CwvMetricsCards } from '../components/cwv-metrics-cards';
 import { DataTable, type DataTableColumn } from '../components/data-table';
+import { NoSitesNotice } from '../components/no-sites-notice';
 
 export const revalidate = 300;
 
@@ -132,11 +133,7 @@ export default async function PerformancePage({
             rowClassName="hover:bg-neutral-800/30"
           />
         ) : (
-          <div className="overflow-hidden rounded border border-neutral-800">
-            <div className="px-3 py-6 text-center text-neutral-500">
-              No sites configured — <Link href="/config" className="text-white underline">add sites in Config</Link>.
-            </div>
-          </div>
+          <NoSitesNotice />
         )}
       </div>
 

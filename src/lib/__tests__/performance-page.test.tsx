@@ -14,6 +14,10 @@ vi.mock('next/navigation', () => ({
   },
 }));
 
+vi.mock('@/lib/google-auth', () => ({
+  hasGoogleCredentials: () => true,
+}));
+
 const {
   mockGetPerformanceSiteData,
   mockGetPerformanceOverviewRows,

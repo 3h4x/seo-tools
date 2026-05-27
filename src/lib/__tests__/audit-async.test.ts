@@ -909,10 +909,10 @@ describe('auditSite — broken internal links', () => {
         const u = String(url);
         const method = init?.method ?? 'GET';
         if (u.endsWith('/robots.txt')) {
-          return makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' });
+          return Promise.resolve(makeResponse({ body: 'Sitemap: https://example.com/sitemap.xml\n' }));
         }
         if (u.endsWith('/sitemap.xml')) {
-          return makeResponse({ body: '<urlset><url><loc>https://example.com/</loc></url></urlset>' });
+          return Promise.resolve(makeResponse({ body: '<urlset><url><loc>https://example.com/</loc></url></urlset>' }));
         }
         if (method === 'HEAD' && u.startsWith('https://example.com/page-')) {
           inFlight++;
@@ -925,7 +925,7 @@ describe('auditSite — broken internal links', () => {
           });
         }
 
-        return makeResponse({
+        return Promise.resolve(makeResponse({
           body: [
             '<html><head><title>Test</title></head><body>',
             '<a href="/page-1">One</a>',
@@ -936,7 +936,7 @@ describe('auditSite — broken internal links', () => {
             '<a href="/page-6">Six</a>',
             '</body></html>',
           ].join(''),
-        });
+        }));
       }),
     );
 

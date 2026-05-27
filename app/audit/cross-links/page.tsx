@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { DataTable, type DataTableColumn } from '../../components/data-table';
 import { getCrossLinkMatrix, type CrossLinkSourceMatrix, type CrossLinkSourceStatus } from '@/lib/cross-links';
 import { getManagedSites } from '@/lib/sites';
+import { NoSitesNotice } from '../../components/no-sites-notice';
 
 export const revalidate = 300;
 
@@ -27,9 +28,7 @@ export default async function CrossLinksPage() {
           <h1 className="text-2xl font-bold text-white">Cross-Site Links</h1>
           <p className="text-neutral-500 text-sm mt-1">Managed-domain link coverage</p>
         </div>
-        <p className="text-neutral-500 text-sm">
-          No sites configured — <Link href="/config" className="text-white underline">add sites in the Config tab</Link>.
-        </p>
+        <NoSitesNotice variant="inline" />
       </div>
     );
   }

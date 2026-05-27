@@ -9,6 +9,13 @@ const config = {
     globals: false,
     exclude: ['node_modules', 'e2e'],
     setupFiles: ['./src/test/setup.ts'],
+    testTimeout: 10000,
+    hookTimeout: 10000,
+    teardownTimeout: 10000,
+    isolate: true,
+    threads: true,
+    maxThreads: 4,
+    minThreads: 1,
   },
   resolve: {
     alias: [

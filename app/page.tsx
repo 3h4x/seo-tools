@@ -5,8 +5,8 @@ import { formatSource } from '@/lib/format';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFallback } from '@/lib/page-helpers';
-import Link from 'next/link';
 import TimeRange from './components/time-range';
+import { NoSitesNotice } from './components/no-sites-notice';
 import { MetricCard } from './components/metric-card';
 import { Icons } from './components/icons';
 import { TrafficSourcesChart } from './components/overview-charts';
@@ -107,10 +107,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         <TimeRange />
       </div>
       {sites.length === 0 ? (
-        <div className="rounded border border-neutral-800 px-4 py-8 text-center text-sm text-neutral-500">
-          No sites configured —{' '}
-          <Link href="/config" className="text-white underline">add sites in the Config tab</Link>.
-        </div>
+        <NoSitesNotice />
       ) : (
       <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
