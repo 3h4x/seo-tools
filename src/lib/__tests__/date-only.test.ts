@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { addDateOnlyDays, dateOnlyDaysBack, dateStr, parseDateOnly, todayDateOnly } from '../date-only';
+import { addDateOnlyDays, batchRanges, dateOnlyDaysBack, dateStr, parseDateOnly, todayDateOnly } from '../date-only';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -27,5 +27,31 @@ describe('date-only helpers', () => {
     date.setDate(date.getDate() + 1);
     expect(dateStr(date)).toBe('2026-03-30');
     expect(addDateOnlyDays('2026-03-28', 2)).toBe('2026-03-30');
+  });
+
+  it('groups unsorted date-only values into contiguous ranges', () => {
+    expect(batchRanges([
+      '2026-05-07',
+      '2026-05-02',
+      '2026-05-01',
+      '2026-05-08',
+      '2026-05-04',
+    ])).toEqual([
+      { start: '2026-05-01', end: '2026-05-02' },
+      { start: '2026-05-04', end: '2026-05-04' },
+      { start: '2026-05-07', end: '2026-05-08' },
+    ]);
+  });
+
+  it('keeps batch ranges contiguous across DST-sensitive boundaries', () => {
+    expect(batchRanges([
+      '2026-03-28',
+      '2026-03-29',
+      '2026-03-30',
+      '2026-04-02',
+    ])).toEqual([
+      { start: '2026-03-28', end: '2026-03-30' },
+      { start: '2026-04-02', end: '2026-04-02' },
+    ]);
   });
 });
