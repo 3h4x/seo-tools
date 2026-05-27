@@ -294,6 +294,28 @@ describe('getCwvAuditSummary', () => {
     expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledTimes(1);
   });
 
+  it('marks the audit summary as rum-pending when events exist but RUM dimensions are not queryable', async () => {
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce({ hasData: false, overall: {}, byDevice: { mobile: {}, desktop: {}, tablet: {} } });
+    vi.mocked(cachedGetCwvEventCount).mockResolvedValueOnce(6);
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => ({
+      url: 'https://borged.io',
+      strategy,
+      performanceScore: null,
+      field: {
+        LCP: { value: 2600, rating: 'good' },
+      },
+      lab: {},
+      fetchedAt: 123,
+    }));
+
+    const result = await getCwvAuditSummary('borged-io');
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('rum-pending');
+    expect(result!.metrics.LCP).toEqual({ value: 2600, rating: 'good', sampleCount: 0 });
+    expect(vi.mocked(cachedGetCwvEventCount)).toHaveBeenCalledWith('discovered-prop', 7);
+  });
+
   it('falls back to desktop PSI in the audit summary when mobile has no metrics', async () => {
     vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce(null);
     vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => {

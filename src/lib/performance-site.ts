@@ -241,9 +241,12 @@ export async function getCwvAuditSummary(siteId: string): Promise<CwvAuditSummar
   const discovered = await providerOrNull(`audit GA4 discovery ${site.id}`, discoverPropertyIds());
   const propertyId = (discovered ?? []).find(c => c.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
 
-  const [rum, psiMobile] = await Promise.all([
+  const [rum, eventCount, psiMobile] = await Promise.all([
     propertyId
       ? providerOrNull(`audit RUM ${site.id}`, cachedGetRumCoreWebVitals(propertyId, 7))
+      : Promise.resolve(null),
+    propertyId
+      ? providerOrNull(`audit CWV event count ${site.id}`, cachedGetCwvEventCount(propertyId, 7))
       : Promise.resolve(null),
     providerOrNull(`audit PSI mobile ${site.id}`, cachedGetPagespeed(url, 'mobile')),
   ]);
@@ -256,7 +259,7 @@ export async function getCwvAuditSummary(siteId: string): Promise<CwvAuditSummar
     ? null
     : await providerOrNull(`audit PSI desktop ${site.id}`, cachedGetPagespeed(url, 'desktop'));
   const fallback = firstPsiWithMetrics(psiMobile, psiDesktop);
-  return { metrics: fallback.metrics, source: fallback.source };
+  return { metrics: fallback.metrics, source: (eventCount ?? 0) > 0 ? 'rum-pending' : fallback.source };
 }
 
 export type {
