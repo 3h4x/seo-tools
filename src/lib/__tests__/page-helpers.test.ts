@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { loadOrFallback, loadOrFlag, loadSyncOrFallback } from '../page-helpers';
+import { loadOrFallback, loadOrFlag, loadSyncOrFallback, loadSyncOrFlag } from '../page-helpers';
 
 describe('page helpers', () => {
   it('returns async fallback and logs when a promise rejects', async () => {
@@ -36,6 +36,23 @@ describe('page helpers', () => {
         throw new Error('boom');
       }, 'fallback')).toBe('fallback');
       expect(consoleError).toHaveBeenCalledWith('[Sync read]', expect.any(Error));
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it('loadSyncOrFlag returns failed:true with fallback when the read throws', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    try {
+      const failed = loadSyncOrFlag('Flagged sync read', () => {
+        throw new Error('boom');
+      }, 'fallback');
+      expect(failed).toEqual({ value: 'fallback', failed: true });
+      expect(consoleError).toHaveBeenCalledWith('[Flagged sync read]', expect.any(Error));
+
+      const ok = loadSyncOrFlag('Flagged sync read', () => 'actual', 'fallback');
+      expect(ok).toEqual({ value: 'actual', failed: false });
     } finally {
       consoleError.mockRestore();
     }

@@ -38,3 +38,16 @@ export async function loadOrFlag<T>(
     return { value: fallback, failed: true };
   }
 }
+
+export function loadSyncOrFlag<T>(
+  label: string,
+  read: () => T,
+  fallback: T,
+): FlaggedLoad<T> {
+  try {
+    return { value: read(), failed: false };
+  } catch (error) {
+    console.error(`[${label}]`, error);
+    return { value: fallback, failed: true };
+  }
+}

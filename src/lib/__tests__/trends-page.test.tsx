@@ -466,6 +466,31 @@ describe('TrendsPage', () => {
     }
   });
 
+  it('surfaces a partial-failure banner when snapshot or keyword counts throw', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockGetSnapshotCount.mockImplementationOnce(() => {
+      throw new Error('snapshot count unavailable');
+    });
+    mockGetKeywordCount.mockImplementationOnce(() => {
+      throw new Error('keyword count unavailable');
+    });
+
+    try {
+      const html = renderToStaticMarkup(await TrendsPage({
+        searchParams: Promise.resolve({}),
+      }));
+
+      expect(html).toContain('Some data sources are unavailable');
+      expect(html).toContain('snapshot count');
+      expect(html).toContain('keyword count');
+      expect(html).not.toContain('No trend data yet');
+      expect(consoleError).toHaveBeenCalledWith('[TrendsPage snapshot count]', expect.any(Error));
+      expect(consoleError).toHaveBeenCalledWith('[TrendsPage keyword count]', expect.any(Error));
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   it('keeps rendering when per-site trend queries throw', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockGetScTrends.mockImplementationOnce(() => {

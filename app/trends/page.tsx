@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { loadOrFlag, loadSyncOrFallback } from '@/lib/page-helpers';
+import { loadOrFlag, loadSyncOrFallback, loadSyncOrFlag } from '@/lib/page-helpers';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { getManagedSites } from '@/lib/sites';
@@ -34,17 +34,16 @@ export default async function TrendsPage({
   const tab = Array.isArray(sp.tab) ? sp.tab[0] : sp.tab;
   const showKeywordsFirst = tab === 'keywords';
 
-  let snapshotCount: number;
-  let keywordCount: number;
-  try {
-    snapshotCount = getSnapshotCount();
-    keywordCount = getKeywordCount();
-  } catch {
-    snapshotCount = 0;
-    keywordCount = 0;
-  }
+  const partialFailures: string[] = [];
+  const snapshotCountResult = loadSyncOrFlag('TrendsPage snapshot count', () => getSnapshotCount(), 0);
+  const keywordCountResult = loadSyncOrFlag('TrendsPage keyword count', () => getKeywordCount(), 0);
+  const snapshotCount = snapshotCountResult.value;
+  const keywordCount = keywordCountResult.value;
+  if (snapshotCountResult.failed) partialFailures.push('snapshot count');
+  if (keywordCountResult.failed) partialFailures.push('keyword count');
+  const countsFailed = snapshotCountResult.failed || keywordCountResult.failed;
 
-  if (snapshotCount === 0 && keywordCount === 0) {
+  if (!countsFailed && snapshotCount === 0 && keywordCount === 0) {
     return (
       <div className="space-y-8">
         <div>
@@ -73,7 +72,6 @@ export default async function TrendsPage({
 
   const managedSitesResult = await loadOrFlag('TrendsPage managed sites', getManagedSites(), []);
   const managedSites = managedSitesResult.value;
-  const partialFailures: string[] = [];
   if (managedSitesResult.failed) partialFailures.push('managed sites');
 
   if (managedSites.length === 0) {
