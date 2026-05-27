@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Badge, ConfiguredNotice, FormButton, FormInput } from '@/components/ui';
+import { Badge, ConfiguredNotice, FormButton, FormInput, Spinner } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { Skeleton } from './skeletons';
 
@@ -185,6 +185,7 @@ export default function PagespeedKeyForm() {
           onClick={handleTest}
           disabled={!input.trim() || testState === 'testing'}
         >
+          {testState === 'testing' && <Spinner />}
           {testState === 'testing' ? 'Testing…' : 'Test'}
         </FormButton>
         <FormButton
@@ -192,6 +193,7 @@ export default function PagespeedKeyForm() {
           disabled={testState !== 'ok' || saving}
           variant="primary"
         >
+          {saving && <Spinner />}
           {saving ? 'Saving…' : source === 'env' ? 'Override with DB key' : 'Save'}
         </FormButton>
         {source === 'db' && (
@@ -200,6 +202,7 @@ export default function PagespeedKeyForm() {
             disabled={removing}
             variant="danger"
           >
+            {removing && <Spinner />}
             {removing ? 'Removing…' : 'Remove'}
           </FormButton>
         )}
