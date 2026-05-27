@@ -6,7 +6,7 @@ import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
-import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, TextButton } from '@/components/ui';
+import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, Spinner, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 
 interface Site {
@@ -792,7 +792,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               variant="primary"
               onClick={handleSave}
               disabled={!canSave}
+              className="inline-flex items-center gap-1.5"
             >
+              {saving && <Spinner />}
               {saving ? 'Saving…' : 'Save'}
             </FormButton>
             <FormButton
@@ -811,7 +813,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               size="xs"
               onClick={handleDiscover}
               disabled={discovering || isEditing}
+              className="inline-flex items-center gap-1.5"
             >
+              {discovering && <Spinner />}
               {discovering ? 'Discovering…' : 'Discover sites'}
             </FormButton>
           </div>
@@ -882,7 +886,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   variant="primary"
                   onClick={handleImport}
                   disabled={importing || selected.size === 0}
+                  className="inline-flex items-center gap-1.5"
                 >
+                  {importing && <Spinner />}
                   {importing ? 'Importing…' : `Import Selected (${selected.size})`}
                 </FormButton>
               </div>
