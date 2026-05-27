@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { TextButton } from '@/components/ui';
+import { Badge, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
@@ -123,14 +123,14 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
       <div className="flex items-center gap-2">
         <span className="text-white font-medium">{row.name}</span>
         {row.ga4Error && (
-          <span className="rounded-sm border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300">
+          <Badge size="xs" shape="rounded" uppercase className="border-red-500/40 bg-red-500/10 text-red-300">
             GA4 error
-          </span>
+          </Badge>
         )}
         {row.scError && (
-          <span className="rounded-sm border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300">
+          <Badge size="xs" shape="rounded" uppercase className="border-red-500/40 bg-red-500/10 text-red-300">
             SC error
-          </span>
+          </Badge>
         )}
         <div className="flex items-center gap-1.5">
           <span className="text-neutral-600 text-xs">{row.domain}</span>
