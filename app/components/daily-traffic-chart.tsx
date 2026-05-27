@@ -155,7 +155,11 @@ export default function DailyTrafficChart({ days }: { days: number }) {
   const siteToggleOptions = allSiteIds
     .filter(id => dates.some(d => {
       const sd = data[d]?.[id];
-      return sd && [...activeMetrics].some(m => (sd[m] ?? 0) > 0);
+      if (!sd) return false;
+      for (const m of activeMetrics) {
+        if ((sd[m] ?? 0) > 0) return true;
+      }
+      return false;
     }))
     .map(id => ({
       value: id,
