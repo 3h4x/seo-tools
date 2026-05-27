@@ -18,7 +18,7 @@ const binPath = path.join(binDir, process.platform === "win32" ? `${binName}.cmd
 if (!existsSync(binPath)) {
   const install = spawnSync("pnpm", ["install", "--frozen-lockfile"], {
     cwd: rootDir,
-    env: { ...process.env, HUSKY: "0" },
+    env: { ...process.env, HUSKY: "0", CI: process.env.CI || "true" },
     shell: process.platform === "win32",
     stdio: "inherit",
   });
