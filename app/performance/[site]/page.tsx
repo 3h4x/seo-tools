@@ -8,6 +8,7 @@ import {
   rateCwv,
 } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
+import { Badge } from '@/components/ui';
 import TimeRange from '../../components/time-range';
 import TrendChart from '../../components/trend-chart';
 import CwvSetupGuide from '../../components/cwv-setup-guide';
@@ -16,6 +17,14 @@ import { CwvMetricsCards } from '../../components/cwv-metrics-cards';
 import { DataTable, type DataTableColumn } from '../../components/data-table';
 
 export const revalidate = 300;
+
+const SOURCE_BADGE = {
+  'rum':         { label: 'RUM',     cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30', tip: 'Real-user data via GA4 core_web_vitals' },
+  'rum-pending': { label: 'RUM 24h', cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30',          tip: 'Events flowing; custom dimensions are still propagating to the Data API' },
+  'psi-field':   { label: 'CrUX',    cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30',          tip: 'PageSpeed Insights field data (CrUX, p75)' },
+  'psi-lab':     { label: 'Lab',     cls: 'bg-violet-500/15 text-violet-300 border-violet-500/30',    tip: 'Lighthouse lab synthetic measurements' },
+  'none':        { label: 'No data', cls: 'bg-neutral-800 text-neutral-500 border-neutral-700',       tip: 'No RUM events and PSI returned no metrics' },
+} as const;
 
 export default async function PerfSiteDetail({
   params,
@@ -30,7 +39,9 @@ export default async function PerfSiteDetail({
   const perf = await getPerformanceSiteData(siteId, requestedDays);
   if (!perf) notFound();
 
-  const { site, days, hasRum, propagating, eventCount, heroSource, overall, byDevice, slowestPages, trend, psi } = perf;
+  const { site, days, source, hasRum, propagating, eventCount, heroSource, overall, byDevice, slowestPages, trend, psi } = perf;
+  const sourceBadge = SOURCE_BADGE[source];
+  const hasOverallMetrics = CWV_METRIC_ORDER.some((name) => overall[name]);
   const trendData = trend.map((point) => ({
     date: point.date,
     LCP: point.metrics.LCP?.value ?? null,
@@ -63,7 +74,12 @@ export default async function PerfSiteDetail({
           <h1 className="text-2xl font-bold text-white mt-1">{site.name}</h1>
           <p className="text-neutral-500 text-sm mt-1 font-mono">{site.domain}</p>
         </div>
-        <TimeRange options={[{ value: '7', label: '7d' }, { value: '28', label: '28d' }]} defaultValue="7" />
+        <div className="flex items-center gap-3">
+          <Badge title={sourceBadge.tip} shape="rounded" uppercase className={sourceBadge.cls}>
+            {sourceBadge.label}
+          </Badge>
+          <TimeRange options={[{ value: '7', label: '7d' }, { value: '28', label: '28d' }]} defaultValue="7" />
+        </div>
       </div>
 
       {psiNeedsKey && (
@@ -80,6 +96,17 @@ export default async function PerfSiteDetail({
             {eventCount.toLocaleString()} <span className="font-mono">core_web_vitals</span> events received
             in the last {days} days, but custom dimensions/metrics are still propagating to the GA4 Data API.
             This typically takes 24–48 hours after registering them. Showing PSI fallback until then.
+          </div>
+        </div>
+      )}
+
+      {!hasOverallMetrics && !propagating && (
+        <div className="rounded-md border border-neutral-800 bg-neutral-900/60 px-4 py-3 text-sm text-neutral-300 space-y-1">
+          <div className="font-semibold text-white">No Core Web Vitals data yet</div>
+          <div className="text-xs text-neutral-500">
+            No RUM events were queryable for the last {days} days, and PageSpeed Insights returned no CrUX
+            or Lighthouse metrics for <span className="font-mono text-neutral-400">{perf.url}</span>.
+            Use the setup guide below to wire GTM and GA4, then refresh after events start flowing.
           </div>
         </div>
       )}

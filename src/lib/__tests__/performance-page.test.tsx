@@ -376,4 +376,43 @@ describe('Performance site detail page', () => {
       undefined,
     );
   });
+
+  it('renders an explicit no-data state when RUM and PSI have no metrics', async () => {
+    mockGetPerformanceSiteData.mockResolvedValueOnce({
+      site: {
+        id: 'empty-site',
+        name: 'Empty Site',
+        domain: 'empty.example.com',
+      },
+      days: 7,
+      propertyId: '',
+      url: 'https://empty.example.com',
+      source: 'none',
+      heroSource: 'no data',
+      hasRum: false,
+      propagating: false,
+      eventCount: 0,
+      needsKey: false,
+      overall: {},
+      byDevice: null,
+      slowestPages: [],
+      trend: [],
+      psi: { mobile: null, desktop: null },
+    });
+
+    const html = renderToStaticMarkup(await PerfSiteDetail({
+      params: Promise.resolve({ site: 'empty-site' }),
+      searchParams: Promise.resolve({ days: '7' }),
+    }));
+
+    expect(html).toContain('No data');
+    expect(html).toContain('No Core Web Vitals data yet');
+    expect(html).toContain('No RUM events were queryable for the last 7 days');
+    expect(html).toContain('https://empty.example.com');
+    expect(html).toContain('Overall (no data)');
+    expect(mockCwvSetupGuide).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultOpen: true }),
+      undefined,
+    );
+  });
 });
