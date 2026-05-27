@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPerformanceSiteData } from '@/lib/performance-site';
+import { Notice } from '@/components/ui';
 import {
   CWV_METRIC_ORDER,
   PERF_VALID_DAYS,
@@ -76,32 +77,32 @@ export default async function PerfSiteDetail({
       <PartialFailureBanner failures={partialFailures} />
 
       {psiNeedsKey && (
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
+        <Notice tone="warning" size="sm">
           PageSpeed Insights rate-limited. Add a free API key in{' '}
           <Link href="/config" className="underline">Config</Link> to lift the per-IP cap.
-        </div>
+        </Notice>
       )}
 
       {propagating && (
-        <div className="rounded-md border border-blue-500/40 bg-blue-500/10 px-4 py-3 text-sm text-blue-200 space-y-1">
+        <Notice tone="info" className="space-y-1">
           <div className="font-semibold">GTM wired · RUM data propagating</div>
           <div className="text-blue-300/80 text-xs">
             {eventCount.toLocaleString()} <span className="font-mono">core_web_vitals</span> events received
             in the last {days} days, but custom dimensions/metrics are still propagating to the GA4 Data API.
             This typically takes 24–48 hours after registering them. Showing PSI fallback until then.
           </div>
-        </div>
+        </Notice>
       )}
 
       {!hasOverallMetrics && !propagating && (
-        <div className="rounded-md border border-neutral-800 bg-neutral-900/60 px-4 py-3 text-sm text-neutral-300 space-y-1">
+        <Notice className="space-y-1">
           <div className="font-semibold text-white">No Core Web Vitals data yet</div>
           <div className="text-xs text-neutral-500">
             No RUM events were queryable for the last {days} days, and PageSpeed Insights returned no CrUX
             or Lighthouse metrics for <span className="font-mono text-neutral-400">{perf.url}</span>.
             Use the setup guide below to wire GTM and GA4, then refresh after events start flowing.
           </div>
-        </div>
+        </Notice>
       )}
 
       <section className="space-y-3">
