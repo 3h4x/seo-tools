@@ -1,6 +1,6 @@
 import type { CheckStatus, CheckResult } from '@/lib/audit';
-import type { GapRecommendation } from '@/lib/gaps';
-import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gaps';
+import type { GapRecommendation } from '@/lib/gap-definitions';
+import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
 import { Badge } from '@/components/ui';
 
 const statusColors: Record<CheckStatus, string> = {

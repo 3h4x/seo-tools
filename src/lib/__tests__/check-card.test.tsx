@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { Recommendation } from '../../../app/components/audit/check-card';
-import type { GapRecommendation } from '../gaps';
+import type { GapRecommendation } from '../gap-definitions';
 
 describe('audit check card', () => {
   it('renders recommendation metadata with shared badge styling', () => {

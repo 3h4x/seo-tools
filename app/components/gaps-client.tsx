@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gaps';
-import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gaps';
+import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gap-definitions';
+import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
 import { Badge, FilterChipGroup, TextButton } from '@/components/ui';
 
 export interface SiteGap {

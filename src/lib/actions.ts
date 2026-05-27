@@ -1,7 +1,8 @@
 import { cachedAuditAllSites } from './audit';
 import { detectAllDecay, type DecaySeverity } from './decay';
 import { getKeywordDropActions } from './db';
-import { analyzeSiteGaps, createSiteGapSignals, loadSiteGapSignals, type GapRecommendation, type GapSeverity } from './gaps';
+import type { GapRecommendation, GapSeverity } from './gap-definitions';
+import { analyzeSiteGaps, createSiteGapSignals, loadSiteGapSignals } from './gaps';
 import { discoverPropertyIds } from './ga4';
 import { loadOrFlag } from './page-helpers';
 import { getManagedSites } from './sites';

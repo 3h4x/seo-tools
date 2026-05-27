@@ -3,7 +3,8 @@ import { cachedAuditAllSites, type CheckStatus, type SiteAuditResult } from '@/l
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getManagedSites } from '@/lib/sites';
 import { discoverPropertyIds } from '@/lib/ga4';
-import { analyzeSiteGaps, loadSiteGapSignals, type GapSeverity, type GapCategory } from '@/lib/gaps';
+import type { GapSeverity, GapCategory } from '@/lib/gap-definitions';
+import { analyzeSiteGaps, loadSiteGapSignals } from '@/lib/gaps';
 import { detectAllDecay, type DecaySeverity } from '@/lib/decay';
 import { formatRelativeTime } from '@/lib/format';
 import { getCwvAuditSummary, type CwvAuditSummary } from '@/lib/performance-site';
