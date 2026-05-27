@@ -366,6 +366,41 @@ describe('Audit page', () => {
     expect(html).toContain('Checked moments ago');
   });
 
+  it('flags stale audit timestamps after 24 hours', async () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    try {
+      mockCachedAuditAllSites.mockResolvedValue([
+        makeAudit({
+          siteId: 'site-a',
+          domain: 'a.test',
+          pass: 9,
+          total: 10,
+          timestamp: 1_700_000_000_000 - 25 * 60 * 60 * 1000,
+        }),
+      ]);
+      mockGetManagedSites.mockResolvedValue([
+        { id: 'site-a', name: 'Site A', domain: 'a.test', ga4PropertyId: 'site-prop-a', testPages: [] },
+      ]);
+      mockDetectAllDecay.mockResolvedValue([]);
+      mockAnalyzeSiteGaps.mockReturnValue({ gaps: [] });
+      mockGetCwvAuditSummary.mockResolvedValue({
+        metrics: {},
+        source: 'psi-lab',
+      });
+
+      const page = await AuditPage({
+        searchParams: Promise.resolve({ period: '7' }),
+      });
+
+      const html = renderToStaticMarkup(page);
+
+      expect(html).toContain('Stale · Checked moments ago');
+      expect(html).toContain('text-amber-400 text-[10px]');
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
   it('keeps rendering when optional per-site audit augmentations fail', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     try {

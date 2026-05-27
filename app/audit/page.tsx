@@ -29,6 +29,9 @@ const DECAY_SEVERITY_COLORS: Record<DecaySeverity, { badge: string; badgeBg: str
   mild: { badge: 'text-blue-400', badgeBg: 'bg-blue-500/10' },
 };
 
+const AUDIT_STALE_MS = 24 * 60 * 60 * 1000;
+const AUDIT_VERY_STALE_MS = 7 * AUDIT_STALE_MS;
+
 const DECAY_TABLE_COLUMNS: DataTableColumn[] = [
   { label: 'Site', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-400 text-xs' },
   { label: 'Page', rowHeader: true, className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 text-neutral-300 text-xs truncate max-w-[200px]' },
@@ -71,6 +74,13 @@ function checksSummary(
 
 async function loadCwvSummaryForAudit(siteId: string): Promise<[string, CwvAuditSummary | null]> {
   return [siteId, await loadOrFallback(`AuditPage CWV ${siteId}`, getCwvAuditSummary(siteId), null)];
+}
+
+function auditFreshness(timestampMs: number): { className: string; prefix: string } {
+  const ageMs = Date.now() - timestampMs;
+  if (ageMs >= AUDIT_VERY_STALE_MS) return { className: 'text-red-400', prefix: 'Very stale · ' };
+  if (ageMs >= AUDIT_STALE_MS) return { className: 'text-amber-400', prefix: 'Stale · ' };
+  return { className: 'text-neutral-700', prefix: '' };
 }
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ period?: QueryParamValue }> }) {
@@ -229,6 +239,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           const site = managedSites.find(s => s.id === audit.siteId);
           const gapCount = gapCountBySite.get(audit.siteId) ?? 0;
           const cwv = cwvSummaries[audit.siteId] ?? null;
+          const freshness = auditFreshness(audit.timestamp);
           return (
             <Link
               key={audit.siteId}
@@ -255,8 +266,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <span className="text-neutral-600 text-xs">View details →</span>
-                  <span className="text-neutral-700 text-[10px]">
-                    Checked {formatRelativeTime(audit.timestamp)}
+                  <span className={`${freshness.className} text-[10px]`}>
+                    {freshness.prefix}Checked {formatRelativeTime(audit.timestamp)}
                   </span>
                 </div>
               </div>
