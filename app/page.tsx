@@ -5,6 +5,7 @@ import { formatSource } from '@/lib/format';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFallback } from '@/lib/page-helpers';
+import Link from 'next/link';
 import TimeRange from './components/time-range';
 import { MetricCard } from './components/metric-card';
 import { Icons } from './components/icons';
@@ -105,6 +106,13 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         </div>
         <TimeRange />
       </div>
+      {sites.length === 0 ? (
+        <div className="rounded border border-neutral-800 px-4 py-8 text-center text-sm text-neutral-500">
+          No sites configured —{' '}
+          <Link href="/config" className="text-white underline">add sites in the Config tab</Link>.
+        </div>
+      ) : (
+      <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <MetricCard icon={Icons.users} label="Users" current={totals.users} previous={totals.prevUsers} accent="border-blue-500" />
         <MetricCard icon={Icons.sessions} label="Sessions" current={totals.sessions} previous={totals.prevSessions} accent="border-violet-500" />
@@ -118,6 +126,8 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Site Performance</h2>
         <SortablePerformanceTable rows={performanceRows} />
       </div>
+      </>
+      )}
     </div>
   );
 }
