@@ -392,6 +392,47 @@ describe('loadActionQueue', () => {
     ]);
   });
 
+  it('escalates medium gaps with 50+ affected clicks and summarizes multiple pages', async () => {
+    mockCachedAuditAllSites.mockResolvedValueOnce([{ siteId: 'site-a' }]);
+    mockLoadSiteGapSignals.mockResolvedValueOnce({
+      days: 7,
+      scTopPages: [
+        { page: 'https://a.test/products?sort=popular', clicks: 35, impressions: 300, ctr: 0.12, position: 4 },
+        { page: 'https://a.test/pricing#plans', clicks: 20, impressions: 180, ctr: 0.11, position: 5 },
+        { page: 'https://a.test/about', clicks: 200, impressions: 900, ctr: 0.22, position: 2 },
+      ],
+    });
+    mockAnalyzeSiteGaps.mockReturnValueOnce({
+      gaps: [{
+        id: 'low-internal-links',
+        title: 'Improve internal links',
+        description: 'Several pages have too few internal links.',
+        severity: 'medium',
+        category: 'internal-links',
+        hint: 'Add contextual links.',
+        affectedPages: ['/products', '/pricing'],
+      }],
+    });
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        kind: 'gap',
+        priority: 'high',
+        affected: '2 pages',
+        impactLabel: '55 clicks at risk',
+        score: 110,
+      }),
+    ]);
+    expect(result.counts).toEqual({
+      critical: 0,
+      high: 1,
+      medium: 0,
+      low: 0,
+    });
+  });
+
   it('sorts by score and caps the queue at 100 items', async () => {
     mockGetManagedSites.mockResolvedValueOnce([siteA]);
     mockDiscoverPropertyIds.mockResolvedValueOnce([{ ...siteA, ga4PropertyId: 'properties/111' }]);
