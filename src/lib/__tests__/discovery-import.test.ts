@@ -41,6 +41,30 @@ describe('getImportResult', () => {
     });
   });
 
+  it('falls back to the HTTP status when an error response has malformed JSON', async () => {
+    const res = new Response('{not-json', {
+      status: 502,
+      headers: { 'content-type': 'application/json' },
+    });
+
+    await expect(getImportResult(res)).resolves.toEqual({
+      ok: false,
+      error: 'Request failed (502)',
+    });
+  });
+
+  it('falls back to a generic save failure when a successful response has malformed JSON', async () => {
+    const res = new Response('{not-json', {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+
+    await expect(getImportResult(res)).resolves.toEqual({
+      ok: false,
+      error: 'Save failed',
+    });
+  });
+
   it('surfaces the joined error string from a 400 with field-level errors payload', async () => {
     const res = new Response(
       JSON.stringify({
