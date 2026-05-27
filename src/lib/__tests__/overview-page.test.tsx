@@ -282,6 +282,8 @@ describe('Overview page', () => {
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain('0 sites');
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('site discovery');
     expect(consoleError).toHaveBeenCalledWith(
       '[OverviewPage discoverPropertyIds]',
       expect.any(Error),

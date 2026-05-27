@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { loadOrFallback, loadSyncOrFallback } from '@/lib/page-helpers';
+import { loadOrFlag, loadSyncOrFallback } from '@/lib/page-helpers';
 import { NoSitesNotice } from '../components/no-sites-notice';
+import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { getManagedSites } from '@/lib/sites';
 import { SnapshotButton } from '../components/snapshot-button';
 import {
@@ -70,7 +71,10 @@ export default async function TrendsPage({
     );
   }
 
-  const managedSites = await loadOrFallback('TrendsPage managed sites', getManagedSites(), []);
+  const managedSitesResult = await loadOrFlag('TrendsPage managed sites', getManagedSites(), []);
+  const managedSites = managedSitesResult.value;
+  const partialFailures: string[] = [];
+  if (managedSitesResult.failed) partialFailures.push('managed sites');
 
   if (managedSites.length === 0) {
     return (
@@ -78,7 +82,17 @@ export default async function TrendsPage({
         <div>
           <h1 className="text-2xl font-bold text-white">Trends</h1>
         </div>
-        <NoSitesNotice variant="inline" />
+        <PartialFailureBanner failures={partialFailures} />
+        {managedSitesResult.failed ? (
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-6">
+            <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
+            <p className="text-neutral-500 text-sm mt-2">
+              The sites table failed to read. Check the server logs and use Refresh to retry.
+            </p>
+          </div>
+        ) : (
+          <NoSitesNotice variant="inline" />
+        )}
       </div>
     );
   }
@@ -95,6 +109,7 @@ export default async function TrendsPage({
         </div>
         <SnapshotButton />
       </div>
+      <PartialFailureBanner failures={partialFailures} />
       {showKeywordsFirst ? (
         <>
           <KeywordsSection managedSites={managedSites} keywordCount={keywordCount} />

@@ -449,6 +449,23 @@ describe('TrendsPage', () => {
     expect(mockGetKeywordDeltas).not.toHaveBeenCalled();
   });
 
+  it('surfaces a partial-failure banner when managed sites load throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockGetManagedSites.mockRejectedValueOnce(new Error('sites unavailable'));
+
+    try {
+      const html = renderToStaticMarkup(await TrendsPage({
+        searchParams: Promise.resolve({}),
+      }));
+
+      expect(html).toContain('Some data sources are unavailable');
+      expect(html).toContain('managed sites');
+      expect(consoleError).toHaveBeenCalledWith('[TrendsPage managed sites]', expect.any(Error));
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   it('keeps rendering when per-site trend queries throw', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockGetScTrends.mockImplementationOnce(() => {

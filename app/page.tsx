@@ -4,9 +4,10 @@ import { getSCUrl } from '@/lib/sites';
 import { formatSource } from '@/lib/format';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
-import { loadOrFallback } from '@/lib/page-helpers';
+import { loadOrFlag } from '@/lib/page-helpers';
 import TimeRange from './components/time-range';
 import { NoSitesNotice } from './components/no-sites-notice';
+import { PartialFailureBanner } from './components/partial-failure-banner';
 import { MetricCard } from './components/metric-card';
 import { Icons } from './components/icons';
 import { TrafficSourcesChart } from './components/overview-charts';
@@ -16,7 +17,8 @@ import { SortablePerformanceTable, type PerformanceRow } from './components/sort
 export const revalidate = 300;
 
 async function getSiteData(days: number) {
-  const sites = await loadOrFallback('OverviewPage discoverPropertyIds', discoverPropertyIds(), []);
+  const sitesResult = await loadOrFlag('OverviewPage discoverPropertyIds', discoverPropertyIds(), []);
+  const sites = sitesResult.value;
 
   const enrichedSites = await Promise.all(
     sites.map(async (site) => {
@@ -41,13 +43,16 @@ async function getSiteData(days: number) {
     })
   );
 
-  return enrichedSites.sort((a, b) => (b.ga4?.data?.current.users ?? 0) - (a.ga4?.data?.current.users ?? 0));
+  const sortedSites = enrichedSites.sort((a, b) => (b.ga4?.data?.current.users ?? 0) - (a.ga4?.data?.current.users ?? 0));
+  return { sites: sortedSites, discoveryFailed: sitesResult.failed };
 }
 
 export default async function Overview({ searchParams }: { searchParams: Promise<{ days?: QueryParamValue }> }) {
   const params = await searchParams;
   const days = parseAllowedIntegerParam(params.days, VALID_DAYS, 7);
-  const sites = await getSiteData(days);
+  const { sites, discoveryFailed } = await getSiteData(days);
+  const partialFailures: string[] = [];
+  if (discoveryFailed) partialFailures.push('site discovery');
 
   const totals = sites.reduce(
     (acc, s) => {
@@ -108,6 +113,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
         </div>
         <TimeRange />
       </div>
+      <PartialFailureBanner failures={partialFailures} />
       {sites.length === 0 ? (
         <NoSitesNotice />
       ) : (

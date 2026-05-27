@@ -18,6 +18,7 @@ import TimeRange from '../components/time-range';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { Badge } from '@/components/ui';
 import { NoSitesNotice } from '../components/no-sites-notice';
+import { PartialFailureBanner } from '../components/partial-failure-banner';
 
 const AUDIT_DECAY_PERIODS = [7, 30] as const;
 
@@ -130,16 +131,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
           <p className="text-neutral-500 text-sm mt-1">Live checks · {managedSites.length} sites</p>
         </div>
-        {partialFailures.length > 0 && (
-          <div
-            role="status"
-            className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
-          >
-            <span className="font-semibold">Some data sources are unavailable: </span>
-            <span className="text-amber-100/80">{partialFailures.join(', ')}</span>
-            <span className="text-amber-100/60"> — use Refresh to retry.</span>
-          </div>
-        )}
+        <PartialFailureBanner failures={partialFailures} />
         <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-6">
           <p className="text-amber-400 font-semibold">No audit data available</p>
           <p className="text-neutral-500 text-sm mt-2">
@@ -226,16 +218,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           </Link>
         </div>
       </div>
-      {partialFailures.length > 0 && (
-        <div
-          role="status"
-          className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
-        >
-          <span className="font-semibold">Some data sources are unavailable: </span>
-          <span className="text-amber-100/80">{partialFailures.join(', ')}</span>
-          <span className="text-amber-100/60"> — use Refresh to retry.</span>
-        </div>
-      )}
+      <PartialFailureBanner failures={partialFailures} />
       <div className="flex gap-6 items-center">
         <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 flex items-center gap-5 shrink-0">
           <div className="relative size-24">
