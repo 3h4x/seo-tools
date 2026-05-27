@@ -104,7 +104,7 @@ describe('Opportunities page', () => {
     const page = await OpportunitiesPage({
       searchParams: Promise.resolve({ days: '28' }),
     });
-    renderToStaticMarkup(page);
+    const html = renderToStaticMarkup(page);
 
     expect(mockDataTable).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -117,8 +117,30 @@ describe('Opportunities page', () => {
       undefined,
     );
     expect(consoleError).toHaveBeenCalledWith(
-      '[OpportunitiesPage]',
-      'site-b',
+      '[OpportunitiesPage keyword opportunities site-b]',
+      expect.any(Error),
+    );
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('b.test keyword opportunities');
+
+    consoleError.mockRestore();
+  });
+
+  it('shows a partial failure banner when managed sites cannot load', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetManagedSites.mockRejectedValue(new Error('sqlite locked'));
+
+    const html = renderToStaticMarkup(await OpportunitiesPage({
+      searchParams: Promise.resolve({ days: '28' }),
+    }));
+
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('Managed sites');
+    expect(html).toContain("Couldn't load managed sites");
+    expect(html).toContain('The sites table failed to read. Check the server logs and use Refresh to retry.');
+    expect(html).not.toContain('Enable Search Console for at least one managed site in Config to populate keyword opportunities.');
+    expect(consoleError).toHaveBeenCalledWith(
+      '[OpportunitiesPage managed sites]',
       expect.any(Error),
     );
 

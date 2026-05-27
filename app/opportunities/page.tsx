@@ -7,9 +7,10 @@ import {
   type KeywordOpportunity,
 } from '@/lib/opportunities';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
-import { loadOrFallback } from '@/lib/page-helpers';
+import { loadOrFlag } from '@/lib/page-helpers';
 import { FilterChipGroup } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
+import { PartialFailureBanner } from '../components/partial-failure-banner';
 import TimeRange from '../components/time-range';
 
 export const revalidate = 300;
@@ -48,7 +49,8 @@ export default async function OpportunitiesPage({
   const params = await searchParams;
   const days = parseAllowedIntegerParam(params.days, OPPORTUNITIES_VALID_DAYS, OPPORTUNITIES_DEFAULT_DAYS);
 
-  const sites = await loadOrFallback('OpportunitiesPage managed sites', getManagedSites(), []);
+  const sitesResult = await loadOrFlag('OpportunitiesPage managed sites', getManagedSites(), []);
+  const sites = sitesResult.value;
   const scSites = sites.filter(s => s.searchConsole !== false);
   const siteParam = Array.isArray(params.site) ? params.site[0] : params.site;
   const selectedSite = siteParam ? scSites.find(site => site.domain === siteParam) : undefined;
@@ -56,17 +58,20 @@ export default async function OpportunitiesPage({
   const targetSites = selectedSite ? [selectedSite] : scSites;
 
   const allOpportunities: SiteOpportunity[] = [];
+  const partialFailures: string[] = [
+    ...(sitesResult.failed ? ['Managed sites'] : []),
+  ];
 
   await Promise.all(
     targetSites.map(async (site) => {
-      let opps: Awaited<ReturnType<typeof cachedGetKeywordOpportunities>>;
+      const result = await loadOrFlag(
+        `OpportunitiesPage keyword opportunities ${site.id}`,
+        cachedGetKeywordOpportunities(getSCUrl(site), site.id, days),
+        [],
+      );
+      const opps = result.value;
 
-      try {
-        opps = await cachedGetKeywordOpportunities(getSCUrl(site), site.id, days);
-      } catch (error) {
-        console.error('[OpportunitiesPage]', site.id, error);
-        opps = [];
-      }
+      if (result.failed) partialFailures.push(`${site.domain} keyword opportunities`);
 
       if (!opps) return;
       for (const opp of opps) {
@@ -78,9 +83,18 @@ export default async function OpportunitiesPage({
   allOpportunities.sort((a, b) => b.opportunity.estimatedClicks - a.opportunity.estimatedClicks);
 
   const top = allOpportunities.slice(0, 100);
-  const emptyMessage = scSites.length === 0
-    ? 'Enable Search Console for at least one managed site in Config to populate keyword opportunities.'
-    : 'No queries ranking in positions 5-20 for the selected period. Try a longer date range.';
+  const emptyTitle = sitesResult.failed ? "Couldn't load managed sites" : 'No opportunities found';
+  const emptyMessage = sitesResult.failed
+    ? 'The sites table failed to read. Check the server logs and use Refresh to retry.'
+    : scSites.length === 0
+      ? 'Enable Search Console for at least one managed site in Config to populate keyword opportunities.'
+      : 'No queries ranking in positions 5-20 for the selected period. Try a longer date range.';
+  const emptyClassName = sitesResult.failed
+    ? 'bg-neutral-900 border border-neutral-800 border-l-4 border-l-red-500 rounded-lg p-8 text-neutral-500'
+    : 'bg-neutral-900 border border-neutral-800 rounded-lg p-8 text-center text-neutral-500';
+  const emptyTitleClassName = sitesResult.failed
+    ? 'font-semibold mb-1 text-red-400'
+    : 'font-medium mb-1';
 
   const rows = top.map(({ domain, opportunity: o }) => [
     <span key="q" className="font-medium text-neutral-200">{o.query}</span>,
@@ -105,6 +119,8 @@ export default async function OpportunitiesPage({
         <TimeRange options={[...OPPORTUNITIES_TIME_RANGE_OPTIONS]} defaultValue={String(OPPORTUNITIES_DEFAULT_DAYS)} />
       </div>
 
+      <PartialFailureBanner failures={partialFailures} />
+
       {scSites.length > 1 && (
         <FilterChipGroup
           ariaLabel="Filter opportunities by site"
@@ -121,8 +137,8 @@ export default async function OpportunitiesPage({
       )}
 
       {top.length === 0 ? (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-8 text-center text-neutral-500">
-          <p className="font-medium mb-1">No opportunities found</p>
+        <div className={emptyClassName}>
+          <p className={emptyTitleClassName}>{emptyTitle}</p>
           <p className="text-sm">{emptyMessage}</p>
         </div>
       ) : (
