@@ -839,8 +839,12 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                     {selected.size === discovered.length ? 'Deselect All' : 'Select All'}
                   </TextButton>
                   {(() => {
-                    const newCount = discovered.filter(s => !s.isUpdate).length;
-                    const updateCount = discovered.filter(s => s.isUpdate).length;
+                    let newCount = 0;
+                    let updateCount = 0;
+                    for (const s of discovered) {
+                      if (s.isUpdate) updateCount++;
+                      else newCount++;
+                    }
                     const parts = [];
                     if (newCount > 0) parts.push(`${newCount} new site${newCount !== 1 ? 's' : ''}`);
                     if (updateCount > 0) parts.push(`${updateCount} to update`);
