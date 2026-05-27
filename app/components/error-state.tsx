@@ -1,0 +1,38 @@
+'use client';
+
+import { useEffect } from 'react';
+import { FormButton } from '@/components/ui';
+
+interface ErrorStateProps {
+  error: Error & { digest?: string };
+  reset: () => void;
+  title?: string;
+  description?: string;
+}
+
+export function ErrorState({ error, reset, title = 'Something went wrong', description }: ErrorStateProps) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  return (
+    <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500/60 p-6 space-y-4">
+      <div className="space-y-1">
+        <h2 className="text-sm font-medium text-white">{title}</h2>
+        <p className="text-xs text-neutral-400">
+          {description ?? 'The page failed to load. This is usually a transient API error — try again.'}
+        </p>
+      </div>
+      <details className="text-xs text-neutral-500">
+        <summary className="cursor-pointer hover:text-neutral-300">Error detail</summary>
+        <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] text-neutral-400">
+          {error.message || 'Unknown error'}
+          {error.digest ? `\n\ndigest: ${error.digest}` : ''}
+        </pre>
+      </details>
+      <FormButton variant="primary" size="sm" onClick={reset}>
+        Try again
+      </FormButton>
+    </div>
+  );
+}
