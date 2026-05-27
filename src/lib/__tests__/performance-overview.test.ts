@@ -63,7 +63,7 @@ beforeEach(() => {
 
 describe('getPerformanceOverviewRows', () => {
   it('does not fetch PSI for rows that already have usable RUM data', async () => {
-    const rows = await getPerformanceOverviewRows(7);
+    const { rows } = await getPerformanceOverviewRows(7);
 
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({
@@ -79,7 +79,7 @@ describe('getPerformanceOverviewRows', () => {
   });
 
   it('still fetches PSI fallback when RUM is unavailable', async () => {
-    const rows = await getPerformanceOverviewRows(28);
+    const { rows } = await getPerformanceOverviewRows(28);
 
     expect(rows[1]).toMatchObject({
       id: 'psi-site',
@@ -118,7 +118,7 @@ describe('getPerformanceOverviewRows', () => {
       };
     });
 
-    const rows = await getPerformanceOverviewRows(7);
+    const { rows } = await getPerformanceOverviewRows(7);
 
     expect(rows[1]).toMatchObject({
       id: 'psi-site',
@@ -132,6 +132,40 @@ describe('getPerformanceOverviewRows', () => {
     expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://psi.example.com', 'desktop');
   });
 
+  it('does not report PSI unavailable when desktop fallback succeeds after mobile fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (url, strategy) => {
+      if (url === 'https://psi.example.com' && strategy === 'mobile') {
+        throw new Error('mobile psi unavailable');
+      }
+
+      return {
+        url,
+        strategy,
+        performanceScore: 96,
+        field: {
+          INP: { value: 180, rating: 'good' },
+        },
+        lab: {},
+        fetchedAt: 123,
+      };
+    });
+
+    const { rows, failures } = await getPerformanceOverviewRows(7);
+
+    expect(rows[1]).toMatchObject({
+      id: 'psi-site',
+      source: 'psi-field',
+      perfScore: 96,
+      metrics: {
+        INP: { value: 180, rating: 'good' },
+      },
+    });
+    expect(failures).toEqual([]);
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceOverview] PSI psi-site:', expect.any(Error));
+    consoleError.mockRestore();
+  });
+
   it('does not label empty PSI payloads as lab data', async () => {
     vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValue(null);
     vi.mocked(cachedGetPagespeed).mockResolvedValue({
@@ -143,7 +177,7 @@ describe('getPerformanceOverviewRows', () => {
       fetchedAt: 123,
     });
 
-    const rows = await getPerformanceOverviewRows(7);
+    const { rows } = await getPerformanceOverviewRows(7);
 
     expect(rows[0]).toMatchObject({
       source: 'none',
@@ -155,6 +189,43 @@ describe('getPerformanceOverviewRows', () => {
       metrics: {},
       perfScore: 91,
     });
+  });
+
+  it('aggregates per-site provider failures into the failures list', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(cachedGetRumCoreWebVitals).mockImplementation(async (propertyId) => {
+      if (propertyId === 'ga4-rum') throw new Error('rum boom');
+      return null;
+    });
+    vi.mocked(cachedGetPagespeed).mockRejectedValue(new Error('psi boom'));
+
+    const { rows, failures } = await getPerformanceOverviewRows(7);
+
+    expect(rows).toHaveLength(2);
+    expect(failures).toEqual(['RUM data (1 site)', 'PageSpeed Insights (2 sites)']);
+    consoleError.mockRestore();
+  });
+
+  it('does not report RUM data unavailable when only the event count lookup fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(cachedGetCwvEventCount).mockImplementation(async (propertyId) => {
+      if (propertyId === 'ga4-rum') throw new Error('event count unavailable');
+      return 0;
+    });
+
+    const { rows, failures } = await getPerformanceOverviewRows(7);
+
+    expect(rows[0]).toMatchObject({
+      id: 'rum-site',
+      source: 'rum',
+      cwvEventCount: 0,
+      metrics: {
+        LCP: { value: 1200, rating: 'good' },
+      },
+    });
+    expect(failures).toEqual([]);
+    expect(consoleError).toHaveBeenCalledWith('[PerformanceOverview] CWV event count rum-site:', expect.any(Error));
+    consoleError.mockRestore();
   });
 
   it('returns neutral rows when individual providers throw', async () => {
@@ -181,7 +252,7 @@ describe('getPerformanceOverviewRows', () => {
       };
     });
 
-    const rows = await getPerformanceOverviewRows(7);
+    const { rows } = await getPerformanceOverviewRows(7);
 
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({
@@ -207,9 +278,10 @@ describe('getPerformanceOverviewRows', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.mocked(discoverPropertyIds).mockRejectedValueOnce(new Error('db unavailable'));
 
-    const rows = await getPerformanceOverviewRows(7);
+    const { rows, failures } = await getPerformanceOverviewRows(7);
 
     expect(rows).toEqual([]);
+    expect(failures).toEqual(['site discovery']);
     expect(consoleError).toHaveBeenCalledWith(
       '[PerformanceOverview discoverPropertyIds]',
       expect.any(Error),

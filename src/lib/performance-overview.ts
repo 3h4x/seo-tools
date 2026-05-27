@@ -7,7 +7,7 @@ import {
   type CwvMetricName,
   type CwvRating,
 } from './constants';
-import { loadOrFallback } from './page-helpers';
+import { loadOrFlag } from './page-helpers';
 
 type PerformanceOverviewSite = Awaited<ReturnType<typeof discoverPropertyIds>>[number];
 
@@ -20,6 +20,17 @@ export interface PerformanceOverviewRow {
   perfScore: number | null;
   needsKey: boolean;
   cwvEventCount: number;
+}
+
+export interface PerformanceOverviewResult {
+  rows: PerformanceOverviewRow[];
+  failures: string[];
+}
+
+interface RowWithFailures {
+  row: PerformanceOverviewRow;
+  rumDataFailed: boolean;
+  psiFailed: boolean;
 }
 
 function emptyRow(
@@ -106,14 +117,18 @@ function firstPsiWithMetrics(...results: Array<PsiData | null>): ReturnType<type
 async function getPerformanceOverviewRow(
   site: PerformanceOverviewSite,
   days: number,
-): Promise<PerformanceOverviewRow> {
+): Promise<RowWithFailures> {
   const propertyId = site.ga4PropertyId || '';
   const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
+
+  let rumDataFailed = false;
+  let psiRequestFailed = false;
 
   const [rum, eventCount] = await Promise.all([
     propertyId
       ? cachedGetRumCoreWebVitals(propertyId, days).catch((error) => {
           console.error(`[PerformanceOverview] RUM ${site.id}:`, error);
+          rumDataFailed = true;
           return null;
         })
       : Promise.resolve(null),
@@ -129,19 +144,24 @@ async function getPerformanceOverviewRow(
 
   if (rum?.hasData) {
     return {
-      id: site.id,
-      name: site.name,
-      domain: site.domain,
-      source: 'rum',
-      metrics: fromRum(rum.overall),
-      perfScore: null,
-      needsKey: false,
-      cwvEventCount,
+      row: {
+        id: site.id,
+        name: site.name,
+        domain: site.domain,
+        source: 'rum',
+        metrics: fromRum(rum.overall),
+        perfScore: null,
+        needsKey: false,
+        cwvEventCount,
+      },
+      rumDataFailed,
+      psiFailed: false,
     };
   }
 
   const psiMobile = await cachedGetPagespeed(url, 'mobile').catch((error) => {
     console.error(`[PerformanceOverview] PSI ${site.id}:`, error);
+    psiRequestFailed = true;
     return null;
   });
   let psiDesktop: PsiData | null = null;
@@ -150,32 +170,57 @@ async function getPerformanceOverviewRow(
   if (psiFallback.source === 'none') {
     psiDesktop = await cachedGetPagespeed(url, 'desktop').catch((error) => {
       console.error(`[PerformanceOverview] PSI desktop ${site.id}:`, error);
+      psiRequestFailed = true;
       return null;
     });
     psiFallback = firstPsiWithMetrics(psiMobile, psiDesktop);
   }
 
+  const psiFailed = psiRequestFailed && psiFallback.source === 'none';
+
   if (psiFallback.psi) {
     return {
-      id: site.id,
-      name: site.name,
-      domain: site.domain,
-      source: cwvEventCount > 0 ? 'rum-pending' : psiFallback.source,
-      metrics: psiFallback.metrics,
-      perfScore: psiFallback.psi.performanceScore,
-      needsKey: !!(psiMobile?.needsKey || psiDesktop?.needsKey),
-      cwvEventCount,
+      row: {
+        id: site.id,
+        name: site.name,
+        domain: site.domain,
+        source: cwvEventCount > 0 ? 'rum-pending' : psiFallback.source,
+        metrics: psiFallback.metrics,
+        perfScore: psiFallback.psi.performanceScore,
+        needsKey: !!(psiMobile?.needsKey || psiDesktop?.needsKey),
+        cwvEventCount,
+      },
+      rumDataFailed,
+      psiFailed,
     };
   }
 
-  return emptyRow(site, cwvEventCount, !!(psiMobile?.needsKey || psiDesktop?.needsKey));
+  return {
+    row: emptyRow(site, cwvEventCount, !!(psiMobile?.needsKey || psiDesktop?.needsKey)),
+    rumDataFailed,
+    psiFailed,
+  };
 }
 
-export async function getPerformanceOverviewRows(days: number): Promise<PerformanceOverviewRow[]> {
-  const sites = await loadOrFallback<PerformanceOverviewSite[]>(
+export async function getPerformanceOverviewRows(days: number): Promise<PerformanceOverviewResult> {
+  const discovered = await loadOrFlag<PerformanceOverviewSite[]>(
     'PerformanceOverview discoverPropertyIds',
     discoverPropertyIds(),
     [],
   );
-  return Promise.all(sites.map((site) => getPerformanceOverviewRow(site, days)));
+  const sites = discovered.value;
+  const results = await Promise.all(sites.map((site) => getPerformanceOverviewRow(site, days)));
+
+  const failures: string[] = [];
+  if (discovered.failed) failures.push('site discovery');
+  const rumFailedCount = results.filter((r) => r.rumDataFailed).length;
+  const psiFailedCount = results.filter((r) => r.psiFailed).length;
+  if (rumFailedCount > 0) {
+    failures.push(`RUM data (${rumFailedCount} site${rumFailedCount === 1 ? '' : 's'})`);
+  }
+  if (psiFailedCount > 0) {
+    failures.push(`PageSpeed Insights (${psiFailedCount} site${psiFailedCount === 1 ? '' : 's'})`);
+  }
+
+  return { rows: results.map((r) => r.row), failures };
 }

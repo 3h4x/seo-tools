@@ -18,6 +18,7 @@ import { CwvCell } from '../components/cwv-cell';
 import { CwvMetricsCards } from '../components/cwv-metrics-cards';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { NoSitesNotice } from '../components/no-sites-notice';
+import { PartialFailureBanner } from '../components/partial-failure-banner';
 
 export const revalidate = 300;
 
@@ -36,7 +37,7 @@ export default async function PerformancePage({
 }) {
   const params = await searchParams;
   const days = parseAllowedIntegerParam(params.days, PERF_VALID_DAYS, 7);
-  const rows = await getPerformanceOverviewRows(days);
+  const { rows, failures } = await getPerformanceOverviewRows(days);
 
   const overallAgg: Record<CwvMetricName, { sum: number; count: number }> = {
     LCP:  { sum: 0, count: 0 }, INP: { sum: 0, count: 0 }, CLS: { sum: 0, count: 0 },
@@ -103,6 +104,8 @@ export default async function PerformancePage({
         </div>
         <TimeRange options={[{ value: '7', label: '7d' }, { value: '28', label: '28d' }]} defaultValue="7" />
       </div>
+
+      <PartialFailureBanner failures={failures} />
 
       {needsKey && (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">

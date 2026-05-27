@@ -122,21 +122,24 @@ beforeEach(() => {
       desktop: null,
     },
   });
-  mockGetPerformanceOverviewRows.mockResolvedValue([
-    {
-      id: 'psi-site',
-      name: 'PSI Site',
-      domain: 'psi.example.com',
-      source: 'psi-field',
-      metrics: {
-        LCP: { value: 2400, rating: 'good' },
-        INP: { value: 180, rating: 'good' },
+  mockGetPerformanceOverviewRows.mockResolvedValue({
+    rows: [
+      {
+        id: 'psi-site',
+        name: 'PSI Site',
+        domain: 'psi.example.com',
+        source: 'psi-field',
+        metrics: {
+          LCP: { value: 2400, rating: 'good' },
+          INP: { value: 180, rating: 'good' },
+        },
+        perfScore: 82,
+        needsKey: false,
+        cwvEventCount: 0,
       },
-      perfScore: 82,
-      needsKey: false,
-      cwvEventCount: 0,
-    },
-  ]);
+    ],
+    failures: [],
+  });
 });
 
 describe('Performance overview page', () => {
@@ -154,7 +157,7 @@ describe('Performance overview page', () => {
   });
 
   it('keeps the setup guide closed when no sites are configured', async () => {
-    mockGetPerformanceOverviewRows.mockResolvedValueOnce([]);
+    mockGetPerformanceOverviewRows.mockResolvedValueOnce({ rows: [], failures: [] });
 
     const page = await PerformancePage({
       searchParams: Promise.resolve({ days: '7' }),
@@ -168,6 +171,22 @@ describe('Performance overview page', () => {
       expect.objectContaining({ defaultOpen: false }),
       undefined,
     );
+  });
+
+  it('renders the partial-failure banner when overview reports failures', async () => {
+    mockGetPerformanceOverviewRows.mockResolvedValueOnce({
+      rows: [],
+      failures: ['RUM data (2 sites)', 'PageSpeed Insights (1 site)'],
+    });
+
+    const page = await PerformancePage({
+      searchParams: Promise.resolve({ days: '7' }),
+    });
+
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('RUM data (2 sites), PageSpeed Insights (1 site)');
   });
 
   it('uses the first repeated guide searchParam for the setup guide state', async () => {

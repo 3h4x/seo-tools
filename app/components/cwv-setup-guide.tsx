@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { FormButton } from '@/components/ui';
+import { Badge, FormButton } from '@/components/ui';
 
 const DATALAYER_SNIPPET = `import { onLCP, onINP, onCLS, onFCP, onTTFB } from 'web-vitals';
 
@@ -128,7 +128,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-        <span className="inline-flex items-center justify-center size-5 rounded-full bg-neutral-800 text-xs text-neutral-400">{n}</span>
+        <Badge className="size-5 justify-center border-transparent bg-neutral-800 !p-0 text-neutral-400">{n}</Badge>
         {title}
       </h4>
       <div className="pl-7 space-y-2 text-xs">{children}</div>
