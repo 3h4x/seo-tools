@@ -20,6 +20,8 @@ export const revalidate = 300;
 async function getSiteData(days: number) {
   const sitesResult = await loadOrFlag('OverviewPage discoverPropertyIds', discoverPropertyIds(), []);
   const sites = sitesResult.value;
+  let searchConsoleFailureCount = 0;
+  let ga4FailureCount = 0;
 
   const enrichedSites = await Promise.all(
     sites.map(async (site) => {
@@ -35,6 +37,8 @@ async function getSiteData(days: number) {
           return { data: null, error: true };
         }),
       ]);
+      if (scResult?.error) searchConsoleFailureCount += 1;
+      if (ga4Result.error) ga4FailureCount += 1;
 
       return {
         ...site,
@@ -45,14 +49,19 @@ async function getSiteData(days: number) {
   );
 
   const sortedSites = enrichedSites.sort((a, b) => (b.ga4?.data?.current.users ?? 0) - (a.ga4?.data?.current.users ?? 0));
-  return { sites: sortedSites, discoveryFailed: sitesResult.failed };
+  return {
+    sites: sortedSites,
+    discoveryFailed: sitesResult.failed,
+    searchConsoleFailureCount,
+    ga4FailureCount,
+  };
 }
 
 export default async function Overview({ searchParams }: { searchParams: Promise<{ days?: QueryParamValue }> }) {
   const params = await searchParams;
   const days = parseAllowedIntegerParam(params.days, VALID_DAYS, 7);
   const [
-    { sites, discoveryFailed },
+    { sites, discoveryFailed, searchConsoleFailureCount, ga4FailureCount },
     cwvSourcesResult,
   ] = await Promise.all([
     getSiteData(days),
@@ -64,6 +73,12 @@ export default async function Overview({ searchParams }: { searchParams: Promise
   ]);
   const partialFailures: string[] = [];
   if (discoveryFailed) partialFailures.push('site discovery');
+  if (searchConsoleFailureCount > 0) {
+    partialFailures.push(`Search Console (${searchConsoleFailureCount} site${searchConsoleFailureCount === 1 ? '' : 's'})`);
+  }
+  if (ga4FailureCount > 0) {
+    partialFailures.push(`GA4 (${ga4FailureCount} site${ga4FailureCount === 1 ? '' : 's'})`);
+  }
   if (cwvSourcesResult.failed) partialFailures.push('Core Web Vitals sources');
   partialFailures.push(...cwvSourcesResult.value.failures);
   const cwvSourceBySite = new Map(

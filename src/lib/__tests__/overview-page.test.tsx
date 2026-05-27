@@ -255,6 +255,8 @@ describe('Overview page', () => {
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain('Last 7 days');
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('Search Console (1 site), GA4 (1 site)');
     expect(consoleError).toHaveBeenCalledWith('[OverviewPage] Search Console site-a:', expect.any(Error));
     expect(consoleError).toHaveBeenCalledWith('[OverviewPage] GA4 site-b:', expect.any(Error));
 
