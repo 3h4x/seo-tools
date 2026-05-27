@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, ConfiguredNotice, FormButton, FormTextarea } from '@/components/ui';
+import { Badge, ConfiguredNotice, FormButton, FormTextarea, Spinner } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -153,7 +153,9 @@ export default function ConfigForm({ source: initialSource }: Props) {
         <FormButton
           onClick={handleTest}
           disabled={!canTest || testState === 'testing'}
+          className="inline-flex items-center gap-1.5"
         >
+          {testState === 'testing' && <Spinner />}
           {testState === 'testing' ? 'Testing…' : 'Test Connection'}
         </FormButton>
 
@@ -161,7 +163,9 @@ export default function ConfigForm({ source: initialSource }: Props) {
           onClick={handleSave}
           disabled={!canSave || saving}
           variant="primary"
+          className="inline-flex items-center gap-1.5"
         >
+          {saving && <Spinner />}
           {saving ? 'Saving…' : source === 'env' ? 'Override with DB key' : 'Save'}
         </FormButton>
 
@@ -170,7 +174,9 @@ export default function ConfigForm({ source: initialSource }: Props) {
             onClick={handleRemove}
             disabled={removing}
             variant="danger"
+            className="inline-flex items-center gap-1.5"
           >
+            {removing && <Spinner />}
             {removing ? 'Removing…' : 'Remove'}
           </FormButton>
         )}
