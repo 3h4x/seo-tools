@@ -154,7 +154,9 @@ export async function GET(req: Request) {
   const existingDomains = new Set(existingSites.map(s => getExistingDomainIdentity(s.domain)));
   const existingScIdentities = new Set(existingSites.flatMap(getSiteSearchConsoleIdentities));
 
-  // Fetch SC sites
+  // Kick off GA4 discovery in parallel with the SC fetch below; best-effort so swallow rejection.
+  const ga4Promise: Promise<DiscoveredGa4Property[] | null> = cachedGetDiscoveredGa4Properties().catch(() => null);
+
   let scSites: DedupeScSite[] = [];
   try {
     const sc = new searchconsole_v1.Searchconsole({ auth });
@@ -174,13 +176,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'search_console_api_failed' }, { status: 500 });
   }
 
-  // Fetch GA4 properties (best-effort)
-  let ga4Properties: DiscoveredGa4Property[] | null = null;
-  try {
-    ga4Properties = await cachedGetDiscoveredGa4Properties();
-  } catch {
-    // GA4 discovery is best-effort; proceed without it.
-  }
+  const ga4Properties: DiscoveredGa4Property[] | null = await ga4Promise;
 
   const exactGa4Matches = buildUniqueExactGa4Matches(ga4Properties ?? []);
   const allocateDiscoveryId = createDiscoveryIdAllocator(existingSiteIds);
