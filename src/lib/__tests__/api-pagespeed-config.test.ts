@@ -64,6 +64,34 @@ describe('POST /api/config/pagespeed', () => {
     expect(setConfig).not.toHaveBeenCalled();
   });
 
+  it('falls back to HTTP status when PSI auth error JSON cannot be parsed', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: () => Promise.reject(new Error('bad json')),
+    } as Response);
+
+    const res = await POST(postReq({ key: 'bad', testOnly: true }));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'HTTP 401' });
+    expect(setConfig).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 on unexpected PSI upstream failures', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({}),
+    } as Response);
+
+    const res = await POST(postReq({ key: 'bad', testOnly: true }));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'HTTP 500' });
+    expect(setConfig).not.toHaveBeenCalled();
+  });
+
   it('does not save when testOnly=true', async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) } as Response);
     const res = await POST(postReq({ key: 'good', testOnly: true }));
