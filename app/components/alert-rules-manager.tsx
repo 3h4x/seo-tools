@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Badge, FormButton, FormInput, FormSelect, Spinner, TextButton, ToggleButtonGroup } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
@@ -215,6 +215,48 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
     );
   }
 
+  const ruleRows: ReactNode[][] = [];
+  const ruleRowKeys: number[] = [];
+
+  for (const rule of rules) {
+    const site = sites.find((entry) => entry.id === rule.siteId);
+    const metricBlocked = isMetricBlockedBySite(rule.metric, site);
+
+    ruleRowKeys.push(rule.id);
+    ruleRows.push([
+      site?.name ?? rule.siteId,
+      <div key="metric" className="flex flex-wrap items-center gap-2">
+        <span>{METRIC_OPTIONS.find((option) => option.value === rule.metric)?.label ?? rule.metric}</span>
+        {metricBlocked && (
+          <Badge className="border-amber-500/40 bg-amber-500/10 text-amber-300">
+            {METRIC_DISABLED_REASONS[rule.metric] ?? 'Inactive'}
+          </Badge>
+        )}
+      </div>,
+      `${rule.thresholdPct}% drop`,
+      rule.channels.join(', '),
+      <div key="actions" className="flex gap-2">
+        <TextButton
+          onClick={() => setForm({
+            id: rule.id,
+            siteId: rule.siteId,
+            metric: rule.metric,
+            thresholdPct: String(rule.thresholdPct),
+            channels: rule.channels,
+          })}
+        >
+          Edit
+        </TextButton>
+        <TextButton
+          variant="danger"
+          onClick={() => void handleDelete(rule.id)}
+        >
+          Delete
+        </TextButton>
+      </div>,
+    ]);
+  }
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
@@ -230,44 +272,8 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
         <DataTable
           caption="Configured alert rules"
           columns={ALERT_RULE_COLUMNS}
-          rows={rules.map((rule) => {
-            const site = sites.find((entry) => entry.id === rule.siteId);
-            const metricBlocked = isMetricBlockedBySite(rule.metric, site);
-
-            return [
-              site?.name ?? rule.siteId,
-              <div key="metric" className="flex flex-wrap items-center gap-2">
-                <span>{METRIC_OPTIONS.find((option) => option.value === rule.metric)?.label ?? rule.metric}</span>
-                {metricBlocked && (
-                  <Badge className="border-amber-500/40 bg-amber-500/10 text-amber-300">
-                    {METRIC_DISABLED_REASONS[rule.metric] ?? 'Inactive'}
-                  </Badge>
-                )}
-              </div>,
-              `${rule.thresholdPct}% drop`,
-              rule.channels.join(', '),
-              <div key="actions" className="flex gap-2">
-                <TextButton
-                  onClick={() => setForm({
-                    id: rule.id,
-                    siteId: rule.siteId,
-                    metric: rule.metric,
-                    thresholdPct: String(rule.thresholdPct),
-                    channels: rule.channels,
-                  })}
-                >
-                  Edit
-                </TextButton>
-                <TextButton
-                  variant="danger"
-                  onClick={() => void handleDelete(rule.id)}
-                >
-                  Delete
-                </TextButton>
-              </div>,
-            ];
-          })}
-          rowKeys={rules.map((rule) => rule.id)}
+          rows={ruleRows}
+          rowKeys={ruleRowKeys}
           monospaceCells={false}
           containerClassName="overflow-x-auto"
           tableClassName="w-full text-sm text-left"
