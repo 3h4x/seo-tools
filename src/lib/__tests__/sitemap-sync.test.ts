@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../google-auth', () => ({ getAuth: vi.fn() }));
 vi.mock('../db', () => ({ getDb: vi.fn() }));
@@ -327,5 +327,124 @@ describe('runSitemapSync', () => {
     expect(submit).toHaveBeenCalledWith(
       expect.objectContaining({ siteUrl: 'https://mysite.io/' }),
     );
+  });
+
+  it('builds sitemapUrl from URL-prefix domain and strips trailing slash', async () => {
+    const db = makeDb([{ id: 'site1', domain: 'https://mysite.io/', sc_url: null }], undefined);
+    vi.mocked(getDb).mockReturnValue(db as never);
+    mockFetch(true);
+
+    const submit = vi.fn().mockResolvedValue({});
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return { sitemaps: { submit } };
+    } as never);
+
+    await runSitemapSync();
+
+    // URL-prefix domain: sitemap URL has trailing slash stripped before /sitemap.xml
+    expect(fetch).toHaveBeenCalledWith(
+      'https://mysite.io/sitemap.xml',
+      expect.any(Object),
+    );
+    // When sc_url is null and domain is URL-prefix, scUrl defaults to the raw domain (with trailing slash)
+    expect(submit).toHaveBeenCalledWith({
+      siteUrl: 'https://mysite.io/',
+      feedpath: 'https://mysite.io/sitemap.xml',
+    });
+  });
+
+  it('treats loadSites failure as zero sites without throwing (catch path)', async () => {
+    // First getDb call (ensureTable) succeeds; second (loadSites) throws.
+    const workingDb = { exec: vi.fn(), prepare: vi.fn().mockReturnValue({ get: vi.fn(), all: vi.fn(), run: vi.fn() }) };
+    const throwingDb = { exec: vi.fn(), prepare: vi.fn().mockImplementation(() => {
+      throw new Error('db unavailable');
+    }) };
+    vi.mocked(getDb)
+      .mockReturnValueOnce(workingDb as never) // ensureTable
+      .mockReturnValueOnce(workingDb as never) // top-level db var
+      .mockReturnValueOnce(throwingDb as never); // loadSites — throws inside try
+    vi.stubGlobal('fetch', vi.fn());
+
+    await expect(runSitemapSync()).resolves.toBeUndefined();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('startSitemapSync', () => {
+  let clearIntervalSpy: ReturnType<typeof vi.spyOn>;
+  let setIntervalSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    // Reset module state so _intervalId starts as null per test.
+    vi.resetModules();
+    setIntervalSpy = vi.spyOn(global, 'setInterval').mockReturnValue(1 as never);
+    clearIntervalSpy = vi.spyOn(global, 'clearInterval').mockReturnValue(undefined as never);
+  });
+
+  afterEach(() => {
+    setIntervalSpy.mockRestore();
+    clearIntervalSpy.mockRestore();
+  });
+
+  it('schedules a 6h interval on first call', async () => {
+    const db = makeDb([]);
+    vi.doMock('../google-auth', () => ({ getAuth: vi.fn() }));
+    vi.doMock('../db', () => ({ getDb: vi.fn().mockReturnValue(db) }));
+    vi.doMock('@googleapis/searchconsole', () => ({
+      searchconsole_v1: {
+        Searchconsole: function () {
+          return { sitemaps: { submit: vi.fn() } };
+        },
+      },
+    }));
+
+    const mod = await import('../sitemap-sync');
+    mod.startSitemapSync();
+
+    expect(setIntervalSpy).toHaveBeenCalledOnce();
+    expect(setIntervalSpy.mock.calls[0][1]).toBe(6 * 60 * 60 * 1000);
+  });
+
+  it('is idempotent — calling twice does not schedule a second interval', async () => {
+    const db = makeDb([]);
+    vi.doMock('../google-auth', () => ({ getAuth: vi.fn() }));
+    vi.doMock('../db', () => ({ getDb: vi.fn().mockReturnValue(db) }));
+    vi.doMock('@googleapis/searchconsole', () => ({
+      searchconsole_v1: {
+        Searchconsole: function () {
+          return { sitemaps: { submit: vi.fn() } };
+        },
+      },
+    }));
+
+    const mod = await import('../sitemap-sync');
+    mod.startSitemapSync();
+    mod.startSitemapSync();
+
+    expect(setIntervalSpy).toHaveBeenCalledOnce();
+  });
+
+  it('does not throw when the initial run rejects — error is caught', async () => {
+    vi.doMock('../google-auth', () => ({ getAuth: vi.fn() }));
+    vi.doMock('../db', () => ({
+      getDb: vi.fn().mockImplementation(() => {
+        throw new Error('boom');
+      }),
+    }));
+    vi.doMock('@googleapis/searchconsole', () => ({
+      searchconsole_v1: { Searchconsole: function () { return { sitemaps: { submit: vi.fn() } }; } },
+    }));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const mod = await import('../sitemap-sync');
+    expect(() => mod.startSitemapSync()).not.toThrow();
+
+    // Let the rejected promise settle so the .catch handler fires.
+    await new Promise(resolve => setImmediate(resolve));
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[sitemap-sync] startup error:',
+      expect.stringContaining('boom'),
+    );
+    errorSpy.mockRestore();
   });
 });
