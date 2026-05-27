@@ -391,4 +391,40 @@ describe('loadActionQueue', () => {
       }),
     ]);
   });
+
+  it('sorts by score and caps the queue at 100 items', async () => {
+    mockGetManagedSites.mockResolvedValueOnce([siteA]);
+    mockDiscoverPropertyIds.mockResolvedValueOnce([{ ...siteA, ga4PropertyId: 'properties/111' }]);
+    mockGetKeywordDropActions.mockReturnValueOnce(
+      Array.from({ length: 101 }, (_, index) => {
+        const clicks = index + 1;
+        return {
+          query: `query-${clicks}`,
+          clicks,
+          impressions: clicks * 10,
+          currentPosition: 9,
+          previousPosition: 8,
+          delta: -1,
+          window: '7d',
+        };
+      }),
+    );
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toHaveLength(100);
+    expect(result.items[0]).toEqual(expect.objectContaining({
+      affected: 'query-101',
+      score: 101,
+    }));
+    expect(result.items.at(-1)).toEqual(expect.objectContaining({
+      affected: 'query-2',
+      score: 2,
+    }));
+    expect(result.items).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ affected: 'query-1' }),
+      ]),
+    );
+  });
 });
