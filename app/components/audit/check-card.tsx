@@ -38,11 +38,13 @@ export function Recommendation({ gap }: { gap: GapRecommendation }) {
   return (
     <div className={`mt-3 rounded-md ${s.bg} border border-neutral-800 p-4`}>
       <div className="flex items-center gap-2 mb-1.5">
-        <div className={`size-1.5 rounded-full ${s.dot}`} />
-        <span className={`text-xs font-semibold ${s.text}`}>
+        <Badge size="compact" shape="rounded" className={`gap-1.5 ${s.bg} ${s.text} border-neutral-800`}>
+          <span className={`size-1.5 rounded-full ${s.dot}`} aria-hidden="true" />
           {s.label} priority
-        </span>
-        <span className="text-neutral-600 text-xs">{CATEGORY_LABELS[gap.category] || gap.category}</span>
+        </Badge>
+        <Badge size="compact" shape="rounded" className="border-neutral-800 text-neutral-600">
+          {CATEGORY_LABELS[gap.category] || gap.category}
+        </Badge>
       </div>
       <p className="text-neutral-300 text-sm font-medium">{gap.title}</p>
       <p className="text-neutral-500 text-xs mt-1">{gap.description}</p>
