@@ -21,6 +21,8 @@ export type PerformanceRow = {
   scClicks: number | null;
   scPosition: number | null;
   hasData: boolean;
+  ga4Error?: boolean;
+  scError?: boolean;
 };
 
 type SortKey = 'name' | 'users' | 'sessions' | 'views' | 'bounceRate' | 'avgSessionDuration' | 'scClicks' | 'scPosition';
@@ -120,6 +122,16 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
     <Link key="site" href={`/${encodeURIComponent(row.id)}`} className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
         <span className="text-white font-medium">{row.name}</span>
+        {row.ga4Error && (
+          <span className="rounded-sm border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300">
+            GA4 error
+          </span>
+        )}
+        {row.scError && (
+          <span className="rounded-sm border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300">
+            SC error
+          </span>
+        )}
         <div className="flex items-center gap-1.5">
           <span className="text-neutral-600 text-xs">{row.domain}</span>
           <CopyButton text={`https://${row.domain}`} label="domain" className="text-[10px] px-1 py-0.5" />
@@ -130,7 +142,9 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
           <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: `${(row.users / maxUsers) * 100}%` }} />
         </div>
       ) : (
-        <span className="text-neutral-600 text-xs">No GA4 data</span>
+        <span className={row.ga4Error ? 'text-red-400/70 text-xs' : 'text-neutral-600 text-xs'}>
+          {row.ga4Error ? 'GA4 failed' : 'No GA4 data'}
+        </span>
       )}
     </Link>,
     <span key="users">
@@ -187,7 +201,8 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
       headRowClassName="border-b border-neutral-800 text-neutral-500 text-left text-xs uppercase tracking-wider"
       rowClassName={(_, idx) => {
         const row = sorted[idx];
-        return `transition-colors ${row.hasData ? 'hover:bg-neutral-800/30 cursor-pointer' : 'opacity-40'} ${idx === 0 && row.hasData ? 'border-l-2 border-l-emerald-500' : ''}`;
+        const hasProviderError = row.ga4Error || row.scError;
+        return `transition-colors ${row.hasData || hasProviderError ? 'hover:bg-neutral-800/30 cursor-pointer' : 'opacity-40'} ${idx === 0 && row.hasData ? 'border-l-2 border-l-emerald-500' : ''}`;
       }}
     />
   );

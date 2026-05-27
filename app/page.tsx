@@ -81,6 +81,8 @@ export default async function Overview({ searchParams }: { searchParams: Promise
     scClicks: site.sc === null ? 0 : site.sc.error ? null : Number(site.sc.data?.clicks ?? 0),
     scPosition: site.sc === null ? 0 : site.sc.error ? null : Number(site.sc.data?.position ?? 0),
     hasData: !!(site.ga4?.data && site.ga4.data.current.users > 0),
+    ga4Error: Boolean(site.ga4?.error),
+    scError: site.sc !== null && Boolean(site.sc.error),
   }));
 
   const sourceMap = new Map<string, number>();

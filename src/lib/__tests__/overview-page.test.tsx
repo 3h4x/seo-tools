@@ -206,6 +206,8 @@ describe('Overview page', () => {
         scClicks: 11,
         scPosition: 3.5,
         hasData: true,
+        ga4Error: false,
+        scError: false,
       }),
       expect.objectContaining({
         id: 'site-b',
@@ -214,6 +216,8 @@ describe('Overview page', () => {
         scClicks: 0,
         scPosition: 0,
         hasData: true,
+        ga4Error: false,
+        scError: false,
       }),
     ]);
   });
@@ -250,6 +254,8 @@ describe('Overview page', () => {
         scClicks: null,
         scPosition: null,
         hasData: true,
+        ga4Error: false,
+        scError: true,
       }),
       expect.objectContaining({
         id: 'site-b',
@@ -257,6 +263,8 @@ describe('Overview page', () => {
         scClicks: 0,
         scPosition: 0,
         hasData: false,
+        ga4Error: true,
+        scError: false,
       }),
     ]);
 

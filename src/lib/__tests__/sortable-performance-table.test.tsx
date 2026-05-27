@@ -34,9 +34,11 @@ const rows: PerformanceRow[] = [
     views: 12,
     bounceRate: 0.6,
     avgSessionDuration: 30,
-    scClicks: 0,
-    scPosition: 0,
+    scClicks: null,
+    scPosition: null,
     hasData: true,
+    ga4Error: true,
+    scError: true,
   },
 ];
 
@@ -51,5 +53,18 @@ describe('SortablePerformanceTable', () => {
     expect(html).toContain('aria-label="Sort by Sessions descending"');
     expect(html).toContain('<svg aria-hidden="true"');
     expect(html).toContain('title="Sort by SC Position"');
+  });
+
+  it('surfaces provider failures on the affected site row', () => {
+    const html = renderToStaticMarkup(
+      <SortablePerformanceTable
+        rows={rows.map((row) => row.id === 'site-b' ? { ...row, users: 0, hasData: false } : row)}
+      />
+    );
+
+    expect(html).toContain('GA4 error');
+    expect(html).toContain('SC error');
+    expect(html).toContain('GA4 failed');
+    expect(html).toContain('<span class="text-red-400/60 text-xs">error</span>');
   });
 });
