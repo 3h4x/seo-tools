@@ -22,6 +22,7 @@ describe('actions page', () => {
   it('renders action priority and kind labels with shared badge styling', async () => {
     mockLoadActionQueue.mockResolvedValue({
       counts: { critical: 1, high: 0, medium: 0, low: 0 },
+      failures: [],
       items: [
         {
           id: 'site-a-gap',
@@ -51,6 +52,7 @@ describe('actions page', () => {
   it('renders the empty state when there are no ranked actions', async () => {
     mockLoadActionQueue.mockResolvedValue({
       counts: { critical: 0, high: 0, medium: 0, low: 0 },
+      failures: [],
       items: [],
     });
 
@@ -63,6 +65,7 @@ describe('actions page', () => {
   it('renders priority count chips with shared badge sizing', async () => {
     mockLoadActionQueue.mockResolvedValue({
       counts: { critical: 1, high: 2, medium: 3, low: 4 },
+      failures: [],
       items: [],
     });
 
@@ -73,5 +76,18 @@ describe('actions page', () => {
     expect(html).toContain('High</span><span class="font-mono">2');
     expect(html).toContain('Medium</span><span class="font-mono">3');
     expect(html).toContain('Low</span><span class="font-mono">4');
+  });
+
+  it('shows a partial failure banner when the action queue is incomplete', async () => {
+    mockLoadActionQueue.mockResolvedValue({
+      counts: { critical: 0, high: 0, medium: 0, low: 0 },
+      failures: ['SEO audits', 'Site A keyword history'],
+      items: [],
+    });
+
+    const html = renderToStaticMarkup(await ActionsPage());
+
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('SEO audits, Site A keyword history');
   });
 });

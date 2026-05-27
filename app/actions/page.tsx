@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui';
 import { loadActionQueue, type ActionQueueItem } from '@/lib/actions';
 import { DataTable, type DataTableColumn } from '../components/data-table';
+import { PartialFailureBanner } from '../components/partial-failure-banner';
 
 export const revalidate = 300;
 
@@ -28,7 +29,7 @@ const COLUMNS: DataTableColumn[] = [
 ];
 
 export default async function ActionsPage() {
-  const { items, counts } = await loadActionQueue(7);
+  const { items, counts, failures } = await loadActionQueue(7);
 
   const rows = items.map((item) => ([
     <div key={`${item.id}-priority`} className="flex items-center gap-2">
@@ -68,6 +69,8 @@ export default async function ActionsPage() {
           <PriorityCountBadge label="Low" value={counts.low} tone="low" />
         </div>
       </div>
+
+      <PartialFailureBanner failures={failures} />
 
       {items.length === 0 ? (
         <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">

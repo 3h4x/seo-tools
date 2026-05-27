@@ -3,7 +3,7 @@ import { detectAllDecay, type DecaySeverity } from './decay';
 import { getKeywordDropActions } from './db';
 import { analyzeSiteGaps, createSiteGapSignals, loadSiteGapSignals, type GapRecommendation, type GapSeverity } from './gaps';
 import { discoverPropertyIds } from './ga4';
-import { loadOrFallback } from './page-helpers';
+import { loadOrFlag } from './page-helpers';
 import { getManagedSites } from './sites';
 
 export interface ActionQueueItem {
@@ -24,6 +24,7 @@ export interface ActionQueueItem {
 export interface ActionQueueData {
   items: ActionQueueItem[];
   counts: Record<ActionQueueItem['priority'], number>;
+  failures: string[];
 }
 
 const GAP_WEIGHTS: Record<GapSeverity, number> = {
@@ -94,15 +95,25 @@ function priorityFromDecay(severity: DecaySeverity): ActionQueueItem['priority']
 }
 
 export async function loadActionQueue(days: number = 7): Promise<ActionQueueData> {
-  const [managedSites, discoveredSites, audits, decayResults] = await Promise.all([
-    loadOrFallback('ActionQueue managed sites', getManagedSites(), []),
-    loadOrFallback('ActionQueue GA4 discovery', discoverPropertyIds(), []),
-    loadOrFallback('ActionQueue audits', cachedAuditAllSites(), []),
-    loadOrFallback('ActionQueue decay', detectAllDecay(days === 30 ? 30 : 7), []),
+  const [managedSitesResult, discoveredSitesResult, auditsResult, decayResultsResult] = await Promise.all([
+    loadOrFlag('ActionQueue managed sites', getManagedSites(), []),
+    loadOrFlag('ActionQueue GA4 discovery', discoverPropertyIds(), []),
+    loadOrFlag('ActionQueue audits', cachedAuditAllSites(), []),
+    loadOrFlag('ActionQueue decay', detectAllDecay(days === 30 ? 30 : 7), []),
   ]);
+  const failures = [
+    ...(managedSitesResult.failed ? ['Managed sites'] : []),
+    ...(discoveredSitesResult.failed ? ['GA4 discovery'] : []),
+    ...(auditsResult.failed ? ['SEO audits'] : []),
+    ...(decayResultsResult.failed ? ['Content decay'] : []),
+  ];
+  const managedSites = managedSitesResult.value;
+  const discoveredSites = discoveredSitesResult.value;
+  const audits = auditsResult.value;
+  const decayResults = decayResultsResult.value;
 
   if (managedSites.length === 0) {
-    return { items: [], counts: { ...EMPTY_PRIORITY_COUNTS } };
+    return { items: [], counts: { ...EMPTY_PRIORITY_COUNTS }, failures };
   }
 
   const propertyIdBySite = new Map(
@@ -116,11 +127,15 @@ export async function loadActionQueue(days: number = 7): Promise<ActionQueueData
         const site = siteById.get(audit.siteId);
         if (!site) return [];
 
-        const signals = await loadOrFallback(
+        const signalsResult = await loadOrFlag(
           `ActionQueue gap signals ${site.id}`,
           loadSiteGapSignals(site, propertyIdBySite.get(site.id) ?? '', days),
           createSiteGapSignals({ days }),
         );
+        if (signalsResult.failed) {
+          failures.push(`${site.name} gap signals`);
+        }
+        const signals = signalsResult.value;
         const impactPages = signals.scTopPages ?? [];
 
         return analyzeSiteGaps(audit, site, signals).gaps.map((gap) => {
@@ -168,7 +183,7 @@ export async function loadActionQueue(days: number = 7): Promise<ActionQueueData
   });
 
   const keywordItems = managedSites.flatMap((site) => (
-    site.searchConsole === false ? [] : loadKeywordDropActions(site.id).map((keyword) => ({
+    site.searchConsole === false ? [] : loadKeywordDropActions(site.id, site.name, failures).map((keyword) => ({
       id: `${site.id}-keyword-${keyword.query}`,
       kind: 'keyword' as const,
       priority: priorityFromKeyword(keyword.delta, keyword.clicks),
@@ -196,14 +211,19 @@ export async function loadActionQueue(days: number = 7): Promise<ActionQueueData
     { ...EMPTY_PRIORITY_COUNTS },
   );
 
-  return { items, counts };
+  return { items, counts, failures };
 }
 
-function loadKeywordDropActions(siteId: string): ReturnType<typeof getKeywordDropActions> {
+function loadKeywordDropActions(
+  siteId: string,
+  siteName: string,
+  failures: string[],
+): ReturnType<typeof getKeywordDropActions> {
   try {
     return getKeywordDropActions(siteId, 5);
   } catch (error) {
     console.error(`[ActionQueue] keyword drops ${siteId}:`, error);
+    failures.push(`${siteName} keyword history`);
     return [];
   }
 }
