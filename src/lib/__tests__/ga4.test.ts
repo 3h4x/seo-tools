@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockListAccountSummaries = vi.fn();
 const mockRunReport = vi.fn();
 
-vi.mock('../google-auth', () => ({ getAuth: () => ({}) }));
+const mockHasGoogleCredentials = vi.fn(() => true);
+vi.mock('../google-auth', () => ({ getAuth: () => ({}), hasGoogleCredentials: () => mockHasGoogleCredentials() }));
 vi.mock('@google-analytics/admin', () => ({
   AnalyticsAdminServiceClient: class {
     listAccountSummaries = mockListAccountSummaries;
@@ -47,6 +48,15 @@ describe('cachedGetDiscoveredGa4Properties', () => {
       'managed-sites',
       expect.any(Function),
     );
+  });
+
+  it('returns null without calling the admin API when credentials are absent', async () => {
+    mockHasGoogleCredentials.mockReturnValueOnce(false);
+
+    const result = await cachedGetDiscoveredGa4Properties();
+
+    expect(result).toBeNull();
+    expect(mockListAccountSummaries).not.toHaveBeenCalled();
   });
 });
 

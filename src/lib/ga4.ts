@@ -1,6 +1,6 @@
 import { AnalyticsAdminServiceClient } from '@google-analytics/admin';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
-import { getAuth } from './google-auth';
+import { getAuth, hasGoogleCredentials } from './google-auth';
 import { getManagedSites } from './sites';
 import { clearCacheEntry, withCache, type ProviderResult } from './db';
 import { normalizeGa4PropertyId } from './ga4-property';
@@ -19,6 +19,7 @@ function getDataClient() {
 }
 
 async function fetchDiscoveredGa4Properties(): Promise<DiscoveredGa4Property[] | null> {
+  if (!hasGoogleCredentials()) return null;
   try {
     const [summaries] = await getAdminClient().listAccountSummaries({});
     return summaries.flatMap((account) => (
