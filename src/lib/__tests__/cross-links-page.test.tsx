@@ -46,6 +46,16 @@ beforeEach(() => {
 });
 
 describe('CrossLinksPage', () => {
+  it('renders the no-sites notice only when managed sites load successfully as empty', async () => {
+    mockGetManagedSites.mockResolvedValue([]);
+
+    const html = renderToStaticMarkup(await CrossLinksPage());
+
+    expect(html).toContain('Google service account not configured');
+    expect(html).not.toContain("Couldn't load managed sites");
+    expect(mockGetCrossLinkMatrix).not.toHaveBeenCalled();
+  });
+
   it('renders unavailable sources as N/A and excludes them from zero-link gap totals', async () => {
     mockGetManagedSites.mockResolvedValue([
       { id: 'alpha', name: 'Alpha', domain: 'alpha.test', testPages: ['/'] },
@@ -104,5 +114,41 @@ describe('CrossLinksPage', () => {
     expect(html).toContain('SC unavailable');
     expect(html).toContain('Not evaluated');
     expect(html).toContain('1 fetch failed');
+  });
+
+  it('shows a partial failure banner when managed sites cannot load', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockGetManagedSites.mockRejectedValue(new Error('sqlite locked'));
+
+    const html = renderToStaticMarkup(await CrossLinksPage());
+
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('Managed sites');
+    expect(html).toContain("Couldn't load managed sites");
+    expect(html).toContain('The sites table failed to read');
+    expect(html).not.toContain('No sites configured');
+    expect(html).not.toContain('Google service account not configured');
+    expect(mockGetCrossLinkMatrix).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith('[CrossLinksPage managed sites]', expect.any(Error));
+
+    consoleError.mockRestore();
+  });
+
+  it('keeps the page visible when matrix generation fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockGetManagedSites.mockResolvedValue([
+      { id: 'alpha', name: 'Alpha', domain: 'alpha.test', testPages: ['/'] },
+      { id: 'beta', name: 'Beta', domain: 'beta.test', testPages: ['/'] },
+    ]);
+    mockGetCrossLinkMatrix.mockRejectedValue(new Error('Search Console timeout'));
+
+    const html = renderToStaticMarkup(await CrossLinksPage());
+
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('Cross-link matrix');
+    expect(html).toContain('Unavailable Sources');
+    expect(consoleError).toHaveBeenCalledWith('[CrossLinksPage matrix]', expect.any(Error));
+
+    consoleError.mockRestore();
   });
 });

@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { DataTable, type DataTableColumn } from '../../components/data-table';
 import { getCrossLinkMatrix, type CrossLinkSourceMatrix, type CrossLinkSourceStatus } from '@/lib/cross-links';
+import { loadOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
 import { NoSitesNotice } from '../../components/no-sites-notice';
+import { PartialFailureBanner } from '../../components/partial-failure-banner';
 
 export const revalidate = 300;
 
@@ -12,8 +14,16 @@ const BASE_COLUMNS: DataTableColumn[] = [
 ];
 
 export default async function CrossLinksPage() {
-  const sites = await getManagedSites();
-  const matrix = await getCrossLinkMatrix(sites);
+  const sitesResult = await loadOrFlag('CrossLinksPage managed sites', getManagedSites(), []);
+  const sites = sitesResult.value;
+  const matrixResult = sites.length > 0
+    ? await loadOrFlag('CrossLinksPage matrix', getCrossLinkMatrix(sites), [])
+    : { value: [], failed: false };
+  const matrix = matrixResult.value;
+  const partialFailures = [
+    ...(sitesResult.failed ? ['Managed sites'] : []),
+    ...(matrixResult.failed ? ['Cross-link matrix'] : []),
+  ];
   const evaluatedTargets = matrix
     .filter((row) => row.status === 'ok')
     .flatMap((row) => row.targets);
@@ -28,7 +38,17 @@ export default async function CrossLinksPage() {
           <h1 className="text-2xl font-bold text-white">Cross-Site Links</h1>
           <p className="text-neutral-500 text-sm mt-1">Managed-domain link coverage</p>
         </div>
-        <NoSitesNotice variant="inline" />
+        <PartialFailureBanner failures={partialFailures} />
+        {sitesResult.failed ? (
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-6">
+            <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
+            <p className="text-neutral-500 text-sm mt-2">
+              The sites table failed to read. Check the server logs and use Refresh to retry.
+            </p>
+          </div>
+        ) : (
+          <NoSitesNotice variant="inline" />
+        )}
       </div>
     );
   }
@@ -51,6 +71,8 @@ export default async function CrossLinksPage() {
           <p className="text-neutral-500 text-sm mt-1">Top Search Console pages crawled with Googlebot UA · cached 24h · unavailable sources show as N/A</p>
         </div>
       </div>
+
+      <PartialFailureBanner failures={partialFailures} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <SummaryCard label="Source Sites" value={matrix.length} accent="border-l-blue-500" valueClassName="text-blue-400" />

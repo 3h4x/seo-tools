@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { dbGetAlertEvents } from '@/lib/db';
 import { formatAlertMetricValue, getAlertMetricLabel } from '@/lib/alerts';
-import { loadOrFallback, loadSyncOrFallback } from '@/lib/page-helpers';
+import { loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
 import { DataTable, type DataTableColumn } from '../components/data-table';
+import { PartialFailureBanner } from '../components/partial-failure-banner';
 
 export const revalidate = 300;
 
@@ -20,8 +21,14 @@ const ALERT_COLUMNS: DataTableColumn[] = [
 ];
 
 export default async function AlertsPage() {
-  const events = loadSyncOrFallback('AlertsPage events', () => dbGetAlertEvents(100), []);
-  const managedSites = await loadOrFallback('AlertsPage managed sites', getManagedSites(), []);
+  const eventsResult = loadSyncOrFlag('AlertsPage events', () => dbGetAlertEvents(100), []);
+  const managedSitesResult = await loadOrFlag('AlertsPage managed sites', getManagedSites(), []);
+  const events = eventsResult.value;
+  const managedSites = managedSitesResult.value;
+  const partialFailures = [
+    ...(eventsResult.failed ? ['Alert history'] : []),
+    ...(managedSitesResult.failed ? ['Managed sites'] : []),
+  ];
   const sitesById = new Map(managedSites.map((site) => [site.id, site]));
   const rows = events.map((event) => {
     const site = sitesById.get(event.siteId);
@@ -57,7 +64,16 @@ export default async function AlertsPage() {
         </p>
       </div>
 
-      {events.length === 0 ? (
+      <PartialFailureBanner failures={partialFailures} />
+
+      {eventsResult.failed ? (
+        <div className="rounded-lg border border-neutral-800 border-l-4 border-l-red-500 bg-neutral-900 p-6">
+          <p className="font-semibold text-red-400">Couldn&apos;t load alert history</p>
+          <p className="mt-2 text-sm text-neutral-500">
+            The alert events table failed to read. Check the server logs and use Refresh to retry.
+          </p>
+        </div>
+      ) : events.length === 0 ? (
         <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6 text-sm text-neutral-500">
           No alerts have fired yet. Add rules in <Link href="/config" className="text-white underline">Config</Link> and run snapshots to populate history.
         </div>

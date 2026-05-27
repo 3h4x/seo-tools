@@ -39,7 +39,7 @@ describe('alerts page', () => {
     expect(html).toContain('href="/config"');
   });
 
-  it('falls back to empty state when underlying reads fail', async () => {
+  it('shows a failure state when alert history cannot load', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockDbGetAlertEvents.mockImplementation(() => {
       throw new Error('sqlite locked');
@@ -48,8 +48,43 @@ describe('alerts page', () => {
 
     const html = renderToStaticMarkup(await AlertsPage());
 
-    expect(html).toContain('No alerts have fired yet.');
+    expect(html).toContain("Couldn't load alert history");
+    expect(html).toContain('The alert events table failed to read');
+    expect(html).not.toContain('No alerts have fired yet.');
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('Alert history');
+    expect(html).toContain('Managed sites');
     expect(consoleError).toHaveBeenCalledWith('[AlertsPage events]', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[AlertsPage managed sites]', expect.any(Error));
+
+    consoleError.mockRestore();
+  });
+
+  it('keeps alert rows visible when site labels fail to load', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockDbGetAlertEvents.mockReturnValue([
+      {
+        id: 1,
+        siteId: 'site-a',
+        ruleId: 1,
+        metric: 'sc_clicks',
+        thresholdPct: 25,
+        previousValue: 100,
+        currentValue: 60,
+        deltaPct: 40,
+        snapshotDate: '2026-05-17',
+        deliveredChannels: [],
+        deliveryError: null,
+        createdAt: '2026-05-17 08:30:00',
+      },
+    ]);
+    mockGetManagedSites.mockRejectedValue(new Error('sites unavailable'));
+
+    const html = renderToStaticMarkup(await AlertsPage());
+
+    expect(html).toContain('site-a');
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('Managed sites');
     expect(consoleError).toHaveBeenCalledWith('[AlertsPage managed sites]', expect.any(Error));
 
     consoleError.mockRestore();
