@@ -10,6 +10,7 @@ import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import {
   getPerformanceOverviewRows,
 } from '@/lib/performance-overview';
+import { Notice } from '@/components/ui';
 import TimeRange from '../components/time-range';
 import CwvSetupGuide from '../components/cwv-setup-guide';
 import { CwvCell } from '../components/cwv-cell';
@@ -93,10 +94,10 @@ export default async function PerformancePage({
       <PartialFailureBanner failures={failures} />
 
       {needsKey && (
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
+        <Notice tone="warning" size="sm">
           PageSpeed Insights rate-limited. Add a free API key in{' '}
           <Link href="/config" className="underline">Config</Link> to lift the per-IP cap.
-        </div>
+        </Notice>
       )}
 
       <CwvMetricsCards
