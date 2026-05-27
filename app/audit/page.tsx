@@ -19,6 +19,7 @@ import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { Badge } from '@/components/ui';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
+import { PerformanceSourceBadge } from '../components/performance-source-badge';
 
 const AUDIT_DECAY_PERIODS = [7, 30] as const;
 
@@ -323,9 +324,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                       </div>
                     );
                   })}
-                  <Badge className="ml-auto border-neutral-800 text-neutral-600">
-                    {cwv.source === 'rum' ? 'RUM' : cwv.source === 'psi-field' ? 'CrUX' : 'Lab'}
-                  </Badge>
+                  <PerformanceSourceBadge source={cwv.source} className="ml-auto" />
                 </div>
               )}
             </Link>

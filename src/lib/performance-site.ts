@@ -11,7 +11,7 @@ import { getManagedSite } from './sites';
 import { CWV_METRIC_ORDER, PERF_VALID_DAYS, rateCwv, type CwvMetricName } from './constants';
 import { normalizeAllowedNumber } from './days';
 
-type PerformanceSource = 'rum' | 'rum-pending' | 'psi-field' | 'psi-lab' | 'none';
+export type PerformanceSource = 'rum' | 'rum-pending' | 'psi-field' | 'psi-lab' | 'none';
 
 interface PerformanceMetric {
   value: number;
@@ -264,6 +264,5 @@ export type {
   PerformanceMetric,
   PerformanceMetricMap,
   PerformanceSiteData,
-  PerformanceSource,
   PerformanceTrendRow,
 };

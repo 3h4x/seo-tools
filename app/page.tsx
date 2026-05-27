@@ -5,6 +5,7 @@ import { formatSource } from '@/lib/format';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFlag } from '@/lib/page-helpers';
+import { getPerformanceOverviewRows } from '@/lib/performance-overview';
 import TimeRange from './components/time-range';
 import { NoSitesNotice } from './components/no-sites-notice';
 import { PartialFailureBanner } from './components/partial-failure-banner';
@@ -50,9 +51,24 @@ async function getSiteData(days: number) {
 export default async function Overview({ searchParams }: { searchParams: Promise<{ days?: QueryParamValue }> }) {
   const params = await searchParams;
   const days = parseAllowedIntegerParam(params.days, VALID_DAYS, 7);
-  const { sites, discoveryFailed } = await getSiteData(days);
+  const [
+    { sites, discoveryFailed },
+    cwvSourcesResult,
+  ] = await Promise.all([
+    getSiteData(days),
+    loadOrFlag(
+      'OverviewPage CWV sources',
+      getPerformanceOverviewRows(days),
+      { rows: [], failures: [] },
+    ),
+  ]);
   const partialFailures: string[] = [];
   if (discoveryFailed) partialFailures.push('site discovery');
+  if (cwvSourcesResult.failed) partialFailures.push('Core Web Vitals sources');
+  partialFailures.push(...cwvSourcesResult.value.failures);
+  const cwvSourceBySite = new Map(
+    cwvSourcesResult.value.rows.map((row) => [row.id, row.source]),
+  );
 
   const totals = sites.reduce(
     (acc, s) => {
@@ -88,6 +104,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
     hasData: !!(site.ga4?.data && site.ga4.data.current.users > 0),
     ga4Error: Boolean(site.ga4?.error),
     scError: site.sc !== null && Boolean(site.sc.error),
+    cwvSource: cwvSourceBySite.get(site.id) ?? 'none',
   }));
 
   const sourceMap = new Map<string, number>();

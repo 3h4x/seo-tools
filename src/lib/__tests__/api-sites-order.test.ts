@@ -12,7 +12,7 @@ vi.mock('@/lib/db', () => ({
 import { PUT } from '../../../app/api/sites/order/route';
 
 function putReq(body: object | string): NextRequest {
-  const init: RequestInit = {
+  const init = {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: typeof body === 'string' ? body : JSON.stringify(body),

@@ -9,9 +9,7 @@ import {
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import {
   getPerformanceOverviewRows,
-  type PerformanceOverviewRow,
 } from '@/lib/performance-overview';
-import { Badge } from '@/components/ui';
 import TimeRange from '../components/time-range';
 import CwvSetupGuide from '../components/cwv-setup-guide';
 import { CwvCell } from '../components/cwv-cell';
@@ -19,16 +17,9 @@ import { CwvMetricsCards } from '../components/cwv-metrics-cards';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
+import { PerformanceSourceBadge } from '../components/performance-source-badge';
 
 export const revalidate = 300;
-
-const SOURCE_BADGE: Record<PerformanceOverviewRow['source'], { label: string; cls: string; tip: string }> = {
-  'rum':         { label: 'RUM',      cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30', tip: 'Real-user data via GA4 core_web_vitals' },
-  'rum-pending': { label: 'RUM 24h',  cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30',          tip: 'Events flowing — custom dimensions still propagating to the Data API (24–48h after registration)' },
-  'psi-field':   { label: 'CrUX',     cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30',          tip: 'PageSpeed Insights field data (CrUX, p75)' },
-  'psi-lab':     { label: 'Lab',      cls: 'bg-violet-500/15 text-violet-300 border-violet-500/30',    tip: 'Lighthouse lab synthetic measurements' },
-  'none':        { label: 'No data',  cls: 'bg-neutral-800 text-neutral-500 border-neutral-700',       tip: 'No RUM events and PSI returned nothing' },
-};
 
 export default async function PerformancePage({
   searchParams,
@@ -72,17 +63,12 @@ export default async function PerformancePage({
     { label: 'PSI', align: 'right', className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2 text-right font-mono' },
   ];
 
-  const tableRows = rows.map((row) => {
-    const badge = SOURCE_BADGE[row.source];
-
-    return [
+  const tableRows = rows.map((row) => [
       <div key="site">
         <Link href={`/performance/${encodeURIComponent(row.id)}`} className="text-white hover:underline">{row.name}</Link>
         <div className="text-xs text-neutral-500 font-mono">{row.domain}</div>
       </div>,
-      <Badge key="source" title={badge.tip} shape="rounded" uppercase className={badge.cls}>
-        {badge.label}
-      </Badge>,
+      <PerformanceSourceBadge key="source" source={row.source} />,
       ...CWV_METRIC_ORDER.map((name) => {
         const m = row.metrics[name];
         return <CwvCell key={name} name={name} value={m?.value} rating={m?.rating} />;
@@ -90,8 +76,7 @@ export default async function PerformancePage({
       row.perfScore == null
         ? <span key="psi" className="text-neutral-600">—</span>
         : <span key="psi" className={row.perfScore >= 90 ? 'text-emerald-400' : row.perfScore >= 50 ? 'text-amber-400' : 'text-red-400'}>{row.perfScore}</span>,
-    ];
-  });
+    ]);
 
   return (
     <div className="space-y-8">

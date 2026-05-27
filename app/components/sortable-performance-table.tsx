@@ -6,7 +6,9 @@ import { Badge, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
+import { PerformanceSourceBadge } from './performance-source-badge';
 import { formatBounce, formatDuration } from '@/lib/format';
+import type { PerformanceSource } from '@/lib/performance-site';
 
 export type PerformanceRow = {
   id: string;
@@ -23,6 +25,7 @@ export type PerformanceRow = {
   hasData: boolean;
   ga4Error?: boolean;
   scError?: boolean;
+  cwvSource?: PerformanceSource;
 };
 
 type SortKey = 'name' | 'users' | 'sessions' | 'views' | 'bounceRate' | 'avgSessionDuration' | 'scClicks' | 'scPosition';
@@ -132,6 +135,7 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
             SC error
           </Badge>
         )}
+        {row.cwvSource && <PerformanceSourceBadge source={row.cwvSource} />}
         <div className="flex items-center gap-1.5">
           <span className="text-neutral-600 text-xs">{row.domain}</span>
           <CopyButton text={`https://${row.domain}`} label="domain" className="text-[10px] px-1 py-0.5" />

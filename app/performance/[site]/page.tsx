@@ -8,7 +8,6 @@ import {
   rateCwv,
 } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
-import { Badge } from '@/components/ui';
 import TimeRange from '../../components/time-range';
 import TrendChart from '../../components/trend-chart';
 import CwvSetupGuide from '../../components/cwv-setup-guide';
@@ -16,16 +15,9 @@ import { CwvCell } from '../../components/cwv-cell';
 import { CwvMetricsCards } from '../../components/cwv-metrics-cards';
 import { DataTable, type DataTableColumn } from '../../components/data-table';
 import { PartialFailureBanner } from '../../components/partial-failure-banner';
+import { PerformanceSourceBadge } from '../../components/performance-source-badge';
 
 export const revalidate = 300;
-
-const SOURCE_BADGE = {
-  'rum':         { label: 'RUM',     cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30', tip: 'Real-user data via GA4 core_web_vitals' },
-  'rum-pending': { label: 'RUM 24h', cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30',          tip: 'Events flowing; custom dimensions are still propagating to the Data API' },
-  'psi-field':   { label: 'CrUX',    cls: 'bg-blue-500/15 text-blue-300 border-blue-500/30',          tip: 'PageSpeed Insights field data (CrUX, p75)' },
-  'psi-lab':     { label: 'Lab',     cls: 'bg-violet-500/15 text-violet-300 border-violet-500/30',    tip: 'Lighthouse lab synthetic measurements' },
-  'none':        { label: 'No data', cls: 'bg-neutral-800 text-neutral-500 border-neutral-700',       tip: 'No RUM events and PSI returned no metrics' },
-} as const;
 
 export default async function PerfSiteDetail({
   params,
@@ -42,7 +34,6 @@ export default async function PerfSiteDetail({
 
   const { site, days, source, hasRum, propagating, eventCount, heroSource, overall, byDevice, slowestPages, trend, psi } = perf;
   const partialFailures = perf.failures ?? [];
-  const sourceBadge = SOURCE_BADGE[source];
   const hasOverallMetrics = CWV_METRIC_ORDER.some((name) => overall[name]);
   const trendData = trend.map((point) => ({
     date: point.date,
@@ -77,9 +68,7 @@ export default async function PerfSiteDetail({
           <p className="text-neutral-500 text-sm mt-1 font-mono">{site.domain}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge title={sourceBadge.tip} shape="rounded" uppercase className={sourceBadge.cls}>
-            {sourceBadge.label}
-          </Badge>
+          <PerformanceSourceBadge source={source} />
           <TimeRange options={[{ value: '7', label: '7d' }, { value: '28', label: '28d' }]} defaultValue="7" />
         </div>
       </div>

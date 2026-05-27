@@ -12,6 +12,7 @@ const {
   mockDiscoverPropertyIds,
   mockCachedGetAnalytics,
   mockCachedGetSearchConsoleData,
+  mockGetPerformanceOverviewRows,
   mockGetSCUrl,
   mockFormatSource,
   mockTimeRange,
@@ -23,6 +24,7 @@ const {
   mockDiscoverPropertyIds: vi.fn(),
   mockCachedGetAnalytics: vi.fn(),
   mockCachedGetSearchConsoleData: vi.fn(),
+  mockGetPerformanceOverviewRows: vi.fn(),
   mockGetSCUrl: vi.fn(),
   mockFormatSource: vi.fn((source: string, medium?: string) => `${source}/${medium ?? ''}`),
   mockTimeRange: vi.fn(() => <div>Time Range</div>),
@@ -39,6 +41,10 @@ vi.mock('@/lib/ga4', () => ({
 
 vi.mock('@/lib/search-console', () => ({
   cachedGetSearchConsoleData: mockCachedGetSearchConsoleData,
+}));
+
+vi.mock('@/lib/performance-overview', () => ({
+  getPerformanceOverviewRows: mockGetPerformanceOverviewRows,
 }));
 
 vi.mock('@/lib/sites', () => ({
@@ -152,6 +158,13 @@ beforeEach(() => {
     data: { clicks: 11, impressions: 101, position: 3.5 },
     error: false,
   });
+  mockGetPerformanceOverviewRows.mockResolvedValue({
+    rows: [
+      { id: 'site-a', source: 'rum' },
+      { id: 'site-b', source: 'psi-field' },
+    ],
+    failures: [],
+  });
 });
 
 describe('Overview page', () => {
@@ -208,6 +221,7 @@ describe('Overview page', () => {
         hasData: true,
         ga4Error: false,
         scError: false,
+        cwvSource: 'rum',
       }),
       expect.objectContaining({
         id: 'site-b',
@@ -218,6 +232,7 @@ describe('Overview page', () => {
         hasData: true,
         ga4Error: false,
         scError: false,
+        cwvSource: 'psi-field',
       }),
     ]);
   });
@@ -256,6 +271,7 @@ describe('Overview page', () => {
         hasData: true,
         ga4Error: false,
         scError: true,
+        cwvSource: 'rum',
       }),
       expect.objectContaining({
         id: 'site-b',
@@ -265,6 +281,7 @@ describe('Overview page', () => {
         hasData: false,
         ga4Error: true,
         scError: false,
+        cwvSource: 'psi-field',
       }),
     ]);
 
