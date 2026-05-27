@@ -1,6 +1,6 @@
 import { formatRelativeTime } from '@/lib/format';
 import type { OperationalStatus } from '@/lib/db';
-import { Badge } from '@/components/ui';
+import { Badge, Notice } from '@/components/ui';
 
 const STATE_STYLES: Record<OperationalStatus['state'], string> = {
   fresh: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
@@ -38,9 +38,9 @@ export default function OperationalStatusPanel({
         Freshness is derived from collector, sitemap sync, and snapshot records. GA4 coverage may fall back to saved property IDs when discovery data is unavailable.
       </p>
       {error && (
-        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+        <Notice tone="warning" size="sm">
           Operational status could not be loaded. Config and site management are still available.
-        </div>
+        </Notice>
       )}
       <div className="grid gap-3 md:grid-cols-2">
         {statuses.map((status) => (
