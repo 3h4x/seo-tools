@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Badge, ConfiguredNotice, FormButton, FormInput, FormTextarea } from '@/components/ui';
+import { Badge, ConfiguredNotice, FormButton, FormInput, FormTextarea, Spinner } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -241,7 +241,9 @@ export default function AlertDeliveryForm() {
           variant="primary"
           onClick={handleSave}
           disabled={saving}
+          className="inline-flex items-center gap-1.5"
         >
+          {saving && <Spinner />}
           {saving ? 'Saving…' : 'Save'}
         </FormButton>
         <FormButton
