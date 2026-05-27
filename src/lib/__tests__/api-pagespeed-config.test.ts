@@ -92,6 +92,17 @@ describe('POST /api/config/pagespeed', () => {
     expect(setConfig).not.toHaveBeenCalled();
   });
 
+  it('returns 400 and does not save when the PSI validation request rejects', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('network unavailable'));
+
+    const res = await POST(postReq({ key: 'good', testOnly: true }));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'network unavailable' });
+    expect(setConfig).not.toHaveBeenCalled();
+    expect(clearCache).not.toHaveBeenCalled();
+  });
+
   it('does not save when testOnly=true', async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) } as Response);
     const res = await POST(postReq({ key: 'good', testOnly: true }));
