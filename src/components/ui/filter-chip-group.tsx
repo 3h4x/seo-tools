@@ -3,18 +3,21 @@ import type { ReactNode } from 'react';
 interface FilterChipOption<T extends string> {
   value: T;
   label: ReactNode;
+  href?: string;
   count?: number;
   activeClassName?: string;
   countActiveClassName?: string;
 }
 
-interface FilterChipGroupProps<T extends string> {
+type FilterChipGroupProps<T extends string> = {
   options: ReadonlyArray<FilterChipOption<T>>;
   value: T | null;
-  onChange: (value: T | null) => void;
   ariaLabel?: string;
   hideZeroCounts?: boolean;
-}
+} & (
+  | { onChange: (value: T | null) => void }
+  | { onChange?: never }
+);
 
 const DEFAULT_ACTIVE_CLASS = 'bg-white/10 text-white border-white/20';
 const DEFAULT_INACTIVE_CLASS =
@@ -33,16 +36,11 @@ export function FilterChipGroup<T extends string>({
         if (hideZeroCounts && option.count === 0) return null;
         const active = value === option.value;
         const activeClass = option.activeClassName ?? DEFAULT_ACTIVE_CLASS;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={active ? 'true' : 'false'}
-            onClick={() => onChange(active ? null : option.value)}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              active ? activeClass : DEFAULT_INACTIVE_CLASS
-            }`}
-          >
+        const className = `text-xs px-2.5 py-1 rounded-full border transition-colors ${
+          active ? activeClass : DEFAULT_INACTIVE_CLASS
+        }`;
+        const content = (
+          <>
             {option.label}
             {option.count !== undefined && (
               <span
@@ -55,6 +53,31 @@ export function FilterChipGroup<T extends string>({
                 {option.count}
               </span>
             )}
+          </>
+        );
+
+        if (option.href) {
+          return (
+            <a
+              key={option.value}
+              href={option.href}
+              aria-current={active ? 'page' : undefined}
+              className={className}
+            >
+              {content}
+            </a>
+          );
+        }
+
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={active ? 'true' : 'false'}
+            onClick={() => onChange?.(active ? null : option.value)}
+            className={className}
+          >
+            {content}
           </button>
         );
       })}

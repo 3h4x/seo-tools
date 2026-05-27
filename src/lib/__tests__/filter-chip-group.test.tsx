@@ -76,4 +76,21 @@ describe('FilterChipGroup', () => {
     expect(html).toContain('text-red-400');
     expect(html).toContain('border-red-500/20');
   });
+
+  it('renders href options as active links for server-backed filters', () => {
+    const html = renderToStaticMarkup(
+      <FilterChipGroup
+        ariaLabel="Filter by site"
+        value="all"
+        options={[
+          { value: 'all', label: 'All sites', href: '/opportunities?days=28' },
+          { value: 'example.com', label: 'example.com', href: '/opportunities?days=28&site=example.com' },
+        ]}
+      />,
+    );
+
+    expect(html).toContain('<a href="/opportunities?days=28" aria-current="page"');
+    expect(html).toContain('All sites');
+    expect(html).not.toContain('aria-pressed');
+  });
 });

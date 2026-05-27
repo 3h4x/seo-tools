@@ -7,7 +7,7 @@ Use these primitives for repeated dashboard patterns before adding local ad-hoc 
 Current primitives:
 - `Badge` — shared compact bordered status badge for operational labels, source tags, small table badges, and dashboard count chips. Supports `xs`, `sm`, `compact`, and `md` sizing, `rounded` or `pill` shape, and optional uppercase tracking.
 - `ConfiguredNotice` — compact neutral status row with the green configured indicator used by config forms.
-- `FilterChipGroup` — rounded-pill chip filter group with optional per-chip count badges and per-chip active styling. Clicking the active chip deselects (single-toggle). Supports `hideZeroCounts` to hide empty options.
+- `FilterChipGroup` — rounded-pill chip filter group with optional per-chip count badges and per-chip active styling. Clicking the active button chip deselects (single-toggle). Options may also provide `href` for URL-backed server filters. Supports `hideZeroCounts` to hide empty options.
 - `FormButton` — form action button with `primary`, `secondary`, `danger`, and transparent `ghost` variants plus `md`, `sm`, `xs`, and row-sized controls.
 - `FormCheckbox` — shared checkbox input for config and manager forms.
 - `FormInput` / `FormSelect` / `FormTextarea` — shared dark form controls for config fields and dashboard forms. Use `monospace` for keys, URLs, and other literal values. Use `tone="dense"` with `padding="compact"` or `padding="dense"` for compact controls embedded in dense manager surfaces. Use `FormTextarea padding="roomy"` when preserving larger text-area padding.

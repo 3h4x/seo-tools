@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { getManagedSites, getSCUrl } from '@/lib/sites';
 import {
   cachedGetKeywordOpportunities,
@@ -9,7 +8,7 @@ import {
 } from '@/lib/opportunities';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFallback } from '@/lib/page-helpers';
-import { Badge } from '@/components/ui';
+import { FilterChipGroup } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
 
@@ -39,34 +38,6 @@ function opportunitiesHref(days: number, site?: string): string {
 interface SiteOpportunity {
   domain: string;
   opportunity: KeywordOpportunity;
-}
-
-function SiteFilterLink({
-  active,
-  children,
-  href,
-}: {
-  active: boolean;
-  children: ReactNode;
-  href: string;
-}) {
-  return (
-    <a
-      href={href}
-      aria-current={active ? 'page' : undefined}
-      className="inline-flex"
-    >
-      <Badge
-        size="md"
-        shape="rounded"
-        className={`border-0 px-3 py-1 text-sm font-normal ${
-          active ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-        }`}
-      >
-        {children}
-      </Badge>
-    </a>
-  );
 }
 
 export default async function OpportunitiesPage({
@@ -135,23 +106,18 @@ export default async function OpportunitiesPage({
       </div>
 
       {scSites.length > 1 && (
-        <nav className="flex gap-2 flex-wrap" aria-label="Filter opportunities by site">
-          <SiteFilterLink
-            href={opportunitiesHref(days)}
-            active={!siteFilter}
-          >
-            All sites
-          </SiteFilterLink>
-          {scSites.map(site => (
-            <SiteFilterLink
-              key={site.id}
-              href={opportunitiesHref(days, site.domain)}
-              active={siteFilter === site.domain}
-            >
-              {site.domain}
-            </SiteFilterLink>
-          ))}
-        </nav>
+        <FilterChipGroup
+          ariaLabel="Filter opportunities by site"
+          value={siteFilter || 'all'}
+          options={[
+            { value: 'all', label: 'All sites', href: opportunitiesHref(days) },
+            ...scSites.map(site => ({
+              value: site.domain,
+              label: site.domain,
+              href: opportunitiesHref(days, site.domain),
+            })),
+          ]}
+        />
       )}
 
       {top.length === 0 ? (
