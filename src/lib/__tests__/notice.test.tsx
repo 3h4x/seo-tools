@@ -15,4 +15,15 @@ describe('Notice', () => {
     expect(html).toContain('px-3 py-2 text-sm');
     expect(html).toContain('role="status"');
   });
+
+  it('supports danger status banners', () => {
+    const html = renderToStaticMarkup(
+      <Notice tone="danger" role="alert">
+        Page queries unavailable.
+      </Notice>
+    );
+
+    expect(html).toContain('border-red-950 bg-neutral-900 text-neutral-300');
+    expect(html).toContain('role="alert"');
+  });
 });

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TextButton } from '@/components/ui';
+import { Notice, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { PositionBadge } from './position-badge';
 import { Skeleton } from './skeletons';
@@ -49,12 +49,12 @@ function PageQueriesSkeleton() {
 
 function PageQueriesError({ message }: { message: string }) {
   return (
-    <div className="bg-neutral-900 rounded-lg border border-red-950 p-4" role="alert">
+    <Notice tone="danger" size="none" className="p-4" role="alert">
       <div className="h-32 flex flex-col items-center justify-center text-center">
         <h3 className="text-xs uppercase tracking-wider text-red-300 font-semibold">Page Queries Unavailable</h3>
         <p className="mt-2 max-w-md text-sm text-neutral-400">{message}</p>
       </div>
-    </div>
+    </Notice>
   );
 }
 
