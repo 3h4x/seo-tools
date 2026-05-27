@@ -375,4 +375,109 @@ describe('getCwvAuditSummary', () => {
     const result = await getCwvAuditSummary('nonexistent');
     expect(result).toBeNull();
   });
+
+  it('fetches desktop PSI when mobile PSI throws', async () => {
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce(null);
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => {
+      if (strategy === 'mobile') throw new Error('mobile PSI unavailable');
+      return {
+        url: 'https://borged.io',
+        strategy,
+        performanceScore: 87,
+        field: {
+          LCP: { value: 2600, rating: 'good' },
+        },
+        lab: {},
+        fetchedAt: 123,
+      };
+    });
+
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const result = await getCwvAuditSummary('borged-io');
+    consoleError.mockRestore();
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('psi-field');
+    expect(result!.metrics.LCP).toEqual({ value: 2600, rating: 'good', sampleCount: 0 });
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'mobile');
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'desktop');
+  });
+});
+
+describe('getPerformanceSiteData additional edge cases', () => {
+  it('returns null when site is not found', async () => {
+    vi.mocked(getManagedSite).mockResolvedValueOnce(null);
+    const result = await getPerformanceSiteData('nonexistent', 7);
+    expect(result).toBeNull();
+  });
+
+  it('sets source to none when no RUM, no events, and PSI returns empty data', async () => {
+    vi.mocked(cachedGetPagespeed).mockResolvedValue({
+      url: 'https://borged.io',
+      strategy: 'mobile',
+      performanceScore: null,
+      field: null,
+      lab: {},
+      fetchedAt: 123,
+    });
+
+    const result = await getPerformanceSiteData('borged-io', 7);
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('none');
+    expect(result!.hasRum).toBe(false);
+    expect(result!.propagating).toBe(false);
+    expect(result!.overall).toEqual({});
+  });
+
+  it('sets needsKey true when mobile PSI reports rate-limit without key', async () => {
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => ({
+      url: 'https://borged.io',
+      strategy,
+      performanceScore: null,
+      field: null,
+      lab: {},
+      fetchedAt: 123,
+      needsKey: strategy === 'mobile',
+    }));
+
+    const result = await getPerformanceSiteData('borged-io', 7);
+
+    expect(result).not.toBeNull();
+    expect(result!.needsKey).toBe(true);
+  });
+
+  it('sets needsKey true when desktop PSI reports rate-limit without key', async () => {
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => ({
+      url: 'https://borged.io',
+      strategy,
+      performanceScore: null,
+      field: null,
+      lab: {},
+      fetchedAt: 123,
+      needsKey: strategy === 'desktop',
+    }));
+
+    const result = await getPerformanceSiteData('borged-io', 7);
+
+    expect(result).not.toBeNull();
+    expect(result!.needsKey).toBe(true);
+  });
+
+  it('sets needsKey false when neither PSI result flags it', async () => {
+    vi.mocked(cachedGetPagespeed).mockResolvedValue({
+      url: 'https://borged.io',
+      strategy: 'mobile',
+      performanceScore: 90,
+      field: { LCP: { value: 1800, rating: 'good' } },
+      lab: {},
+      fetchedAt: 123,
+      needsKey: false,
+    });
+
+    const result = await getPerformanceSiteData('borged-io', 7);
+
+    expect(result).not.toBeNull();
+    expect(result!.needsKey).toBe(false);
+  });
 });
