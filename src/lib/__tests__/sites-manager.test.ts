@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import SitesManager, { formatDiscoverError, formatSiteMutationError } from '../../../app/components/sites-manager';
+import SitesManager, { formatDiscoverError, formatDiscoverWarning, formatSiteMutationError } from '../../../app/components/sites-manager';
 
 describe('SitesManager', () => {
   it('labels compact managed-site table controls and status glyphs', () => {
@@ -60,6 +60,20 @@ describe('formatDiscoverError', () => {
     expect(formatDiscoverError(undefined, 503)).toBe('Discovery failed (503)');
     expect(formatDiscoverError('', 500)).toBe('Discovery failed (500)');
     expect(formatDiscoverError('   ', 500)).toBe('Discovery failed (500)');
+  });
+});
+
+describe('formatDiscoverWarning', () => {
+  it('maps known warning codes to non-blocking discovery messages', () => {
+    expect(formatDiscoverWarning('ga4_admin_api_failed')).toBe(
+      'GA4 Admin API discovery failed. Search Console results are shown without GA4 matches.',
+    );
+  });
+
+  it('passes through unknown warnings and ignores empty values', () => {
+    expect(formatDiscoverWarning('provider delayed')).toBe('provider delayed');
+    expect(formatDiscoverWarning(null)).toBe('');
+    expect(formatDiscoverWarning('   ')).toBe('');
   });
 });
 

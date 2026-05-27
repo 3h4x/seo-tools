@@ -61,6 +61,10 @@ const DISCOVER_ERROR_MESSAGES: Record<string, string> = {
   failed_to_load_existing_sites: 'Could not load existing sites. Check server logs.',
 };
 
+const DISCOVER_WARNING_MESSAGES: Record<string, string> = {
+  ga4_admin_api_failed: 'GA4 Admin API discovery failed. Search Console results are shown without GA4 matches.',
+};
+
 const SITE_MUTATION_ERROR_MESSAGES: Record<string, string> = {
   failed_to_load_sites: 'Could not load existing sites. Check server logs.',
   failed_to_save_site: 'Could not save site. Check server logs.',
@@ -74,6 +78,12 @@ export function formatDiscoverError(error: string | undefined, status: number): 
     return DISCOVER_ERROR_MESSAGES[trimmed];
   }
   return trimmed || `Discovery failed (${status})`;
+}
+
+export function formatDiscoverWarning(warning: string | null): string {
+  const trimmed = warning?.trim();
+  if (!trimmed) return '';
+  return DISCOVER_WARNING_MESSAGES[trimmed] ?? trimmed;
 }
 
 export function formatSiteMutationError(error: string | undefined, status: number, fallback: string): string {
@@ -178,6 +188,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   const [discovering, setDiscovering] = useState(false);
   const [discovered, setDiscovered] = useState<DiscoveredSite[] | null>(null);
   const [discoverError, setDiscoverError] = useState('');
+  const [discoverWarning, setDiscoverWarning] = useState('');
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
@@ -352,6 +363,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   async function handleDiscover() {
     setDiscovering(true);
     setDiscoverError('');
+    setDiscoverWarning('');
     setImportSummary(null);
     setDiscovered(null);
     setSelected(new Set());
@@ -381,6 +393,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       }
       const discoveredSites = data as DiscoveredSite[];
       setDiscovered(discoveredSites);
+      setDiscoverWarning(formatDiscoverWarning(res.headers.get('x-seo-tools-discovery-warning')));
       setSelected(new Set(discoveredSites.map(s => s.id)));
     } catch (err) {
       console.error('[SitesManager] discover:', err);
@@ -411,6 +424,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
     if (!discovered) return;
     setImporting(true);
     setDiscoverError('');
+    setDiscoverWarning('');
     setImportSummary(null);
     const toImport = discovered.filter(s => selected.has(s.id));
     try {
@@ -821,6 +835,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           </div>
 
           {discoverError && <p className="text-sm text-red-400" role="alert">{discoverError}</p>}
+          {discoverWarning && <p className="text-sm text-amber-300" role="status">{discoverWarning}</p>}
           {importSummary && (
             <p className={`text-sm ${importSummary.tone === 'warning' ? 'text-amber-300' : 'text-emerald-300'}`}>
               {importSummary.message}

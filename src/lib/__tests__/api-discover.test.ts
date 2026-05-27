@@ -523,12 +523,41 @@ describe('GET /api/sites/discover', () => {
   it('proceeds without GA4 when admin API throws', async () => {
     mockSc(['mysite.com']);
     vi.mocked(cachedGetDiscoveredGa4Properties).mockRejectedValue(new Error('Admin API failed') as never);
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const res = await GET(getReq());
     expect(res.status).toBe(200);
+    expect(res.headers.get('x-seo-tools-discovery-warning')).toBe('ga4_admin_api_failed');
     const body = await res.json();
     expect(body).toHaveLength(1);
     expect(body[0].ga4PropertyId).toBeUndefined();
+    expect(consoleError).toHaveBeenCalledWith(
+      '[GET /api/sites/discover] GA4 Admin API error',
+      expect.any(Error),
+    );
+    consoleError.mockRestore();
+  });
+
+  it('warns when GA4 discovery resolves null after an admin API failure', async () => {
+    mockSc(['mysite.com']);
+    vi.mocked(cachedGetDiscoveredGa4Properties).mockResolvedValue(null as never);
+
+    const res = await GET(getReq());
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-seo-tools-discovery-warning')).toBe('ga4_admin_api_failed');
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0].ga4PropertyId).toBeUndefined();
+  });
+
+  it('warns on ga4debug when GA4 discovery resolves null', async () => {
+    mockSc([]);
+    vi.mocked(cachedGetDiscoveredGa4Properties).mockResolvedValue(null as never);
+
+    const res = await GET(getReq('http://localhost/api/sites/discover?ga4debug'));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-seo-tools-discovery-warning')).toBe('ga4_admin_api_failed');
+    expect(await res.json()).toEqual({});
   });
 
   it('slugifies domain for id field', async () => {

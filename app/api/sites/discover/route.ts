@@ -30,6 +30,9 @@ type MatchedGa4Property = {
   displayName: string;
 };
 
+const DISCOVERY_WARNING_HEADER = 'x-seo-tools-discovery-warning';
+const GA4_DISCOVERY_WARNING = 'ga4_admin_api_failed';
+
 function isDomainProperty(scUrl: string): boolean {
   return scUrl.toLowerCase().startsWith('sc-domain:');
 }
@@ -154,8 +157,13 @@ export async function GET(req: Request) {
   const existingDomains = new Set(existingSites.map(s => getExistingDomainIdentity(s.domain)));
   const existingScIdentities = new Set(existingSites.flatMap(getSiteSearchConsoleIdentities));
 
-  // Kick off GA4 discovery in parallel with the SC fetch below; best-effort so swallow rejection.
-  const ga4Promise: Promise<DiscoveredGa4Property[] | null> = cachedGetDiscoveredGa4Properties().catch(() => null);
+  let ga4DiscoveryFailed = false;
+  // Kick off GA4 discovery in parallel with the SC fetch below; best-effort so SC-only discovery can still work.
+  const ga4Promise: Promise<DiscoveredGa4Property[] | null> = cachedGetDiscoveredGa4Properties().catch((error) => {
+    ga4DiscoveryFailed = true;
+    console.error('[GET /api/sites/discover] GA4 Admin API error', error);
+    return null;
+  });
 
   let scSites: DedupeScSite[] = [];
   try {
@@ -177,13 +185,16 @@ export async function GET(req: Request) {
   }
 
   const ga4Properties: DiscoveredGa4Property[] | null = await ga4Promise;
+  if (ga4Properties === null) {
+    ga4DiscoveryFailed = true;
+  }
 
   const exactGa4Matches = buildUniqueExactGa4Matches(ga4Properties ?? []);
   const allocateDiscoveryId = createDiscoveryIdAllocator(existingSiteIds);
 
   // Debug: return raw GA4 property names
   if (new URL(req.url).searchParams.has('ga4debug')) {
-    return NextResponse.json(Object.fromEntries(
+    const response = NextResponse.json(Object.fromEntries(
       (ga4Properties ?? [])
         .map((property) => {
           const propertyId = property.propertyId.trim();
@@ -192,6 +203,10 @@ export async function GET(req: Request) {
         })
         .filter((entry): entry is [string, string] => entry !== null),
     ));
+    if (ga4DiscoveryFailed) {
+      response.headers.set(DISCOVERY_WARNING_HEADER, GA4_DISCOVERY_WARNING);
+    }
+    return response;
   }
 
   // Build proposed sites from the union of SC domains and GA4 properties not already in DB
@@ -280,5 +295,9 @@ export async function GET(req: Request) {
       }];
     });
 
-  return NextResponse.json([...proposed, ...backfill]);
+  const response = NextResponse.json([...proposed, ...backfill]);
+  if (ga4DiscoveryFailed) {
+    response.headers.set(DISCOVERY_WARNING_HEADER, GA4_DISCOVERY_WARNING);
+  }
+  return response;
 }
