@@ -121,6 +121,7 @@ beforeEach(() => {
       },
       desktop: null,
     },
+    failures: [],
   });
   mockGetPerformanceOverviewRows.mockResolvedValue({
     rows: [
@@ -324,6 +325,53 @@ describe('Performance site detail page', () => {
       params: Promise.resolve({ site: 'missing' }),
       searchParams: Promise.resolve({ days: '7' }),
     })).rejects.toThrow('notFound');
+  });
+
+  it('renders the partial-failure banner for degraded site performance data', async () => {
+    mockGetPerformanceSiteData.mockResolvedValueOnce({
+      site: {
+        id: 'borged-io',
+        name: 'Borged',
+        domain: 'borged.io',
+      },
+      days: 7,
+      propertyId: 'prop-1',
+      url: 'https://borged.io',
+      source: 'psi-field',
+      heroSource: 'CrUX field (mobile)',
+      hasRum: false,
+      propagating: false,
+      eventCount: 0,
+      needsKey: false,
+      overall: {
+        LCP: { value: 2400, rating: 'good', sampleCount: 0 },
+      },
+      byDevice: null,
+      slowestPages: [],
+      trend: [],
+      psi: {
+        mobile: {
+          url: 'https://borged.io',
+          strategy: 'mobile',
+          performanceScore: 90,
+          field: {
+            LCP: { value: 2400, rating: 'good' },
+          },
+          lab: {},
+          fetchedAt: Date.now(),
+        },
+        desktop: null,
+      },
+      failures: ['RUM data', 'PageSpeed Insights desktop'],
+    });
+
+    const html = renderToStaticMarkup(await PerfSiteDetail({
+      params: Promise.resolve({ site: 'borged-io' }),
+      searchParams: Promise.resolve({ days: '7' }),
+    }));
+
+    expect(html).toContain('Some data sources are unavailable');
+    expect(html).toContain('RUM data, PageSpeed Insights desktop');
   });
 
   it('renders PSI fallback cards and opens the setup guide when RUM is unavailable', async () => {

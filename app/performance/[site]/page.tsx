@@ -15,6 +15,7 @@ import CwvSetupGuide from '../../components/cwv-setup-guide';
 import { CwvCell } from '../../components/cwv-cell';
 import { CwvMetricsCards } from '../../components/cwv-metrics-cards';
 import { DataTable, type DataTableColumn } from '../../components/data-table';
+import { PartialFailureBanner } from '../../components/partial-failure-banner';
 
 export const revalidate = 300;
 
@@ -40,6 +41,7 @@ export default async function PerfSiteDetail({
   if (!perf) notFound();
 
   const { site, days, source, hasRum, propagating, eventCount, heroSource, overall, byDevice, slowestPages, trend, psi } = perf;
+  const partialFailures = perf.failures ?? [];
   const sourceBadge = SOURCE_BADGE[source];
   const hasOverallMetrics = CWV_METRIC_ORDER.some((name) => overall[name]);
   const trendData = trend.map((point) => ({
@@ -81,6 +83,8 @@ export default async function PerfSiteDetail({
           <TimeRange options={[{ value: '7', label: '7d' }, { value: '28', label: '28d' }]} defaultValue="7" />
         </div>
       </div>
+
+      <PartialFailureBanner failures={partialFailures} />
 
       {psiNeedsKey && (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">

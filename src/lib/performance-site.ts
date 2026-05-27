@@ -59,6 +59,7 @@ interface PerformanceSiteData {
     mobile: PsiData | null;
     desktop: PsiData | null;
   };
+  failures: string[];
 }
 
 function normalizeDays(days?: number): number {
@@ -137,11 +138,17 @@ function firstPsiWithMetrics(...results: Array<PsiData | null>): ReturnType<type
   return firstFallback ?? { metrics: {}, source: 'none', heroSource: 'no data' };
 }
 
-async function providerOrNull<T>(label: string, promise: Promise<T | null>): Promise<T | null> {
+async function providerOrNull<T>(
+  label: string,
+  promise: Promise<T | null>,
+  failures?: string[],
+  failureLabel: string = label,
+): Promise<T | null> {
   try {
     return await promise;
   } catch (error) {
     console.error(`[PerformanceSite] ${label}:`, error);
+    failures?.push(failureLabel);
     return null;
   }
 }
@@ -151,25 +158,31 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
   if (!site) return null;
 
   const days = normalizeDays(requestedDays);
-  const discovered = await providerOrNull(`GA4 discovery ${site.id}`, discoverPropertyIds());
+  const failures: string[] = [];
+  const discovered = await providerOrNull(
+    `GA4 discovery ${site.id}`,
+    discoverPropertyIds(),
+    failures,
+    'GA4 property discovery',
+  );
   const propertyId = (discovered ?? []).find(candidate => candidate.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
   const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
 
   const [rum, byPage, trend, eventCount, psiMobile, psiDesktop] = await Promise.all([
     propertyId
-      ? providerOrNull(`RUM ${site.id}`, cachedGetRumCoreWebVitals(propertyId, days))
+      ? providerOrNull(`RUM ${site.id}`, cachedGetRumCoreWebVitals(propertyId, days), failures, 'RUM data')
       : Promise.resolve(null),
     propertyId
-      ? providerOrNull(`RUM pages ${site.id}`, cachedGetRumCwvByPage(propertyId, days, 20))
+      ? providerOrNull(`RUM pages ${site.id}`, cachedGetRumCwvByPage(propertyId, days, 20), failures, 'RUM slowest pages')
       : Promise.resolve(null),
     propertyId
-      ? providerOrNull(`RUM trend ${site.id}`, cachedGetRumCwvTrend(propertyId, Math.max(days, 30)))
+      ? providerOrNull(`RUM trend ${site.id}`, cachedGetRumCwvTrend(propertyId, Math.max(days, 30)), failures, 'RUM trend')
       : Promise.resolve(null),
     propertyId
-      ? providerOrNull(`CWV event count ${site.id}`, cachedGetCwvEventCount(propertyId, days))
+      ? providerOrNull(`CWV event count ${site.id}`, cachedGetCwvEventCount(propertyId, days), failures, 'CWV event count')
       : Promise.resolve(null),
-    providerOrNull(`PSI mobile ${site.id}`, cachedGetPagespeed(url, 'mobile')),
-    providerOrNull(`PSI desktop ${site.id}`, cachedGetPagespeed(url, 'desktop')),
+    providerOrNull(`PSI mobile ${site.id}`, cachedGetPagespeed(url, 'mobile'), failures, 'PageSpeed Insights mobile'),
+    providerOrNull(`PSI desktop ${site.id}`, cachedGetPagespeed(url, 'desktop'), failures, 'PageSpeed Insights desktop'),
   ]);
 
   const hasRum = !!rum?.hasData;
@@ -211,6 +224,7 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
       mobile: psiMobile,
       desktop: psiDesktop,
     },
+    failures,
   };
 }
 

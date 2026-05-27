@@ -208,6 +208,12 @@ describe('getPerformanceSiteData', () => {
     expect(result!.slowestPages).toEqual([]);
     expect(result!.trend).toEqual([]);
     expect(result!.psi.desktop).toBeNull();
+    expect(result!.failures).toEqual([
+      'RUM data',
+      'RUM slowest pages',
+      'RUM trend',
+      'PageSpeed Insights desktop',
+    ]);
     expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] RUM borged-io:', expect.any(Error));
     expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] RUM pages borged-io:', expect.any(Error));
     expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] RUM trend borged-io:', expect.any(Error));
@@ -235,6 +241,7 @@ describe('getPerformanceSiteData', () => {
     expect(result).not.toBeNull();
     expect(result!.propertyId).toBe('site-prop');
     expect(result!.source).toBe('rum');
+    expect(result!.failures).toEqual(['GA4 property discovery']);
     expect(vi.mocked(cachedGetRumCoreWebVitals)).toHaveBeenCalledWith('site-prop', 7);
     expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] GA4 discovery borged-io:', expect.any(Error));
     consoleError.mockRestore();

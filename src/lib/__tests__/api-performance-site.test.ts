@@ -34,6 +34,7 @@ describe('GET /api/performance/[site]', () => {
       slowestPages: [],
       trend: [],
       psi: { mobile: null, desktop: null },
+      failures: [],
     });
 
     const res = await GET(getReq('http://localhost/api/performance/borged-io?days=28'), {
@@ -66,6 +67,7 @@ describe('GET /api/performance/[site]', () => {
       slowestPages: [],
       trend: [],
       psi: { mobile: null, desktop: null },
+      failures: [],
     });
 
     const res = await GET(getReq('http://localhost/api/performance/borged-io?days=abc'), {
