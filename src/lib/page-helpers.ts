@@ -23,3 +23,18 @@ export function loadSyncOrFallback<T>(
     return fallback;
   }
 }
+
+export type FlaggedLoad<T> = { value: T; failed: boolean };
+
+export async function loadOrFlag<T>(
+  label: string,
+  promise: Promise<T>,
+  fallback: T,
+): Promise<FlaggedLoad<T>> {
+  try {
+    return { value: await promise, failed: false };
+  } catch (error) {
+    console.error(`[${label}]`, error);
+    return { value: fallback, failed: true };
+  }
+}

@@ -50,7 +50,8 @@ describe('AlertRulesManager', () => {
     expect(html).toContain('aria-label="Alert site"');
     expect(html).toContain('aria-label="Alert metric"');
     expect(html).toContain('aria-label="Drop threshold percent"');
-    expect(html).toContain('rounded border-neutral-600');
+    expect(html).toContain('aria-label="Alert channels"');
+    expect(html).toContain('aria-pressed="true"');
   });
 
   it('renders a structured skeleton while rules are loading', () => {

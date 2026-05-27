@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, FormButton, FormCheckbox, FormInput, FormSelect, TextButton } from '@/components/ui';
+import { Badge, FormButton, FormInput, FormSelect, TextButton, ToggleButtonGroup } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -19,6 +19,11 @@ type FormState = {
 const METRIC_OPTIONS: Array<{ value: AlertMetric; label: string }> = [
   { value: 'sc_clicks', label: 'SC clicks' },
   { value: 'ga4_sessions', label: 'GA4 sessions' },
+];
+
+const CHANNEL_OPTIONS: Array<{ value: AlertChannel; label: string }> = [
+  { value: 'email', label: 'email' },
+  { value: 'webhook', label: 'webhook' },
 ];
 
 export function isMetricBlockedBySite(metric: AlertMetric, site: Pick<Site, 'searchConsole'> | undefined): boolean {
@@ -317,17 +322,12 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
           />
         </div>
 
-        <div className="flex flex-wrap gap-4 text-sm text-neutral-300">
-          {(['email', 'webhook'] as AlertChannel[]).map((channel) => (
-            <label key={channel} className="flex items-center gap-2 cursor-pointer">
-              <FormCheckbox
-                checked={form.channels.includes(channel)}
-                onChange={() => toggleChannel(channel)}
-              />
-              <span>{channel}</span>
-            </label>
-          ))}
-        </div>
+        <ToggleButtonGroup
+          ariaLabel="Alert channels"
+          options={CHANNEL_OPTIONS}
+          activeValues={new Set(form.channels)}
+          onToggle={toggleChannel}
+        />
 
         {formMetricBlocked && (
           <p className="text-xs text-amber-300">

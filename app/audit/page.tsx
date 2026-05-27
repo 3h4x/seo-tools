@@ -8,7 +8,7 @@ import { detectAllDecay, type DecaySeverity } from '@/lib/decay';
 import { formatRelativeTime } from '@/lib/format';
 import { getCwvAuditSummary, type CwvAuditSummary } from '@/lib/performance-site';
 import { CWV_RATING_COLORS, CWV_THRESHOLDS, type CwvMetricName } from '@/lib/constants';
-import { loadOrFallback } from '@/lib/page-helpers';
+import { loadOrFallback, loadOrFlag } from '@/lib/page-helpers';
 import { statusDots, accentBorder, StatusBadge } from '../components/audit/check-card';
 import { MetricCard } from '../components/metric-card';
 import { CopyButton } from '../components/copy-button';
@@ -87,12 +87,21 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const period = parseAllowedIntegerParam(sp.period, AUDIT_DECAY_PERIODS, 7) as 7 | 30;
 
-  const [audits, managedSites, decayResults, discoveredSites] = await Promise.all([
-    loadOrFallback('AuditPage audits', cachedAuditAllSites(), []),
-    loadOrFallback('AuditPage managed sites', getManagedSites(), []),
-    loadOrFallback('AuditPage decay', detectAllDecay(period), []),
-    loadOrFallback('AuditPage GA4 discovery', discoverPropertyIds(), []),
+  const [auditsResult, managedSitesResult, decayResult, discoveredResult] = await Promise.all([
+    loadOrFlag('AuditPage audits', cachedAuditAllSites(), []),
+    loadOrFlag('AuditPage managed sites', getManagedSites(), []),
+    loadOrFlag('AuditPage decay', detectAllDecay(period), []),
+    loadOrFlag('AuditPage GA4 discovery', discoverPropertyIds(), []),
   ]);
+  const audits = auditsResult.value;
+  const managedSites = managedSitesResult.value;
+  const decayResults = decayResult.value;
+  const discoveredSites = discoveredResult.value;
+  const partialFailures: string[] = [];
+  if (auditsResult.failed) partialFailures.push('site audits');
+  if (managedSitesResult.failed) partialFailures.push('managed sites');
+  if (decayResult.failed) partialFailures.push('content decay');
+  if (discoveredResult.failed) partialFailures.push('GA4 discovery');
 
   if (managedSites.length === 0) {
     return (
@@ -100,7 +109,16 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         <div>
           <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
         </div>
-        <NoSitesNotice variant="inline" />
+        {managedSitesResult.failed ? (
+          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-6">
+            <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
+            <p className="text-neutral-500 text-sm mt-2">
+              The sites table failed to read. Check the server logs and use Refresh to retry.
+            </p>
+          </div>
+        ) : (
+          <NoSitesNotice variant="inline" />
+        )}
       </div>
     );
   }
@@ -112,6 +130,16 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
           <p className="text-neutral-500 text-sm mt-1">Live checks · {managedSites.length} sites</p>
         </div>
+        {partialFailures.length > 0 && (
+          <div
+            role="status"
+            className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+          >
+            <span className="font-semibold">Some data sources are unavailable: </span>
+            <span className="text-amber-100/80">{partialFailures.join(', ')}</span>
+            <span className="text-amber-100/60"> — use Refresh to retry.</span>
+          </div>
+        )}
         <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-6">
           <p className="text-amber-400 font-semibold">No audit data available</p>
           <p className="text-neutral-500 text-sm mt-2">
@@ -198,6 +226,16 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           </Link>
         </div>
       </div>
+      {partialFailures.length > 0 && (
+        <div
+          role="status"
+          className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+        >
+          <span className="font-semibold">Some data sources are unavailable: </span>
+          <span className="text-amber-100/80">{partialFailures.join(', ')}</span>
+          <span className="text-amber-100/60"> — use Refresh to retry.</span>
+        </div>
+      )}
       <div className="flex gap-6 items-center">
         <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 flex items-center gap-5 shrink-0">
           <div className="relative size-24">

@@ -230,6 +230,10 @@ describe('Audit page', () => {
       expect(html).toContain('No audit data available');
       expect(html).toContain('Live checks · 1 sites');
       expect(html).not.toContain('No sites configured');
+      expect(html).toContain('Some data sources are unavailable');
+      expect(html).toContain('site audits');
+      expect(html).toContain('content decay');
+      expect(html).toContain('GA4 discovery');
       expect(mockGetCwvAuditSummary).not.toHaveBeenCalled();
       expect(consoleError).toHaveBeenCalledWith('[AuditPage audits]', expect.any(Error));
       expect(consoleError).toHaveBeenCalledWith('[AuditPage decay]', expect.any(Error));
