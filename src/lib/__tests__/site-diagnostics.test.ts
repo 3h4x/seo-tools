@@ -138,3 +138,77 @@ describe('getSiteDiagnostics', () => {
     ]);
   });
 });
+
+describe('classifyProviderError — message-based and fallback paths', () => {
+  const site = {
+    id: 'site-x',
+    name: 'Site X',
+    domain: 'x.example.com',
+    searchConsole: true,
+    ga4PropertyId: 'properties/1',
+    testPages: ['/'],
+  };
+
+  beforeEach(() => {
+    mockGetManagedSites.mockResolvedValue([site]);
+    mockGa4RunReport.mockResolvedValue([{}]);
+  });
+
+  it.each([
+    [{ code: 'FORBIDDEN' }, 'permission-error'],
+    [{ code: 'forbidden' }, 'permission-error'],
+    [{ message: 'Forbidden: request lacks scopes' }, 'permission-error'],
+    [{ message: 'Not Authorized to access this resource' }, 'permission-error'],
+    [{ message: 'Access Denied by policy' }, 'permission-error'],
+    [{ message: 'Resource Not Found in the system' }, 'not-found'],
+    [{ message: 'Requested entity was not found' }, 'not-found'],
+    [{ message: 'Generic transport failure' }, 'provider-error'],
+    [{ code: 999 }, 'provider-error'],
+  ])('classifies %o via SC error → status %s', async (error, expectedStatus) => {
+    mockScSitesGet.mockRejectedValue(error);
+
+    const result = await getSiteDiagnostics();
+
+    expect(result[0].searchConsole.status).toBe(expectedStatus);
+  });
+
+  it('extracts message from Error instances for classification', async () => {
+    mockScSitesGet.mockRejectedValue(new Error('access denied by IAM policy'));
+
+    const result = await getSiteDiagnostics();
+
+    expect(result[0].searchConsole.status).toBe('permission-error');
+  });
+
+  it('falls back to provider-error when Error has unrecognized message', async () => {
+    mockScSitesGet.mockRejectedValue(new Error('unexpected quota exceeded'));
+
+    const result = await getSiteDiagnostics();
+
+    expect(result[0].searchConsole.status).toBe('provider-error');
+  });
+
+  it('uses Unknown provider error when error has no message property and is not an Error', async () => {
+    mockScSitesGet.mockRejectedValue({ code: 999 });
+
+    const result = await getSiteDiagnostics();
+
+    expect(result[0].searchConsole.status).toBe('provider-error');
+  });
+
+  it('normalizes numeric string code "403" the same as numeric 403', async () => {
+    mockScSitesGet.mockRejectedValue({ code: '403', message: '' });
+
+    const result = await getSiteDiagnostics();
+
+    expect(result[0].searchConsole.status).toBe('permission-error');
+  });
+
+  it('normalizes numeric string code "404" the same as numeric 404', async () => {
+    mockScSitesGet.mockRejectedValue({ code: '404', message: '' });
+
+    const result = await getSiteDiagnostics();
+
+    expect(result[0].searchConsole.status).toBe('not-found');
+  });
+});

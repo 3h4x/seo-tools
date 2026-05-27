@@ -380,6 +380,108 @@ describe('alert delivery config', () => {
     expect(httpsRequestMock).not.toHaveBeenCalled();
   });
 
+  it('validateAlertDeliveryInput throws on invalid fromEmail', () => {
+    expect(() => validateAlertDeliveryInput({ fromEmail: 'not-an-email' })).toThrow(
+      'From email must be a valid email address',
+    );
+  });
+
+  it('validateAlertDeliveryInput accepts a valid fromEmail without throwing', () => {
+    expect(() => validateAlertDeliveryInput({ fromEmail: 'alerts@example.com' })).not.toThrow();
+  });
+
+  it('validateAlertDeliveryInput throws on invalid recipient email', () => {
+    expect(() => validateAlertDeliveryInput({ toEmail: 'bad@@email' })).toThrow(
+      'Invalid recipient email: bad@@email',
+    );
+  });
+
+  it('validateAlertDeliveryInput throws on invalid email in a comma-separated recipient list', () => {
+    expect(() =>
+      validateAlertDeliveryInput({ toEmail: 'ops@example.com, notanemail' }),
+    ).toThrow('Invalid recipient email: notanemail');
+  });
+
+  it('validateAlertDeliveryInput accepts multiple valid recipients separated by comma', () => {
+    const result = validateAlertDeliveryInput({
+      toEmail: 'ops@example.com, dev@example.com',
+    });
+    expect(result.toEmail).toBe('ops@example.com, dev@example.com');
+  });
+
+  it('validateAlertDeliveryInput accepts multiple valid recipients separated by newline', () => {
+    const result = validateAlertDeliveryInput({
+      toEmail: 'ops@example.com\ndev@example.com',
+    });
+    expect(result.toEmail).toBe('ops@example.com\ndev@example.com');
+  });
+
+  it('captures error when email config is incomplete (missing resendApiKey)', async () => {
+    setConfig('alert_from_email', 'alerts@example.com');
+    setConfig('alert_to_email', 'ops@example.com');
+
+    const result = await sendAlertNotifications(['email'], payload);
+
+    expect(result.deliveredChannels).toEqual([]);
+    expect(result.deliveryError).toContain('email:');
+    expect(result.deliveryError).toContain('Resend API key');
+  });
+
+  it('captures error when email config is incomplete (missing fromEmail)', async () => {
+    setConfig('alert_resend_api_key', 're_123');
+    setConfig('alert_to_email', 'ops@example.com');
+
+    const result = await sendAlertNotifications(['email'], payload);
+
+    expect(result.deliveredChannels).toEqual([]);
+    expect(result.deliveryError).toContain('email:');
+    expect(result.deliveryError).toContain('from email');
+  });
+
+  it('captures error when email config is incomplete (no recipients)', async () => {
+    setConfig('alert_resend_api_key', 're_123');
+    setConfig('alert_from_email', 'alerts@example.com');
+
+    const result = await sendAlertNotifications(['email'], payload);
+
+    expect(result.deliveredChannels).toEqual([]);
+    expect(result.deliveryError).toContain('email:');
+    expect(result.deliveryError).toContain('recipient');
+  });
+
+  it('captures error when webhook URL is not configured', async () => {
+    const result = await sendAlertNotifications(['webhook'], payload);
+
+    expect(result.deliveredChannels).toEqual([]);
+    expect(result.deliveryError).toContain('webhook:');
+    expect(result.deliveryError).toContain('webhook URL');
+    expect(httpsRequestMock).not.toHaveBeenCalled();
+  });
+
+  it('delivers both channels successfully and returns no error', async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 202 }));
+    vi.stubGlobal('fetch', fetchMock);
+    setConfig('alert_resend_api_key', 're_123');
+    setConfig('alert_from_email', 'alerts@example.com');
+    setConfig('alert_to_email', 'ops@example.com');
+    setConfig('alert_webhook_url', 'https://hooks.example.com/seo-alerts');
+
+    const result = await sendAlertNotifications(['email', 'webhook'], payload);
+
+    expect(result.deliveredChannels).toEqual(['email', 'webhook']);
+    expect(result.deliveryError).toBeNull();
+  });
+
+  it('accumulates errors from both channels with " | " separator when both fail', async () => {
+    setConfig('alert_webhook_url', 'https://127.0.0.1/seo-alerts');
+
+    const result = await sendAlertNotifications(['email', 'webhook'], payload);
+
+    expect(result.deliveredChannels).toEqual([]);
+    expect(result.deliveryError).toContain(' | ');
+    expect(result.deliveryError).toMatch(/^email:.*\|.*webhook:/);
+  });
+
   it('pins webhook delivery to the public address validated before the request', async () => {
     lookupMock.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
     setConfig('alert_webhook_url', 'https://hooks.example.com/seo-alerts');
