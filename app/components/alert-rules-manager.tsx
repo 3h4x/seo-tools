@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, FormButton, FormInput, FormSelect, TextButton, ToggleButtonGroup } from '@/components/ui';
+import { Badge, FormButton, FormInput, FormSelect, Spinner, TextButton, ToggleButtonGroup } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -342,6 +342,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
           onClick={() => void handleSave()}
           disabled={saving || formMetricBlocked}
         >
+          {saving && <Spinner />}
           {saving ? 'Saving…' : form.id ? 'Update rule' : 'Create rule'}
         </FormButton>
       </div>
