@@ -92,6 +92,14 @@ function SearchConsoleDisabledNotice() {
   );
 }
 
+function ProviderErrorBadge() {
+  return (
+    <Badge size="xs" shape="rounded" uppercase className="border-red-500/40 bg-red-500/10 text-red-300">
+      data unavailable
+    </Badge>
+  );
+}
+
 export default async function SiteDashboardPage({
   params,
   searchParams,
@@ -185,7 +193,7 @@ export default async function SiteDashboardPage({
         <div>
           <div className="flex items-center gap-3 mb-3">
             <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Search Console</h2>
-            {scError && <span className="text-xs text-red-400">data unavailable</span>}
+            {scError && <ProviderErrorBadge />}
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <MetricCard icon={Icons.clicks} label="Clicks" current={sc?.current.clicks ?? 0} previous={sc?.previous.clicks} accent="border-emerald-500" />
@@ -200,7 +208,7 @@ export default async function SiteDashboardPage({
       <div>
         <div className="flex items-center gap-3 mb-3">
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">GA4 Analytics</h2>
-          {ga4Error && <span className="text-xs text-red-400">data unavailable</span>}
+          {ga4Error && <ProviderErrorBadge />}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <MetricCard icon={Icons.users} label="Users" current={ga4?.current.users ?? 0} previous={ga4?.previous.users} accent="border-blue-500" />
