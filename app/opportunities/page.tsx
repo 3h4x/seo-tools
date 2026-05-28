@@ -8,7 +8,7 @@ import {
 } from '@/lib/opportunities';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFlag } from '@/lib/page-helpers';
-import { FilterChipGroup } from '@/components/ui';
+import { FilterChipGroup, Notice } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import TimeRange from '../components/time-range';
@@ -137,10 +137,14 @@ export default async function OpportunitiesPage({
       )}
 
       {top.length === 0 ? (
-        <div className={emptyClassName}>
+        <Notice
+          size="none"
+          tone={sitesResult.failed ? 'danger' : 'neutral'}
+          className={emptyClassName}
+        >
           <p className={emptyTitleClassName}>{emptyTitle}</p>
           <p className="text-sm">{emptyMessage}</p>
-        </div>
+        </Notice>
       ) : (
         <>
           <div className="text-xs text-neutral-500">
