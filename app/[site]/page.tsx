@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getManagedSite, getSCUrl } from '@/lib/sites';
 import { getCwvAuditSummary } from '@/lib/performance-site';
-import { discoverPropertyIds, cachedGetAnalytics } from '@/lib/ga4';
+import { discoverPropertyIdsWithStatus, cachedGetAnalytics } from '@/lib/ga4';
 import {
   cachedGetSearchConsoleDataWithComparison,
   cachedGetSearchConsolePages,
@@ -118,8 +118,12 @@ export default async function SiteDashboardPage({
   const hasSearchConsole = site.searchConsole !== false;
 
   // Discover GA4 property ID
-  const discoveredResult = await loadOrFlag('SiteDashboard GA4 discovery', discoverPropertyIds(), []);
-  const discovered = discoveredResult.value;
+  const discoveredResult = await loadOrFlag(
+    'SiteDashboard GA4 discovery',
+    discoverPropertyIdsWithStatus(),
+    { sites: [], failed: false },
+  );
+  const discovered = discoveredResult.value.sites;
   const propertyId = discovered.find((s) => s.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
 
   const scUrl = getSCUrl(site);
@@ -171,7 +175,7 @@ export default async function SiteDashboardPage({
   const keywordDeltas: KeywordDelta[] = keywordDeltasResult.value;
 
   const partialFailures: string[] = [];
-  if (discoveredResult.failed) partialFailures.push('GA4 discovery');
+  if (discoveredResult.failed || discoveredResult.value.failed) partialFailures.push('GA4 discovery');
   if (rawAuditResult.failed) partialFailures.push('site audit');
   if (sitemapSubmissionsResult.failed) partialFailures.push('sitemap submissions');
   if (scComparisonResult.failed) partialFailures.push('Search Console metrics');

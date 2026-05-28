@@ -1,7 +1,7 @@
 import { AnalyticsAdminServiceClient } from '@google-analytics/admin';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getAuth, hasGoogleCredentials } from './google-auth';
-import { getManagedSites } from './sites';
+import { getManagedSites, type Site } from './sites';
 import { clearCacheEntry, withCache, type ProviderResult } from './db';
 import { normalizeGa4PropertyId } from './ga4-property';
 import {
@@ -20,20 +20,15 @@ function getDataClient() {
 
 async function fetchDiscoveredGa4Properties(): Promise<DiscoveredGa4Property[] | null> {
   if (!hasGoogleCredentials()) return null;
-  try {
-    const [summaries] = await getAdminClient().listAccountSummaries({});
-    return summaries.flatMap((account) => (
-      (account.propertySummaries ?? []).flatMap((property) => {
-        const displayName = property.displayName?.trim();
-        const propertyId = normalizeGa4PropertyId(property.property);
-        if (!displayName || !propertyId) return [];
-        return [{ displayName, propertyId }];
-      })
-    ));
-  } catch (error) {
-    console.error('Error discovering GA4 properties:', error);
-    return null;
-  }
+  const [summaries] = await getAdminClient().listAccountSummaries({});
+  return summaries.flatMap((account) => (
+    (account.propertySummaries ?? []).flatMap((property) => {
+      const displayName = property.displayName?.trim();
+      const propertyId = normalizeGa4PropertyId(property.property);
+      if (!displayName || !propertyId) return [];
+      return [{ displayName, propertyId }];
+    })
+  ));
 }
 
 export async function cachedGetDiscoveredGa4Properties(): Promise<DiscoveredGa4Property[] | null> {
@@ -48,20 +43,35 @@ export function clearGa4DiscoveryCache(): void {
   clearCacheEntry(GA4_DISCOVERY_CACHE_KEY, GA4_DISCOVERY_CACHE_SITE_ID);
 }
 
-export async function discoverPropertyIds() {
-  const sites = await getManagedSites();
-  const properties = await cachedGetDiscoveredGa4Properties().catch((error) => {
-    console.error('Error discovering GA4 properties:', error);
-    return null;
-  });
-  if (!properties) return sites;
+export interface Ga4PropertyDiscoveryResult {
+  sites: Site[];
+  failed: boolean;
+}
 
-  return sites.map((site) => {
+export async function discoverPropertyIdsWithStatus(): Promise<Ga4PropertyDiscoveryResult> {
+  const sites = await getManagedSites();
+  let properties: DiscoveredGa4Property[] | null;
+  try {
+    properties = await cachedGetDiscoveredGa4Properties();
+  } catch (error) {
+    console.error('Error discovering GA4 properties:', error);
+    return { sites, failed: true };
+  }
+  if (!properties) return { sites, failed: false };
+
+  return {
+    failed: false,
+    sites: sites.map((site) => {
       return {
         ...site,
         ga4PropertyId: resolveSiteGa4PropertyId(site, properties),
       };
-  });
+    }),
+  };
+}
+
+export async function discoverPropertyIds(): Promise<Site[]> {
+  return (await discoverPropertyIdsWithStatus()).sites;
 }
 
 interface GA4Metrics {

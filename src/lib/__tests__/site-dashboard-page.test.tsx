@@ -70,7 +70,7 @@ vi.mock('@/lib/performance-site', () => ({
 }));
 
 vi.mock('@/lib/ga4', () => ({
-  discoverPropertyIds: mockDiscoverPropertyIds,
+  discoverPropertyIdsWithStatus: mockDiscoverPropertyIds,
   cachedGetAnalytics: mockCachedGetAnalytics,
 }));
 
@@ -288,7 +288,7 @@ beforeEach(() => {
   });
   mockGetSCUrl.mockReturnValue('sc-domain:site1.test');
   mockGetCwvAuditSummary.mockResolvedValue(null);
-  mockDiscoverPropertyIds.mockResolvedValue([]);
+  mockDiscoverPropertyIds.mockResolvedValue({ sites: [], failed: false });
   mockCachedGetAnalytics.mockResolvedValue(makeAnalytics());
   mockCachedGetSearchConsoleDataWithComparison.mockResolvedValue(makeSearchConsoleComparison());
   mockCachedGetSearchConsolePages.mockResolvedValue([]);

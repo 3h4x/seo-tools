@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../ga4', () => ({
-  discoverPropertyIds: vi.fn(),
+  discoverPropertyIdsWithStatus: vi.fn(),
 }));
 
 vi.mock('../pagespeed', () => ({
@@ -19,7 +19,7 @@ vi.mock('../sites', () => ({
   getManagedSite: vi.fn(),
 }));
 
-import { discoverPropertyIds } from '../ga4';
+import { discoverPropertyIdsWithStatus } from '../ga4';
 import { cachedGetPagespeed } from '../pagespeed';
 import {
   cachedGetCwvEventCount,
@@ -42,7 +42,10 @@ const site = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getManagedSite).mockResolvedValue(site);
-  vi.mocked(discoverPropertyIds).mockResolvedValue([{ ...site, ga4PropertyId: 'discovered-prop' }]);
+  vi.mocked(discoverPropertyIdsWithStatus).mockResolvedValue({
+    sites: [{ ...site, ga4PropertyId: 'discovered-prop' }],
+    failed: false,
+  });
   vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValue(null);
   vi.mocked(cachedGetRumCwvByPage).mockResolvedValue([]);
   vi.mocked(cachedGetRumCwvTrend).mockResolvedValue([]);
@@ -223,7 +226,7 @@ describe('getPerformanceSiteData', () => {
 
   it('falls back to the configured property id when GA4 discovery fails', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    vi.mocked(discoverPropertyIds).mockRejectedValueOnce(new Error('discovery unavailable'));
+    vi.mocked(discoverPropertyIdsWithStatus).mockRejectedValueOnce(new Error('discovery unavailable'));
     vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce({
       hasData: true,
       overall: {
@@ -376,7 +379,7 @@ describe('getCwvAuditSummary', () => {
 
   it('keeps the audit summary available when GA4 discovery fails', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    vi.mocked(discoverPropertyIds).mockRejectedValueOnce(new Error('discovery unavailable'));
+    vi.mocked(discoverPropertyIdsWithStatus).mockRejectedValueOnce(new Error('discovery unavailable'));
     vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce({
       hasData: true,
       overall: {

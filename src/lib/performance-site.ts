@@ -1,4 +1,4 @@
-import { discoverPropertyIds } from './ga4';
+import { discoverPropertyIdsWithStatus } from './ga4';
 import { cachedGetPagespeed, type PsiData } from './pagespeed';
 import {
   cachedGetCwvEventCount,
@@ -161,11 +161,13 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
   const failures: string[] = [];
   const discovered = await providerOrNull(
     `GA4 discovery ${site.id}`,
-    discoverPropertyIds(),
+    discoverPropertyIdsWithStatus(),
     failures,
     'GA4 property discovery',
   );
-  const propertyId = (discovered ?? []).find(candidate => candidate.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
+  if (discovered?.failed) failures.push('GA4 property discovery');
+  const discoveredSites = discovered?.sites ?? [];
+  const propertyId = discoveredSites.find(candidate => candidate.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
   const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
 
   const [rum, byPage, trend, eventCount, psiMobile, psiDesktop] = await Promise.all([
@@ -238,8 +240,9 @@ export async function getCwvAuditSummary(siteId: string): Promise<CwvAuditSummar
   if (!site) return null;
 
   const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
-  const discovered = await providerOrNull(`audit GA4 discovery ${site.id}`, discoverPropertyIds());
-  const propertyId = (discovered ?? []).find(c => c.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
+  const discovered = await providerOrNull(`audit GA4 discovery ${site.id}`, discoverPropertyIdsWithStatus());
+  const discoveredSites = discovered?.sites ?? [];
+  const propertyId = discoveredSites.find(c => c.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
 
   const [rum, eventCount, psiMobile] = await Promise.all([
     propertyId

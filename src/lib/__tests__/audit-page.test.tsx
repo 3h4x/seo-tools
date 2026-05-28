@@ -53,7 +53,7 @@ vi.mock('@/lib/sites', () => ({
 }));
 
 vi.mock('@/lib/ga4', () => ({
-  discoverPropertyIds: mockDiscoverPropertyIds,
+  discoverPropertyIdsWithStatus: mockDiscoverPropertyIds,
 }));
 
 vi.mock('@/lib/gaps', () => ({
@@ -172,7 +172,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockSummarizeCanonicalChecks.mockReturnValue({ status: 'pass', compactLabel: 'All canonical' });
   mockFormatRelativeTime.mockReturnValue('moments ago');
-  mockDiscoverPropertyIds.mockResolvedValue([]);
+  mockDiscoverPropertyIds.mockResolvedValue({ sites: [], failed: false });
   mockLoadSiteGapSignals.mockResolvedValue({ days: 7 });
 });
 
@@ -256,10 +256,13 @@ describe('Audit page', () => {
       { id: 'site-a', name: 'Site A', domain: 'a.test', ga4PropertyId: 'site-prop-a', testPages: [] },
       { id: 'site-b', name: 'Site B', domain: 'b.test', ga4PropertyId: 'site-prop-b', testPages: [] },
     ]);
-    mockDiscoverPropertyIds.mockResolvedValue([
-      { id: 'site-a', ga4PropertyId: 'discovered-prop-a' },
-      { id: 'site-b', ga4PropertyId: 'discovered-prop-b' },
-    ]);
+    mockDiscoverPropertyIds.mockResolvedValue({
+      failed: false,
+      sites: [
+        { id: 'site-a', ga4PropertyId: 'discovered-prop-a' },
+        { id: 'site-b', ga4PropertyId: 'discovered-prop-b' },
+      ],
+    });
     mockLoadSiteGapSignals
       .mockResolvedValueOnce({
         days: 30,

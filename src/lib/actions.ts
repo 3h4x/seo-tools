@@ -3,7 +3,7 @@ import { detectAllDecay, type DecaySeverity } from './decay';
 import { getKeywordDropActions } from './db';
 import type { GapRecommendation, GapSeverity } from './gap-definitions';
 import { analyzeSiteGaps, createSiteGapSignals, loadSiteGapSignals } from './gaps';
-import { discoverPropertyIds } from './ga4';
+import { discoverPropertyIdsWithStatus } from './ga4';
 import { loadOrFlag } from './page-helpers';
 import { getManagedSites } from './sites';
 
@@ -98,18 +98,18 @@ function priorityFromDecay(severity: DecaySeverity): ActionQueueItem['priority']
 export async function loadActionQueue(days: number = 7): Promise<ActionQueueData> {
   const [managedSitesResult, discoveredSitesResult, auditsResult, decayResultsResult] = await Promise.all([
     loadOrFlag('ActionQueue managed sites', getManagedSites(), []),
-    loadOrFlag('ActionQueue GA4 discovery', discoverPropertyIds(), []),
+    loadOrFlag('ActionQueue GA4 discovery', discoverPropertyIdsWithStatus(), { sites: [], failed: false }),
     loadOrFlag('ActionQueue audits', cachedAuditAllSites(), []),
     loadOrFlag('ActionQueue decay', detectAllDecay(days === 30 ? 30 : 7), []),
   ]);
   const failures = [
     ...(managedSitesResult.failed ? ['Managed sites'] : []),
-    ...(discoveredSitesResult.failed ? ['GA4 discovery'] : []),
+    ...(discoveredSitesResult.failed || discoveredSitesResult.value.failed ? ['GA4 discovery'] : []),
     ...(auditsResult.failed ? ['SEO audits'] : []),
     ...(decayResultsResult.failed ? ['Content decay'] : []),
   ];
   const managedSites = managedSitesResult.value;
-  const discoveredSites = discoveredSitesResult.value;
+  const discoveredSites = discoveredSitesResult.value.sites;
   const audits = auditsResult.value;
   const decayResults = decayResultsResult.value;
 

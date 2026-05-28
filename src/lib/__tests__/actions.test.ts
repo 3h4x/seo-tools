@@ -49,7 +49,7 @@ vi.mock('../gaps', () => ({
 }));
 
 vi.mock('../ga4', () => ({
-  discoverPropertyIds: mockDiscoverPropertyIds,
+  discoverPropertyIdsWithStatus: mockDiscoverPropertyIds,
 }));
 
 vi.mock('../sites', () => ({
@@ -77,10 +77,13 @@ const siteB = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetManagedSites.mockResolvedValue([siteA, siteB]);
-  mockDiscoverPropertyIds.mockResolvedValue([
-    { ...siteA, ga4PropertyId: 'properties/111' },
-    { ...siteB, ga4PropertyId: 'properties/222' },
-  ]);
+  mockDiscoverPropertyIds.mockResolvedValue({
+    failed: false,
+    sites: [
+      { ...siteA, ga4PropertyId: 'properties/111' },
+      { ...siteB, ga4PropertyId: 'properties/222' },
+    ],
+  });
   mockCachedAuditAllSites.mockResolvedValue([]);
   mockDetectAllDecay.mockResolvedValue([]);
   mockLoadSiteGapSignals.mockResolvedValue({ scTopPages: [], days: 7 });
@@ -435,7 +438,10 @@ describe('loadActionQueue', () => {
 
   it('sorts by score and caps the queue at 100 items', async () => {
     mockGetManagedSites.mockResolvedValueOnce([siteA]);
-    mockDiscoverPropertyIds.mockResolvedValueOnce([{ ...siteA, ga4PropertyId: 'properties/111' }]);
+    mockDiscoverPropertyIds.mockResolvedValueOnce({
+      failed: false,
+      sites: [{ ...siteA, ga4PropertyId: 'properties/111' }],
+    });
     mockGetKeywordDropActions.mockReturnValueOnce(
       Array.from({ length: 101 }, (_, index) => {
         const clicks = index + 1;

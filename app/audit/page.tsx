@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { cachedAuditAllSites, type CheckStatus, type SiteAuditResult } from '@/lib/audit';
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getManagedSites } from '@/lib/sites';
-import { discoverPropertyIds } from '@/lib/ga4';
+import { discoverPropertyIdsWithStatus } from '@/lib/ga4';
 import type { GapSeverity, GapCategory } from '@/lib/gap-definitions';
 import { analyzeSiteGaps, loadSiteGapSignals } from '@/lib/gaps';
 import { detectAllDecay, type DecaySeverity } from '@/lib/decay';
@@ -94,17 +94,17 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     loadOrFlag('AuditPage audits', cachedAuditAllSites(), []),
     loadOrFlag('AuditPage managed sites', getManagedSites(), []),
     loadOrFlag('AuditPage decay', detectAllDecay(period), []),
-    loadOrFlag('AuditPage GA4 discovery', discoverPropertyIds(), []),
+    loadOrFlag('AuditPage GA4 discovery', discoverPropertyIdsWithStatus(), { sites: [], failed: false }),
   ]);
   const audits = auditsResult.value;
   const managedSites = managedSitesResult.value;
   const decayResults = decayResult.value;
-  const discoveredSites = discoveredResult.value;
+  const discoveredSites = discoveredResult.value.sites;
   const partialFailures: string[] = [];
   if (auditsResult.failed) partialFailures.push('site audits');
   if (managedSitesResult.failed) partialFailures.push('managed sites');
   if (decayResult.failed) partialFailures.push('content decay');
-  if (discoveredResult.failed) partialFailures.push('GA4 discovery');
+  if (discoveredResult.failed || discoveredResult.value.failed) partialFailures.push('GA4 discovery');
 
   if (managedSites.length === 0) {
     return (

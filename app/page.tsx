@@ -1,4 +1,4 @@
-import { discoverPropertyIds, cachedGetAnalytics } from '@/lib/ga4';
+import { discoverPropertyIdsWithStatus, cachedGetAnalytics } from '@/lib/ga4';
 import { cachedGetSearchConsoleData } from '@/lib/search-console';
 import { getSCUrl } from '@/lib/sites';
 import { formatSource } from '@/lib/format';
@@ -18,8 +18,12 @@ import { SortablePerformanceTable, type PerformanceRow } from './components/sort
 export const revalidate = 300;
 
 async function getSiteData(days: number) {
-  const sitesResult = await loadOrFlag('OverviewPage discoverPropertyIds', discoverPropertyIds(), []);
-  const sites = sitesResult.value;
+  const sitesResult = await loadOrFlag(
+    'OverviewPage discoverPropertyIds',
+    discoverPropertyIdsWithStatus(),
+    { sites: [], failed: false },
+  );
+  const sites = sitesResult.value.sites;
   let searchConsoleFailureCount = 0;
   let ga4FailureCount = 0;
 
@@ -51,7 +55,7 @@ async function getSiteData(days: number) {
   const sortedSites = enrichedSites.sort((a, b) => (b.ga4?.data?.current.users ?? 0) - (a.ga4?.data?.current.users ?? 0));
   return {
     sites: sortedSites,
-    discoveryFailed: sitesResult.failed,
+    discoveryFailed: sitesResult.failed || sitesResult.value.failed,
     searchConsoleFailureCount,
     ga4FailureCount,
   };

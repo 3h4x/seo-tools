@@ -35,7 +35,7 @@ const {
 }));
 
 vi.mock('@/lib/ga4', () => ({
-  discoverPropertyIds: mockDiscoverPropertyIds,
+  discoverPropertyIdsWithStatus: mockDiscoverPropertyIds,
   cachedGetAnalytics: mockCachedGetAnalytics,
 }));
 
@@ -121,7 +121,9 @@ function makeAnalytics(overrides: Partial<{
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetSCUrl.mockImplementation((site: { domain: string }) => `sc-domain:${site.domain}`);
-  mockDiscoverPropertyIds.mockResolvedValue([
+  mockDiscoverPropertyIds.mockResolvedValue({
+    failed: false,
+    sites: [
     {
       id: 'site-a',
       name: 'Site A',
@@ -136,7 +138,8 @@ beforeEach(() => {
       ga4PropertyId: 'properties/222',
       searchConsole: false,
     },
-  ]);
+    ],
+  });
   mockCachedGetAnalytics
     .mockResolvedValueOnce(makeAnalytics({
       current: { users: 25, sessions: 40, views: 60, bounceRate: 0.4, avgSessionDuration: 120 },

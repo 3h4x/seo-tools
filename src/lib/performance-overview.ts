@@ -1,4 +1,4 @@
-import { discoverPropertyIds } from './ga4';
+import { discoverPropertyIdsWithStatus } from './ga4';
 import { cachedGetCwvEventCount, cachedGetRumCoreWebVitals, type CwvMetricMap } from './performance';
 import { cachedGetPagespeed, type PsiData } from './pagespeed';
 import {
@@ -9,7 +9,7 @@ import {
 } from './constants';
 import { loadOrFlag } from './page-helpers';
 
-type PerformanceOverviewSite = Awaited<ReturnType<typeof discoverPropertyIds>>[number];
+type PerformanceOverviewSite = Awaited<ReturnType<typeof discoverPropertyIdsWithStatus>>['sites'][number];
 
 export interface PerformanceOverviewRow {
   id: string;
@@ -203,16 +203,16 @@ async function getPerformanceOverviewRow(
 }
 
 export async function getPerformanceOverviewRows(days: number): Promise<PerformanceOverviewResult> {
-  const discovered = await loadOrFlag<PerformanceOverviewSite[]>(
+  const discovered = await loadOrFlag(
     'PerformanceOverview discoverPropertyIds',
-    discoverPropertyIds(),
-    [],
+    discoverPropertyIdsWithStatus(),
+    { sites: [] as PerformanceOverviewSite[], failed: false },
   );
-  const sites = discovered.value;
+  const sites = discovered.value.sites;
   const results = await Promise.all(sites.map((site) => getPerformanceOverviewRow(site, days)));
 
   const failures: string[] = [];
-  if (discovered.failed) failures.push('site discovery');
+  if (discovered.failed || discovered.value.failed) failures.push('site discovery');
   const rumFailedCount = results.filter((r) => r.rumDataFailed).length;
   const psiFailedCount = results.filter((r) => r.psiFailed).length;
   if (rumFailedCount > 0) {

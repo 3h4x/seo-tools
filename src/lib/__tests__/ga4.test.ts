@@ -24,7 +24,7 @@ vi.mock('../sites', () => ({
 }));
 
 import { clearCacheEntry, withCache } from '../db';
-import { cachedGetDiscoveredGa4Properties, clearGa4DiscoveryCache, discoverPropertyIds, cachedGetAnalytics } from '../ga4';
+import { cachedGetDiscoveredGa4Properties, clearGa4DiscoveryCache, discoverPropertyIds, discoverPropertyIdsWithStatus, cachedGetAnalytics } from '../ga4';
 import { getManagedSites } from '../sites';
 
 beforeEach(() => {
@@ -121,6 +121,19 @@ describe('discoverPropertyIds', () => {
 
     const result = await discoverPropertyIds();
     expect(result).toEqual(sites);
+  });
+
+  it('flags admin API failures while keeping configured sites available', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const sites = [{ id: 's1', name: 'Site1', domain: 'example.com', ga4PropertyId: 'properties/999', testPages: [] }];
+    vi.mocked(getManagedSites).mockResolvedValue(sites as never);
+    mockListAccountSummaries.mockRejectedValue(new Error('Auth failure'));
+
+    const result = await discoverPropertyIdsWithStatus();
+
+    expect(result).toEqual({ sites, failed: true });
+    expect(consoleError).toHaveBeenCalledWith('Error discovering GA4 properties:', expect.any(Error));
+    consoleError.mockRestore();
   });
 
   it('returns sites unchanged when cached property discovery misses', async () => {

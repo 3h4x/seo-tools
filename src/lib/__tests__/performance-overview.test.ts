@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../ga4', () => ({
-  discoverPropertyIds: vi.fn(),
+  discoverPropertyIdsWithStatus: vi.fn(),
 }));
 
 vi.mock('../pagespeed', () => ({
@@ -13,7 +13,7 @@ vi.mock('../performance', () => ({
   cachedGetRumCoreWebVitals: vi.fn(),
 }));
 
-import { discoverPropertyIds } from '../ga4';
+import { discoverPropertyIdsWithStatus } from '../ga4';
 import { cachedGetPagespeed } from '../pagespeed';
 import { cachedGetCwvEventCount, cachedGetRumCoreWebVitals } from '../performance';
 import { getPerformanceOverviewRows } from '../performance-overview';
@@ -23,6 +23,7 @@ const rumSite = {
   name: 'RUM Site',
   domain: 'rum.example.com',
   ga4PropertyId: 'ga4-rum',
+  testPages: [],
 };
 
 const psiSite = {
@@ -30,11 +31,12 @@ const psiSite = {
   name: 'PSI Site',
   domain: 'psi.example.com',
   ga4PropertyId: 'ga4-psi',
+  testPages: [],
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(discoverPropertyIds).mockResolvedValue([rumSite, psiSite] as Awaited<ReturnType<typeof discoverPropertyIds>>);
+  vi.mocked(discoverPropertyIdsWithStatus).mockResolvedValue({ sites: [rumSite, psiSite], failed: false });
   vi.mocked(cachedGetCwvEventCount).mockResolvedValue(0);
   vi.mocked(cachedGetRumCoreWebVitals).mockImplementation(async (propertyId) => {
     if (propertyId === 'ga4-rum') {
@@ -276,7 +278,7 @@ describe('getPerformanceOverviewRows', () => {
 
   it('returns no rows when site discovery throws', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    vi.mocked(discoverPropertyIds).mockRejectedValueOnce(new Error('db unavailable'));
+    vi.mocked(discoverPropertyIdsWithStatus).mockRejectedValueOnce(new Error('db unavailable'));
 
     const { rows, failures } = await getPerformanceOverviewRows(7);
 

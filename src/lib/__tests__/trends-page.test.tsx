@@ -117,6 +117,10 @@ vi.mock('../../../app/components/keyword-rank-table', () => ({
 
 vi.mock('@/lib/ga4', () => ({
   discoverPropertyIds: vi.fn(async () => [{ id: 'site-1', ga4PropertyId: 'prop-1' }]),
+  discoverPropertyIdsWithStatus: vi.fn(async () => ({
+    sites: [{ id: 'site-1', ga4PropertyId: 'prop-1' }],
+    failed: false,
+  })),
   cachedGetAnalytics: vi.fn(async () => ({
     data: {
       current: { users: 10, sessions: 20, views: 30, bounceRate: 0.45, avgSessionDuration: 12 },
