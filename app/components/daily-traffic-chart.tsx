@@ -16,7 +16,7 @@ import { Skeleton } from './skeletons';
 import { formatDateShort } from '@/lib/format';
 import { METRIC_COLORS } from '@/lib/constants';
 import { todayDateOnly } from '@/lib/date-only';
-import { SegmentedControl, ToggleButtonGroup } from '@/components/ui';
+import { Notice, SegmentedControl, ToggleButtonGroup } from '@/components/ui';
 
 const METRICS = ['views', 'users', 'clicks', 'impressions'] as const;
 const METRIC_OPTIONS = METRICS.map(metric => ({
@@ -70,12 +70,12 @@ function DailyTrafficSkeleton() {
 
 function DailyTrafficError({ message }: { message: string }) {
   return (
-    <div className="bg-neutral-900 rounded-lg border border-red-950 p-5" role="alert">
+    <Notice tone="danger" size="none" className="rounded-lg p-5" role="alert">
       <div className="h-40 flex flex-col items-center justify-center text-center">
         <h2 className="text-xs uppercase tracking-wider text-red-300 font-semibold">Daily Traffic Unavailable</h2>
         <p className="mt-2 max-w-md text-sm text-neutral-400">{message}</p>
       </div>
-    </div>
+    </Notice>
   );
 }
 
