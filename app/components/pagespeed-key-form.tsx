@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Badge, ConfiguredNotice, FormButton, FormInput, Spinner } from '@/components/ui';
+import { Badge, ConfiguredNotice, FormButton, FormInput, Notice, Spinner } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { Skeleton } from './skeletons';
 
@@ -179,7 +179,11 @@ export default function PagespeedKeyForm() {
       </div>
 
       {testState === 'ok' && <p className="text-sm text-green-400" role="status">Key works</p>}
-      {testState === 'error' && <p className="text-sm text-red-400" role="alert">{errorMsg}</p>}
+      {testState === 'error' && (
+        <Notice tone="danger" size="sm" role="alert">
+          {errorMsg}
+        </Notice>
+      )}
 
       <div className="flex gap-2 flex-wrap">
         <FormButton
