@@ -178,7 +178,11 @@ export default function PagespeedKeyForm() {
         />
       </div>
 
-      {testState === 'ok' && <p className="text-sm text-green-400" role="status">Key works</p>}
+      {testState === 'ok' && (
+        <Notice tone="success" size="sm" role="status">
+          Key works
+        </Notice>
+      )}
       {testState === 'error' && (
         <Notice tone="danger" size="sm" role="alert">
           {errorMsg}
