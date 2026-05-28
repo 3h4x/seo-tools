@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { getManagedSite, getSCUrl } from '@/lib/sites';
 import { getCwvAuditSummary } from '@/lib/performance-site';
 import { discoverPropertyIdsWithStatus, cachedGetAnalytics } from '@/lib/ga4';
@@ -33,7 +32,7 @@ import { loadOrFallback, loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
 import { ProviderErrorBadge } from '../components/provider-error-badge';
-import { Notice } from '@/components/ui';
+import { Notice, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -220,7 +219,7 @@ export default async function SiteDashboardPage({
     <div className="space-y-8">
       <div className="flex items-start justify-between">
         <div>
-          <Link href="/" className="text-neutral-500 hover:text-neutral-300 text-sm transition-colors">&larr; Overview</Link>
+          <TextLink href="/" variant="muted" className="text-sm">&larr; Overview</TextLink>
           <h1 className="text-2xl font-bold text-white mt-1">{site.name}</h1>
           <p className="text-neutral-500 text-sm mt-1">{site.domain} &middot; Last {days} days</p>
         </div>
@@ -374,7 +373,7 @@ export default async function SiteDashboardPage({
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">
             Keyword Rank Changes
-            <Link href="/trends#keywords" className="ml-3 text-neutral-600 hover:text-neutral-400 normal-case font-normal">view history →</Link>
+            <TextLink href="/trends#keywords" variant="muted" className="ml-3 text-neutral-600 hover:text-neutral-400 normal-case font-normal">view history →</TextLink>
           </h2>
           <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
             <KeywordRankTable deltas={keywordDeltas} />
@@ -561,14 +560,14 @@ export default async function SiteDashboardPage({
                     )}
                     {inspection.inspectionResultLink && (
                       <div className="mt-2">
-                        <a
+                        <TextLink
                           href={inspection.inspectionResultLink}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[11px] text-neutral-400 hover:text-neutral-200 transition-colors"
+                          className="text-[11px] text-neutral-400 hover:text-neutral-200"
                         >
                           Open in Search Console →
-                        </a>
+                        </TextLink>
                       </div>
                     )}
                   </div>
@@ -774,13 +773,13 @@ export default async function SiteDashboardPage({
                 <h2 className="text-white font-semibold text-sm">Core Web Vitals</h2>
                 <div className="flex items-center gap-3">
                   <PerformanceSourceBadge source={cwvSummary.source} />
-                  <Link
+                  <TextLink
                     href={`/performance/${encodeURIComponent(siteId)}`}
-                    className="text-neutral-500 hover:text-neutral-300 text-xs transition-colors"
+                    variant="muted"
                     onClick={e => e.stopPropagation()}
                   >
                     Full detail →
-                  </Link>
+                  </TextLink>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
