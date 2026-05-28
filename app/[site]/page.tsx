@@ -664,8 +664,16 @@ export default async function SiteDashboardPage({
                       {img.images.filter(d => !d.hasAlt || !d.isLazy).map((d, j) => (
                         <div key={j} className="flex items-start gap-2 text-xs">
                           <span className="text-neutral-600 font-mono truncate max-w-xs shrink-0">{d.src.length > 60 ? d.src.slice(0, 57) + '...' : d.src}</span>
-                          {!d.hasAlt && <span className="text-red-400 whitespace-nowrap">missing alt</span>}
-                          {!d.isLazy && <span className="text-amber-400 whitespace-nowrap">not lazy</span>}
+                          {!d.hasAlt && (
+                            <Badge size="xs" shape="rounded" className="border-red-500/40 bg-red-500/10 text-red-300 whitespace-nowrap">
+                              missing alt
+                            </Badge>
+                          )}
+                          {!d.isLazy && (
+                            <Badge size="xs" shape="rounded" className="border-amber-500/30 bg-amber-500/10 text-amber-300 whitespace-nowrap">
+                              not lazy
+                            </Badge>
+                          )}
                         </div>
                       ))}
                       {img.images.every(d => d.hasAlt && d.isLazy) && (
@@ -720,7 +728,9 @@ export default async function SiteDashboardPage({
                     <span className="text-neutral-500 font-mono">{link.externalLinks} external</span>
                     <span className="text-neutral-600 font-mono">{link.brokenLinksMessage}</span>
                     {link.brokenLinks.length > 0 && (
-                      <span className="text-red-400 font-mono">{link.brokenLinks.length} broken</span>
+                      <Badge size="xs" shape="rounded" className="border-red-500/40 bg-red-500/10 text-red-300 font-mono">
+                        {link.brokenLinks.length} broken
+                      </Badge>
                     )}
                   </div>
                   {link.brokenLinks.length > 0 && (
@@ -731,7 +741,10 @@ export default async function SiteDashboardPage({
                       <div className="mt-2 space-y-1">
                         {link.brokenLinks.map((brokenLink) => (
                           <div key={`${link.page}-${brokenLink.url}`} className="text-[11px] font-mono text-neutral-500 break-all">
-                            <span className="text-red-400">HTTP {brokenLink.status || 0}</span> {brokenLink.url}
+                            <Badge size="xs" shape="rounded" className="mr-1 border-red-500/40 bg-red-500/10 text-red-300 font-mono">
+                              HTTP {brokenLink.status || 0}
+                            </Badge>
+                            {brokenLink.url}
                           </div>
                         ))}
                       </div>
