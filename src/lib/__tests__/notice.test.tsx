@@ -26,4 +26,15 @@ describe('Notice', () => {
     expect(html).toContain('border-red-950 bg-neutral-900 text-neutral-300');
     expect(html).toContain('role="alert"');
   });
+
+  it('supports success status banners', () => {
+    const html = renderToStaticMarkup(
+      <Notice tone="success" size="sm" role="status">
+        Connection OK
+      </Notice>
+    );
+
+    expect(html).toContain('border-emerald-500/30 bg-emerald-500/10 text-emerald-200');
+    expect(html).toContain('role="status"');
+  });
 });
