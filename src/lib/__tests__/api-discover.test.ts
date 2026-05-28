@@ -395,6 +395,35 @@ describe('GET /api/sites/discover', () => {
     expect(body[0].scUrl).toBeUndefined();
   });
 
+  it('prefers a root URL-prefix property over a path-specific property for the same hostname', async () => {
+    vi.mocked(searchconsole_v1.Searchconsole).mockImplementation(function () {
+      return {
+        sites: {
+          list: vi.fn().mockResolvedValue({
+            data: {
+              siteEntry: [
+                { siteUrl: 'https://example.com/blog/' },
+                { siteUrl: 'https://example.com/' },
+              ],
+            },
+          }),
+        },
+      };
+    } as never);
+    mockGa4([]);
+
+    const res = await GET(getReq());
+    const body = await res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({
+      id: 'example-com',
+      domain: 'example.com',
+      scUrl: 'https://example.com/',
+      searchConsole: true,
+      discoverySource: 'sc',
+    });
+  });
+
   it('excludes URL-prefix properties when the normalized hostname already exists', async () => {
     vi.mocked(dbGetSites).mockReturnValue([
       { id: 'blog-example-com', name: 'Blog', domain: 'blog.example.com', testPages: [] },
