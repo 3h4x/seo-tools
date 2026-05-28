@@ -33,6 +33,7 @@ import { loadOrFallback, loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
 import { ProviderErrorBadge } from '../components/provider-error-badge';
+import { Notice } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -94,12 +95,12 @@ function ttfbStatus(ms: number): CheckStatus {
 
 function SearchConsoleDisabledNotice() {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-5">
+    <Notice size="none" className="rounded-lg bg-neutral-900 p-5">
       <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Search Console</h2>
       <p className="mt-2 text-sm text-neutral-500">
         Search Console is disabled for this site in Config. Metrics, query tables, and keyword history are hidden.
       </p>
-    </div>
+    </Notice>
   );
 }
 
