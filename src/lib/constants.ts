@@ -49,6 +49,21 @@ export const ACTION_KIND_STYLES = {
   keyword: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
 } as const;
 
+export const CROSS_LINK_SUMMARY_STYLES = {
+  sources: { accent: 'border-l-blue-500', value: 'text-blue-400' },
+  linked: { accent: 'border-l-emerald-500', value: STATUS_COLORS.pass.text },
+  gaps: { accent: 'border-l-red-500', value: STATUS_COLORS.fail.text },
+  unavailable: { accent: 'border-l-neutral-600', value: 'text-neutral-300' },
+} as const;
+
+export const CROSS_LINK_CELL_STYLES = {
+  linked: `${STATUS_COLORS.pass.text} font-semibold`,
+  gap: `${STATUS_COLORS.fail.text} font-semibold`,
+  unavailable: 'text-neutral-500 font-semibold',
+  sourceUnavailable: 'text-neutral-400 font-medium',
+  fetchFailure: `${STATUS_COLORS.warn.text} text-[10px]`,
+} as const;
+
 export type CwvMetricName = 'LCP' | 'INP' | 'CLS' | 'FCP' | 'TTFB';
 export type CwvRating = 'good' | 'ni' | 'poor';
 

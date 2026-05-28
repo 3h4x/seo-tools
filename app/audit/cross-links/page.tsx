@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { DataTable, type DataTableColumn } from '../../components/data-table';
 import { getCrossLinkMatrix, type CrossLinkSourceMatrix, type CrossLinkSourceStatus } from '@/lib/cross-links';
+import { CROSS_LINK_CELL_STYLES, CROSS_LINK_SUMMARY_STYLES } from '@/lib/constants';
 import { loadOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
 import { NoSitesNotice } from '../../components/no-sites-notice';
@@ -82,10 +83,10 @@ export default async function CrossLinksPage() {
       <PartialFailureBanner failures={partialFailures} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <SummaryCard label="Source Sites" value={matrix.length} accent="border-l-blue-500" valueClassName="text-blue-400" />
-        <SummaryCard label="Cells With Links" value={totalLinkedCells} accent="border-l-emerald-500" valueClassName="text-emerald-400" />
-        <SummaryCard label="Zero-Link Gaps" value={zeroLinkCells} accent="border-l-red-500" valueClassName="text-red-400" />
-        <SummaryCard label="Unavailable Sources" value={unavailableSources} accent="border-l-neutral-600" valueClassName="text-neutral-300" />
+        <SummaryCard label="Source Sites" value={matrix.length} styles={CROSS_LINK_SUMMARY_STYLES.sources} />
+        <SummaryCard label="Cells With Links" value={totalLinkedCells} styles={CROSS_LINK_SUMMARY_STYLES.linked} />
+        <SummaryCard label="Zero-Link Gaps" value={zeroLinkCells} styles={CROSS_LINK_SUMMARY_STYLES.gaps} />
+        <SummaryCard label="Unavailable Sources" value={unavailableSources} styles={CROSS_LINK_SUMMARY_STYLES.unavailable} />
       </div>
 
       <DataTable
@@ -110,12 +111,12 @@ export default async function CrossLinksPage() {
               <div key={site.id} className="space-y-0.5">
                 {row.status !== 'ok' || target.linkedPages === null || target.missingPages === null ? (
                   <>
-                    <div className="text-neutral-500 font-semibold">{sourceStatusLabel(row.status)}</div>
+                    <div className={CROSS_LINK_CELL_STYLES.unavailable}>{sourceStatusLabel(row.status)}</div>
                     <div className="text-neutral-700 text-[10px]">Not evaluated</div>
                   </>
                 ) : (
                   <>
-                    <div className={target.linkedPages === 0 ? 'text-red-400 font-semibold' : 'text-emerald-400 font-semibold'}>
+                    <div className={target.linkedPages === 0 ? CROSS_LINK_CELL_STYLES.gap : CROSS_LINK_CELL_STYLES.linked}>
                       {target.linkedPages === 0 ? '0 links' : `${target.linkedPages} link${target.linkedPages === 1 ? '' : 's'}`}
                     </div>
                     <div className="text-neutral-600 text-[10px]">{target.missingPages} pages missing</div>
@@ -137,12 +138,12 @@ export default async function CrossLinksPage() {
 }
 
 function SummaryCard(
-  { label, value, accent, valueClassName }: { label: string; value: number; accent: string; valueClassName: string },
+  { label, value, styles }: { label: string; value: number; styles: { accent: string; value: string } },
 ) {
   return (
-    <div className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accent} p-4`}>
+    <div className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${styles.accent} p-4`}>
       <div className="text-neutral-500 text-xs uppercase tracking-wider">{label}</div>
-      <div className={`text-2xl font-bold font-mono mt-2 ${valueClassName}`}>{value}</div>
+      <div className={`text-2xl font-bold font-mono mt-2 ${styles.value}`}>{value}</div>
     </div>
   );
 }
@@ -151,7 +152,7 @@ function SourcePagesCell({ row }: { row: CrossLinkSourceMatrix }) {
   if (row.status !== 'ok') {
     return (
       <div className="space-y-0.5">
-        <div className="text-neutral-400 font-medium">{sourceStatusLabel(row.status)}</div>
+        <div className={CROSS_LINK_CELL_STYLES.sourceUnavailable}>{sourceStatusLabel(row.status)}</div>
         <div className="text-neutral-700 text-[10px]">Not evaluated</div>
       </div>
     );
@@ -161,7 +162,7 @@ function SourcePagesCell({ row }: { row: CrossLinkSourceMatrix }) {
     <div className="space-y-0.5">
       <div>{row.crawledPages}</div>
       {row.failedPages > 0 && (
-        <div className="text-amber-400 text-[10px]">
+        <div className={CROSS_LINK_CELL_STYLES.fetchFailure}>
           {row.failedPages} fetch {row.failedPages === 1 ? 'failed' : 'failures'}
         </div>
       )}

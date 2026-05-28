@@ -5,6 +5,8 @@ import {
   ACTION_PRIORITY_STYLES,
   CHART_COLORS,
   CHART_NEUTRALS,
+  CROSS_LINK_CELL_STYLES,
+  CROSS_LINK_SUMMARY_STYLES,
   CWV_METRIC_ORDER,
   CWV_THRESHOLDS,
   CWV_TREND_COLORS,
@@ -72,6 +74,22 @@ describe('constants', () => {
       gap: 'text-violet-300 bg-violet-500/10 border-violet-500/20',
       decay: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
       keyword: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+    });
+  });
+
+  it('exports cross-site link status styles', () => {
+    expect(CROSS_LINK_SUMMARY_STYLES).toEqual({
+      sources: { accent: 'border-l-blue-500', value: 'text-blue-400' },
+      linked: { accent: 'border-l-emerald-500', value: STATUS_COLORS.pass.text },
+      gaps: { accent: 'border-l-red-500', value: STATUS_COLORS.fail.text },
+      unavailable: { accent: 'border-l-neutral-600', value: 'text-neutral-300' },
+    });
+    expect(CROSS_LINK_CELL_STYLES).toEqual({
+      linked: `${STATUS_COLORS.pass.text} font-semibold`,
+      gap: `${STATUS_COLORS.fail.text} font-semibold`,
+      unavailable: 'text-neutral-500 font-semibold',
+      sourceUnavailable: 'text-neutral-400 font-medium',
+      fetchFailure: `${STATUS_COLORS.warn.text} text-[10px]`,
     });
   });
 
