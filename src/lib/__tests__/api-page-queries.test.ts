@@ -85,6 +85,23 @@ describe('GET /api/[site]/page-queries', () => {
     expect(await res.json()).toEqual({ error: 'Site not found' });
   });
 
+  it('returns a sanitized 500 when site config cannot be loaded', async () => {
+    vi.mocked(getManagedSite).mockRejectedValueOnce(new Error('sites table unavailable'));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await GET(getReq(), { params: Promise.resolve({ site: 'borged-io' }) });
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'failed_to_fetch_page_queries' });
+    expect(vi.mocked(cachedGetTopPagesWithQueries)).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(
+      '[GET /api/[site]/page-queries]',
+      expect.any(Error),
+    );
+
+    consoleError.mockRestore();
+  });
+
   it('returns empty data when site has no Search Console config', async () => {
     vi.mocked(getManagedSite).mockResolvedValueOnce({ ...fakeSite, searchConsole: false } as any);
 
