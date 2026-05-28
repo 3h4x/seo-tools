@@ -434,7 +434,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                   <span className="text-neutral-400">{page.currentPosition.toFixed(1)}</span>
                   {page.positionDelta > 0 && <span className="text-red-400 text-[10px] ml-1">+{page.positionDelta}</span>}
                 </span>,
-                <Badge key="severity" className={`${colors.badgeBg} ${colors.badge} !border-0 uppercase`}>
+                <Badge key="severity" uppercase className={`${colors.badgeBg} ${colors.badge} !border-0`}>
                   {page.severity}
                 </Badge>,
               ];
