@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { getPerformanceSiteData } from '@/lib/performance-site';
 import { Notice } from '@/components/ui';
 import {
@@ -56,6 +57,20 @@ export default async function PerfSiteDetail({
       cellClassName: 'px-3 py-2 text-right',
     })),
   ];
+  const slowestPageRows: ReactNode[][] = [];
+  const slowestPageRowKeys: string[] = [];
+
+  for (const row of slowestPages) {
+    slowestPageRowKeys.push(row.path);
+    slowestPageRows.push([
+      row.path,
+      row.totalSamples.toLocaleString(),
+      ...CWV_METRIC_ORDER.map((name) => {
+        const m = row.metrics[name];
+        return <CwvCell key={name} name={name} value={m?.value} rating={m?.rating} />;
+      }),
+    ]);
+  }
 
   return (
     <div className="space-y-8">
@@ -173,16 +188,9 @@ export default async function PerfSiteDetail({
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Slowest pages</h2>
           <DataTable
             columns={slowestPageColumns}
-            rows={slowestPages.map((row) => [
-              row.path,
-              row.totalSamples.toLocaleString(),
-              ...CWV_METRIC_ORDER.map((name) => {
-                const m = row.metrics[name];
-                return <CwvCell key={name} name={name} value={m?.value} rating={m?.rating} />;
-              }),
-            ])}
+            rows={slowestPageRows}
             caption="Slowest pages by Core Web Vitals samples"
-            rowKeys={slowestPages.map((row) => row.path)}
+            rowKeys={slowestPageRowKeys}
             monospaceCells={false}
             containerClassName="overflow-hidden rounded border border-neutral-800"
             tableClassName="w-full text-sm"
