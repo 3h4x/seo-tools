@@ -51,11 +51,11 @@ function ExportButton({ data, filename, label = 'Export CSV' }: {
       onClick={handleExport}
       title={`Download ${filename} as CSV`}
       size="xs"
-      className={`inline-flex items-center gap-1.5 !text-[10px] font-medium !px-2 !py-1 !rounded border ${
-        done
-          ? '!bg-emerald-500/10 !text-emerald-400 !border-emerald-500/20'
-          : '!bg-neutral-800 !text-neutral-400 !border-neutral-700 hover:!text-neutral-200 hover:!border-neutral-600'
-      }`}
+      variant={done ? 'success' : 'muted'}
+      className={[
+        'inline-flex items-center gap-1.5 !px-2 !py-1 !text-[10px] font-medium !rounded border',
+        done ? 'border-emerald-500/20' : 'border-neutral-700 hover:border-neutral-600',
+      ].join(' ')}
     >
       <span className="sr-only" role="status" aria-live="polite">
         {done ? `Saved ${filename}` : ''}
