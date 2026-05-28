@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Badge, FormButton, FormInput, FormSelect, Spinner, TextButton, ToggleButtonGroup } from '@/components/ui';
+import { Badge, FormButton, FormInput, FormSelect, Notice, Spinner, TextButton, ToggleButtonGroup } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -336,12 +336,16 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
         />
 
         {formMetricBlocked && (
-          <p className="text-xs text-amber-300">
+          <Notice tone="warning" size="sm">
             Search Console is disabled for this site. Choose GA4 sessions or re-enable Search Console before saving this rule.
-          </p>
+          </Notice>
         )}
 
-        {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
+        {error && (
+          <Notice tone="danger" size="sm" role="alert">
+            {error}
+          </Notice>
+        )}
 
         <FormButton
           variant="primary"
