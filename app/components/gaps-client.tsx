@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gap-definitions';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
-import { Badge, FilterChipGroup, TextButton } from '@/components/ui';
+import { Badge, FilterChipGroup, Notice, TextButton } from '@/components/ui';
 
 export interface SiteGap {
   gap: GapRecommendation;
@@ -199,7 +199,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
       })}
 
       {filtered.length === 0 && (
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-12 text-center">
+        <Notice size="none" className="bg-neutral-900 rounded-lg border-neutral-800 p-12 text-center">
           {isFiltered ? (
             <>
               <div className="text-neutral-500 text-4xl mb-3">⊘</div>
@@ -221,7 +221,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
               <div className="text-neutral-500 text-sm mt-1">No SEO gaps detected across all sites.</div>
             </>
           )}
-        </div>
+        </Notice>
       )}
     </div>
   );
