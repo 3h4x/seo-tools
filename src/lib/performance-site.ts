@@ -170,26 +170,73 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
   const propertyId = discoveredSites.find(candidate => candidate.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
   const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
 
-  const [rum, byPage, trend, eventCount, psiMobile, psiDesktop] = await Promise.all([
+  const [rum, eventCount] = await Promise.all([
     propertyId
       ? providerOrNull(`RUM ${site.id}`, cachedGetRumCoreWebVitals(propertyId, days), failures, 'RUM data')
       : Promise.resolve(null),
     propertyId
-      ? providerOrNull(`RUM pages ${site.id}`, cachedGetRumCwvByPage(propertyId, days, 20), failures, 'RUM slowest pages')
-      : Promise.resolve(null),
-    propertyId
-      ? providerOrNull(`RUM trend ${site.id}`, cachedGetRumCwvTrend(propertyId, Math.max(days, 30)), failures, 'RUM trend')
-      : Promise.resolve(null),
-    propertyId
       ? providerOrNull(`CWV event count ${site.id}`, cachedGetCwvEventCount(propertyId, days), failures, 'CWV event count')
       : Promise.resolve(null),
-    providerOrNull(`PSI mobile ${site.id}`, cachedGetPagespeed(url, 'mobile'), failures, 'PageSpeed Insights mobile'),
-    providerOrNull(`PSI desktop ${site.id}`, cachedGetPagespeed(url, 'desktop'), failures, 'PageSpeed Insights desktop'),
   ]);
 
   const hasRum = !!rum?.hasData;
   const cwvEventCount = eventCount ?? 0;
   const propagating = !hasRum && cwvEventCount > 0;
+
+  if (hasRum) {
+    const [byPage, trend, psiMobile, psiDesktop] = await Promise.all([
+      propertyId
+        ? providerOrNull(`RUM pages ${site.id}`, cachedGetRumCwvByPage(propertyId, days, 20), failures, 'RUM slowest pages')
+        : Promise.resolve(null),
+      propertyId
+        ? providerOrNull(`RUM trend ${site.id}`, cachedGetRumCwvTrend(propertyId, Math.max(days, 30)), failures, 'RUM trend')
+        : Promise.resolve(null),
+      providerOrNull(`PSI mobile ${site.id}`, cachedGetPagespeed(url, 'mobile'), failures, 'PageSpeed Insights mobile'),
+      providerOrNull(`PSI desktop ${site.id}`, cachedGetPagespeed(url, 'desktop'), failures, 'PageSpeed Insights desktop'),
+    ]);
+
+    return {
+      site: {
+        id: site.id,
+        name: site.name,
+        domain: site.domain,
+      },
+      days,
+      propertyId,
+      url,
+      source: 'rum',
+      heroSource: 'RUM (GA4)',
+      hasRum,
+      propagating,
+      eventCount: cwvEventCount,
+      needsKey: !!(psiMobile?.needsKey || psiDesktop?.needsKey),
+      overall: cloneRumMetrics(rum!.overall),
+      byDevice: {
+        mobile: cloneRumMetrics(rum!.byDevice.mobile),
+        desktop: cloneRumMetrics(rum!.byDevice.desktop),
+        tablet: cloneRumMetrics(rum!.byDevice.tablet),
+      },
+      slowestPages: (byPage ?? []).map((row) => ({
+        path: row.path,
+        totalSamples: row.totalSamples,
+        metrics: cloneRumMetrics(row.metrics),
+      })),
+      trend: (trend ?? []).map((row) => ({
+        date: row.date.length === 8 ? `${row.date.slice(0, 4)}-${row.date.slice(4, 6)}-${row.date.slice(6, 8)}` : row.date,
+        metrics: cloneRumMetrics(row.metrics),
+      })),
+      psi: {
+        mobile: psiMobile,
+        desktop: psiDesktop,
+      },
+      failures,
+    };
+  }
+
+  const [psiMobile, psiDesktop] = await Promise.all([
+    providerOrNull(`PSI mobile ${site.id}`, cachedGetPagespeed(url, 'mobile'), failures, 'PageSpeed Insights mobile'),
+    providerOrNull(`PSI desktop ${site.id}`, cachedGetPagespeed(url, 'desktop'), failures, 'PageSpeed Insights desktop'),
+  ]);
   const psiFallback = firstPsiWithMetrics(psiMobile, psiDesktop);
 
   return {
@@ -201,27 +248,16 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
     days,
     propertyId,
     url,
-    source: hasRum ? 'rum' : propagating ? 'rum-pending' : psiFallback.source,
-    heroSource: hasRum ? 'RUM (GA4)' : psiFallback.heroSource,
+    source: propagating ? 'rum-pending' : psiFallback.source,
+    heroSource: psiFallback.heroSource,
     hasRum,
     propagating,
     eventCount: cwvEventCount,
     needsKey: !!(psiMobile?.needsKey || psiDesktop?.needsKey),
-    overall: hasRum ? cloneRumMetrics(rum!.overall) : psiFallback.metrics,
-    byDevice: hasRum && rum ? {
-      mobile: cloneRumMetrics(rum.byDevice.mobile),
-      desktop: cloneRumMetrics(rum.byDevice.desktop),
-      tablet: cloneRumMetrics(rum.byDevice.tablet),
-    } : null,
-    slowestPages: (byPage ?? []).map((row) => ({
-      path: row.path,
-      totalSamples: row.totalSamples,
-      metrics: cloneRumMetrics(row.metrics),
-    })),
-    trend: (trend ?? []).map((row) => ({
-      date: row.date.length === 8 ? `${row.date.slice(0, 4)}-${row.date.slice(4, 6)}-${row.date.slice(6, 8)}` : row.date,
-      metrics: cloneRumMetrics(row.metrics),
-    })),
+    overall: psiFallback.metrics,
+    byDevice: null,
+    slowestPages: [],
+    trend: [],
     psi: {
       mobile: psiMobile,
       desktop: psiDesktop,

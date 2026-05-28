@@ -216,6 +216,54 @@ describe('Performance site detail page', () => {
     expect(html).toContain('Trend Chart:integer');
   });
 
+  it('renders PSI score and key warning alongside RUM detail data', async () => {
+    mockGetPerformanceSiteData.mockResolvedValueOnce({
+      site: {
+        id: 'borged-io',
+        name: 'Borged',
+        domain: 'borged.io',
+      },
+      days: 7,
+      propertyId: 'prop-1',
+      url: 'https://borged.io',
+      source: 'rum',
+      heroSource: 'RUM (GA4)',
+      hasRum: true,
+      propagating: false,
+      eventCount: 10,
+      needsKey: true,
+      overall: {
+        LCP: { value: 1200, rating: 'good', sampleCount: 10 },
+      },
+      byDevice: { mobile: {}, desktop: {}, tablet: {} },
+      slowestPages: [],
+      trend: [],
+      psi: {
+        mobile: {
+          url: 'https://borged.io',
+          strategy: 'mobile',
+          performanceScore: 91,
+          field: null,
+          lab: {},
+          fetchedAt: Date.now(),
+          needsKey: true,
+        },
+        desktop: null,
+      },
+      failures: [],
+    });
+
+    const html = renderToStaticMarkup(await PerfSiteDetail({
+      params: Promise.resolve({ site: 'borged-io' }),
+      searchParams: Promise.resolve({ days: '7' }),
+    }));
+
+    expect(html).toContain('Lighthouse mobile:');
+    expect(html).toContain('>91</span>');
+    expect(html).toContain('PageSpeed Insights rate-limited');
+    expect(html).toContain('Overall (RUM (GA4))');
+  });
+
   it('converts CLS trend values to chart-friendly thousandths', async () => {
     mockGetPerformanceSiteData.mockResolvedValueOnce({
       site: {

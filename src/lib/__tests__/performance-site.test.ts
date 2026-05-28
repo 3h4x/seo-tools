@@ -67,7 +67,7 @@ describe('getPerformanceSiteData', () => {
     expect(result).not.toBeNull();
     expect(result!.days).toBe(7);
     expect(vi.mocked(cachedGetRumCoreWebVitals)).toHaveBeenCalledWith('discovered-prop', 7);
-    expect(vi.mocked(cachedGetRumCwvTrend)).toHaveBeenCalledWith('discovered-prop', 30);
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'mobile');
   });
 
   it('prefers RUM metrics over PSI fallback when RUM data exists', async () => {
@@ -103,6 +103,41 @@ describe('getPerformanceSiteData', () => {
     expect(result!.heroSource).toBe('RUM (GA4)');
     expect(result!.overall.LCP).toEqual({ value: 1200, rating: 'good', sampleCount: 10 });
     expect(result!.byDevice?.mobile.LCP).toEqual({ value: 1300, rating: 'good', sampleCount: 6 });
+    expect(result!.needsKey).toBe(false);
+    expect(result!.psi.mobile?.performanceScore).toBe(42);
+    expect(result!.psi.desktop?.performanceScore).toBe(42);
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'mobile');
+    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'desktop');
+  });
+
+  it('keeps PSI key state available when RUM data exists', async () => {
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce({
+      hasData: true,
+      overall: {
+        LCP: { value: 1200, rating: 'good', sampleCount: 10 },
+      },
+      byDevice: {
+        mobile: {},
+        desktop: {},
+        tablet: {},
+      },
+    });
+    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => ({
+      url: 'https://borged.io',
+      strategy,
+      performanceScore: null,
+      field: null,
+      lab: {},
+      fetchedAt: 123,
+      needsKey: strategy === 'desktop',
+    }));
+
+    const result = await getPerformanceSiteData('borged-io', 7);
+
+    expect(result).not.toBeNull();
+    expect(result!.source).toBe('rum');
+    expect(result!.needsKey).toBe(true);
+    expect(result!.psi.desktop?.needsKey).toBe(true);
   });
 
   it('returns rum-pending with PSI fallback when events exist but RUM is unavailable', async () => {
@@ -167,6 +202,17 @@ describe('getPerformanceSiteData', () => {
   });
 
   it('normalizes trend dates to yyyy-mm-dd', async () => {
+    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce({
+      hasData: true,
+      overall: {
+        LCP: { value: 1200, rating: 'good', sampleCount: 10 },
+      },
+      byDevice: {
+        mobile: {},
+        desktop: {},
+        tablet: {},
+      },
+    });
     vi.mocked(cachedGetRumCwvTrend).mockResolvedValueOnce([
       { date: '20260508', metrics: { LCP: { value: 1200, rating: 'good', sampleCount: 2 } } },
       { date: '2026-05-09', metrics: { INP: { value: 180, rating: 'good', sampleCount: 3 } } },
@@ -184,8 +230,6 @@ describe('getPerformanceSiteData', () => {
   it('keeps the detail payload usable when individual providers throw', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.mocked(cachedGetRumCoreWebVitals).mockRejectedValueOnce(new Error('rum unavailable'));
-    vi.mocked(cachedGetRumCwvByPage).mockRejectedValueOnce(new Error('pages unavailable'));
-    vi.mocked(cachedGetRumCwvTrend).mockRejectedValueOnce(new Error('trend unavailable'));
     vi.mocked(cachedGetCwvEventCount).mockResolvedValueOnce(8);
     vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => {
       if (strategy === 'desktop') throw new Error('desktop PSI unavailable');
@@ -213,14 +257,12 @@ describe('getPerformanceSiteData', () => {
     expect(result!.psi.desktop).toBeNull();
     expect(result!.failures).toEqual([
       'RUM data',
-      'RUM slowest pages',
-      'RUM trend',
       'PageSpeed Insights desktop',
     ]);
     expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] RUM borged-io:', expect.any(Error));
-    expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] RUM pages borged-io:', expect.any(Error));
-    expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] RUM trend borged-io:', expect.any(Error));
     expect(consoleError).toHaveBeenCalledWith('[PerformanceSite] PSI desktop borged-io:', expect.any(Error));
+    expect(vi.mocked(cachedGetRumCwvByPage)).not.toHaveBeenCalled();
+    expect(vi.mocked(cachedGetRumCwvTrend)).not.toHaveBeenCalled();
     consoleError.mockRestore();
   });
 
