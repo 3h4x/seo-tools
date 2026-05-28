@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, ConfiguredNotice, FormButton, FormTextarea, Spinner } from '@/components/ui';
+import { Badge, ConfiguredNotice, FormButton, FormTextarea, Notice, Spinner } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -146,7 +146,9 @@ export default function ConfigForm({ source: initialSource }: Props) {
         <p className="text-sm text-green-400" role="status">Connection OK</p>
       )}
       {testState === 'error' && (
-        <p className="text-sm text-red-400" role="alert">{errorMsg}</p>
+        <Notice tone="danger" size="sm" role="alert">
+          {errorMsg}
+        </Notice>
       )}
 
       <div className="flex gap-2 flex-wrap">
