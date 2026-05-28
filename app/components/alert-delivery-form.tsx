@@ -238,7 +238,11 @@ export default function AlertDeliveryForm() {
           {error}
         </Notice>
       )}
-      {success && <p className="text-sm text-emerald-400" role="status">{success}</p>}
+      {success && (
+        <Notice tone="success" size="sm" role="status">
+          {success}
+        </Notice>
+      )}
 
       <div className="flex gap-2 flex-wrap">
         <FormButton
