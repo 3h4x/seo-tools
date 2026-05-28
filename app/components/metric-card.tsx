@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Badge } from '@/components/ui';
 
 export function MetricCard({
   label,
@@ -38,10 +39,10 @@ export function MetricCard({
       <div className="flex items-baseline gap-2">
         <span className={`${valueColor} text-2xl font-mono font-bold`}>{displayValue}</span>
         {show && (
-          <span className={`text-[10px] font-medium ${up ? 'text-emerald-400' : 'text-red-400'}`} title={diffLabel}>
+          <Badge className={`!border-0 !px-0 !py-0 !text-[10px] ${up ? 'text-emerald-400' : 'text-red-400'}`} title={diffLabel}>
             <span aria-hidden="true">{diff > 0 ? '\u2191' : '\u2193'}{Math.abs(diff).toFixed(0)}%</span>
             <span className="sr-only">{diffLabel}</span>
-          </span>
+          </Badge>
         )}
       </div>
       {footer != null && <div className="text-[10px] text-neutral-500 mt-1">{footer}</div>}
