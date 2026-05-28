@@ -1,8 +1,9 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
+import { Skeleton } from '@/components/ui';
 import { useRefresh } from './refresh-context';
-import { Skeleton, SkeletonCard, SkeletonTable, SkeletonSummaryRow } from './skeletons';
+import { SkeletonCard, SkeletonTable, SkeletonSummaryRow } from './skeletons';
 
 function SkeletonPage() {
   return (
