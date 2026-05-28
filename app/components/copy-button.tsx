@@ -29,11 +29,8 @@ export function CopyButton({ text, label, className = '' }: CopyButtonProps) {
     <FormButton
       onClick={handleCopy}
       size="xs"
-      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
-        copied
-          ? '!bg-emerald-500/20 !text-emerald-400'
-          : '!bg-neutral-800 !text-neutral-400 hover:!bg-neutral-700 hover:!text-neutral-300'
-      } ${className}`}
+      variant={copied ? 'success' : 'muted'}
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${className}`}
       title={`Copy ${label || 'to clipboard'}`}
     >
       <span className="sr-only" role="status" aria-live="polite">

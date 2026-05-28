@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-type FormButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+type FormButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'muted' | 'success';
 type FormButtonSize = 'md' | 'sm' | 'xs' | 'row';
 
 interface FormButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -14,6 +14,8 @@ const VARIANT_CLASSES: Record<FormButtonVariant, string> = {
   secondary: 'bg-neutral-800 text-white hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed',
   danger: 'bg-neutral-800 text-red-400 hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed',
   ghost: 'bg-transparent text-neutral-300 hover:bg-transparent hover:text-white disabled:opacity-40 disabled:cursor-not-allowed',
+  muted: 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed',
+  success: 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed',
 };
 
 const SIZE_CLASSES: Record<FormButtonSize, string> = {

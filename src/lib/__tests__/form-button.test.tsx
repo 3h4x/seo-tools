@@ -57,4 +57,13 @@ describe('FormButton', () => {
     expect(html).toContain('bg-transparent text-neutral-300');
     expect(html).toContain('hover:text-white');
   });
+
+  it('supports muted and success action states', () => {
+    const muted = renderToStaticMarkup(<FormButton variant="muted">Copy</FormButton>);
+    const success = renderToStaticMarkup(<FormButton variant="success">Copied</FormButton>);
+
+    expect(muted).toContain('bg-neutral-800 text-neutral-400');
+    expect(muted).toContain('hover:text-neutral-300');
+    expect(success).toContain('bg-emerald-500/20 text-emerald-400');
+  });
 });
