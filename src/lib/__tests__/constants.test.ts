@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ACTION_KIND_STYLES,
+  ACTION_PRIORITY_STYLES,
   CHART_COLORS,
   CHART_NEUTRALS,
   CWV_METRIC_ORDER,
@@ -56,6 +58,20 @@ describe('constants', () => {
       warn: { chart: '#f59e0b', text: 'text-amber-400', dot: 'bg-amber-500' },
       fail: { chart: '#ef4444', text: 'text-red-400', dot: 'bg-red-500' },
       error: { chart: '#737373', text: 'text-neutral-400', dot: 'bg-neutral-500' },
+    });
+  });
+
+  it('exports action queue badge styles', () => {
+    expect(ACTION_PRIORITY_STYLES).toEqual({
+      critical: 'text-red-300 bg-red-500/10 border-red-500/20',
+      high: 'text-red-400 bg-red-500/10 border-red-500/20',
+      medium: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+      low: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+    });
+    expect(ACTION_KIND_STYLES).toEqual({
+      gap: 'text-violet-300 bg-violet-500/10 border-violet-500/20',
+      decay: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
+      keyword: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
     });
   });
 

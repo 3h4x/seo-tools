@@ -36,6 +36,19 @@ export const STATUS_COLORS = {
   error: { chart: '#737373', text: 'text-neutral-400', dot: 'bg-neutral-500' },
 } as const;
 
+export const ACTION_PRIORITY_STYLES = {
+  critical: 'text-red-300 bg-red-500/10 border-red-500/20',
+  high: 'text-red-400 bg-red-500/10 border-red-500/20',
+  medium: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+  low: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+} as const;
+
+export const ACTION_KIND_STYLES = {
+  gap: 'text-violet-300 bg-violet-500/10 border-violet-500/20',
+  decay: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
+  keyword: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+} as const;
+
 export type CwvMetricName = 'LCP' | 'INP' | 'CLS' | 'FCP' | 'TTFB';
 export type CwvRating = 'good' | 'ni' | 'poor';
 

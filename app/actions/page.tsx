@@ -1,23 +1,11 @@
 import Link from 'next/link';
 import { Badge, Notice } from '@/components/ui';
 import { loadActionQueue, type ActionQueueItem } from '@/lib/actions';
+import { ACTION_KIND_STYLES, ACTION_PRIORITY_STYLES } from '@/lib/constants';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 
 export const revalidate = 300;
-
-const PRIORITY_STYLES: Record<ActionQueueItem['priority'], string> = {
-  critical: 'text-red-300 bg-red-500/10 border-red-500/20',
-  high: 'text-red-400 bg-red-500/10 border-red-500/20',
-  medium: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-  low: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-};
-
-const KIND_STYLES: Record<ActionQueueItem['kind'], string> = {
-  gap: 'text-violet-300 bg-violet-500/10 border-violet-500/20',
-  decay: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
-  keyword: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
-};
 
 const COLUMNS: DataTableColumn[] = [
   { label: 'Priority', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-3 whitespace-nowrap' },
@@ -33,10 +21,10 @@ export default async function ActionsPage() {
 
   const rows = items.map((item) => ([
     <div key={`${item.id}-priority`} className="flex items-center gap-2">
-      <Badge uppercase className={`font-semibold ${PRIORITY_STYLES[item.priority]}`}>
+      <Badge uppercase className={`font-semibold ${ACTION_PRIORITY_STYLES[item.priority]}`}>
         {item.priority}
       </Badge>
-      <Badge uppercase className={`hidden sm:inline-flex font-semibold ${KIND_STYLES[item.kind]}`}>
+      <Badge uppercase className={`hidden sm:inline-flex font-semibold ${ACTION_KIND_STYLES[item.kind]}`}>
         {item.kind}
       </Badge>
     </div>,
@@ -101,7 +89,7 @@ function PriorityCountBadge({
   tone: 'critical' | 'high' | 'medium' | 'low';
 }) {
   return (
-    <Badge size="md" shape="rounded" className={`gap-2 ${PRIORITY_STYLES[tone]}`}>
+    <Badge size="md" shape="rounded" className={`gap-2 ${ACTION_PRIORITY_STYLES[tone]}`}>
       <span className="font-semibold">{label}</span>
       <span className="font-mono">{value}</span>
     </Badge>
