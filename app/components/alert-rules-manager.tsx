@@ -266,7 +266,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
       {loading ? (
         <AlertRulesSkeleton />
       ) : rules.length === 0 ? (
-        <p className="text-sm text-neutral-500">No rules yet.</p>
+        <Notice size="sm">No rules yet.</Notice>
       ) : (
         <DataTable
           caption="Configured alert rules"
