@@ -12,7 +12,7 @@ import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import {
   getPerformanceOverviewRows,
 } from '@/lib/performance-overview';
-import { Notice } from '@/components/ui';
+import { Notice, TextLink } from '@/components/ui';
 import TimeRange from '../components/time-range';
 import CwvSetupGuide from '../components/cwv-setup-guide';
 import { CwvCell } from '../components/cwv-cell';
@@ -102,7 +102,7 @@ export default async function PerformancePage({
       {needsKey && (
         <Notice tone="warning" size="sm">
           PageSpeed Insights rate-limited. Add a free API key in{' '}
-          <Link href="/config" className="underline">Config</Link> to lift the per-IP cap.
+          <TextLink href="/config" className="underline">Config</TextLink> to lift the per-IP cap.
         </Notice>
       )}
 

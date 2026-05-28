@@ -215,7 +215,9 @@ describe('Performance overview page', () => {
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain('PageSpeed Insights rate-limited');
-    expect(html).toContain('<a href="/config" class="underline">Config</a> to lift the per-IP cap.');
+    expect(html).toContain('href="/config"');
+    expect(html).toContain('text-xs transition-colors text-neutral-400 hover:text-white');
+    expect(html).toContain('underline">Config</a> to lift the per-IP cap.');
   });
 
   it('uses the first repeated guide searchParam for the setup guide state', async () => {
@@ -492,7 +494,9 @@ describe('Performance site detail page', () => {
     }));
 
     expect(html).toContain('PageSpeed Insights rate-limited');
-    expect(html).toContain('<a href="/config" class="underline">Config</a> to lift the per-IP cap.');
+    expect(html).toContain('href="/config"');
+    expect(html).toContain('text-xs transition-colors text-neutral-400 hover:text-white');
+    expect(html).toContain('underline">Config</a> to lift the per-IP cap.');
   });
 
   it('renders PSI fallback cards and opens the setup guide when RUM is unavailable', async () => {

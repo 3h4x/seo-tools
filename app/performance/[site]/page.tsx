@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { getPerformanceSiteData } from '@/lib/performance-site';
@@ -95,7 +94,7 @@ export default async function PerfSiteDetail({
       {psiNeedsKey && (
         <Notice tone="warning" size="sm">
           PageSpeed Insights rate-limited. Add a free API key in{' '}
-          <Link href="/config" className="underline">Config</Link> to lift the per-IP cap.
+          <TextLink href="/config" className="underline">Config</TextLink> to lift the per-IP cap.
         </Notice>
       )}
 
