@@ -71,3 +71,9 @@ export function rateCwv(name: CwvMetricName, value: number): CwvRating {
   if (value <= t.poor) return 'ni';
   return 'poor';
 }
+
+export function ratePerformanceScore(score: number): CwvRating {
+  if (score >= 90) return 'good';
+  if (score >= 50) return 'ni';
+  return 'poor';
+}

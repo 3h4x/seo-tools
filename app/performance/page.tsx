@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import {
   CWV_METRIC_ORDER,
+  CWV_RATING_COLORS,
   PERF_VALID_DAYS,
   rateCwv,
+  ratePerformanceScore,
   type CwvMetricName,
   type CwvRating,
 } from '@/lib/constants';
@@ -80,7 +82,7 @@ export default async function PerformancePage({
       }),
       row.perfScore == null
         ? <span key="psi" className="text-neutral-600">—</span>
-        : <span key="psi" className={row.perfScore >= 90 ? 'text-emerald-400' : row.perfScore >= 50 ? 'text-amber-400' : 'text-red-400'}>{row.perfScore}</span>,
+        : <span key="psi" className={CWV_RATING_COLORS[ratePerformanceScore(row.perfScore)].text}>{row.perfScore}</span>,
     ]);
 
   return (

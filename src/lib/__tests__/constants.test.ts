@@ -11,6 +11,7 @@ import {
   TREND_COLORS,
   VALID_DAYS,
   rateCwv,
+  ratePerformanceScore,
 } from '../constants';
 
 describe('constants', () => {
@@ -120,5 +121,14 @@ describe('rateCwv', () => {
     for (const name of CWV_METRIC_ORDER) {
       expect(rateCwv(name, 0)).toBe('good');
     }
+  });
+});
+
+describe('ratePerformanceScore', () => {
+  it('rates Lighthouse/PageSpeed score boundary values', () => {
+    expect(ratePerformanceScore(90)).toBe('good');
+    expect(ratePerformanceScore(89)).toBe('ni');
+    expect(ratePerformanceScore(50)).toBe('ni');
+    expect(ratePerformanceScore(49)).toBe('poor');
   });
 });
