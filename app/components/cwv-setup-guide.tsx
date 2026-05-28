@@ -45,7 +45,9 @@ export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: b
           <span className="text-neutral-500" aria-hidden="true">{open ? '▾' : '▸'}</span>
           How to wire Core Web Vitals (GTM + GA4)
         </span>
-        <span className="text-xs text-neutral-500">required once per project</span>
+        <Badge size="compact" shape="rounded" className="border-neutral-800 bg-neutral-950/40 text-neutral-500">
+          required once per project
+        </Badge>
       </FormButton>
       {open && (
         <div
