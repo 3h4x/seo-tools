@@ -1,12 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Badge, FormButton, FormInput, FormSelect, Notice, Spinner, TextButton, ToggleButtonGroup } from '@/components/ui';
+import { Badge, FormButton, FormInput, FormSelect, Notice, Skeleton, Spinner, TextButton, ToggleButtonGroup } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
 import { DataTable, type DataTableColumn } from './data-table';
-import { Skeleton } from './skeletons';
 
 type FormState = {
   id?: number;
