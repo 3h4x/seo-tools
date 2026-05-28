@@ -3,7 +3,7 @@ import { dbGetAlertEvents } from '@/lib/db';
 import { formatAlertMetricValue, getAlertMetricLabel } from '@/lib/alerts';
 import { loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
-import { Notice, TextLink } from '@/components/ui';
+import { Badge, Notice, TextLink } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 
@@ -49,7 +49,9 @@ export default async function AlertsPage() {
       <>
         {event.deliveredChannels.length > 0 ? event.deliveredChannels.join(', ') : 'none'}
         {event.deliveryError && (
-          <div className="mt-1 text-xs text-amber-400">{event.deliveryError}</div>
+          <Badge size="xs" shape="rounded" className="mt-1 border-amber-500/30 bg-amber-500/10 text-amber-300">
+            {event.deliveryError}
+          </Badge>
         )}
       </>,
       event.snapshotDate,
