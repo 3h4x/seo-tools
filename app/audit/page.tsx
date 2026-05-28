@@ -9,7 +9,7 @@ import { detectAllDecay, type DecaySeverity } from '@/lib/decay';
 import { formatRelativeTime } from '@/lib/format';
 import { getCwvAuditSummary, type CwvAuditSummary } from '@/lib/performance-site';
 import { CWV_RATING_COLORS, CWV_THRESHOLDS, type CwvMetricName } from '@/lib/constants';
-import { loadOrFallback, loadOrFlag } from '@/lib/page-helpers';
+import { loadOrFlag } from '@/lib/page-helpers';
 import { statusDots, accentBorder, StatusBadge } from '../components/audit/check-card';
 import { MetricCard } from '../components/metric-card';
 import { CopyButton } from '../components/copy-button';
@@ -75,8 +75,11 @@ function checksSummary(
   return { status: 'pass', label: labels.pass };
 }
 
-async function loadCwvSummaryForAudit(siteId: string): Promise<[string, CwvAuditSummary | null]> {
-  return [siteId, await loadOrFallback(`AuditPage CWV ${siteId}`, getCwvAuditSummary(siteId), null)];
+async function loadCwvSummaryForAudit(
+  siteId: string,
+): Promise<[string, { value: CwvAuditSummary | null; failed: boolean }]> {
+  const result = await loadOrFlag(`AuditPage CWV ${siteId}`, getCwvAuditSummary(siteId), null);
+  return [siteId, result];
 }
 
 function auditFreshness(timestampMs: number): { className: string; prefix: string } {
@@ -148,11 +151,18 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     discoveredSites.map((site) => [site.id, site.ga4PropertyId || '']),
   );
 
-  const cwvSummaries = Object.fromEntries(
-    await Promise.all(
-      managedSites.map((site) => loadCwvSummaryForAudit(site.id))
-    )
+  const cwvEntries = await Promise.all(
+    managedSites.map((site) => loadCwvSummaryForAudit(site.id))
   );
+  const cwvSummaries: Record<string, CwvAuditSummary | null> = {};
+  let cwvFailedCount = 0;
+  for (const [siteId, result] of cwvEntries) {
+    cwvSummaries[siteId] = result.value;
+    if (result.failed) cwvFailedCount += 1;
+  }
+  if (cwvFailedCount > 0) {
+    partialFailures.push(`Core Web Vitals (${cwvFailedCount} site${cwvFailedCount === 1 ? '' : 's'})`);
+  }
 
   const totalPass = audits.reduce((s, a) => s + a.score.pass, 0);
   const totalWarn = audits.reduce((s, a) => s + a.score.warn, 0);
@@ -168,15 +178,23 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     if (!site) return null;
 
     const propertyId = propertyIdBySite.get(site.id) || site.ga4PropertyId || '';
-    const signals = await loadOrFallback(
+    const signalsResult = await loadOrFlag(
       `AuditPage gaps ${site.id}`,
       loadSiteGapSignals(site, propertyId, period),
       null,
     );
-    if (!signals) return { site, gaps: [] };
-    const { gaps } = analyzeSiteGaps(audit, site, signals);
-    return { site, gaps };
+    if (!signalsResult.value) return { site, gaps: [], failed: signalsResult.failed };
+    const { gaps } = analyzeSiteGaps(audit, site, signalsResult.value);
+    return { site, gaps, failed: signalsResult.failed };
   }));
+
+  let gapSignalFailures = 0;
+  for (const row of siteGapRows) {
+    if (row?.failed) gapSignalFailures += 1;
+  }
+  if (gapSignalFailures > 0) {
+    partialFailures.push(`gap analysis signals (${gapSignalFailures} site${gapSignalFailures === 1 ? '' : 's'})`);
+  }
 
   for (const row of siteGapRows) {
     if (!row) continue;
