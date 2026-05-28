@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Link from 'next/link';
-import { TextButton } from '@/components/ui';
+import { TextButton, TextLink } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
@@ -124,7 +123,12 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
 
   const tableRows = sorted.map((row) => [
     <div key="site" className="flex items-start gap-2">
-      <Link href={`/${encodeURIComponent(row.id)}`} className="flex min-w-0 flex-col gap-1">
+      <TextLink
+        href={`/${encodeURIComponent(row.id)}`}
+        size="inherit"
+        variant="inherit"
+        className="flex min-w-0 flex-col gap-1"
+      >
         <div className="flex items-center gap-2">
           <span className="text-white font-medium">{row.name}</span>
           {row.ga4Error && <ProviderErrorBadge label="GA4 error" />}
@@ -141,7 +145,7 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
             {row.ga4Error ? 'GA4 failed' : 'No GA4 data'}
           </span>
         )}
-      </Link>
+      </TextLink>
       <div className="pt-[1.375rem]">
         <CopyButton text={`https://${row.domain}`} label="domain" className="text-[10px] px-1 py-0.5" />
       </div>
