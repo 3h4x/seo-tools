@@ -199,7 +199,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
       })}
 
       {filtered.length === 0 && (
-        <Notice size="none" className="bg-neutral-900 rounded-lg border-neutral-800 p-12 text-center">
+        <Notice size="none" className="rounded-lg p-12 text-center">
           {isFiltered ? (
             <>
               <div className="text-neutral-500 text-4xl mb-3">⊘</div>
