@@ -90,8 +90,8 @@ export default async function OpportunitiesPage({
       ? 'Enable Search Console for at least one managed site in Config to populate keyword opportunities.'
       : 'No queries ranking in positions 5-20 for the selected period. Try a longer date range.';
   const emptyNoticeClassName = sitesResult.failed
-    ? 'rounded-lg border border-neutral-800 border-l-4 border-l-red-500 bg-neutral-900 p-8 text-neutral-500'
-    : 'rounded-lg border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500';
+    ? 'rounded-lg border-l-4 border-l-red-500 p-8 text-neutral-500'
+    : 'rounded-lg p-8 text-center text-neutral-500';
   const emptyTitleClassName = sitesResult.failed
     ? 'font-semibold mb-1 text-red-400'
     : 'font-medium mb-1';
