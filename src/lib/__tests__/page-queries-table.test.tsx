@@ -31,6 +31,19 @@ describe('PageQueriesTable', () => {
     expect(html).not.toContain('No page data available.');
   });
 
+  it('renders an empty notice when no page query rows are available', () => {
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => [[], vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()])
+      .mockImplementationOnce(() => [null, vi.fn()])
+      .mockImplementation(() => [new Set(), vi.fn()]);
+
+    const html = renderToStaticMarkup(<PageQueriesTable siteId="site-a" days={7} />);
+
+    expect(html).toContain('No page data available.');
+    expect(html).toContain('rounded-md border');
+  });
+
   it('renders expandable page rows as keyboard-accessible controls', () => {
     vi.spyOn(React, 'useState')
       .mockImplementationOnce(() => [[{

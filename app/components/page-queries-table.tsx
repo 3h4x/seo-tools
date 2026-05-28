@@ -57,6 +57,14 @@ function PageQueriesError({ message }: { message: string }) {
   );
 }
 
+function PageQueriesEmpty({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <Notice tone="neutral" size="sm" className={`text-neutral-500 ${className}`}>
+      {children}
+    </Notice>
+  );
+}
+
 export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
   const [rows, setRows] = useState<PageQueryResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,7 +128,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
       ) : loadError ? (
         <PageQueriesError message={loadError} />
       ) : rows.length === 0 ? (
-        <p className="text-neutral-600 text-sm">No page data available.</p>
+        <PageQueriesEmpty>No page data available.</PageQueriesEmpty>
       ) : (
         <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
           <table className="w-full text-sm">
@@ -170,7 +178,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                       <tr id={panelId} key={`${row.page}-expanded`} className="bg-neutral-950/50">
                         <td colSpan={4} className="px-6 pb-3 pt-1">
                           {row.queries.length === 0 ? (
-                            <p className="text-neutral-600 text-xs">No query data for this page.</p>
+                            <PageQueriesEmpty className="text-xs">No query data for this page.</PageQueriesEmpty>
                           ) : (
                             <DataTable
                               columns={QUERY_COLUMNS}
