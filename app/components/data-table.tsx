@@ -1,5 +1,20 @@
 import type { ReactNode } from 'react';
 
+const FONT_WEIGHT_CLASS_RE = /\bfont-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)\b/;
+const TEXT_ALIGN_CLASS_RE = /\btext-(?:left|center|right|justify|start|end)\b/;
+
+function joinClassNames(...parts: Array<string | undefined>) {
+  return [...new Set(parts.flatMap((part) => (part ? part.split(/\s+/) : [])))].join(' ');
+}
+
+function hasFontWeightClass(className: string) {
+  return FONT_WEIGHT_CLASS_RE.test(className);
+}
+
+function hasTextAlignClass(className: string) {
+  return TEXT_ALIGN_CLASS_RE.test(className);
+}
+
 export interface DataTableColumn {
   label: ReactNode;
   key?: string;
@@ -37,10 +52,6 @@ export function DataTable({
   bodyClassName = 'divide-y divide-neutral-800',
   rowClassName = 'hover:bg-neutral-800/30',
 }: DataTableProps) {
-  const joinClassNames = (...parts: Array<string | undefined>) => [...new Set(parts.flatMap((part) => (part ? part.split(/\s+/) : [])))].join(' ');
-  const hasFontWeightClass = (className: string) => /\bfont-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)\b/.test(className);
-  const hasTextAlignClass = (className: string) => /\btext-(?:left|center|right|justify|start|end)\b/.test(className);
-
   const getHeaderClassName = (column: DataTableColumn) => {
     const baseClassName = column.className ?? 'px-3 py-2 font-semibold';
     const alignmentClass = hasTextAlignClass(baseClassName)
