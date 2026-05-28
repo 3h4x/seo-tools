@@ -74,16 +74,19 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
   const [filterCategory, setFilterCategory] = useState<GapCategory | null>(null);
   const [filterSeverity, setFilterSeverity] = useState<GapSeverity | null>(null);
 
-  // Apply filters
-  const filtered = allSiteGaps.filter((sg) => {
-    if (filterSite && sg.siteId !== filterSite) return false;
-    if (filterCategory && sg.gap.category !== filterCategory) return false;
-    if (filterSeverity && sg.gap.severity !== filterSeverity) return false;
-    return true;
-  });
-
+  const filtered: SiteGap[] = [];
   const grouped: Record<GapSeverity, SiteGap[]> = { high: [], medium: [], low: [] };
-  for (const sg of filtered) {
+  const siteCounts: Record<string, number> = {};
+  const categoryCounts: Partial<Record<GapCategory, number>> = {};
+  const severityCounts: Record<GapSeverity, number> = { high: 0, medium: 0, low: 0 };
+  for (const sg of allSiteGaps) {
+    siteCounts[sg.siteId] = (siteCounts[sg.siteId] ?? 0) + 1;
+    categoryCounts[sg.gap.category] = (categoryCounts[sg.gap.category] ?? 0) + 1;
+    severityCounts[sg.gap.severity]++;
+    if (filterSite && sg.siteId !== filterSite) continue;
+    if (filterCategory && sg.gap.category !== filterCategory) continue;
+    if (filterSeverity && sg.gap.severity !== filterSeverity) continue;
+    filtered.push(sg);
     grouped[sg.gap.severity].push(sg);
   }
 
@@ -113,7 +116,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
               options={sites.map((site) => ({
                 value: site.id,
                 label: site.name,
-                count: allSiteGaps.filter((sg) => sg.siteId === site.id).length,
+                count: siteCounts[site.id] ?? 0,
               }))}
             />
           </div>
@@ -128,7 +131,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
               options={categories.map((cat) => ({
                 value: cat,
                 label: CATEGORY_LABELS[cat],
-                count: allSiteGaps.filter((sg) => sg.gap.category === cat).length,
+                count: categoryCounts[cat] ?? 0,
               }))}
             />
           </div>
@@ -145,7 +148,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
               return {
                 value: sev,
                 label: s.label,
-                count: allSiteGaps.filter((sg) => sg.gap.severity === sev).length,
+                count: severityCounts[sev],
                 activeClassName: `${s.bg} ${s.text} ${s.border}`,
                 countActiveClassName: '',
               };
