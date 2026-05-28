@@ -454,6 +454,8 @@ describe('Audit page', () => {
       expect(html).toContain('a.test');
       expect(html).toContain('b.test');
       expect(html).toContain('1410ms');
+      expect(html).toContain('Core Web Vitals (1 site)');
+      expect(html).toContain('gap analysis signals (1 site)');
       expect(mockGapsClient).toHaveBeenCalledWith(
         expect.objectContaining({
           allSiteGaps: [
