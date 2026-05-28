@@ -541,6 +541,38 @@ describe('loadActionQueue', () => {
     expect(result.counts.medium).toBe(1);
   });
 
+  it('classifies low-severity structural gaps as low priority', async () => {
+    mockCachedAuditAllSites.mockResolvedValueOnce([{ siteId: 'site-a' }]);
+    mockAnalyzeSiteGaps.mockReturnValueOnce({
+      gaps: [{
+        id: 'weak-favicon',
+        title: 'Add favicon',
+        description: 'No favicon was detected.',
+        severity: 'low',
+        category: 'technical',
+        hint: 'Add /favicon.ico.',
+      }],
+    });
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        kind: 'gap',
+        priority: 'low',
+        affected: 'Sitewide',
+        impactLabel: 'Structural issue',
+        score: 1,
+      }),
+    ]);
+    expect(result.counts).toEqual({
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 1,
+    });
+  });
+
   it('sorts by score and caps the queue at 100 items', async () => {
     mockGetManagedSites.mockResolvedValueOnce([siteA]);
     mockDiscoverPropertyIds.mockResolvedValueOnce({
