@@ -564,6 +564,39 @@ describe('getCrossLinkMatrix', () => {
     expect(alphaFetches).toHaveLength(0);
   });
 
+  it('does not treat sibling hostnames as managed-domain matches', async () => {
+    const twoSites: Site[] = [
+      { id: 'alpha', name: 'Alpha', domain: 'alpha.test', testPages: ['/'] },
+      { id: 'beta', name: 'Beta', domain: 'beta.test', testPages: ['/'] },
+    ];
+
+    vi.stubGlobal('fetch', vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      if (url === 'https://beta.test/home') {
+        return new Response('<a href="https://xalpha.test/near-miss">Near miss</a>');
+      }
+      return new Response('', { status: 404 });
+    }) as typeof fetch);
+
+    mockCachedGetSearchConsolePages.mockImplementation((siteUrl: string) => {
+      if (siteUrl === 'sc-domain:beta.test') {
+        return [{ page: '/home' }];
+      }
+      return [];
+    });
+
+    const matrix = await getCrossLinkMatrix(twoSites);
+
+    const beta = matrix.find((row) => row.sourceSiteId === 'beta');
+    expect(beta?.status).toBe('ok');
+    expect(beta?.targets[0]).toMatchObject({
+      targetSiteId: 'alpha',
+      linkedPages: 0,
+      missingPages: 1,
+      linkedExamples: [],
+    });
+  });
+
   it('prefers the most specific managed domain when apex and subdomain sites overlap', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: string | URL) => {
       const url = String(input);
