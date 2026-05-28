@@ -7,6 +7,7 @@ import {
   CWV_THRESHOLDS,
   CWV_TREND_COLORS,
   METRIC_COLORS,
+  STATUS_COLORS,
   TREND_COLORS,
   VALID_DAYS,
   rateCwv,
@@ -45,6 +46,15 @@ describe('constants', () => {
       tooltipItem: '#d4d4d4',
       dotStroke: '#0a0a0a',
       inactive: '#525252',
+    });
+  });
+
+  it('exports semantic status colors for non-Tailwind chart surfaces', () => {
+    expect(STATUS_COLORS).toEqual({
+      pass: { chart: '#10b981', text: 'text-emerald-400' },
+      warn: { chart: '#f59e0b', text: 'text-amber-400' },
+      fail: { chart: '#ef4444', text: 'text-red-400' },
+      error: { chart: '#737373', text: 'text-neutral-400' },
     });
   });
 

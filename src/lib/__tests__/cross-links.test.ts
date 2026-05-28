@@ -526,7 +526,8 @@ describe('getCrossLinkMatrix', () => {
       String(call[0]).startsWith('https://alpha.test/'),
     );
     expect(alphaFetches).toHaveLength(1);
-    expect(String(alphaFetches[0][0])).toBe('https://alpha.test/good');
+    const [firstAlphaFetch] = alphaFetches;
+    expect(String(firstAlphaFetch?.[0])).toBe('https://alpha.test/good');
   });
 
   it('falls back to no-pages when every Search Console row fails URL normalization', async () => {
@@ -535,7 +536,7 @@ describe('getCrossLinkMatrix', () => {
       { id: 'beta', name: 'Beta', domain: 'beta.test', testPages: ['/'] },
     ];
 
-    const fetchSpy = vi.fn(async () => new Response('', { status: 404 }));
+    const fetchSpy = vi.fn(async (_input: string | URL) => new Response('', { status: 404 }));
     vi.stubGlobal('fetch', fetchSpy as typeof fetch);
 
     mockCachedGetSearchConsolePages.mockImplementation((siteUrl: string) => {

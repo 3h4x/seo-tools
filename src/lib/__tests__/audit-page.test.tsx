@@ -74,6 +74,9 @@ vi.mock('@/lib/performance-site', () => ({
 }));
 
 vi.mock('@/lib/constants', () => ({
+  CHART_NEUTRALS: {
+    grid: '#262626',
+  },
   CWV_RATING_COLORS: {
     good: { text: 'text-emerald-400' },
     'needs-improvement': { text: 'text-amber-400' },
@@ -83,6 +86,12 @@ vi.mock('@/lib/constants', () => ({
     LCP: { unit: 'ms' },
     INP: { unit: 'ms' },
     CLS: { unit: 'score' },
+  },
+  STATUS_COLORS: {
+    pass: { chart: '#10b981', text: 'text-emerald-400' },
+    warn: { chart: '#f59e0b', text: 'text-amber-400' },
+    fail: { chart: '#ef4444', text: 'text-red-400' },
+    error: { chart: '#737373', text: 'text-neutral-400' },
   },
 }));
 

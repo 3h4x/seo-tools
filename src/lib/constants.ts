@@ -29,6 +29,13 @@ export const CHART_NEUTRALS = {
   inactive: '#525252',     // neutral-600
 } as const;
 
+export const STATUS_COLORS = {
+  pass: { chart: '#10b981', text: 'text-emerald-400' },
+  warn: { chart: '#f59e0b', text: 'text-amber-400' },
+  fail: { chart: '#ef4444', text: 'text-red-400' },
+  error: { chart: '#737373', text: 'text-neutral-400' },
+} as const;
+
 export type CwvMetricName = 'LCP' | 'INP' | 'CLS' | 'FCP' | 'TTFB';
 export type CwvRating = 'good' | 'ni' | 'poor';
 

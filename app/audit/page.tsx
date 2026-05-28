@@ -8,7 +8,7 @@ import { analyzeSiteGaps, loadSiteGapSignals } from '@/lib/gaps';
 import { detectAllDecay, type DecaySeverity } from '@/lib/decay';
 import { formatRelativeTime } from '@/lib/format';
 import { getCwvAuditSummary, type CwvAuditSummary } from '@/lib/performance-site';
-import { CWV_RATING_COLORS, CWV_THRESHOLDS, type CwvMetricName } from '@/lib/constants';
+import { CHART_NEUTRALS, CWV_RATING_COLORS, CWV_THRESHOLDS, STATUS_COLORS, type CwvMetricName } from '@/lib/constants';
 import { loadOrFlag } from '@/lib/page-helpers';
 import { statusDots, accentBorder, StatusBadge } from '../components/audit/check-card';
 import { MetricCard } from '../components/metric-card';
@@ -230,6 +230,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const allDecaying = decayResults.flatMap(r => r.decayingPages);
   const severeCount = allDecaying.filter(p => p.severity === 'severe').length;
   const decaySitesAffected = new Set(allDecaying.map(p => p.siteId)).size;
+  const healthStatus = healthPct >= 90 ? 'pass' : healthPct >= 70 ? 'warn' : 'fail';
+  const healthColors = STATUS_COLORS[healthStatus];
 
   return (
     <div className="space-y-8">
@@ -249,16 +251,16 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 flex items-center gap-5 shrink-0">
           <div className="relative size-24">
             <svg viewBox="0 0 100 100" className="size-24 -rotate-90">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="#262626" strokeWidth="8" />
+              <circle cx="50" cy="50" r="42" fill="none" stroke={CHART_NEUTRALS.grid} strokeWidth="8" />
               <circle
                 cx="50" cy="50" r="42" fill="none"
-                stroke={healthPct >= 90 ? '#10b981' : healthPct >= 70 ? '#f59e0b' : '#ef4444'}
+                stroke={healthColors.chart}
                 strokeWidth="8" strokeLinecap="round"
                 strokeDasharray={`${healthPct * 2.64} 264`}
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className={`text-lg font-bold font-mono ${healthPct >= 90 ? 'text-emerald-400' : healthPct >= 70 ? 'text-amber-400' : 'text-red-400'}`}>
+              <span className={`text-lg font-bold font-mono ${healthColors.text}`}>
                 {healthPct}%
               </span>
             </div>

@@ -6,6 +6,7 @@ import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteId, normalizeSiteDomain, slugifySiteDomain } from '@/lib/site-domain';
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
+import { CHART_NEUTRALS } from '@/lib/constants';
 import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, Spinner, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 
@@ -742,7 +743,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   tone="dense"
                   padding="compact"
                   className="h-8 w-12 cursor-pointer"
-                  value={form.color ?? '#737373'}
+                  value={form.color ?? CHART_NEUTRALS.tick}
                   onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                 />
                 {form.color && (
