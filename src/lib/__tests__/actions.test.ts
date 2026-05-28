@@ -365,6 +365,29 @@ describe('loadActionQueue', () => {
     expect(mockDetectAllDecay).toHaveBeenCalledWith(30);
   });
 
+  it('normalizes unsupported decay windows to 7 days in fetches and item copy', async () => {
+    mockDetectAllDecay.mockResolvedValueOnce([
+      {
+        siteId: 'site-a',
+        domain: 'a.test',
+        totalPages: 1,
+        decayingPages: [
+          { page: '/stale', siteId: 'site-a', domain: 'a.test', severity: 'moderate', previousClicks: 40, currentClicks: 20, clicksDelta: -50, currentImpressions: 300, previousImpressions: 500, impressionsDelta: -40 },
+        ],
+      },
+    ]);
+
+    const result = await loadActionQueue(14);
+
+    expect(mockDetectAllDecay).toHaveBeenCalledWith(7);
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        kind: 'decay',
+        detail: '/stale lost 50% clicks over the last 7 days.',
+      }),
+    ]);
+  });
+
   it('normalizes absolute SC page URLs when matching gap affectedPages', async () => {
     mockCachedAuditAllSites.mockResolvedValueOnce([{ siteId: 'site-a' }]);
     mockLoadSiteGapSignals.mockResolvedValueOnce({

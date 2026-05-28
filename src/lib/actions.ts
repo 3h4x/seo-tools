@@ -96,11 +96,12 @@ function priorityFromDecay(severity: DecaySeverity): ActionQueueItem['priority']
 }
 
 export async function loadActionQueue(days: number = 7): Promise<ActionQueueData> {
+  const decayDays = days === 30 ? 30 : 7;
   const [managedSitesResult, discoveredSitesResult, auditsResult, decayResultsResult] = await Promise.all([
     loadOrFlag('ActionQueue managed sites', getManagedSites(), []),
     loadOrFlag('ActionQueue GA4 discovery', discoverPropertyIdsWithStatus(), { sites: [], failed: false }),
     loadOrFlag('ActionQueue audits', cachedAuditAllSites(), []),
-    loadOrFlag('ActionQueue decay', detectAllDecay(days === 30 ? 30 : 7), []),
+    loadOrFlag('ActionQueue decay', detectAllDecay(decayDays), []),
   ]);
   const failures = [
     ...(managedSitesResult.failed ? ['Managed sites'] : []),
@@ -175,7 +176,7 @@ export async function loadActionQueue(days: number = 7): Promise<ActionQueueData
         siteName: site.name,
         siteDomain: site.domain,
         title: 'Recover decaying page traffic',
-        detail: `${page.page} lost ${Math.abs(page.clicksDelta)}% clicks over the last ${days} days.`,
+        detail: `${page.page} lost ${Math.abs(page.clicksDelta)}% clicks over the last ${decayDays} days.`,
         affected: page.page,
         impactLabel: `${lostClicks.toLocaleString()} clicks lost`,
         href: `/${encodeURIComponent(site.id)}`,
