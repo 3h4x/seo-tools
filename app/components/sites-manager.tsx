@@ -840,9 +840,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           {discoverError && <Notice tone="danger" size="sm" role="alert">{discoverError}</Notice>}
           {discoverWarning && <Notice tone="warning" size="sm" role="status">{discoverWarning}</Notice>}
           {importSummary && (
-            <p className={`text-sm ${importSummary.tone === 'warning' ? 'text-amber-300' : 'text-emerald-300'}`}>
+            <Notice tone={importSummary.tone} size="sm" role="status">
               {importSummary.message}
-            </p>
+            </Notice>
           )}
 
           {discovered !== null && (
