@@ -447,4 +447,42 @@ describe('startSitemapSync', () => {
     );
     errorSpy.mockRestore();
   });
+
+  it('catches interval run failures without replacing the existing schedule', async () => {
+    const db = makeDb([]);
+    const getDbMock = vi.fn()
+      .mockReturnValueOnce(db)
+      .mockReturnValueOnce(db)
+      .mockReturnValueOnce(db)
+      .mockImplementation(() => {
+        throw new Error('interval db unavailable');
+      });
+
+    vi.doMock('../google-auth', () => ({ getAuth: vi.fn() }));
+    vi.doMock('../db', () => ({ getDb: getDbMock }));
+    vi.doMock('@googleapis/searchconsole', () => ({
+      searchconsole_v1: {
+        Searchconsole: function () {
+          return { sitemaps: { submit: vi.fn() } };
+        },
+      },
+    }));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const mod = await import('../sitemap-sync');
+    mod.startSitemapSync();
+
+    expect(setIntervalSpy).toHaveBeenCalledOnce();
+    const intervalCallback = setIntervalSpy.mock.calls[0][0] as () => void;
+    expect(() => intervalCallback()).not.toThrow();
+
+    await new Promise(resolve => setImmediate(resolve));
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[sitemap-sync] interval error:',
+      expect.stringContaining('interval db unavailable'),
+    );
+    expect(setIntervalSpy).toHaveBeenCalledOnce();
+
+    errorSpy.mockRestore();
+  });
 });
