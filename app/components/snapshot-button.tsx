@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormButton, Spinner } from '@/components/ui';
+import { FormButton, Notice, Spinner } from '@/components/ui';
 import { formatNetworkError } from '@/lib/request-result';
 import type { SnapshotResult } from '@/lib/snapshot';
 
@@ -103,15 +103,17 @@ export function SnapshotButton() {
         {state === 'running' ? 'Running snapshot…' : 'Run snapshot now'}
       </FormButton>
       {state === 'done' && result && (
-        <p className="text-xs text-neutral-400">
+        <Notice size="sm" className="max-w-xl text-xs">
           Snapshot saved for {result.date} — {result.sc} SC pages, {result.keywords} keywords, {result.ga4} GA4 sites
           {result.errors.length > 0 && (
             <span className="text-amber-400"> ({result.errors.length} error{result.errors.length !== 1 ? 's' : ''})</span>
           )}
-        </p>
+        </Notice>
       )}
       {state === 'error' && (
-        <p className="text-xs text-red-400" role="alert">{errorMsg}</p>
+        <Notice tone="danger" size="sm" className="max-w-xl text-xs" role="alert">
+          {errorMsg}
+        </Notice>
       )}
     </div>
   );
