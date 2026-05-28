@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Badge, ConfiguredNotice, FormButton, FormInput, FormTextarea, Spinner } from '@/components/ui';
+import { Badge, ConfiguredNotice, FormButton, FormInput, FormTextarea, Notice, Spinner } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -233,7 +233,11 @@ export default function AlertDeliveryForm() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
+      {error && (
+        <Notice tone="danger" size="sm" role="alert">
+          {error}
+        </Notice>
+      )}
       {success && <p className="text-sm text-emerald-400" role="status">{success}</p>}
 
       <div className="flex gap-2 flex-wrap">
