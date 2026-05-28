@@ -3,6 +3,7 @@ import { dbGetAlertEvents } from '@/lib/db';
 import { formatAlertMetricValue, getAlertMetricLabel } from '@/lib/alerts';
 import { loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
+import { Notice } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 
@@ -67,16 +68,16 @@ export default async function AlertsPage() {
       <PartialFailureBanner failures={partialFailures} />
 
       {eventsResult.failed ? (
-        <div className="rounded-lg border border-neutral-800 border-l-4 border-l-red-500 bg-neutral-900 p-6">
+        <Notice tone="danger" size="none" className="rounded-lg border-l-4 border-l-red-500 p-6">
           <p className="font-semibold text-red-400">Couldn&apos;t load alert history</p>
           <p className="mt-2 text-sm text-neutral-500">
             The alert events table failed to read. Check the server logs and use Refresh to retry.
           </p>
-        </div>
+        </Notice>
       ) : events.length === 0 ? (
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6 text-sm text-neutral-500">
+        <Notice size="none" className="rounded-lg p-6 text-sm text-neutral-500">
           No alerts have fired yet. Add rules in <Link href="/config" className="text-white underline">Config</Link> and run snapshots to populate history.
-        </div>
+        </Notice>
       ) : (
         <DataTable
           columns={ALERT_COLUMNS}
