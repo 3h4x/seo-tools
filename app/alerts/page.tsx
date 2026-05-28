@@ -1,10 +1,9 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { dbGetAlertEvents } from '@/lib/db';
 import { formatAlertMetricValue, getAlertMetricLabel } from '@/lib/alerts';
 import { loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
-import { Notice } from '@/components/ui';
+import { Notice, TextLink } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 
@@ -65,7 +64,7 @@ export default async function AlertsPage() {
         <h1 className="text-2xl font-bold text-white">Alerts</h1>
         <p className="mt-1 text-sm text-neutral-500">
           Recent fired alerts from the snapshot pipeline. Configure rules and delivery in{' '}
-          <Link href="/config" className="text-white underline">Config</Link>.
+          <TextLink href="/config" className="text-sm text-white underline">Config</TextLink>.
         </p>
       </div>
 
@@ -80,7 +79,7 @@ export default async function AlertsPage() {
         </Notice>
       ) : events.length === 0 ? (
         <Notice size="none" className="p-6 text-sm text-neutral-500">
-          No alerts have fired yet. Add rules in <Link href="/config" className="text-white underline">Config</Link> and run snapshots to populate history.
+          No alerts have fired yet. Add rules in <TextLink href="/config" className="text-sm text-white underline">Config</TextLink> and run snapshots to populate history.
         </Notice>
       ) : (
         <DataTable
