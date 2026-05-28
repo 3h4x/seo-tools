@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Notice } from '@/components/ui';
 import { hasGoogleCredentials } from '@/lib/google-auth';
 
 interface Props {
@@ -7,24 +8,31 @@ interface Props {
 
 export function NoSitesNotice({ variant = 'card' }: Props) {
   const hasCreds = hasGoogleCredentials();
-  const className = variant === 'card'
-    ? 'rounded border border-neutral-800 px-4 py-8 text-center text-sm text-neutral-500'
-    : 'text-neutral-500 text-sm';
+  const className = 'text-neutral-500 text-sm';
+  const content = hasCreds ? (
+    <>
+      No sites configured —{' '}
+      <Link href="/config" className="text-white underline">add sites in the Config tab</Link>.
+    </>
+  ) : (
+    <>
+      Google service account not configured —{' '}
+      <Link href="/config" className="text-white underline">add credentials in the Config tab</Link>{' '}
+      to enable site discovery and SEO data.
+    </>
+  );
 
-  if (!hasCreds) {
+  if (variant === 'inline') {
     return (
       <div className={className}>
-        Google service account not configured —{' '}
-        <Link href="/config" className="text-white underline">add credentials in the Config tab</Link>{' '}
-        to enable site discovery and SEO data.
+        {content}
       </div>
     );
   }
 
   return (
-    <div className={className}>
-      No sites configured —{' '}
-      <Link href="/config" className="text-white underline">add sites in the Config tab</Link>.
-    </div>
+    <Notice size="none" className="rounded border-neutral-800 bg-transparent px-4 py-8 text-center text-sm text-neutral-500">
+      {content}
+    </Notice>
   );
 }
