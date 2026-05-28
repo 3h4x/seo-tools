@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gap-definitions';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
-import { Badge, FilterChipGroup, Notice, TextButton } from '@/components/ui';
+import { Badge, FilterChipGroup, Notice, TextButton, TextLink } from '@/components/ui';
 
 export interface SiteGap {
   gap: GapRecommendation;
@@ -50,14 +49,14 @@ function GapRow({ sg }: { sg: SiteGap }) {
             </pre>
           </details>
         </div>
-        <Link
+        <TextLink
           href={`/${encodeURIComponent(siteId)}`}
-          className="shrink-0 bg-neutral-800 hover:bg-neutral-700 rounded-md px-3 py-1.5 transition-colors text-right"
+          className="shrink-0 rounded-md bg-neutral-800 px-3 py-1.5 text-right hover:bg-neutral-700"
           title={`View ${domain} full audit`}
         >
           <div className="text-white text-xs font-semibold">{siteName}</div>
           <div className="text-neutral-500 text-[10px]">{domain}</div>
-        </Link>
+        </TextLink>
       </div>
     </div>
   );
