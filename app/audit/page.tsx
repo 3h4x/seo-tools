@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { cachedAuditAllSites, type CheckStatus, type SiteAuditResult } from '@/lib/audit';
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getManagedSites } from '@/lib/sites';
@@ -299,9 +298,11 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           const cwv = cwvSummaries[audit.siteId] ?? null;
           const freshness = auditFreshness(audit.timestamp);
           return (
-            <Link
+            <TextLink
               key={audit.siteId}
               href={`/${encodeURIComponent(audit.siteId)}`}
+              size="inherit"
+              variant="inherit"
               className={`block bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accentBorder[worst]} p-5 hover:bg-neutral-800/50 transition-colors`}
             >
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -363,7 +364,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                   <PerformanceSourceBadge source={cwv.source} className="ml-auto" />
                 </div>
               )}
-            </Link>
+            </TextLink>
           );
         })}
       </div>
