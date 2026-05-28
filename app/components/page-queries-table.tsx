@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Notice, TextButton } from '@/components/ui';
+import { Notice, Skeleton, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { PositionBadge } from './position-badge';
-import { Skeleton } from './skeletons';
 import type { SCQueryRow, PageQueryResult } from '@/lib/search-console';
 
 interface PageQueriesTableProps {
