@@ -10,6 +10,7 @@ import {
   CWV_METRIC_ORDER,
   CWV_THRESHOLDS,
   CWV_TREND_COLORS,
+  GAP_SEVERITY_STYLES,
   METRIC_COLORS,
   STATUS_COLORS,
   TREND_COLORS,
@@ -74,6 +75,35 @@ describe('constants', () => {
       gap: 'text-violet-300 bg-violet-500/10 border-violet-500/20',
       decay: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
       keyword: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+    });
+  });
+
+  it('exports shared gap severity styles', () => {
+    expect(GAP_SEVERITY_STYLES).toEqual({
+      high: {
+        label: 'High',
+        bg: 'bg-red-500/10',
+        text: STATUS_COLORS.fail.text,
+        dot: STATUS_COLORS.fail.dot,
+        border: 'border-red-500/20',
+        accentBorder: 'border-l-red-500',
+      },
+      medium: {
+        label: 'Medium',
+        bg: 'bg-amber-500/10',
+        text: STATUS_COLORS.warn.text,
+        dot: STATUS_COLORS.warn.dot,
+        border: 'border-amber-500/20',
+        accentBorder: 'border-l-amber-500',
+      },
+      low: {
+        label: 'Low',
+        bg: 'bg-blue-500/10',
+        text: 'text-blue-400',
+        dot: 'bg-blue-500',
+        border: 'border-blue-500/20',
+        accentBorder: 'border-l-blue-500',
+      },
     });
   });
 

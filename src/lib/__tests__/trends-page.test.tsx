@@ -103,6 +103,11 @@ vi.mock('@/lib/constants', () => ({
     fail: { chart: '#ef4444', text: 'text-red-400', dot: 'bg-red-500' },
     error: { chart: '#737373', text: 'text-neutral-400', dot: 'bg-neutral-500' },
   },
+  GAP_SEVERITY_STYLES: {
+    high: { label: 'High', bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-500', border: 'border-red-500/20', accentBorder: 'border-l-red-500' },
+    medium: { label: 'Medium', bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-500', border: 'border-amber-500/20', accentBorder: 'border-l-amber-500' },
+    low: { label: 'Low', bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-500', border: 'border-blue-500/20', accentBorder: 'border-l-blue-500' },
+  },
   VALID_DAYS: [7, 30, 90],
 }));
 

@@ -49,6 +49,33 @@ export const ACTION_KIND_STYLES = {
   keyword: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
 } as const;
 
+export const GAP_SEVERITY_STYLES = {
+  high: {
+    label: 'High',
+    bg: 'bg-red-500/10',
+    text: STATUS_COLORS.fail.text,
+    dot: STATUS_COLORS.fail.dot,
+    border: 'border-red-500/20',
+    accentBorder: 'border-l-red-500',
+  },
+  medium: {
+    label: 'Medium',
+    bg: 'bg-amber-500/10',
+    text: STATUS_COLORS.warn.text,
+    dot: STATUS_COLORS.warn.dot,
+    border: 'border-amber-500/20',
+    accentBorder: 'border-l-amber-500',
+  },
+  low: {
+    label: 'Low',
+    bg: 'bg-blue-500/10',
+    text: 'text-blue-400',
+    dot: 'bg-blue-500',
+    border: 'border-blue-500/20',
+    accentBorder: 'border-l-blue-500',
+  },
+} as const;
+
 export const CROSS_LINK_SUMMARY_STYLES = {
   sources: { accent: 'border-l-blue-500', value: 'text-blue-400' },
   linked: { accent: 'border-l-emerald-500', value: STATUS_COLORS.pass.text },
