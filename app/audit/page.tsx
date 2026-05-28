@@ -17,7 +17,7 @@ import { GapsClient, type SiteGap } from '../components/gaps-client';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
-import { Badge, Notice } from '@/components/ui';
+import { Badge, Notice, TextLink } from '@/components/ui';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
@@ -248,11 +248,11 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
         <p className="text-neutral-500 text-sm mt-1">Live checks · {audits.length} sites</p>
         <div className="mt-3">
-          <Link href="/audit/cross-links" className="inline-flex group">
+          <TextLink href="/audit/cross-links" size="inherit" variant="inherit" className="inline-flex group">
             <Badge size="compact" className="border-neutral-800 px-3 py-1 font-normal text-neutral-300 transition-colors group-hover:bg-neutral-800/50">
               Cross-site links
             </Badge>
-          </Link>
+          </TextLink>
         </div>
       </div>
       <PartialFailureBanner failures={partialFailures} />
