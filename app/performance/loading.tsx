@@ -1,4 +1,5 @@
-import { Skeleton, SkeletonHeader, SkeletonSummaryRow, SkeletonTable } from '../components/skeletons';
+import { Skeleton } from '@/components/ui';
+import { SkeletonHeader, SkeletonSummaryRow, SkeletonTable } from '../components/skeletons';
 
 export default function Loading() {
   return (
