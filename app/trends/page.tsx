@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Notice } from '@/components/ui';
 import { loadOrFlag, loadSyncOrFallback, loadSyncOrFlag } from '@/lib/page-helpers';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
@@ -50,7 +51,7 @@ export default async function TrendsPage({
           <h1 className="text-2xl font-bold text-white">Trends</h1>
           <p className="text-neutral-500 text-sm mt-1">Historical data over time</p>
         </div>
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-8 text-center">
+        <Notice tone="warning" size="none" className="rounded-lg border-l-4 border-l-amber-500 p-8 text-center">
           <svg className="size-12 mx-auto text-amber-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
           </svg>
@@ -65,7 +66,7 @@ export default async function TrendsPage({
             </div>
             <p className="text-neutral-600 text-xs mt-3 text-center">Or run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> from the CLI. Charts appear after 2+ snapshots.</p>
           </div>
-        </div>
+        </Notice>
       </div>
     );
   }
@@ -82,12 +83,12 @@ export default async function TrendsPage({
         </div>
         <PartialFailureBanner failures={partialFailures} />
         {managedSitesResult.failed ? (
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-6">
+          <Notice tone="danger" size="none" className="rounded-lg border-l-4 border-l-red-500 p-6" role="alert">
             <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
             <p className="text-neutral-500 text-sm mt-2">
               The sites table failed to read. Check the server logs and use Refresh to retry.
             </p>
-          </div>
+          </Notice>
         ) : (
           <NoSitesNotice variant="inline" />
         )}
@@ -375,12 +376,12 @@ function KeywordsSection({
           <h2 className="text-lg font-bold text-white">Keyword History</h2>
           <p className="text-neutral-500 text-sm mt-1">Rank movement over time across tracked queries</p>
         </div>
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-8 text-center">
+        <Notice tone="warning" size="none" className="rounded-lg border-l-4 border-l-amber-500 p-8 text-center">
           <p className="text-amber-400 font-bold">No keyword history yet</p>
           <p className="text-neutral-500 text-sm mt-2">
             Run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> to start capturing per-keyword rank data.
           </p>
-        </div>
+        </Notice>
       </section>
     );
   }
@@ -406,7 +407,7 @@ function KeywordsSection({
       </div>
 
       {sitesData.length === 0 ? (
-        <p className="text-neutral-500 text-sm">No keyword data found for any configured site.</p>
+        <Notice size="sm">No keyword data found for any configured site.</Notice>
       ) : (
         <div className="space-y-6">
           {sitesData.map(({ site, topQueries, history, deltas }) => {
