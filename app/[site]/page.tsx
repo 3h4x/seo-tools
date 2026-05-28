@@ -154,6 +154,25 @@ export default async function SiteDashboardPage({
   const ga4Error = ga4Data.error;
   const hasGa4 = ga4 && ga4.current.users > 0;
   const queryBucketStats = scQueries ? getQueryBucketStats(scQueries) : [];
+  const scQueryRows: Array<{ label: string; clicks: number; impressions: number; ctr: number; position: number }> = [];
+  const scQueryExportRows: Array<{ query: string; clicks: number; impressions: number; ctr: string; position: string }> = [];
+
+  for (const row of scQueries ?? []) {
+    scQueryRows.push({
+      label: row.query,
+      clicks: row.clicks,
+      impressions: row.impressions,
+      ctr: row.ctr,
+      position: row.position,
+    });
+    scQueryExportRows.push({
+      query: row.query,
+      clicks: row.clicks,
+      impressions: row.impressions,
+      ctr: `${(row.ctr * 100).toFixed(2)}%`,
+      position: row.position.toFixed(1),
+    });
+  }
 
   const scDailyResult = hasSearchConsole
     ? loadSyncOrFlag(`SiteDashboard SC daily ${siteId}`, () => getScDaily(siteId), [])
@@ -318,9 +337,9 @@ export default async function SiteDashboardPage({
           <ScTable
             heading="Top Queries"
             columnLabel="Query"
-            rows={(scQueries ?? []).map(r => ({ label: r.query, clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position }))}
+            rows={scQueryRows}
             emptyMessage="No query data available."
-            exportData={(scQueries ?? []).map(r => ({ query: r.query, clicks: r.clicks, impressions: r.impressions, ctr: `${(r.ctr * 100).toFixed(2)}%`, position: r.position.toFixed(1) }))}
+            exportData={scQueryExportRows}
             filename={`${siteId}-queries-${days}d`}
           />
           <PageQueriesTable siteId={siteId} days={days} />
