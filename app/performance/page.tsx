@@ -35,16 +35,20 @@ export default async function PerformancePage({
     LCP:  { sum: 0, count: 0 }, INP: { sum: 0, count: 0 }, CLS: { sum: 0, count: 0 },
     FCP:  { sum: 0, count: 0 }, TTFB: { sum: 0, count: 0 },
   };
+  let sitesWithRum = 0;
+  let needsKey = false;
+  let allNone = rows.length > 0;
   for (const row of rows) {
     for (const name of CWV_METRIC_ORDER) {
       const m = row.metrics[name];
       if (m) { overallAgg[name].sum += m.value; overallAgg[name].count += 1; }
     }
+    if (row.source === 'rum') sitesWithRum += 1;
+    if (row.needsKey) needsKey = true;
+    if (row.source !== 'none') allNone = false;
   }
-  const sitesWithRum = rows.filter(r => r.source === 'rum').length;
-  const needsKey = rows.some(r => r.needsKey);
   const guideParam = Array.isArray(params.guide) ? params.guide[0] : params.guide;
-  const guideOpen = guideParam === '1' || (rows.length > 0 && rows.every(r => r.source === 'none'));
+  const guideOpen = guideParam === '1' || allNone;
 
   const overallMetrics: Partial<Record<CwvMetricName, { value: number; rating: CwvRating }>> = {};
   for (const name of CWV_METRIC_ORDER) {
