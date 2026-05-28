@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { DataTable, type DataTableColumn } from '../../components/data-table';
 import { getCrossLinkMatrix, type CrossLinkSourceMatrix, type CrossLinkSourceStatus } from '@/lib/cross-links';
 import { CROSS_LINK_CELL_STYLES, CROSS_LINK_SUMMARY_STYLES } from '@/lib/constants';
@@ -6,7 +5,7 @@ import { loadOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
 import { NoSitesNotice } from '../../components/no-sites-notice';
 import { PartialFailureBanner } from '../../components/partial-failure-banner';
-import { Notice } from '@/components/ui';
+import { Notice, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -75,7 +74,7 @@ export default async function CrossLinksPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-white">Cross-Site Links</h1>
-            <Link href="/audit" className="text-sm text-neutral-500 hover:text-neutral-300 transition-colors">Back to audit</Link>
+            <TextLink href="/audit" size="xs" variant="muted" className="text-sm">Back to audit</TextLink>
           </div>
           <p className="text-neutral-500 text-sm mt-1">Top Search Console pages crawled with Googlebot UA · cached 24h · unavailable sources show as N/A</p>
         </div>
