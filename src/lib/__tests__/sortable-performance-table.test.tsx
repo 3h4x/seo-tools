@@ -67,4 +67,17 @@ describe('SortablePerformanceTable', () => {
     expect(html).toContain('GA4 failed');
     expect(html).toContain('<span class="text-red-400/60 text-xs">error</span>');
   });
+
+  it('keeps site details linked while the domain copy button stays outside the site link', () => {
+    const html = renderToStaticMarkup(<SortablePerformanceTable rows={rows} />);
+    const siteCell = html.slice(html.indexOf('href="/site-a"'), html.indexOf('href="/site-b"'));
+    const linkHtml = siteCell.slice(0, siteCell.indexOf('</a>'));
+    const afterLinkHtml = siteCell.slice(siteCell.indexOf('</a>'));
+
+    expect(linkHtml).toContain('Site A');
+    expect(linkHtml).toContain('a.test');
+    expect(linkHtml).toContain('bg-emerald-500/60');
+    expect(linkHtml).not.toContain('<button');
+    expect(afterLinkHtml).toContain('title="Copy domain"');
+  });
 });
