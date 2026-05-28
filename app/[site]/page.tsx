@@ -30,9 +30,9 @@ import { PageQueriesTable } from '../components/page-queries-table';
 import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFallback, loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
-import { Badge } from '@/components/ui';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
+import { ProviderErrorBadge } from '../components/provider-error-badge';
 
 export const revalidate = 300;
 
@@ -91,14 +91,6 @@ function SearchConsoleDisabledNotice() {
         Search Console is disabled for this site in Config. Metrics, query tables, and keyword history are hidden.
       </p>
     </div>
-  );
-}
-
-function ProviderErrorBadge() {
-  return (
-    <Badge size="xs" shape="rounded" uppercase className="border-red-500/40 bg-red-500/10 text-red-300">
-      data unavailable
-    </Badge>
   );
 }
 

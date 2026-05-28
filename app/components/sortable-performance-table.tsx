@@ -2,11 +2,12 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Badge, TextButton } from '@/components/ui';
+import { TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
 import { PerformanceSourceBadge } from './performance-source-badge';
+import { ProviderErrorBadge } from './provider-error-badge';
 import { formatBounce, formatDuration } from '@/lib/format';
 import type { PerformanceSource } from '@/lib/performance-site';
 
@@ -125,16 +126,8 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
     <Link key="site" href={`/${encodeURIComponent(row.id)}`} className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
         <span className="text-white font-medium">{row.name}</span>
-        {row.ga4Error && (
-          <Badge size="xs" shape="rounded" uppercase className="border-red-500/40 bg-red-500/10 text-red-300">
-            GA4 error
-          </Badge>
-        )}
-        {row.scError && (
-          <Badge size="xs" shape="rounded" uppercase className="border-red-500/40 bg-red-500/10 text-red-300">
-            SC error
-          </Badge>
-        )}
+        {row.ga4Error && <ProviderErrorBadge label="GA4 error" />}
+        {row.scError && <ProviderErrorBadge label="SC error" />}
         {row.cwvSource && <PerformanceSourceBadge source={row.cwvSource} />}
         <div className="flex items-center gap-1.5">
           <span className="text-neutral-600 text-xs">{row.domain}</span>
