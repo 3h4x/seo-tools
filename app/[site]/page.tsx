@@ -104,6 +104,14 @@ function SearchConsoleDisabledNotice() {
   );
 }
 
+function EmptyDataNotice({ children }: { children: ReactNode }) {
+  return (
+    <Notice size="sm" className="text-neutral-500">
+      {children}
+    </Notice>
+  );
+}
+
 export default async function SiteDashboardPage({
   params,
   searchParams,
@@ -407,13 +415,13 @@ export default async function SiteDashboardPage({
               </div>
             </div>
           ) : (
-            <p className="text-neutral-600 text-sm">No GA4 page data available.</p>
+            <EmptyDataNotice>No GA4 page data available.</EmptyDataNotice>
           )}
         </div>
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Traffic Sources</h2>
           {(ga4?.trafficSources ?? []).length === 0 ? (
-            <p className="text-neutral-600 text-sm">No traffic source data available.</p>
+            <EmptyDataNotice>No traffic source data available.</EmptyDataNotice>
           ) : (
             <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
               <div className="space-y-1.5">
