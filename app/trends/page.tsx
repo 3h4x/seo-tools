@@ -18,7 +18,7 @@ import {
 } from '@/lib/db';
 import { formatDuration, formatBounce } from '@/lib/format';
 import TrendChart from '../components/trend-chart';
-import { METRIC_COLORS, CHART_COLORS } from '@/lib/constants';
+import { METRIC_COLORS, CHART_COLORS, TREND_COLORS } from '@/lib/constants';
 import { PositionBadge } from '../components/position-badge';
 import { TrendBadge } from '../components/trend-badge';
 import { TrendsTable } from '../components/trends-table';
@@ -238,7 +238,7 @@ function OverviewTab({
                   <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">TTFB · ms · lower is better</h3>
                   <TrendChart
                     data={ttfbTrends}
-                    lines={[{ key: 'ttfbMs', color: '#f97316', label: 'TTFB (ms)' }]}
+                    lines={[{ key: 'ttfbMs', color: TREND_COLORS.ttfb, label: 'TTFB (ms)' }]}
                     height={160}
                     valueFormat="integer"
                   />
@@ -249,7 +249,7 @@ function OverviewTab({
                   <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">Indexing Coverage · % of sitemap URLs appearing in search</h3>
                   <TrendChart
                     data={auditTrends}
-                    lines={[{ key: 'coveragePct', color: '#38bdf8', label: 'Coverage %' }]}
+                    lines={[{ key: 'coveragePct', color: TREND_COLORS.coverage, label: 'Coverage %' }]}
                     height={160}
                     valueFormat="integer"
                   />

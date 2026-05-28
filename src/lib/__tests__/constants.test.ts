@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { CHART_COLORS, METRIC_COLORS, VALID_DAYS, rateCwv, CWV_THRESHOLDS, CWV_METRIC_ORDER } from '../constants';
+import {
+  CHART_COLORS,
+  CWV_METRIC_ORDER,
+  CWV_THRESHOLDS,
+  CWV_TREND_COLORS,
+  METRIC_COLORS,
+  TREND_COLORS,
+  VALID_DAYS,
+  rateCwv,
+} from '../constants';
 
 describe('constants', () => {
   it('exports the supported day windows in ascending order', () => {
@@ -22,6 +31,18 @@ describe('constants', () => {
       clicks: '#10b981',
       impressions: '#06b6d4',
       position: '#f59e0b',
+    });
+  });
+
+  it('exports semantic trend colors used by dashboard charts', () => {
+    expect(TREND_COLORS).toEqual({
+      ttfb: '#f97316',
+      coverage: '#38bdf8',
+    });
+    expect(CWV_TREND_COLORS).toEqual({
+      LCP: METRIC_COLORS.users,
+      INP: METRIC_COLORS.sessions,
+      CLS: METRIC_COLORS.views,
     });
   });
 });

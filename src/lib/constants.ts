@@ -11,6 +11,11 @@ export const METRIC_COLORS: Record<string, string> = {
   position: '#f59e0b',
 };
 
+export const TREND_COLORS = {
+  ttfb: '#f97316',
+  coverage: '#38bdf8',
+} as const;
+
 export type CwvMetricName = 'LCP' | 'INP' | 'CLS' | 'FCP' | 'TTFB';
 export type CwvRating = 'good' | 'ni' | 'poor';
 
@@ -25,6 +30,12 @@ export const CWV_THRESHOLDS: Record<CwvMetricName, { good: number; poor: number;
 };
 
 export const CWV_METRIC_ORDER: CwvMetricName[] = ['LCP', 'INP', 'CLS', 'FCP', 'TTFB'];
+
+export const CWV_TREND_COLORS: Record<Extract<CwvMetricName, 'LCP' | 'INP' | 'CLS'>, string> = {
+  LCP: METRIC_COLORS.users,
+  INP: METRIC_COLORS.sessions,
+  CLS: METRIC_COLORS.views,
+};
 
 export const PERF_VALID_DAYS = [7, 28] as const;
 

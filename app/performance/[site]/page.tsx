@@ -6,6 +6,7 @@ import {
   CWV_METRIC_ORDER,
   PERF_VALID_DAYS,
   CWV_THRESHOLDS,
+  CWV_TREND_COLORS,
   rateCwv,
 } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
@@ -198,9 +199,9 @@ export default async function PerfSiteDetail({
           <TrendChart
             data={trendData}
             lines={[
-              { key: 'LCP', color: '#3b82f6', label: `LCP (good ≤${CWV_THRESHOLDS.LCP.good}ms)` },
-              { key: 'INP', color: '#8b5cf6', label: `INP (good ≤${CWV_THRESHOLDS.INP.good}ms)` },
-              { key: 'CLS', color: '#f59e0b', label: 'CLS ×1000' },
+              { key: 'LCP', color: CWV_TREND_COLORS.LCP, label: `LCP (good ≤${CWV_THRESHOLDS.LCP.good}ms)` },
+              { key: 'INP', color: CWV_TREND_COLORS.INP, label: `INP (good ≤${CWV_THRESHOLDS.INP.good}ms)` },
+              { key: 'CLS', color: CWV_TREND_COLORS.CLS, label: 'CLS ×1000' },
             ]}
             height={240}
             valueFormat="integer"

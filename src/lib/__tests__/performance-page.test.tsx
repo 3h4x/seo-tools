@@ -82,6 +82,7 @@ vi.mock('../../../app/components/cwv-metrics-cards', () => ({
 
 import PerfSiteDetail from '../../../app/performance/[site]/page';
 import PerformancePage from '../../../app/performance/page';
+import { CWV_TREND_COLORS } from '../constants';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -214,6 +215,16 @@ describe('Performance site detail page', () => {
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain('Trend Chart:integer');
+    expect(mockTrendChart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lines: [
+          expect.objectContaining({ key: 'LCP', color: CWV_TREND_COLORS.LCP }),
+          expect.objectContaining({ key: 'INP', color: CWV_TREND_COLORS.INP }),
+          expect.objectContaining({ key: 'CLS', color: CWV_TREND_COLORS.CLS }),
+        ],
+      }),
+      undefined,
+    );
   });
 
   it('keeps the RUM detail header focused on RUM data', async () => {

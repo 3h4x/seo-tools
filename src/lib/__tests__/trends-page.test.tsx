@@ -89,6 +89,10 @@ vi.mock('@/lib/constants', () => ({
     impressions: '#5',
     position: '#6',
   },
+  TREND_COLORS: {
+    ttfb: '#7',
+    coverage: '#8',
+  },
   CHART_COLORS: ['#1', '#2', '#3', '#4', '#5'],
   VALID_DAYS: [7, 30, 90],
 }));
