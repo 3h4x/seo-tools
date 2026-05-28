@@ -12,11 +12,10 @@ import {
 } from 'recharts';
 import ClientChart from './client-chart';
 import TrendChart from './trend-chart';
-import { Skeleton } from './skeletons';
 import { formatDateShort } from '@/lib/format';
 import { CHART_NEUTRALS, METRIC_COLORS } from '@/lib/constants';
 import { todayDateOnly } from '@/lib/date-only';
-import { Notice, SegmentedControl, ToggleButtonGroup } from '@/components/ui';
+import { Notice, SegmentedControl, Skeleton, ToggleButtonGroup } from '@/components/ui';
 
 const METRICS = ['views', 'users', 'clicks', 'impressions'] as const;
 const METRIC_OPTIONS = METRICS.map(metric => ({
