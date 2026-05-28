@@ -94,6 +94,9 @@ vi.mock('@/lib/constants', () => ({
     coverage: '#8',
   },
   CHART_COLORS: ['#1', '#2', '#3', '#4', '#5'],
+  CHART_NEUTRALS: {
+    inactive: '#9',
+  },
   STATUS_COLORS: {
     pass: { chart: '#10b981', text: 'text-emerald-400', dot: 'bg-emerald-500' },
     warn: { chart: '#f59e0b', text: 'text-amber-400', dot: 'bg-amber-500' },

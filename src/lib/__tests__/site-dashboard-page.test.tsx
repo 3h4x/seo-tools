@@ -112,6 +112,9 @@ vi.mock('@/lib/constants', () => ({
     sessions: '#5',
     views: '#6',
   },
+  CHART_NEUTRALS: {
+    inactive: '#7',
+  },
   CWV_RATING_COLORS: {
     good: { text: 'text-emerald-400', label: 'Good' },
     'needs-improvement': { text: 'text-amber-400', label: 'Needs Improvement' },

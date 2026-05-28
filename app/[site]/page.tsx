@@ -12,11 +12,12 @@ import {
 } from '@/lib/search-console';
 import { cachedAuditSite, createFailedSiteAuditResult, normalizeSiteAuditResult, type CheckStatus } from '@/lib/audit';
 import { analyzeSiteGaps, createSiteGapSignals } from '@/lib/gaps';
+import { GAP_SEVERITY_STYLES, type GapSeverity } from '@/lib/gap-definitions';
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getScDaily, getGa4Daily, getKeywordDeltas } from '@/lib/db';
 import type { KeywordDelta } from '@/lib/keyword-history';
 import { KeywordRankTable } from '../components/keyword-rank-table';
-import { METRIC_COLORS, CWV_RATING_COLORS, CWV_THRESHOLDS, STATUS_COLORS, type CwvMetricName } from '@/lib/constants';
+import { CHART_NEUTRALS, METRIC_COLORS, CWV_RATING_COLORS, CWV_THRESHOLDS, STATUS_COLORS, VALID_DAYS, type CwvMetricName } from '@/lib/constants';
 import { pluralize, formatSource, formatDuration, formatBounce } from '@/lib/format';
 import TimeRange from '../components/time-range';
 import { Icons } from '../components/icons';
@@ -27,7 +28,6 @@ import { IndexNowButton } from '../components/indexnow-button';
 import { gapsBySection } from '@/lib/gaps';
 import { ScTable } from '../components/sc-table';
 import { PageQueriesTable } from '../components/page-queries-table';
-import { VALID_DAYS } from '@/lib/constants';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFallback, loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
@@ -37,10 +37,10 @@ import { ProviderErrorBadge } from '../components/provider-error-badge';
 export const revalidate = 300;
 
 const QUERY_BUCKETS = [
-  { label: 'Top 3', sublabel: 'pos 1–3', colorBar: 'bg-emerald-500', colorText: 'text-emerald-400', test: (position: number) => position <= 3 },
-  { label: '4–10', sublabel: 'first page', colorBar: 'bg-blue-500', colorText: 'text-blue-400', test: (position: number) => position > 3 && position <= 10 },
-  { label: '11–20', sublabel: 'second page', colorBar: 'bg-amber-500', colorText: 'text-amber-400', test: (position: number) => position > 10 && position <= 20 },
-  { label: '20+', sublabel: 'buried', colorBar: 'bg-neutral-600', colorText: 'text-neutral-500', test: (position: number) => position > 20 },
+  { label: 'Top 3', sublabel: 'pos 1–3', color: STATUS_COLORS.pass.chart, test: (position: number) => position <= 3 },
+  { label: '4–10', sublabel: 'first page', color: METRIC_COLORS.users, test: (position: number) => position > 3 && position <= 10 },
+  { label: '11–20', sublabel: 'second page', color: STATUS_COLORS.warn.chart, test: (position: number) => position > 10 && position <= 20 },
+  { label: '20+', sublabel: 'buried', color: CHART_NEUTRALS.inactive, test: (position: number) => position > 20 },
 ] as const;
 
 type QueryBucketStat = (typeof QUERY_BUCKETS)[number] & {
@@ -71,13 +71,25 @@ function getQueryBucketStats(
 }
 
 function engagementTone(engagementRate: number): string {
-  if (engagementRate >= 0.6) return 'text-emerald-400';
-  if (engagementRate >= 0.4) return 'text-amber-400';
-  return 'text-red-400';
+  if (engagementRate >= 0.6) return STATUS_COLORS.pass.text;
+  if (engagementRate >= 0.4) return STATUS_COLORS.warn.text;
+  return STATUS_COLORS.fail.text;
 }
 
 function statusTextTone(status: CheckStatus, passTone: string = STATUS_COLORS.pass.text): string {
   return status === 'pass' ? passTone : STATUS_COLORS[status].text;
+}
+
+function coverageStatus(coveragePct: number): CheckStatus {
+  if (coveragePct >= 60) return 'pass';
+  if (coveragePct >= 30) return 'warn';
+  return 'fail';
+}
+
+function ttfbStatus(ms: number): CheckStatus {
+  if (ms < 800) return 'pass';
+  if (ms < 2000) return 'warn';
+  return 'fail';
 }
 
 function SearchConsoleDisabledNotice() {
@@ -222,9 +234,13 @@ export default async function SiteDashboardPage({
           <div className="flex items-center gap-2 ml-auto">
             <span className="text-neutral-300 font-mono text-sm font-bold">{totalGaps}</span>
             <span className="text-neutral-500 text-xs">recommendations</span>
-            {gapAnalysis.counts.high > 0 && <span className="text-red-400 text-xs font-mono">{gapAnalysis.counts.high} high</span>}
-            {gapAnalysis.counts.medium > 0 && <span className="text-amber-400 text-xs font-mono">{gapAnalysis.counts.medium} med</span>}
-            {gapAnalysis.counts.low > 0 && <span className="text-blue-400 text-xs font-mono">{gapAnalysis.counts.low} low</span>}
+            {(['high', 'medium', 'low'] satisfies GapSeverity[]).map((severity) => (
+              gapAnalysis.counts[severity] > 0 && (
+                <span key={severity} className={`${GAP_SEVERITY_STYLES[severity].text} text-xs font-mono`}>
+                  {gapAnalysis.counts[severity]} {severity === 'medium' ? 'med' : severity}
+                </span>
+              )
+            ))}
           </div>
         )}
       </div>
@@ -299,8 +315,11 @@ export default async function SiteDashboardPage({
               {queryBucketStats.map((bucket) => bucket.count > 0 && (
                 <div
                   key={bucket.label}
-                  className={`${bucket.colorBar} transition-all first:rounded-l-full last:rounded-r-full`}
-                  style={{ width: `${(bucket.count / scQueries.length) * 100}%` }}
+                  className="transition-all first:rounded-l-full last:rounded-r-full"
+                  style={{
+                    backgroundColor: bucket.color,
+                    width: `${(bucket.count / scQueries.length) * 100}%`,
+                  }}
                 />
               ))}
             </div>
@@ -308,11 +327,11 @@ export default async function SiteDashboardPage({
               {queryBucketStats.map((bucket) => (
                 <div key={bucket.label} className="space-y-0.5">
                   <div className="flex items-center gap-1.5">
-                    <div className={`size-2 rounded-full shrink-0 ${bucket.colorBar}`} />
+                    <div className="size-2 rounded-full shrink-0" style={{ backgroundColor: bucket.color }} />
                     <span className="text-neutral-400 text-xs font-semibold">{bucket.label}</span>
                   </div>
                   <div className="pl-3.5">
-                    <span className={`${bucket.colorText} text-lg font-mono font-bold leading-none`}>{bucket.count}</span>
+                    <span className="text-lg font-mono font-bold leading-none" style={{ color: bucket.color }}>{bucket.count}</span>
                     {' '}
                     <span className="text-neutral-600 text-xs">queries</span>
                   </div>
@@ -488,9 +507,7 @@ export default async function SiteDashboardPage({
                 </div>
                 <div className="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${
-                      (audit.indexingCoverage.coveragePct ?? 0) >= 60 ? 'bg-emerald-500' : (audit.indexingCoverage.coveragePct ?? 0) >= 30 ? 'bg-amber-500' : 'bg-red-500'
-                    }`}
+                    className={`h-full rounded-full ${STATUS_COLORS[coverageStatus(audit.indexingCoverage.coveragePct ?? 0)].dot}`}
                     style={{ width: `${Math.min(audit.indexingCoverage.coveragePct ?? 0, 100)}%` }}
                   />
                 </div>
@@ -729,9 +746,7 @@ export default async function SiteDashboardPage({
               <div className="mt-3">
                 <div className="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${
-                      audit.ttfb.ms < 800 ? 'bg-emerald-500' : audit.ttfb.ms < 2000 ? 'bg-amber-500' : 'bg-red-500'
-                    }`}
+                    className={`h-full rounded-full ${STATUS_COLORS[ttfbStatus(audit.ttfb.ms)].dot}`}
                     style={{ width: `${Math.min((audit.ttfb.ms / 3000) * 100, 100)}%` }}
                   />
                 </div>
