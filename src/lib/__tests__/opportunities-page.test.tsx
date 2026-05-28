@@ -138,6 +138,7 @@ describe('Opportunities page', () => {
     expect(html).toContain('Managed sites');
     expect(html).toContain("Couldn't load managed sites");
     expect(html).toContain('The sites table failed to read. Check the server logs and use Refresh to retry.');
+    expect(html).toContain('rounded-lg border border-neutral-800 border-l-4 border-l-red-500 bg-neutral-900 p-8 text-neutral-500');
     expect(html).not.toContain('Enable Search Console for at least one managed site in Config to populate keyword opportunities.');
     expect(consoleError).toHaveBeenCalledWith(
       '[OpportunitiesPage managed sites]',
@@ -212,6 +213,7 @@ describe('Opportunities page', () => {
 
     expect(mockCachedGetKeywordOpportunities).not.toHaveBeenCalled();
     expect(html).toContain('Enable Search Console for at least one managed site in Config to populate keyword opportunities.');
+    expect(html).toContain('rounded-lg border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500');
     expect(html).not.toContain('Try a longer date range.');
   });
 });

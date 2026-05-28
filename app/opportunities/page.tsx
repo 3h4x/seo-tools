@@ -89,9 +89,9 @@ export default async function OpportunitiesPage({
     : scSites.length === 0
       ? 'Enable Search Console for at least one managed site in Config to populate keyword opportunities.'
       : 'No queries ranking in positions 5-20 for the selected period. Try a longer date range.';
-  const emptyClassName = sitesResult.failed
-    ? 'bg-neutral-900 border border-neutral-800 border-l-4 border-l-red-500 rounded-lg p-8 text-neutral-500'
-    : 'bg-neutral-900 border border-neutral-800 rounded-lg p-8 text-center text-neutral-500';
+  const emptyNoticeClassName = sitesResult.failed
+    ? 'rounded-lg border border-neutral-800 border-l-4 border-l-red-500 bg-neutral-900 p-8 text-neutral-500'
+    : 'rounded-lg border border-neutral-800 bg-neutral-900 p-8 text-center text-neutral-500';
   const emptyTitleClassName = sitesResult.failed
     ? 'font-semibold mb-1 text-red-400'
     : 'font-medium mb-1';
@@ -140,7 +140,7 @@ export default async function OpportunitiesPage({
         <Notice
           size="none"
           tone={sitesResult.failed ? 'danger' : 'neutral'}
-          className={emptyClassName}
+          className={emptyNoticeClassName}
         >
           <p className={emptyTitleClassName}>{emptyTitle}</p>
           <p className="text-sm">{emptyMessage}</p>
