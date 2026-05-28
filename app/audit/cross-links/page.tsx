@@ -24,12 +24,19 @@ export default async function CrossLinksPage() {
     ...(sitesResult.failed ? ['Managed sites'] : []),
     ...(matrixResult.failed ? ['Cross-link matrix'] : []),
   ];
-  const evaluatedTargets = matrix
-    .filter((row) => row.status === 'ok')
-    .flatMap((row) => row.targets);
-  const totalLinkedCells = evaluatedTargets.filter((target) => (target.linkedPages ?? 0) > 0).length;
-  const zeroLinkCells = evaluatedTargets.filter((target) => target.linkedPages === 0).length;
-  const unavailableSources = matrix.filter((row) => row.status !== 'ok').length;
+  let totalLinkedCells = 0;
+  let zeroLinkCells = 0;
+  let unavailableSources = 0;
+  for (const row of matrix) {
+    if (row.status !== 'ok') {
+      unavailableSources++;
+      continue;
+    }
+    for (const target of row.targets) {
+      if (target.linkedPages === 0) zeroLinkCells++;
+      else if ((target.linkedPages ?? 0) > 0) totalLinkedCells++;
+    }
+  }
 
   if (sites.length === 0) {
     return (
