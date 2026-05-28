@@ -7,7 +7,7 @@ import PagespeedKeyForm from '../components/pagespeed-key-form';
 import SitesManager from '../components/sites-manager';
 import AlertDeliveryForm from '../components/alert-delivery-form';
 import AlertRulesManager from '../components/alert-rules-manager';
-import { Skeleton } from '../components/skeletons';
+import { Skeleton } from '@/components/ui';
 import type { OperationalStatus } from '@/lib/db';
 import type { Site } from '@/lib/sites';
 
