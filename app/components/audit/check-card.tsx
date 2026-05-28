@@ -1,6 +1,7 @@
 import type { CheckStatus, CheckResult } from '@/lib/audit';
 import type { GapRecommendation } from '@/lib/gap-definitions';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
+import { STATUS_COLORS } from '@/lib/constants';
 import { Badge } from '@/components/ui';
 
 const statusColors: Record<CheckStatus, string> = {
@@ -11,10 +12,10 @@ const statusColors: Record<CheckStatus, string> = {
 };
 
 export const statusDots: Record<CheckStatus, string> = {
-  pass: 'bg-emerald-500',
-  warn: 'bg-amber-500',
-  fail: 'bg-red-500',
-  error: 'bg-neutral-500',
+  pass: STATUS_COLORS.pass.dot,
+  warn: STATUS_COLORS.warn.dot,
+  fail: STATUS_COLORS.fail.dot,
+  error: STATUS_COLORS.error.dot,
 };
 
 export const accentBorder: Record<CheckStatus, string> = {
@@ -73,7 +74,7 @@ export function MetaChecksTable({ checks }: { checks: CheckResult[] }) {
           <div className="flex items-center gap-3 text-xs">
             <div className={`size-1.5 rounded-full shrink-0 ${statusDots[c.status]}`} />
             <span className="text-neutral-500 w-28 shrink-0">{c.label}</span>
-            <span className={`font-mono truncate ${c.status === 'fail' ? 'text-red-400' : c.status === 'warn' ? 'text-amber-400' : 'text-neutral-300'}`}>
+            <span className={`font-mono truncate ${c.status === 'pass' ? 'text-neutral-300' : STATUS_COLORS[c.status].text}`}>
               {c.message}
             </span>
           </div>

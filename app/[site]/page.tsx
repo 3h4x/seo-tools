@@ -10,13 +10,13 @@ import {
   cachedGetSearchConsoleQueries,
   cachedGetSitemapSubmissions,
 } from '@/lib/search-console';
-import { cachedAuditSite, createFailedSiteAuditResult, normalizeSiteAuditResult } from '@/lib/audit';
+import { cachedAuditSite, createFailedSiteAuditResult, normalizeSiteAuditResult, type CheckStatus } from '@/lib/audit';
 import { analyzeSiteGaps, createSiteGapSignals } from '@/lib/gaps';
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getScDaily, getGa4Daily, getKeywordDeltas } from '@/lib/db';
 import type { KeywordDelta } from '@/lib/keyword-history';
 import { KeywordRankTable } from '../components/keyword-rank-table';
-import { METRIC_COLORS, CWV_RATING_COLORS, CWV_THRESHOLDS, type CwvMetricName } from '@/lib/constants';
+import { METRIC_COLORS, CWV_RATING_COLORS, CWV_THRESHOLDS, STATUS_COLORS, type CwvMetricName } from '@/lib/constants';
 import { pluralize, formatSource, formatDuration, formatBounce } from '@/lib/format';
 import TimeRange from '../components/time-range';
 import { Icons } from '../components/icons';
@@ -76,11 +76,8 @@ function engagementTone(engagementRate: number): string {
   return 'text-red-400';
 }
 
-function urlInspectionTone(status: 'pass' | 'warn' | 'fail' | 'error'): string {
-  if (status === 'pass') return 'text-emerald-400';
-  if (status === 'warn') return 'text-amber-400';
-  if (status === 'fail') return 'text-red-400';
-  return 'text-neutral-500';
+function statusTextTone(status: CheckStatus, passTone: string = STATUS_COLORS.pass.text): string {
+  return status === 'pass' ? passTone : STATUS_COLORS[status].text;
 }
 
 function SearchConsoleDisabledNotice() {
@@ -211,13 +208,13 @@ export default async function SiteDashboardPage({
       <PartialFailureBanner failures={partialFailures} />
       <div className="flex flex-wrap gap-6">
         {([
-          { dot: 'bg-emerald-500', text: 'text-emerald-400', value: audit.score.pass, label: 'passed' },
-          { dot: 'bg-amber-500',   text: 'text-amber-400',   value: audit.score.warn, label: 'warnings' },
-          { dot: 'bg-red-500',     text: 'text-red-400',     value: audit.score.fail + audit.score.error, label: 'failures' },
-        ] as const).map(({ dot, text, value, label }) => (
+          { status: 'pass', value: audit.score.pass, label: 'passed' },
+          { status: 'warn', value: audit.score.warn, label: 'warnings' },
+          { status: 'fail', value: audit.score.fail + audit.score.error, label: 'failures' },
+        ] satisfies Array<{ status: CheckStatus; value: number; label: string }>).map(({ status, value, label }) => (
           <div key={label} className="flex items-center gap-2">
-            <div className={`size-2 rounded-full ${dot}`} />
-            <span className={`${text} font-mono text-sm font-bold`}>{value}</span>
+            <div className={`size-2 rounded-full ${STATUS_COLORS[status].dot}`} />
+            <span className={`${STATUS_COLORS[status].text} font-mono text-sm font-bold`}>{value}</span>
             <span className="text-neutral-500 text-xs">{label}</span>
           </div>
         ))}
@@ -517,7 +514,7 @@ export default async function SiteDashboardPage({
                     <div className="flex flex-wrap items-center gap-3 text-xs">
                       <div className={`size-1.5 rounded-full shrink-0 ${statusDots[inspection.status]}`} />
                       <span className="text-neutral-300 font-mono">{inspection.page}</span>
-                      <span className={`font-mono ${urlInspectionTone(inspection.status)}`}>{inspection.message}</span>
+                      <span className={`font-mono ${statusTextTone(inspection.status)}`}>{inspection.message}</span>
                       {inspection.verdict && <span className="text-neutral-500 font-mono">verdict: {inspection.verdict}</span>}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono text-neutral-500">
@@ -583,7 +580,7 @@ export default async function SiteDashboardPage({
                   <div className={`size-1.5 rounded-full shrink-0 mt-1 ${statusDots[meta.canonical.status]}`} />
                   <div className="min-w-0">
                     <div className="text-neutral-300 font-mono">{meta.page}</div>
-                    <div className={meta.canonical.status === 'fail' ? 'text-red-400' : meta.canonical.status === 'warn' ? 'text-amber-400' : 'text-neutral-500'}>
+                    <div className={statusTextTone(meta.canonical.status, 'text-neutral-500')}>
                       {meta.canonical.message}
                     </div>
                     {meta.canonicalTarget && (
@@ -720,7 +717,7 @@ export default async function SiteDashboardPage({
                   <div key={i} className="flex items-center gap-3 text-xs">
                     <div className={`size-1.5 rounded-full shrink-0 ${statusDots[check.status]}`} />
                     <span className="text-neutral-500 w-16 shrink-0">{check.label}</span>
-                    <span className={`font-mono ${check.status === 'pass' ? 'text-neutral-300' : 'text-amber-400'}`}>{check.message}</span>
+                    <span className={`font-mono ${statusTextTone(check.status, 'text-neutral-300')}`}>{check.message}</span>
                   </div>
                 ))}
               </div>

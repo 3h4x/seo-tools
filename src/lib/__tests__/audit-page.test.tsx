@@ -88,10 +88,10 @@ vi.mock('@/lib/constants', () => ({
     CLS: { unit: 'score' },
   },
   STATUS_COLORS: {
-    pass: { chart: '#10b981', text: 'text-emerald-400' },
-    warn: { chart: '#f59e0b', text: 'text-amber-400' },
-    fail: { chart: '#ef4444', text: 'text-red-400' },
-    error: { chart: '#737373', text: 'text-neutral-400' },
+    pass: { chart: '#10b981', text: 'text-emerald-400', dot: 'bg-emerald-500' },
+    warn: { chart: '#f59e0b', text: 'text-amber-400', dot: 'bg-amber-500' },
+    fail: { chart: '#ef4444', text: 'text-red-400', dot: 'bg-red-500' },
+    error: { chart: '#737373', text: 'text-neutral-400', dot: 'bg-neutral-500' },
   },
 }));
 
