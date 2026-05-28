@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { FormButton } from '@/components/ui';
+import { FormButton, Notice } from '@/components/ui';
 
 interface ErrorStateProps {
   error: Error & { digest?: string };
@@ -16,7 +16,7 @@ export function ErrorState({ error, reset, title = 'Something went wrong', descr
   }, [error]);
 
   return (
-    <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500/60 p-6 space-y-4">
+    <Notice tone="danger" size="none" className="rounded-lg border-neutral-800 border-l-4 border-l-red-500/60 p-6 space-y-4">
       <div className="space-y-1">
         <h2 className="text-sm font-medium text-white">{title}</h2>
         <p className="text-xs text-neutral-400">
@@ -33,6 +33,6 @@ export function ErrorState({ error, reset, title = 'Something went wrong', descr
       <FormButton variant="primary" size="sm" onClick={reset}>
         Try again
       </FormButton>
-    </div>
+    </Notice>
   );
 }

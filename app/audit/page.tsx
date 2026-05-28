@@ -17,7 +17,7 @@ import { GapsClient, type SiteGap } from '../components/gaps-client';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
-import { Badge } from '@/components/ui';
+import { Badge, Notice } from '@/components/ui';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
@@ -116,12 +116,17 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           <h1 className="text-2xl font-bold text-white">SEO Audit</h1>
         </div>
         {managedSitesResult.failed ? (
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-6">
+          <Notice
+            tone="danger"
+            size="none"
+            className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-6"
+            role="alert"
+          >
             <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
             <p className="text-neutral-500 text-sm mt-2">
               The sites table failed to read. Check the server logs and use Refresh to retry.
             </p>
-          </div>
+          </Notice>
         ) : (
           <NoSitesNotice variant="inline" />
         )}
@@ -137,12 +142,16 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           <p className="text-neutral-500 text-sm mt-1">Live checks · {managedSites.length} sites</p>
         </div>
         <PartialFailureBanner failures={partialFailures} />
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-6">
+        <Notice
+          tone="warning"
+          size="none"
+          className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-6"
+        >
           <p className="text-amber-400 font-semibold">No audit data available</p>
           <p className="text-neutral-500 text-sm mt-2">
             Audit results could not be loaded for the configured sites. Use Refresh to retry the cached checks.
           </p>
-        </div>
+        </Notice>
       </div>
     );
   }
