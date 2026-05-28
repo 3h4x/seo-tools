@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import {
   CWV_METRIC_ORDER,
   CWV_RATING_COLORS,
@@ -72,7 +71,9 @@ export default async function PerformancePage({
 
   const tableRows = rows.map((row) => [
       <div key="site">
-        <Link href={`/performance/${encodeURIComponent(row.id)}`} className="text-white hover:underline">{row.name}</Link>
+        <TextLink href={`/performance/${encodeURIComponent(row.id)}`} className="text-sm text-white hover:underline">
+          {row.name}
+        </TextLink>
         <div className="text-xs text-neutral-500 font-mono">{row.domain}</div>
       </div>,
       <PerformanceSourceBadge key="source" source={row.source} />,

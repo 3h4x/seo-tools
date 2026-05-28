@@ -154,7 +154,8 @@ describe('Performance overview page', () => {
 
     expect(html.match(/avg across 1 site/g)).toHaveLength(2);
     expect(html).toContain('<th scope="col" class="px-3 py-2 font-semibold text-left">Site</th>');
-    expect(html).toContain('<th scope="row" class="px-3 py-2 font-normal text-left"><div><a href="/performance/psi-site" class="text-white hover:underline">PSI Site</a>');
+    expect(html).toContain('<th scope="row" class="px-3 py-2 font-normal text-left"><div><a href="/performance/psi-site"');
+    expect(html).toContain('>PSI Site</a>');
     expect(html).toContain('<th scope="col" class="px-3 py-2 font-semibold text-right">PSI</th>');
   });
 
