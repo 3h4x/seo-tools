@@ -49,11 +49,12 @@ describe('IndexNowButton', () => {
   it('renders failed ping feedback as an alert', () => {
     vi.spyOn(React, 'useState')
       .mockImplementationOnce(() => [false, vi.fn()])
-      .mockImplementationOnce(() => [{ tone: 'error', message: 'IndexNow rejected the submission (422)' }, vi.fn()]);
+      .mockImplementationOnce(() => [{ tone: 'danger', message: 'IndexNow rejected the submission (422)' }, vi.fn()]);
 
     const html = renderToStaticMarkup(<IndexNowButton siteId="site-a" configured />);
 
     expect(html).toContain('role="alert"');
+    expect(html).toContain('border-red-950');
     expect(html).toContain('IndexNow rejected the submission (422)');
   });
 

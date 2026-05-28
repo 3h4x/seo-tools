@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { FormButton, Spinner } from '@/components/ui';
+import { FormButton, Notice, Spinner } from '@/components/ui';
 import { formatNetworkError } from '@/lib/request-result';
 
 type PingState = {
-  tone: 'neutral' | 'success' | 'error';
+  tone: 'success' | 'danger';
   message: string;
 } | null;
 
@@ -101,7 +101,7 @@ export function IndexNowButton({
 
       if (!result.ok) {
         setResult({
-          tone: 'error',
+          tone: 'danger',
           message: result.error,
         });
         return;
@@ -114,7 +114,7 @@ export function IndexNowButton({
     } catch (error) {
       console.error('[IndexNowButton]', error);
       setResult({
-        tone: 'error',
+        tone: 'danger',
         message: formatNetworkError(error, 'IndexNow request failed. Check your connection and try again.'),
       });
     } finally {
@@ -138,12 +138,14 @@ export function IndexNowButton({
         <span className="text-xs text-neutral-500">Add an IndexNow key in Config first.</span>
       )}
       {result && (
-        <span
-          className={`text-xs ${result.tone === 'success' ? 'text-emerald-300' : result.tone === 'error' ? 'text-red-400' : 'text-neutral-400'}`}
-          role={result.tone === 'error' ? 'alert' : 'status'}
+        <Notice
+          tone={result.tone}
+          size="none"
+          className="px-3 py-1.5 text-xs"
+          role={result.tone === 'danger' ? 'alert' : 'status'}
         >
           {result.message}
-        </span>
+        </Notice>
       )}
     </div>
   );
