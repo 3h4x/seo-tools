@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormButton, Notice, Spinner } from '@/components/ui';
+import { Badge, FormButton, Notice, Spinner } from '@/components/ui';
 import { formatNetworkError } from '@/lib/request-result';
 import type { SnapshotResult } from '@/lib/snapshot';
 
@@ -106,7 +106,9 @@ export function SnapshotButton() {
         <Notice size="sm" className="max-w-xl text-xs">
           Snapshot saved for {result.date} — {result.sc} SC pages, {result.keywords} keywords, {result.ga4} GA4 sites
           {result.errors.length > 0 && (
-            <span className="text-amber-400"> ({result.errors.length} error{result.errors.length !== 1 ? 's' : ''})</span>
+            <Badge size="xs" shape="rounded" className="ml-1 border-amber-500/30 bg-amber-500/10 text-amber-300">
+              {result.errors.length} error{result.errors.length !== 1 ? 's' : ''}
+            </Badge>
           )}
         </Notice>
       )}
