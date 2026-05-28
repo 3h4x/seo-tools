@@ -29,18 +29,22 @@ async function getSiteData(days: number) {
 
   const enrichedSites = await Promise.all(
     sites.map(async (site) => {
-      const [scResult, ga4Result] = await Promise.all([
+      const [scLoad, ga4Load] = await Promise.all([
         site.searchConsole !== false
-          ? cachedGetSearchConsoleData(getSCUrl(site), days).catch((error) => {
-              console.error(`[OverviewPage] Search Console ${site.id}:`, error);
-              return { data: null, error: true };
-            })
-          : null,
-        cachedGetAnalytics(site.ga4PropertyId || '', days).catch((error) => {
-          console.error(`[OverviewPage] GA4 ${site.id}:`, error);
-          return { data: null, error: true };
-        }),
+          ? loadOrFlag(
+              `OverviewPage Search Console ${site.id}`,
+              cachedGetSearchConsoleData(getSCUrl(site), days),
+              { data: null, error: true },
+            )
+          : Promise.resolve({ value: null, failed: false }),
+        loadOrFlag(
+          `OverviewPage GA4 ${site.id}`,
+          cachedGetAnalytics(site.ga4PropertyId || '', days),
+          { data: null, error: true },
+        ),
       ]);
+      const scResult = scLoad.value;
+      const ga4Result = ga4Load.value;
       if (scResult?.error) searchConsoleFailureCount += 1;
       if (ga4Result.error) ga4FailureCount += 1;
 
