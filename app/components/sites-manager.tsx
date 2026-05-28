@@ -7,7 +7,7 @@ import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteI
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
 import { CHART_NEUTRALS } from '@/lib/constants';
-import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, Spinner, TextButton } from '@/components/ui';
+import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, Notice, Spinner, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 
 interface Site {
@@ -628,7 +628,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
       )}
 
       {error && !isEditing && (
-        <p className="text-sm text-red-400" role="alert">{error}</p>
+        <Notice tone="danger" size="sm" role="alert">{error}</Notice>
       )}
 
       {sites.length > 0 && (
@@ -646,7 +646,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
         />
       )}
       {diagnosticsError && hasAuth && (
-        <p className="text-xs text-red-400" role="alert">Could not load per-site diagnostics.</p>
+        <Notice tone="danger" size="sm" className="text-xs" role="alert">
+          Could not load per-site diagnostics.
+        </Notice>
       )}
       {isEditing && (
         <div className="border border-neutral-700 rounded-lg p-4 space-y-4 bg-neutral-900/50">
@@ -800,7 +802,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
+          {error && <Notice tone="danger" size="sm" role="alert">{error}</Notice>}
 
           <div className="flex gap-2">
             <FormButton
@@ -835,8 +837,8 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             </FormButton>
           </div>
 
-          {discoverError && <p className="text-sm text-red-400" role="alert">{discoverError}</p>}
-          {discoverWarning && <p className="text-sm text-amber-300" role="status">{discoverWarning}</p>}
+          {discoverError && <Notice tone="danger" size="sm" role="alert">{discoverError}</Notice>}
+          {discoverWarning && <Notice tone="warning" size="sm" role="status">{discoverWarning}</Notice>}
           {importSummary && (
             <p className={`text-sm ${importSummary.tone === 'warning' ? 'text-amber-300' : 'text-emerald-300'}`}>
               {importSummary.message}
