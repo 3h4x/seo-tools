@@ -11,12 +11,12 @@ export function NoSitesNotice({ variant = 'card' }: Props) {
   const content = hasCreds ? (
     <>
       No sites configured —{' '}
-      <TextLink href="/config" className="text-white underline">add sites in the Config tab</TextLink>.
+      <TextLink href="/config" size="inherit" variant="inherit" className="text-white underline">add sites in the Config tab</TextLink>.
     </>
   ) : (
     <>
       Google service account not configured —{' '}
-      <TextLink href="/config" className="text-white underline">add credentials in the Config tab</TextLink>{' '}
+      <TextLink href="/config" size="inherit" variant="inherit" className="text-white underline">add credentials in the Config tab</TextLink>{' '}
       to enable site discovery and SEO data.
     </>
   );
