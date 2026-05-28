@@ -1,9 +1,17 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import Link from 'next/link';
+import type { LinkProps } from 'next/link';
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
 
 type TextButtonVariant = 'neutral' | 'quiet' | 'muted' | 'danger' | 'danger-muted' | 'reorder';
 type TextButtonSize = 'xs' | 'xxs';
 
 interface TextButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode;
+  variant?: TextButtonVariant;
+  size?: TextButtonSize;
+}
+
+interface TextLinkProps extends LinkProps, Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof LinkProps> {
   children: ReactNode;
   variant?: TextButtonVariant;
   size?: TextButtonSize;
@@ -23,6 +31,14 @@ const SIZE_CLASSES: Record<TextButtonSize, string> = {
   xxs: 'text-[11px]',
 };
 
+function getTextActionClassName(
+  className: string | undefined,
+  size: TextButtonSize,
+  variant: TextButtonVariant
+) {
+  return `${SIZE_CLASSES[size]} transition-colors ${VARIANT_CLASSES[variant]} ${className ?? ''}`;
+}
+
 export function TextButton({
   children,
   className = '',
@@ -33,11 +49,28 @@ export function TextButton({
 }: TextButtonProps) {
   return (
     <button
-      className={`${SIZE_CLASSES[size]} transition-colors ${VARIANT_CLASSES[variant]} ${className}`}
+      className={getTextActionClassName(className, size, variant)}
       type={type}
       {...props}
     >
       {children}
     </button>
+  );
+}
+
+export function TextLink({
+  children,
+  className = '',
+  size = 'xs',
+  variant = 'neutral',
+  ...props
+}: TextLinkProps) {
+  return (
+    <Link
+      className={getTextActionClassName(className, size, variant)}
+      {...props}
+    >
+      {children}
+    </Link>
   );
 }

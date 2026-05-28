@@ -7,5 +7,5 @@ export { Notice } from './notice';
 export { SegmentedControl } from './segmented-control';
 export { Skeleton } from './skeleton';
 export { Spinner } from './spinner';
-export { TextButton } from './text-button';
+export { TextButton, TextLink } from './text-button';
 export { ToggleButtonGroup } from './toggle-button-group';

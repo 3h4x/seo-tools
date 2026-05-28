@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { Badge, Notice } from '@/components/ui';
+import { Badge, Notice, TextLink } from '@/components/ui';
 import { loadActionQueue, type ActionQueueItem } from '@/lib/actions';
 import { ACTION_KIND_STYLES, ACTION_PRIORITY_STYLES } from '@/lib/constants';
 import { DataTable, type DataTableColumn } from '../components/data-table';
@@ -38,9 +37,9 @@ export default async function ActionsPage() {
     </div>,
     <span key={`${item.id}-affected`} className="text-xs text-neutral-400">{item.affected}</span>,
     <span key={`${item.id}-impact`} className="font-semibold text-neutral-100">{item.impactLabel}</span>,
-    <Link key={`${item.id}-link`} href={item.href} className="text-xs text-neutral-400 hover:text-white">
+    <TextLink key={`${item.id}-link`} href={item.href}>
       Open site →
-    </Link>,
+    </TextLink>,
   ]));
 
   return (
