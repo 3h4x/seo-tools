@@ -24,9 +24,9 @@ export function NoSitesNotice({ variant = 'card' }: Props) {
 
   if (variant === 'inline') {
     return (
-      <div className={className}>
+      <Notice size="none" className={`${className} border-0 bg-transparent p-0`}>
         {content}
-      </div>
+      </Notice>
     );
   }
 
