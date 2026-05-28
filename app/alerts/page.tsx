@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { dbGetAlertEvents } from '@/lib/db';
 import { formatAlertMetricValue, getAlertMetricLabel } from '@/lib/alerts';
 import { loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
@@ -31,10 +32,12 @@ export default async function AlertsPage() {
     ...(managedSitesResult.failed ? ['Managed sites'] : []),
   ];
   const sitesById = new Map(managedSites.map((site) => [site.id, site]));
-  const rows = events.map((event) => {
+  const rows: ReactNode[][] = [];
+  const rowKeys: Array<string | number> = [];
+  for (const event of events) {
     const site = sitesById.get(event.siteId);
 
-    return [
+    rows.push([
       <div key="site">
         <div className="text-white">{site?.name ?? event.siteId}</div>
         <div className="text-xs text-neutral-500 font-mono">{site?.domain ?? event.siteId}</div>
@@ -52,8 +55,9 @@ export default async function AlertsPage() {
       </>,
       event.snapshotDate,
       event.createdAt,
-    ];
-  });
+    ]);
+    rowKeys.push(event.id);
+  }
 
   return (
     <div className="space-y-6">
@@ -82,7 +86,7 @@ export default async function AlertsPage() {
         <DataTable
           columns={ALERT_COLUMNS}
           rows={rows}
-          rowKeys={events.map((event) => event.id)}
+          rowKeys={rowKeys}
           monospaceCells={false}
           containerClassName="overflow-x-auto rounded-lg border border-neutral-800 bg-neutral-900"
           tableClassName="w-full text-sm text-left"
