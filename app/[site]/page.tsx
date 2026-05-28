@@ -32,7 +32,7 @@ import { loadOrFallback, loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
 import { ProviderErrorBadge } from '../components/provider-error-badge';
-import { Notice, TextLink } from '@/components/ui';
+import { Badge, Notice, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -496,9 +496,21 @@ export default async function SiteDashboardPage({
                     <span className="text-neutral-500">
                       downloaded: <span className="text-neutral-300">{s.lastDownloaded ? new Date(s.lastDownloaded).toLocaleString() : '—'}</span>
                     </span>
-                    {s.isPending && <span className="text-amber-400">pending</span>}
-                    {s.errors > 0 && <span className="text-red-400">{s.errors} errors</span>}
-                    {s.warnings > 0 && <span className="text-amber-400">{s.warnings} warnings</span>}
+                    {s.isPending && (
+                      <Badge size="xs" shape="rounded" className="border-amber-500/30 bg-amber-500/10 text-amber-300">
+                        pending
+                      </Badge>
+                    )}
+                    {s.errors > 0 && (
+                      <Badge size="xs" shape="rounded" className="border-red-500/40 bg-red-500/10 text-red-300">
+                        {s.errors} errors
+                      </Badge>
+                    )}
+                    {s.warnings > 0 && (
+                      <Badge size="xs" shape="rounded" className="border-amber-500/30 bg-amber-500/10 text-amber-300">
+                        {s.warnings} warnings
+                      </Badge>
+                    )}
                   </div>
                 ))}
               </div>
