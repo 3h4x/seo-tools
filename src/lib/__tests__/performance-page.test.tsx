@@ -191,6 +191,33 @@ describe('Performance overview page', () => {
     expect(html).toContain('RUM data (2 sites), PageSpeed Insights (1 site)');
   });
 
+  it('keeps the PSI rate-limit config link styled by the warning notice', async () => {
+    mockGetPerformanceOverviewRows.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 'psi-site',
+          name: 'PSI Site',
+          domain: 'psi.example.com',
+          source: 'psi-field',
+          metrics: {},
+          perfScore: null,
+          needsKey: true,
+          cwvEventCount: 0,
+        },
+      ],
+      failures: [],
+    });
+
+    const page = await PerformancePage({
+      searchParams: Promise.resolve({ days: '7' }),
+    });
+
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain('PageSpeed Insights rate-limited');
+    expect(html).toContain('<a href="/config" class="underline">Config</a> to lift the per-IP cap.');
+  });
+
   it('uses the first repeated guide searchParam for the setup guide state', async () => {
     const page = await PerformancePage({
       searchParams: Promise.resolve({ days: '7', guide: ['1', '0'] }),
@@ -419,6 +446,53 @@ describe('Performance site detail page', () => {
 
     expect(html).toContain('Some data sources are unavailable');
     expect(html).toContain('RUM data, PageSpeed Insights desktop');
+  });
+
+  it('keeps the site PSI rate-limit config link styled by the warning notice', async () => {
+    mockGetPerformanceSiteData.mockResolvedValueOnce({
+      site: {
+        id: 'borged-io',
+        name: 'Borged',
+        domain: 'borged.io',
+      },
+      days: 7,
+      propertyId: 'prop-1',
+      url: 'https://borged.io',
+      source: 'psi-field',
+      heroSource: 'CrUX field (mobile)',
+      hasRum: false,
+      propagating: false,
+      eventCount: 0,
+      needsKey: true,
+      overall: {
+        LCP: { value: 2400, rating: 'good', sampleCount: 0 },
+      },
+      byDevice: null,
+      slowestPages: [],
+      trend: [],
+      psi: {
+        mobile: {
+          url: 'https://borged.io',
+          strategy: 'mobile',
+          performanceScore: 90,
+          field: {
+            LCP: { value: 2400, rating: 'good' },
+          },
+          lab: {},
+          fetchedAt: Date.now(),
+        },
+        desktop: null,
+      },
+      failures: [],
+    });
+
+    const html = renderToStaticMarkup(await PerfSiteDetail({
+      params: Promise.resolve({ site: 'borged-io' }),
+      searchParams: Promise.resolve({ days: '7' }),
+    }));
+
+    expect(html).toContain('PageSpeed Insights rate-limited');
+    expect(html).toContain('<a href="/config" class="underline">Config</a> to lift the per-IP cap.');
   });
 
   it('renders PSI fallback cards and opens the setup guide when RUM is unavailable', async () => {
