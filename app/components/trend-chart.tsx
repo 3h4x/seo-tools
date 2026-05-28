@@ -12,6 +12,7 @@ import {
 import ClientChart from './client-chart';
 import { formatDateShort } from '@/lib/format';
 import { CHART_NEUTRALS } from '@/lib/constants';
+import { Notice } from '@/components/ui';
 
 interface TrendDataPoint {
   date: string;
@@ -55,12 +56,13 @@ export default function TrendChart({
 }: TrendChartProps) {
   if (data.length < 2) {
     return (
-      <div
-        className="flex items-center justify-center text-neutral-600 text-xs border border-neutral-800 rounded"
+      <Notice
+        size="none"
+        className="flex items-center justify-center rounded border-neutral-800 bg-transparent text-xs text-neutral-600"
         style={{ height }}
       >
         Need 2+ snapshots for charts
-      </div>
+      </Notice>
     );
   }
 
