@@ -108,7 +108,7 @@ export default async function PerfSiteDetail({
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Overall ({heroSource})</h2>
-          {psiMobile?.performanceScore != null && (
+          {!hasRum && psiMobile?.performanceScore != null && (
             <span className="text-xs text-neutral-500">Lighthouse mobile: <span className="text-white font-mono">{psiMobile.performanceScore}</span></span>
           )}
         </div>

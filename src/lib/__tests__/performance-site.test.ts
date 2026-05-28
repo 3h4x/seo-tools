@@ -70,7 +70,7 @@ describe('getPerformanceSiteData', () => {
     expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'mobile');
   });
 
-  it('prefers RUM metrics over PSI fallback when RUM data exists', async () => {
+  it('prefers RUM metrics without fetching PSI when RUM data exists', async () => {
     vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce({
       hasData: true,
       overall: {
@@ -104,40 +104,8 @@ describe('getPerformanceSiteData', () => {
     expect(result!.overall.LCP).toEqual({ value: 1200, rating: 'good', sampleCount: 10 });
     expect(result!.byDevice?.mobile.LCP).toEqual({ value: 1300, rating: 'good', sampleCount: 6 });
     expect(result!.needsKey).toBe(false);
-    expect(result!.psi.mobile?.performanceScore).toBe(42);
-    expect(result!.psi.desktop?.performanceScore).toBe(42);
-    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'mobile');
-    expect(vi.mocked(cachedGetPagespeed)).toHaveBeenCalledWith('https://borged.io', 'desktop');
-  });
-
-  it('keeps PSI key state available when RUM data exists', async () => {
-    vi.mocked(cachedGetRumCoreWebVitals).mockResolvedValueOnce({
-      hasData: true,
-      overall: {
-        LCP: { value: 1200, rating: 'good', sampleCount: 10 },
-      },
-      byDevice: {
-        mobile: {},
-        desktop: {},
-        tablet: {},
-      },
-    });
-    vi.mocked(cachedGetPagespeed).mockImplementation(async (_url, strategy) => ({
-      url: 'https://borged.io',
-      strategy,
-      performanceScore: null,
-      field: null,
-      lab: {},
-      fetchedAt: 123,
-      needsKey: strategy === 'desktop',
-    }));
-
-    const result = await getPerformanceSiteData('borged-io', 7);
-
-    expect(result).not.toBeNull();
-    expect(result!.source).toBe('rum');
-    expect(result!.needsKey).toBe(true);
-    expect(result!.psi.desktop?.needsKey).toBe(true);
+    expect(result!.psi).toEqual({ mobile: null, desktop: null });
+    expect(vi.mocked(cachedGetPagespeed)).not.toHaveBeenCalled();
   });
 
   it('returns rum-pending with PSI fallback when events exist but RUM is unavailable', async () => {

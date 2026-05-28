@@ -184,15 +184,13 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
   const propagating = !hasRum && cwvEventCount > 0;
 
   if (hasRum) {
-    const [byPage, trend, psiMobile, psiDesktop] = await Promise.all([
+    const [byPage, trend] = await Promise.all([
       propertyId
         ? providerOrNull(`RUM pages ${site.id}`, cachedGetRumCwvByPage(propertyId, days, 20), failures, 'RUM slowest pages')
         : Promise.resolve(null),
       propertyId
         ? providerOrNull(`RUM trend ${site.id}`, cachedGetRumCwvTrend(propertyId, Math.max(days, 30)), failures, 'RUM trend')
         : Promise.resolve(null),
-      providerOrNull(`PSI mobile ${site.id}`, cachedGetPagespeed(url, 'mobile'), failures, 'PageSpeed Insights mobile'),
-      providerOrNull(`PSI desktop ${site.id}`, cachedGetPagespeed(url, 'desktop'), failures, 'PageSpeed Insights desktop'),
     ]);
 
     return {
@@ -209,7 +207,7 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
       hasRum,
       propagating,
       eventCount: cwvEventCount,
-      needsKey: !!(psiMobile?.needsKey || psiDesktop?.needsKey),
+      needsKey: false,
       overall: cloneRumMetrics(rum!.overall),
       byDevice: {
         mobile: cloneRumMetrics(rum!.byDevice.mobile),
@@ -226,8 +224,8 @@ export async function getPerformanceSiteData(siteId: string, requestedDays?: num
         metrics: cloneRumMetrics(row.metrics),
       })),
       psi: {
-        mobile: psiMobile,
-        desktop: psiDesktop,
+        mobile: null,
+        desktop: null,
       },
       failures,
     };

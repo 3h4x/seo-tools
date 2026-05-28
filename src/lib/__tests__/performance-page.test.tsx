@@ -216,7 +216,7 @@ describe('Performance site detail page', () => {
     expect(html).toContain('Trend Chart:integer');
   });
 
-  it('renders PSI score and key warning alongside RUM detail data', async () => {
+  it('keeps the RUM detail header focused on RUM data', async () => {
     mockGetPerformanceSiteData.mockResolvedValueOnce({
       site: {
         id: 'borged-io',
@@ -231,25 +231,14 @@ describe('Performance site detail page', () => {
       hasRum: true,
       propagating: false,
       eventCount: 10,
-      needsKey: true,
+      needsKey: false,
       overall: {
         LCP: { value: 1200, rating: 'good', sampleCount: 10 },
       },
       byDevice: { mobile: {}, desktop: {}, tablet: {} },
       slowestPages: [],
       trend: [],
-      psi: {
-        mobile: {
-          url: 'https://borged.io',
-          strategy: 'mobile',
-          performanceScore: 91,
-          field: null,
-          lab: {},
-          fetchedAt: Date.now(),
-          needsKey: true,
-        },
-        desktop: null,
-      },
+      psi: { mobile: null, desktop: null },
       failures: [],
     });
 
@@ -258,9 +247,8 @@ describe('Performance site detail page', () => {
       searchParams: Promise.resolve({ days: '7' }),
     }));
 
-    expect(html).toContain('Lighthouse mobile:');
-    expect(html).toContain('>91</span>');
-    expect(html).toContain('PageSpeed Insights rate-limited');
+    expect(html).not.toContain('Lighthouse mobile:');
+    expect(html).not.toContain('PageSpeed Insights rate-limited');
     expect(html).toContain('Overall (RUM (GA4))');
   });
 
