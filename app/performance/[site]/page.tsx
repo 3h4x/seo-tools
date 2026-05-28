@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { getPerformanceSiteData } from '@/lib/performance-site';
-import { Notice } from '@/components/ui';
+import { Notice, TextLink } from '@/components/ui';
 import {
   CWV_METRIC_ORDER,
   PERF_VALID_DAYS,
@@ -77,7 +77,7 @@ export default async function PerfSiteDetail({
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 text-xs text-neutral-500">
-            <Link href="/performance" className="hover:text-white">Performance</Link>
+            <TextLink href="/performance" variant="reorder">Performance</TextLink>
             <span>/</span>
             <span>{site.name}</span>
           </div>
