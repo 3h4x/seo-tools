@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormButton } from '@/components/ui';
+import { FormButton, Notice } from '@/components/ui';
 import { PositionBadge } from './position-badge';
 import { DataTable, type DataTableColumn } from './data-table';
 
@@ -133,7 +133,7 @@ export function ScTable({ heading, columnLabel, rows, emptyMessage, exportData, 
           rowClassName="hover:bg-neutral-800/30 transition-colors"
         />
       ) : (
-        <p className="text-neutral-600 text-sm">{emptyMessage}</p>
+        <Notice size="sm" className="text-neutral-600">{emptyMessage}</Notice>
       )}
     </div>
   );
