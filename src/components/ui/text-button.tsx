@@ -2,8 +2,8 @@ import Link from 'next/link';
 import type { LinkProps } from 'next/link';
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
 
-type TextButtonVariant = 'neutral' | 'quiet' | 'muted' | 'danger' | 'danger-muted' | 'reorder';
-type TextButtonSize = 'xs' | 'xxs';
+type TextButtonVariant = 'neutral' | 'quiet' | 'muted' | 'danger' | 'danger-muted' | 'reorder' | 'inherit';
+type TextButtonSize = 'xs' | 'xxs' | 'inherit';
 
 interface TextButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -24,11 +24,13 @@ const VARIANT_CLASSES: Record<TextButtonVariant, string> = {
   danger: 'text-red-400 hover:text-red-300 disabled:opacity-40',
   'danger-muted': 'text-neutral-600 hover:text-red-400 disabled:opacity-40',
   reorder: 'text-neutral-500 hover:text-white disabled:opacity-30',
+  inherit: '',
 };
 
 const SIZE_CLASSES: Record<TextButtonSize, string> = {
   xs: 'text-xs',
   xxs: 'text-[11px]',
+  inherit: '',
 };
 
 function getTextActionClassName(
