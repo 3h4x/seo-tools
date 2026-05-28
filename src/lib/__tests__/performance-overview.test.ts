@@ -290,4 +290,21 @@ describe('getPerformanceOverviewRows', () => {
     );
     consoleError.mockRestore();
   });
+
+  it('keeps partial discovery rows while surfacing discovery failure', async () => {
+    vi.mocked(discoverPropertyIdsWithStatus).mockResolvedValueOnce({
+      sites: [psiSite],
+      failed: true,
+    });
+
+    const { rows, failures } = await getPerformanceOverviewRows(7);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: 'psi-site',
+      source: 'psi-field',
+      perfScore: 84,
+    });
+    expect(failures).toEqual(['site discovery']);
+  });
 });
