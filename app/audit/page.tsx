@@ -397,7 +397,11 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         </div>
 
         {allDecaying.length === 0 ? (
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-emerald-500 p-8 text-center">
+          <Notice
+            tone="success"
+            size="none"
+            className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-emerald-500 p-8 text-center"
+          >
             <svg className="size-12 mx-auto text-emerald-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
@@ -406,7 +410,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             <p className="text-neutral-500 text-sm mt-2 max-w-md mx-auto">
               Every page across all {decayResults.length} sites is maintaining or growing traffic over the last {period} days.
             </p>
-          </div>
+          </Notice>
         ) : (
           <DataTable
             columns={DECAY_TABLE_COLUMNS}

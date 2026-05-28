@@ -622,9 +622,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
         </FormButton>
       </div>
       {sites.length === 0 && !isEditing && (
-        <p className="text-sm text-neutral-500">
+        <Notice size="none" className="border-0 bg-transparent p-0 text-sm text-neutral-500">
           No sites configured — add a site or use Discover to import from Google.
-        </p>
+        </Notice>
       )}
 
       {error && !isEditing && (
