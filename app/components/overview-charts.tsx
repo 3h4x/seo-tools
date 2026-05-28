@@ -7,7 +7,7 @@ import {
   Tooltip,
 } from 'recharts';
 import ClientChart from './client-chart';
-import { CHART_COLORS } from '@/lib/constants';
+import { CHART_COLORS, CHART_NEUTRALS } from '@/lib/constants';
 
 interface SourceData {
   name: string;
@@ -38,8 +38,8 @@ export function TrafficSourcesChart({ data }: { data: SourceData[] }) {
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: '8px', fontSize: '12px' }}
-                itemStyle={{ color: '#d4d4d4' }}
+                contentStyle={{ backgroundColor: CHART_NEUTRALS.tooltipBg, border: `1px solid ${CHART_NEUTRALS.grid}`, borderRadius: '8px', fontSize: '12px' }}
+                itemStyle={{ color: CHART_NEUTRALS.tooltipItem }}
                 formatter={(value) => [`${value} sessions (${total > 0 ? ((Number(value) / total) * 100).toFixed(0) : 0}%)`, '']}
               />
             </PieChart>

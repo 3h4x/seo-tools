@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CHART_COLORS,
+  CHART_NEUTRALS,
   CWV_METRIC_ORDER,
   CWV_THRESHOLDS,
   CWV_TREND_COLORS,
@@ -31,6 +32,19 @@ describe('constants', () => {
       clicks: '#10b981',
       impressions: '#06b6d4',
       position: '#f59e0b',
+    });
+  });
+
+  it('exports a shared neutral palette for recharts elements', () => {
+    expect(CHART_NEUTRALS).toEqual({
+      grid: '#262626',
+      axis: '#404040',
+      tick: '#737373',
+      tooltipBg: '#171717',
+      tooltipLabel: '#a3a3a3',
+      tooltipItem: '#d4d4d4',
+      dotStroke: '#0a0a0a',
+      inactive: '#525252',
     });
   });
 

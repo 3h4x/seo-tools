@@ -16,6 +16,19 @@ export const TREND_COLORS = {
   coverage: '#38bdf8',
 } as const;
 
+// Shared neutral palette for recharts elements. Hex values match Tailwind neutral-* tokens
+// so chart styling stays in sync with the rest of the dark dashboard.
+export const CHART_NEUTRALS = {
+  grid: '#262626',         // neutral-800
+  axis: '#404040',         // neutral-700
+  tick: '#737373',         // neutral-500
+  tooltipBg: '#171717',    // neutral-900
+  tooltipLabel: '#a3a3a3', // neutral-400
+  tooltipItem: '#d4d4d4',  // neutral-300
+  dotStroke: '#0a0a0a',    // neutral-950
+  inactive: '#525252',     // neutral-600
+} as const;
+
 export type CwvMetricName = 'LCP' | 'INP' | 'CLS' | 'FCP' | 'TTFB';
 export type CwvRating = 'good' | 'ni' | 'poor';
 

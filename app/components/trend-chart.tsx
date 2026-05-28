@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import ClientChart from './client-chart';
 import { formatDateShort } from '@/lib/format';
+import { CHART_NEUTRALS } from '@/lib/constants';
 
 interface TrendDataPoint {
   date: string;
@@ -79,15 +80,15 @@ export default function TrendChart({
             </linearGradient>
           ))}
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART_NEUTRALS.grid} />
         <XAxis
           dataKey={xKey}
-          tick={{ fill: '#737373', fontSize: 10 }}
-          axisLine={{ stroke: '#404040' }}
+          tick={{ fill: CHART_NEUTRALS.tick, fontSize: 10 }}
+          axisLine={{ stroke: CHART_NEUTRALS.axis }}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: '#737373', fontSize: 10 }}
+          tick={{ fill: CHART_NEUTRALS.tick, fontSize: 10 }}
           axisLine={false}
           tickLine={false}
           width={yAxisWidth}
@@ -99,12 +100,12 @@ export default function TrendChart({
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: '#171717',
-            border: '1px solid #404040',
+            backgroundColor: CHART_NEUTRALS.tooltipBg,
+            border: `1px solid ${CHART_NEUTRALS.axis}`,
             borderRadius: '8px',
             fontSize: '12px',
           }}
-          labelStyle={{ color: '#a3a3a3', marginBottom: 4 }}
+          labelStyle={{ color: CHART_NEUTRALS.tooltipLabel, marginBottom: 4 }}
           itemStyle={{ padding: 0 }}
           formatter={(value, name) => {
             const line = lines.find((l) => l.key === name);
@@ -120,7 +121,7 @@ export default function TrendChart({
             strokeWidth={2}
             fill={`url(#grad-${line.key})`}
             dot={false}
-            activeDot={{ r: 3, fill: line.color, stroke: '#0a0a0a', strokeWidth: 2 }}
+            activeDot={{ r: 3, fill: line.color, stroke: CHART_NEUTRALS.dotStroke, strokeWidth: 2 }}
           />
         ))}
       </AreaChart>

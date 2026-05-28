@@ -14,7 +14,7 @@ import ClientChart from './client-chart';
 import TrendChart from './trend-chart';
 import { Skeleton } from './skeletons';
 import { formatDateShort } from '@/lib/format';
-import { METRIC_COLORS } from '@/lib/constants';
+import { CHART_NEUTRALS, METRIC_COLORS } from '@/lib/constants';
 import { todayDateOnly } from '@/lib/date-only';
 import { Notice, SegmentedControl, ToggleButtonGroup } from '@/components/ui';
 
@@ -27,7 +27,7 @@ type Metric = (typeof METRICS)[number];
 type ChartType = 'area' | 'bar';
 type ViewMode = 'persite' | 'cumulative';
 
-const TOOLTIP_STYLE = { backgroundColor: '#171717', border: '1px solid #404040', borderRadius: '8px', fontSize: '12px' };
+const TOOLTIP_STYLE = { backgroundColor: CHART_NEUTRALS.tooltipBg, border: `1px solid ${CHART_NEUTRALS.axis}`, borderRadius: '8px', fontSize: '12px' };
 
 interface DailyData {
   [date: string]: {
@@ -223,7 +223,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
         if (!hasData) continue;
         seriesKeys.push({
           key: `${siteId}_${metric}`,
-          color: sitesMap.get(siteId)?.color ?? '#737373',
+          color: sitesMap.get(siteId)?.color ?? CHART_NEUTRALS.tick,
           label: `${sitesMap.get(siteId)?.name ?? siteId} — ${metric}`,
         });
       }
@@ -250,7 +250,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
             <>
               <span
                 className="inline-block size-1.5 rounded-full mr-1.5"
-                style={{ backgroundColor: active ? METRIC_COLORS[option.value] : '#525252' }}
+                style={{ backgroundColor: active ? METRIC_COLORS[option.value] : CHART_NEUTRALS.inactive }}
               />
               {option.label}
             </>
@@ -287,12 +287,12 @@ export default function DailyTrafficChart({ days }: { days: number }) {
         <div className="h-80">
           <ClientChart><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <BarChart data={chartData} barGap={1} barCategoryGap="15%">
-              <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-              <XAxis dataKey="date" tick={{ fill: '#737373', fontSize: 10 }} axisLine={{ stroke: '#404040' }} tickLine={false} />
-              <YAxis tick={{ fill: '#737373', fontSize: 10 }} axisLine={false} tickLine={false} width={50} tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)} />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_NEUTRALS.grid} />
+              <XAxis dataKey="date" tick={{ fill: CHART_NEUTRALS.tick, fontSize: 10 }} axisLine={{ stroke: CHART_NEUTRALS.axis }} tickLine={false} />
+              <YAxis tick={{ fill: CHART_NEUTRALS.tick, fontSize: 10 }} axisLine={false} tickLine={false} width={50} tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)} />
               <Tooltip
                 contentStyle={TOOLTIP_STYLE}
-                labelStyle={{ color: '#a3a3a3', marginBottom: 4 }}
+                labelStyle={{ color: CHART_NEUTRALS.tooltipLabel, marginBottom: 4 }}
                 formatter={(value, name) => {
                   const s = seriesKeys.find(k => k.key === name);
                   return [Number(value).toLocaleString(), s?.label || String(name)];
@@ -325,7 +325,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
             <>
               <div
                 className="size-2 rounded-full"
-                style={{ backgroundColor: active ? (sitesMap.get(option.value)?.color ?? '#737373') : '#525252' }}
+                style={{ backgroundColor: active ? (sitesMap.get(option.value)?.color ?? CHART_NEUTRALS.tick) : CHART_NEUTRALS.inactive }}
               />
               <span className={active ? 'text-neutral-400' : 'text-neutral-600 line-through'}>
                 {option.label}
