@@ -459,6 +459,88 @@ describe('loadActionQueue', () => {
     });
   });
 
+  it('flags GA4 discovery failure when the discovery payload resolves with failed=true', async () => {
+    mockDiscoverPropertyIds.mockResolvedValueOnce({
+      failed: true,
+      sites: [],
+    });
+    mockGetKeywordDropActions.mockReturnValueOnce([
+      {
+        query: 'analytics term',
+        clicks: 8,
+        impressions: 90,
+        currentPosition: 7,
+        previousPosition: 5,
+        delta: -2,
+        window: '7d',
+      },
+    ]);
+
+    const result = await loadActionQueue(7);
+
+    expect(result.failures).toEqual(['GA4 discovery']);
+    expect(result.items).toEqual([
+      expect.objectContaining({ kind: 'keyword', siteId: 'site-a' }),
+    ]);
+  });
+
+  it('skips audits whose siteId is not in the managed sites list', async () => {
+    mockCachedAuditAllSites.mockResolvedValueOnce([
+      { siteId: 'site-ghost' },
+      { siteId: 'site-a' },
+    ]);
+    mockAnalyzeSiteGaps.mockReturnValue({
+      gaps: [{
+        id: 'missing-jsonld',
+        title: 'Missing JSON-LD',
+        description: 'No structured data.',
+        severity: 'high',
+        category: 'structured-data',
+        hint: 'Add JSON-LD.',
+      }],
+    });
+
+    const result = await loadActionQueue(7);
+
+    expect(mockLoadSiteGapSignals).toHaveBeenCalledTimes(1);
+    expect(mockLoadSiteGapSignals).toHaveBeenCalledWith(siteA, 'properties/111', 7);
+    expect(result.items.filter((i) => i.kind === 'gap')).toEqual([
+      expect.objectContaining({ siteId: 'site-a', kind: 'gap' }),
+    ]);
+  });
+
+  it('classifies a non-escalated medium-severity gap as medium priority', async () => {
+    mockCachedAuditAllSites.mockResolvedValueOnce([{ siteId: 'site-a' }]);
+    mockLoadSiteGapSignals.mockResolvedValueOnce({
+      days: 7,
+      scTopPages: [
+        { page: 'https://a.test/x', clicks: 10, impressions: 100, ctr: 0.1, position: 6 },
+      ],
+    });
+    mockAnalyzeSiteGaps.mockReturnValueOnce({
+      gaps: [{
+        id: 'low-links',
+        title: 'Some medium issue',
+        description: 'Medium gap.',
+        severity: 'medium',
+        category: 'internal-links',
+        hint: 'Improve linking.',
+        affectedPages: ['/x'],
+      }],
+    });
+
+    const result = await loadActionQueue(7);
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        kind: 'gap',
+        priority: 'medium',
+        impactLabel: '10 clicks at risk',
+      }),
+    ]);
+    expect(result.counts.medium).toBe(1);
+  });
+
   it('sorts by score and caps the queue at 100 items', async () => {
     mockGetManagedSites.mockResolvedValueOnce([siteA]);
     mockDiscoverPropertyIds.mockResolvedValueOnce({
