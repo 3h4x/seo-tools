@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { Notice } from '@/components/ui';
+import { Notice, TextLink } from '@/components/ui';
 import { hasGoogleCredentials } from '@/lib/google-auth';
 
 interface Props {
@@ -12,12 +11,12 @@ export function NoSitesNotice({ variant = 'card' }: Props) {
   const content = hasCreds ? (
     <>
       No sites configured —{' '}
-      <Link href="/config" className="text-white underline">add sites in the Config tab</Link>.
+      <TextLink href="/config" className="text-white underline">add sites in the Config tab</TextLink>.
     </>
   ) : (
     <>
       Google service account not configured —{' '}
-      <Link href="/config" className="text-white underline">add credentials in the Config tab</Link>{' '}
+      <TextLink href="/config" className="text-white underline">add credentials in the Config tab</TextLink>{' '}
       to enable site discovery and SEO data.
     </>
   );
