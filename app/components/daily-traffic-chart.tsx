@@ -142,11 +142,11 @@ export default function DailyTrafficChart({ days }: { days: number }) {
   const dates = collectedDates.includes(today) ? collectedDates : [...collectedDates, today];
   if (collectedDates.length < 2) {
     return (
-      <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
+      <Notice size="none" className="rounded-lg p-5">
         <div className="h-40 flex items-center justify-center text-neutral-600 text-sm">
           Need 2+ days of collected data. Run the daily collector first.
         </div>
-      </div>
+      </Notice>
     );
   }
 
