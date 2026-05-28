@@ -49,14 +49,19 @@ export interface Ga4PropertyDiscoveryResult {
 }
 
 export async function discoverPropertyIdsWithStatus(): Promise<Ga4PropertyDiscoveryResult> {
-  const sites = await getManagedSites();
-  let properties: DiscoveredGa4Property[] | null;
-  try {
-    properties = await cachedGetDiscoveredGa4Properties();
-  } catch (error) {
-    console.error('Error discovering GA4 properties:', error);
+  const [sites, discoveryResult] = await Promise.all([
+    getManagedSites(),
+    cachedGetDiscoveredGa4Properties()
+      .then((properties) => ({ properties, error: null }))
+      .catch((error) => ({ properties: null, error })),
+  ]);
+
+  if (discoveryResult.error) {
+    console.error('Error discovering GA4 properties:', discoveryResult.error);
     return { sites, failed: true };
   }
+
+  const properties = discoveryResult.properties;
   if (!properties) return { sites, failed: false };
 
   return {
