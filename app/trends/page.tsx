@@ -155,13 +155,13 @@ function OverviewTab({
 
           if (!hasData) {
             return (
-              <div key={site.id} className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
+              <Notice key={site.id} size="none" className="bg-neutral-900 rounded-lg border-neutral-800 p-5">
                 <div className="flex items-center gap-3">
                   <span className="text-white font-semibold">{site.name}</span>
                   <span className="text-neutral-600 text-xs">{site.domain}</span>
                 </div>
                 <p className="text-neutral-600 text-sm mt-2">No data captured yet.</p>
-              </div>
+              </Notice>
             );
           }
 
