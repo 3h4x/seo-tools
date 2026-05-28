@@ -50,6 +50,57 @@ describe('createConfigRouteHandlers', () => {
     expect(await res.json()).toEqual({ source: 'none' });
   });
 
+  it('returns 500 when the config source cannot be loaded', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(getConfig).mockImplementation(() => {
+      throw new Error('config table unavailable');
+    });
+    const { GET } = createConfigRouteHandlers({
+      configKey: 'test_key',
+      envKey: 'TEST_CONFIG_ENV',
+      validateAndNormalize: async (raw) => raw.trim(),
+    });
+
+    const res = GET();
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'failed_to_load_config_source' });
+    expect(consoleError).toHaveBeenCalledWith('[GET config:test_key]', expect.any(Error));
+    consoleError.mockRestore();
+  });
+
+  it('returns 400 for malformed JSON without validating or saving', async () => {
+    const validateAndNormalize = vi.fn(async (raw: string) => raw.trim());
+    const { POST } = createConfigRouteHandlers({
+      configKey: 'test_key',
+      validateAndNormalize,
+    });
+
+    const res = await POST(postReq('{'));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'Invalid JSON body' });
+    expect(validateAndNormalize).not.toHaveBeenCalled();
+    expect(setConfig).not.toHaveBeenCalled();
+    expect(clearCache).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for non-object JSON without validating or saving', async () => {
+    const validateAndNormalize = vi.fn(async (raw: string) => raw.trim());
+    const { POST } = createConfigRouteHandlers({
+      configKey: 'test_key',
+      validateAndNormalize,
+    });
+
+    const res = await POST(postReq('null'));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: 'Request body must be an object' });
+    expect(validateAndNormalize).not.toHaveBeenCalled();
+    expect(setConfig).not.toHaveBeenCalled();
+    expect(clearCache).not.toHaveBeenCalled();
+  });
+
   it('returns a validation error from the provided normalizer', async () => {
     const { POST } = createConfigRouteHandlers({
       configKey: 'test_key',
