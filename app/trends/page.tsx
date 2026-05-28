@@ -461,10 +461,12 @@ function buildKeywordChartData(
   topQueries: string[],
 ): Array<{ date: string; [query: string]: string | number }> {
   const byDateQuery = new Map<string, number>();
+  const datesSet = new Set<string>();
   for (const r of history) {
     byDateQuery.set(`${r.date}|${r.query}`, r.position);
+    datesSet.add(r.date);
   }
-  const dates = [...new Set(history.map((r) => r.date))].sort();
+  const dates = [...datesSet].sort();
   return dates.map((date) => {
     const point: { date: string; [query: string]: string | number } = { date };
     for (const query of topQueries) {
