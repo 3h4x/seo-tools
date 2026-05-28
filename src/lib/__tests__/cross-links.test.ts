@@ -439,6 +439,130 @@ describe('getCrossLinkMatrix', () => {
     ]);
   });
 
+  it('caps crawled pages at the top 20 from Search Console and ignores the rest', async () => {
+    const twoSites: Site[] = [
+      { id: 'alpha', name: 'Alpha', domain: 'alpha.test', testPages: ['/'] },
+      { id: 'beta', name: 'Beta', domain: 'beta.test', testPages: ['/'] },
+    ];
+
+    const fetchSpy = vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      const match = url.match(/^https:\/\/alpha\.test\/post-(\d+)$/);
+      if (match) {
+        return new Response('<a href="https://beta.test/docs">Beta</a>');
+      }
+      return new Response('', { status: 404 });
+    });
+    vi.stubGlobal('fetch', fetchSpy as typeof fetch);
+
+    mockCachedGetSearchConsolePages.mockImplementation((siteUrl: string) => {
+      if (siteUrl === 'sc-domain:alpha.test') {
+        return Array.from({ length: 25 }, (_, i) => ({ page: `/post-${i}` }));
+      }
+      return [];
+    });
+
+    const matrix = await getCrossLinkMatrix(twoSites);
+
+    const alpha = matrix.find((row) => row.sourceSiteId === 'alpha');
+    expect(alpha?.status).toBe('ok');
+    expect(alpha?.attemptedPages).toBe(20);
+    expect(alpha?.crawledPages).toBe(20);
+    expect(alpha?.targets[0]).toMatchObject({
+      targetSiteId: 'beta',
+      linkedPages: 20,
+      missingPages: 0,
+    });
+    expect(alpha?.targets[0].linkedExamples).toHaveLength(3);
+
+    const alphaFetches = fetchSpy.mock.calls.filter((call) =>
+      String(call[0]).startsWith('https://alpha.test/'),
+    );
+    expect(alphaFetches).toHaveLength(20);
+    expect(alphaFetches.some((call) => String(call[0]) === 'https://alpha.test/post-20')).toBe(false);
+  });
+
+  it('drops Search Console rows that fail URL normalization before crawling', async () => {
+    const twoSites: Site[] = [
+      { id: 'alpha', name: 'Alpha', domain: 'alpha.test', testPages: ['/'] },
+      { id: 'beta', name: 'Beta', domain: 'beta.test', testPages: ['/'] },
+    ];
+
+    const fetchSpy = vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      if (url === 'https://alpha.test/good') {
+        return new Response('<a href="https://beta.test/x">Beta</a>');
+      }
+      return new Response('', { status: 404 });
+    });
+    vi.stubGlobal('fetch', fetchSpy as typeof fetch);
+
+    mockCachedGetSearchConsolePages.mockImplementation((siteUrl: string) => {
+      if (siteUrl === 'sc-domain:alpha.test') {
+        return [
+          { page: '' },
+          { page: 'http://[invalid-host' },
+          { page: '/good' },
+        ];
+      }
+      return [];
+    });
+
+    const matrix = await getCrossLinkMatrix(twoSites);
+
+    const alpha = matrix.find((row) => row.sourceSiteId === 'alpha');
+    expect(alpha?.status).toBe('ok');
+    expect(alpha?.attemptedPages).toBe(1);
+    expect(alpha?.crawledPages).toBe(1);
+    expect(alpha?.failedPages).toBe(0);
+    expect(alpha?.targets[0]).toMatchObject({
+      targetSiteId: 'beta',
+      linkedPages: 1,
+      missingPages: 0,
+      linkedExamples: ['https://alpha.test/good'],
+    });
+
+    const alphaFetches = fetchSpy.mock.calls.filter((call) =>
+      String(call[0]).startsWith('https://alpha.test/'),
+    );
+    expect(alphaFetches).toHaveLength(1);
+    expect(String(alphaFetches[0][0])).toBe('https://alpha.test/good');
+  });
+
+  it('falls back to no-pages when every Search Console row fails URL normalization', async () => {
+    const twoSites: Site[] = [
+      { id: 'alpha', name: 'Alpha', domain: 'alpha.test', testPages: ['/'] },
+      { id: 'beta', name: 'Beta', domain: 'beta.test', testPages: ['/'] },
+    ];
+
+    const fetchSpy = vi.fn(async () => new Response('', { status: 404 }));
+    vi.stubGlobal('fetch', fetchSpy as typeof fetch);
+
+    mockCachedGetSearchConsolePages.mockImplementation((siteUrl: string) => {
+      if (siteUrl === 'sc-domain:alpha.test') {
+        return [{ page: '' }, { page: 'http://[bad' }];
+      }
+      return [];
+    });
+
+    const matrix = await getCrossLinkMatrix(twoSites);
+
+    const alpha = matrix.find((row) => row.sourceSiteId === 'alpha');
+    expect(alpha?.status).toBe('no-pages');
+    expect(alpha?.attemptedPages).toBe(0);
+    expect(alpha?.targets[0]).toMatchObject({
+      targetSiteId: 'beta',
+      linkedPages: null,
+      missingPages: null,
+      linkedExamples: [],
+    });
+
+    const alphaFetches = fetchSpy.mock.calls.filter((call) =>
+      String(call[0]).startsWith('https://alpha.test/'),
+    );
+    expect(alphaFetches).toHaveLength(0);
+  });
+
   it('prefers the most specific managed domain when apex and subdomain sites overlap', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: string | URL) => {
       const url = String(input);
