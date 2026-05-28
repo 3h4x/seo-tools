@@ -164,12 +164,18 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     partialFailures.push(`Core Web Vitals (${cwvFailedCount} site${cwvFailedCount === 1 ? '' : 's'})`);
   }
 
-  const totalPass = audits.reduce((s, a) => s + a.score.pass, 0);
-  const totalWarn = audits.reduce((s, a) => s + a.score.warn, 0);
-  const totalFail = audits.reduce((s, a) => s + a.score.fail + a.score.error, 0);
+  let totalPass = 0;
+  let totalWarn = 0;
+  let totalFail = 0;
+  let healthySites = 0;
+  for (const a of audits) {
+    totalPass += a.score.pass;
+    totalWarn += a.score.warn;
+    totalFail += a.score.fail + a.score.error;
+    if (a.score.total > 0 && a.score.pass / a.score.total >= 0.9) healthySites += 1;
+  }
   const totalChecks = totalPass + totalWarn + totalFail;
   const healthPct = totalChecks > 0 ? Math.round((totalPass / totalChecks) * 100) : 0;
-  const healthySites = audits.filter(a => a.score.total > 0 && a.score.pass / a.score.total >= 0.9).length;
 
   const allSiteGaps: SiteGap[] = [];
   const gapCountBySite = new Map<string, number>();
