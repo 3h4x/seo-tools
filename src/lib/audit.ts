@@ -510,11 +510,14 @@ async function enrichSitemapResult(sitemap: SitemapResult): Promise<SitemapResul
   let deadUrlCount = 0;
   const deadUrls: string[] = [];
 
-  for (const { url } of resolved.entries) {
-    const status = await getUrlHealthStatus(url);
+  const urlHealthStatuses = await Promise.all(
+    resolved.entries.map(({ url }) => getUrlHealthStatus(url)),
+  );
+
+  for (const [index, status] of urlHealthStatuses.entries()) {
     if (status >= 400) {
       deadUrlCount++;
-      deadUrls.push(`${url} (${status})`);
+      deadUrls.push(`${resolved.entries[index].url} (${status})`);
     }
   }
 
