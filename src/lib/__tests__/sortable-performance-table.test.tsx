@@ -65,7 +65,7 @@ describe('SortablePerformanceTable', () => {
     expect(html).toContain('GA4 error');
     expect(html).toContain('SC error');
     expect(html).toContain('GA4 failed');
-    expect(html).toContain('<span class="text-red-400/60 text-xs">error</span>');
+    expect(html).toContain('border-red-500/40 bg-red-500/10 text-red-300');
   });
 
   it('keeps site details linked while the domain copy button stays outside the site link', () => {

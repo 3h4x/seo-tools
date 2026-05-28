@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { TextButton, TextLink } from '@/components/ui';
+import { Badge, TextButton, TextLink } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
@@ -174,10 +174,10 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
       ? <span key="duration">{formatDuration(row.avgSessionDuration)}</span>
       : <span key="duration" className="text-neutral-600">—</span>,
     row.scClicks === null
-      ? <span key="sc-clicks" className="text-red-400/60 text-xs">error</span>
+      ? <Badge key="sc-clicks" size="xs" shape="rounded" className="border-red-500/40 bg-red-500/10 text-red-300">error</Badge>
       : row.scClicks > 0 ? <span key="sc-clicks">{row.scClicks.toLocaleString()}</span> : <span key="sc-clicks" className="text-neutral-600">—</span>,
     row.scPosition === null ? (
-      <span key="sc-position" className="text-red-400/60 text-xs">error</span>
+      <Badge key="sc-position" size="xs" shape="rounded" className="border-red-500/40 bg-red-500/10 text-red-300">error</Badge>
     ) : row.scPosition > 0 ? (
       <span
         key="sc-position"
