@@ -17,6 +17,12 @@ function isSource(value: unknown): value is Source {
   return value === 'db' || value === 'env' || value === 'none';
 }
 
+const SOURCE_LABEL: Record<Source, string | null> = {
+  db: 'Source: database',
+  env: 'Source: environment variable',
+  none: null,
+};
+
 export async function readPagespeedConfigResponse(response: Response): Promise<Source> {
   let payload: PagespeedConfigResponse | null = null;
 
@@ -135,19 +141,14 @@ export default function PagespeedKeyForm() {
 
   if (loading) return <PagespeedKeyFormSkeleton />;
   const hasKey = source !== 'none';
-  const sourceLabel: Record<Source, string | null> = {
-    db: 'Source: database',
-    env: 'Source: environment variable',
-    none: null,
-  };
 
   return (
     <div className="space-y-3 max-w-2xl">
       <div className="flex items-center gap-3">
         <h2 className="text-base font-semibold text-white">PageSpeed Insights API Key</h2>
-        {sourceLabel[source] && (
+        {SOURCE_LABEL[source] && (
           <Badge size="compact" shape="rounded" className="border-neutral-700 bg-neutral-800 text-neutral-400">
-            {sourceLabel[source]}
+            {SOURCE_LABEL[source]}
           </Badge>
         )}
       </div>
