@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { TextLink } from '@/components/ui';
 
 const links = [
   { href: '/', label: 'Overview' },
@@ -22,10 +22,12 @@ export default function NavLinks() {
       {links.map((link) => {
         const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
         return (
-          <Link
+          <TextLink
             key={link.href}
             href={link.href}
             aria-current={active ? 'page' : undefined}
+            size="inherit"
+            variant="inherit"
             className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
               active
                 ? 'text-white bg-neutral-800'
@@ -33,7 +35,7 @@ export default function NavLinks() {
             }`}
           >
             {link.label}
-          </Link>
+          </TextLink>
         );
       })}
     </div>
