@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Notice, Skeleton, Surface, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { PositionBadge } from './position-badge';
@@ -26,6 +26,13 @@ const QUERY_COLUMNS: DataTableColumn[] = [
   { label: 'Impr', align: 'right', className: 'py-1 text-right font-medium hidden md:table-cell', cellClassName: 'py-1 text-neutral-500 text-right hidden md:table-cell' },
   { label: 'CTR', align: 'right', className: 'py-1 text-right font-medium hidden md:table-cell', cellClassName: 'py-1 text-neutral-500 text-right hidden md:table-cell' },
   { label: 'Pos', align: 'right', className: 'py-1 text-right font-medium', cellClassName: 'py-1 text-right' },
+];
+
+const PAGE_COLUMNS: DataTableColumn[] = [
+  { label: 'Page', rowHeader: true, className: 'px-4 py-3 font-semibold text-left', cellClassName: 'px-4 py-2.5 font-normal text-left text-neutral-300 text-xs truncate max-w-[200px]' },
+  { label: 'Clicks', align: 'right', className: 'px-4 py-3 font-semibold text-right', cellClassName: 'px-4 py-2.5 text-neutral-300 text-right' },
+  { label: 'Impr', align: 'right', className: 'px-4 py-3 font-semibold text-right hidden md:table-cell', cellClassName: 'px-4 py-2.5 text-neutral-400 text-right hidden md:table-cell' },
+  { label: 'Pos', align: 'right', className: 'px-4 py-3 font-semibold text-right', cellClassName: 'px-4 py-2.5 text-right' },
 ];
 
 function PageQueriesSkeleton() {
@@ -57,7 +64,7 @@ function PageQueriesError({ message }: { message: string }) {
   );
 }
 
-function PageQueriesEmpty({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function PageQueriesEmpty({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <Notice tone="neutral" size="sm" className={`text-neutral-500 ${className}`}>
       {children}
@@ -118,6 +125,61 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
     try { return new URL(url).pathname; } catch { return url; }
   }
 
+  const pageRows = rows.map((row, index) => {
+    const isOpen = expanded.has(row.page);
+    const panelId = pageQueryPanelId(index);
+
+    return [
+      <TextButton
+        key="page"
+        type="button"
+        aria-expanded={isOpen ? 'true' : 'false'}
+        aria-controls={panelId}
+        aria-label={`${isOpen ? 'Hide' : 'Show'} queries for ${pathname(row.page)}`}
+        title={row.page}
+        onClick={(event) => {
+          event.stopPropagation();
+          toggle(row.page);
+        }}
+        hasIcon
+        className="text-left"
+      >
+        <span aria-hidden="true" className={`transition-transform text-neutral-600 text-[10px] ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+        <span className="text-neutral-300">{pathname(row.page)}</span>
+      </TextButton>,
+      row.clicks.toLocaleString(),
+      row.impressions.toLocaleString(),
+      <PositionBadge key="position" position={row.position} />,
+    ];
+  });
+
+  const expandedRows = rows.map((row) => {
+    if (!expanded.has(row.page)) return null;
+
+    return row.queries.length === 0 ? (
+      <PageQueriesEmpty className="text-xs">No query data for this page.</PageQueriesEmpty>
+    ) : (
+      <DataTable
+        columns={QUERY_COLUMNS}
+        rows={row.queries.map((q: SCQueryRow) => [
+          q.query,
+          q.clicks.toLocaleString(),
+          q.impressions.toLocaleString(),
+          `${(q.ctr * 100).toFixed(1)}%`,
+          <PositionBadge key="position" position={q.position} />,
+        ])}
+        caption={<>Queries for {pathname(row.page)}</>}
+        rowKeys={row.queries.map((q: SCQueryRow) => q.query)}
+        monospaceCells={false}
+        containerClassName=""
+        tableClassName="w-full text-xs"
+        headRowClassName="text-neutral-600 uppercase tracking-wider"
+        bodyClassName=""
+        rowClassName="border-t border-neutral-800/30"
+      />
+    );
+  });
+
   return (
     <div>
       <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">
@@ -131,83 +193,25 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
         <PageQueriesEmpty>No page data available.</PageQueriesEmpty>
       ) : (
         <Surface padding="none" className="overflow-hidden">
-          <table className="w-full text-sm">
-            <caption className="sr-only">Top Search Console pages</caption>
-            <thead>
-              <tr className="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider">
-                <th scope="col" className="px-4 py-3 font-semibold text-left">Page</th>
-                <th scope="col" className="px-4 py-3 font-semibold text-right">Clicks</th>
-                <th scope="col" className="px-4 py-3 font-semibold text-right hidden md:table-cell">Impr</th>
-                <th scope="col" className="px-4 py-3 font-semibold text-right">Pos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, index) => {
-                const isOpen = expanded.has(row.page);
-                const panelId = pageQueryPanelId(index);
-                return (
-                  <React.Fragment key={row.page}>
-                    <tr
-                      className="hover:bg-neutral-800/30 transition-colors cursor-pointer border-b border-neutral-800/50 last:border-0"
-                      onClick={() => toggle(row.page)}
-                    >
-                      <th scope="row" className="px-4 py-2.5 font-normal text-left text-neutral-300 text-xs truncate max-w-[200px]">
-                        <TextButton
-                          type="button"
-                          aria-expanded={isOpen ? 'true' : 'false'}
-                          aria-controls={panelId}
-                          aria-label={`${isOpen ? 'Hide' : 'Show'} queries for ${pathname(row.page)}`}
-                          title={row.page}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            toggle(row.page);
-                          }}
-                          hasIcon
-                          className="text-left"
-                        >
-                          <span aria-hidden="true" className={`transition-transform text-neutral-600 text-[10px] ${isOpen ? 'rotate-90' : ''}`}>▶</span>
-                          <span className="text-neutral-300">{pathname(row.page)}</span>
-                        </TextButton>
-                      </th>
-                      <td className="px-4 py-2.5 text-neutral-300 text-right">{row.clicks.toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-neutral-400 text-right hidden md:table-cell">{row.impressions.toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right">
-                        <PositionBadge position={row.position} />
-                      </td>
-                    </tr>
-                    {isOpen && (
-                      <tr id={panelId} key={`${row.page}-expanded`} className="bg-neutral-950/50">
-                        <td colSpan={4} className="px-6 pb-3 pt-1">
-                          {row.queries.length === 0 ? (
-                            <PageQueriesEmpty className="text-xs">No query data for this page.</PageQueriesEmpty>
-                          ) : (
-                            <DataTable
-                              columns={QUERY_COLUMNS}
-                              rows={row.queries.map((q: SCQueryRow) => [
-                                q.query,
-                                q.clicks.toLocaleString(),
-                                q.impressions.toLocaleString(),
-                                `${(q.ctr * 100).toFixed(1)}%`,
-                                <PositionBadge key="position" position={q.position} />,
-                              ])}
-                              caption={<>Queries for {pathname(row.page)}</>}
-                              rowKeys={row.queries.map((q: SCQueryRow) => q.query)}
-                              monospaceCells={false}
-                              containerClassName=""
-                              tableClassName="w-full text-xs"
-                              headRowClassName="text-neutral-600 uppercase tracking-wider"
-                              bodyClassName=""
-                              rowClassName="border-t border-neutral-800/30"
-                            />
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+          <DataTable
+            columns={PAGE_COLUMNS}
+            rows={pageRows}
+            expandedRows={expandedRows}
+            expandedRowIds={rows.map((_row, index) => pageQueryPanelId(index))}
+            caption="Top Search Console pages"
+            rowKeys={rows.map((row) => row.page)}
+            monospaceCells={false}
+            containerClassName="contents"
+            tableClassName="w-full text-sm"
+            headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
+            bodyClassName=""
+            rowClassName="hover:bg-neutral-800/30 transition-colors cursor-pointer border-b border-neutral-800/50 last:border-0"
+            expandedRowClassName="bg-neutral-950/50"
+            expandedCellClassName="px-6 pb-3 pt-1"
+            getRowProps={(_cells, index) => ({
+              onClick: () => toggle(rows[index].page),
+            })}
+          />
         </Surface>
       )}
     </div>

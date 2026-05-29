@@ -286,4 +286,23 @@ describe('DataTable', () => {
 
     expect(html).toContain('<caption class="sr-only">Slowest pages by Core Web Vitals samples</caption>');
   });
+
+  it('can render caller-provided expanded rows under keyed data rows', () => {
+    const html = renderToStaticMarkup(
+      <DataTable
+        columns={[{ label: 'Page', rowHeader: true }, { label: 'Clicks', align: 'right' }]}
+        rows={[[<span key="path">/docs</span>, <span key="clicks">12</span>]]}
+        rowKeys={['/docs']}
+        expandedRows={[<p key="details">No query data for this page.</p>]}
+        expandedRowIds={['page-query-detail-0']}
+        expandedRowClassName="bg-neutral-950/50"
+        expandedCellClassName="px-6 pb-3 pt-1"
+        getRowProps={() => ({ className: 'cursor-pointer' })}
+      />
+    );
+
+    expect(html).toContain('<tr class="hover:bg-neutral-800/30 cursor-pointer">');
+    expect(html).toContain('<tr id="page-query-detail-0" class="bg-neutral-950/50">');
+    expect(html).toContain('<td colSpan="2" class="px-6 pb-3 pt-1"><p>No query data for this page.</p></td>');
+  });
 });

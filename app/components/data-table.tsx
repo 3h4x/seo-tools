@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type HTMLAttributes, type ReactNode } from 'react';
 
 const FONT_WEIGHT_CLASS_RE = /\bfont-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)\b/;
 const TEXT_ALIGN_CLASS_RE = /\btext-(?:left|center|right|justify|start|end)\b/;
@@ -28,6 +28,8 @@ export interface DataTableColumn {
 interface DataTableProps {
   columns: DataTableColumn[];
   rows: ReactNode[][];
+  expandedRows?: Array<ReactNode | null | undefined>;
+  expandedRowIds?: Array<string | undefined>;
   caption?: ReactNode;
   rowKeys?: Array<string | number>;
   monospaceCells?: boolean;
@@ -37,11 +39,16 @@ interface DataTableProps {
   headRowClassName?: string;
   bodyClassName?: string;
   rowClassName?: string | ((row: ReactNode[], index: number) => string);
+  expandedRowClassName?: string;
+  expandedCellClassName?: string;
+  getRowProps?: (row: ReactNode[], index: number) => HTMLAttributes<HTMLTableRowElement>;
 }
 
 export function DataTable({
   columns,
   rows,
+  expandedRows,
+  expandedRowIds,
   caption,
   rowKeys,
   monospaceCells = true,
@@ -51,6 +58,9 @@ export function DataTable({
   headRowClassName = 'border-b border-neutral-800 text-neutral-500',
   bodyClassName = 'divide-y divide-neutral-800',
   rowClassName = 'hover:bg-neutral-800/30',
+  expandedRowClassName,
+  expandedCellClassName,
+  getRowProps,
 }: DataTableProps) {
   const getHeaderClassName = (column: DataTableColumn) => {
     const baseClassName = column.className ?? 'px-3 py-2 font-semibold';
@@ -102,35 +112,60 @@ export function DataTable({
           </tr>
         </thead>
         <tbody className={bodyClassName}>
-          {rows.map((cells, i) => (
-            <tr key={rowKeys?.[i] ?? i} className={typeof rowClassName === 'function' ? rowClassName(cells, i) : rowClassName}>
-              {cells.map((cell, j) => {
-                const column = columns[j];
-                const className = getCellClassName(column);
+          {rows.map((cells, i) => {
+            const key = rowKeys?.[i] ?? i;
+            const rowProps = getRowProps?.(cells, i);
+            const baseRowClassName = typeof rowClassName === 'function' ? rowClassName(cells, i) : rowClassName;
+            const row = (
+              <tr
+                key={key}
+                {...rowProps}
+                className={joinClassNames(baseRowClassName, rowProps?.className)}
+              >
+                {cells.map((cell, j) => {
+                  const column = columns[j];
+                  const className = getCellClassName(column);
 
-                if (column?.rowHeader) {
+                  if (column?.rowHeader) {
+                    return (
+                      <th
+                        key={j}
+                        scope="row"
+                        className={className}
+                      >
+                        {cell}
+                      </th>
+                    );
+                  }
+
                   return (
-                    <th
+                    <td
                       key={j}
-                      scope="row"
                       className={className}
                     >
                       {cell}
-                    </th>
+                    </td>
                   );
-                }
+                })}
+              </tr>
+            );
+            const expandedRow = expandedRows?.[i];
 
-                return (
-                  <td
-                    key={j}
-                    className={className}
-                  >
-                    {cell}
+            if (expandedRow == null) {
+              return row;
+            }
+
+            return (
+              <Fragment key={key}>
+                {row}
+                <tr id={expandedRowIds?.[i]} className={expandedRowClassName}>
+                  <td colSpan={columns.length} className={expandedCellClassName}>
+                    {expandedRow}
                   </td>
-                );
-              })}
-            </tr>
-          ))}
+                </tr>
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>
