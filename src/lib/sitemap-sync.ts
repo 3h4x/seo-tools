@@ -152,6 +152,26 @@ export async function runSitemapSync(): Promise<void> {
 
 let _intervalId: ReturnType<typeof setInterval> | null = null;
 
+type SitemapSyncShutdownGlobal = typeof globalThis & {
+  __seoToolsSitemapSyncStop?: () => void;
+  __seoToolsSitemapSyncShutdownRegistered?: boolean;
+};
+
+const sitemapSyncShutdownState = globalThis as SitemapSyncShutdownGlobal;
+
+export function stopSitemapSync(): void {
+  if (!_intervalId) return;
+  clearInterval(_intervalId);
+  _intervalId = null;
+}
+
+function registerSitemapSyncShutdown(): void {
+  sitemapSyncShutdownState.__seoToolsSitemapSyncStop = stopSitemapSync;
+  if (sitemapSyncShutdownState.__seoToolsSitemapSyncShutdownRegistered) return;
+  sitemapSyncShutdownState.__seoToolsSitemapSyncShutdownRegistered = true;
+  process.once('SIGTERM', () => sitemapSyncShutdownState.__seoToolsSitemapSyncStop?.());
+}
+
 export function startSitemapSync(): void {
   if (_intervalId) return;
 
@@ -161,6 +181,7 @@ export function startSitemapSync(): void {
   _intervalId = setInterval(() => {
     runSitemapSync().catch(e => console.error('[sitemap-sync] interval error:', (e as Error).message));
   }, CHECK_INTERVAL_MS);
+  registerSitemapSyncShutdown();
 
   console.log(`[sitemap-sync] Scheduled every ${CHECK_INTERVAL_MS / 3_600_000}h`);
 }
