@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
-type SurfacePadding = 'none' | 'sm' | 'md';
+type SurfacePadding = 'none' | 'xs' | 'sm' | 'md';
 
 interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
@@ -9,6 +9,7 @@ interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
 
 const PADDING_CLASSES: Record<SurfacePadding, string> = {
   none: '',
+  xs: 'p-3',
   sm: 'p-4',
   md: 'p-5',
 };

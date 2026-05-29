@@ -547,7 +547,7 @@ export default async function SiteDashboardPage({
             <AuditPanel title={`URL Inspection · ${audit.urlInspection.length} test pages`}>
               <div className="space-y-3">
                 {audit.urlInspection.map((inspection) => (
-                  <Surface key={inspection.page} padding="none" className="!bg-neutral-950/40 p-3">
+                  <Surface key={inspection.page} padding="xs" className="!bg-neutral-950/40">
                     <div className="flex flex-wrap items-center gap-3 text-xs">
                       <div className={`size-1.5 rounded-full shrink-0 ${statusDots[inspection.status]}`} />
                       <span className="text-neutral-300 font-mono">{inspection.page}</span>
@@ -720,7 +720,7 @@ export default async function SiteDashboardPage({
           <AuditPanel title={`Internal Links · ${audit.internalLinks.length} pages checked`}>
             <div className="space-y-3">
               {audit.internalLinks.map((link, i) => (
-                <Surface key={i} padding="none" className="!bg-neutral-950/40 p-3">
+                <Surface key={i} padding="xs" className="!bg-neutral-950/40">
                   <div className="flex flex-wrap items-center gap-4 text-xs">
                     <div className={`size-1.5 rounded-full shrink-0 ${statusDots[link.status]}`} />
                     <span className="text-neutral-400 font-mono w-32 shrink-0">{link.page}</span>
@@ -873,7 +873,7 @@ function SerpSnippetPreview({ page, domain, titleRaw, titleLen, descRaw, descLen
   const DESC_LIMIT = 160;
   const breadcrumb = `${domain}${page === '/' ? '' : page}`;
   return (
-    <Surface padding="none" className="mt-3 !rounded border-neutral-700/40 bg-neutral-800/20 p-3">
+    <Surface padding="xs" className="mt-3 !rounded border-neutral-700/40 bg-neutral-800/20">
       <div className="text-[10px] text-neutral-500 uppercase tracking-wider mb-2 font-semibold">SERP Preview</div>
       <div className="max-w-xl">
         <div className="text-[11px] text-green-700 font-mono mb-0.5 truncate">{breadcrumb}</div>
