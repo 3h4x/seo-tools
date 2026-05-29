@@ -192,6 +192,7 @@ export default function PagespeedKeyForm() {
         <FormButton
           onClick={handleTest}
           disabled={!input.trim() || testState === 'testing'}
+          hasIcon={testState === 'testing'}
         >
           {testState === 'testing' && <Spinner />}
           {testState === 'testing' ? 'Testing…' : 'Test'}
@@ -199,6 +200,7 @@ export default function PagespeedKeyForm() {
         <FormButton
           onClick={handleSave}
           disabled={testState !== 'ok' || saving}
+          hasIcon={saving}
           variant="primary"
         >
           {saving && <Spinner />}
@@ -208,6 +210,7 @@ export default function PagespeedKeyForm() {
           <FormButton
             onClick={handleRemove}
             disabled={removing}
+            hasIcon={removing}
             variant="danger"
           >
             {removing && <Spinner />}
