@@ -56,6 +56,11 @@ const GA4_TOP_PAGE_COLUMNS: DataTableColumn[] = [
   { label: 'Engagement', align: 'right', className: 'px-4 py-3 font-semibold text-right', cellClassName: 'px-4 py-2.5 text-right font-mono' },
 ];
 
+const GA4_TRAFFIC_SOURCE_COLUMNS: DataTableColumn[] = [
+  { label: 'Source', rowHeader: true, cellClassName: 'py-0.5 pr-3 font-normal text-left' },
+  { label: 'Sessions', align: 'right', cellClassName: 'py-0.5 pl-3 text-right' },
+];
+
 function getQueryBucketStats(
   queries: Array<{ position: number; impressions: number; clicks: number }>,
 ): QueryBucketStat[] {
@@ -430,14 +435,21 @@ export default async function SiteDashboardPage({
             <EmptyDataNotice>No traffic source data available.</EmptyDataNotice>
           ) : (
             <Surface padding="sm">
-              <div className="space-y-1.5">
-                {(ga4?.trafficSources ?? []).map((src, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="text-neutral-400 font-mono">{formatSource(src.source, src.medium)}</span>
-                    <span className="text-neutral-500 font-mono">{pluralize(src.sessions, 'session')}</span>
-                  </div>
-                ))}
-              </div>
+              <DataTable
+                columns={GA4_TRAFFIC_SOURCE_COLUMNS}
+                rows={(ga4?.trafficSources ?? []).map((src) => [
+                  <span key="source" className="text-neutral-400 font-mono">{formatSource(src.source, src.medium)}</span>,
+                  <span key="sessions" className="text-neutral-500 font-mono">{pluralize(src.sessions, 'session')}</span>,
+                ])}
+                rowKeys={(ga4?.trafficSources ?? []).map((src, i) => `${src.source}-${src.medium}-${i}`)}
+                caption="GA4 traffic sources"
+                monospaceCells={false}
+                containerClassName="contents"
+                tableClassName="w-full text-xs"
+                headClassName="sr-only"
+                bodyClassName=""
+                rowClassName=""
+              />
             </Surface>
           )}
         </div>
