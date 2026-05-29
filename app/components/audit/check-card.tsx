@@ -37,7 +37,7 @@ export function StatusBadge({ status, label }: { status: CheckStatus; label?: st
 export function Recommendation({ gap }: { gap: GapRecommendation }) {
   const s = GAP_SEVERITY_STYLES[gap.severity];
   return (
-    <Notice size="none" className={`mt-3 ${s.bg} border-neutral-800 p-4`}>
+    <Notice size="card" className={`mt-3 ${s.bg} border-neutral-800`}>
       <div className="flex items-center gap-2 mb-1.5">
         <Badge size="compact" shape="rounded" className={`gap-1.5 ${s.bg} ${s.text} border-neutral-800`}>
           <span className={`size-1.5 rounded-full ${s.dot}`} aria-hidden="true" />

@@ -48,6 +48,16 @@ describe('Notice', () => {
     expect(html).toContain('p-5');
   });
 
+  it('supports card-density notices', () => {
+    const html = renderToStaticMarkup(
+      <Notice size="card">
+        Inline recommendation
+      </Notice>
+    );
+
+    expect(html).toContain('p-4');
+  });
+
   it('supports spacious notices', () => {
     const html = renderToStaticMarkup(
       <Notice size="spacious">
