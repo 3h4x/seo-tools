@@ -38,7 +38,7 @@ function StatusSectionSkeleton() {
       <Skeleton className="h-4 w-full max-w-3xl" />
       <div className="grid gap-3 md:grid-cols-2">
         {[...Array(4)].map((_, index) => (
-          <Surface key={index} padding="none" className="p-4 space-y-3">
+          <Surface key={index} padding="sm" className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-5 w-16 rounded-full" />
@@ -64,7 +64,7 @@ function SitesSectionSkeleton() {
       </div>
       <div className="grid gap-3">
         {[...Array(3)].map((_, index) => (
-          <Surface key={index} padding="none" className="p-4">
+          <Surface key={index} padding="sm">
             <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-center">
               <Skeleton className="h-4 w-40" />
               <Skeleton className="h-4 w-48" />
