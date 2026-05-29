@@ -58,7 +58,7 @@ export default async function TrendsPage({
           <p className="text-neutral-500 text-sm mt-2 max-w-lg mx-auto">
             Take snapshots to track SEO performance over time. Each snapshot captures Search Console + GA4 metrics and top-50 keyword rankings for all sites.
           </p>
-          <Surface padding="none" className="mt-4 !bg-neutral-800 p-4 max-w-md mx-auto text-left">
+          <Surface padding="sm" className="mt-4 !bg-neutral-800 max-w-md mx-auto text-left">
             <p className="text-neutral-400 text-xs mb-2 font-semibold">Quick start:</p>
             <div className="flex justify-center">
               <SnapshotButton />
