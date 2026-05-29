@@ -15,7 +15,7 @@ import TrendChart from './trend-chart';
 import { formatDateShort } from '@/lib/format';
 import { CHART_NEUTRALS, METRIC_COLORS } from '@/lib/constants';
 import { todayDateOnly } from '@/lib/date-only';
-import { Notice, SegmentedControl, Skeleton, ToggleButtonGroup } from '@/components/ui';
+import { Notice, SegmentedControl, Skeleton, Surface, ToggleButtonGroup } from '@/components/ui';
 
 const METRICS = ['views', 'users', 'clicks', 'impressions'] as const;
 const METRIC_OPTIONS = METRICS.map(metric => ({
@@ -48,7 +48,7 @@ interface DailyApiResponse {
 
 function DailyTrafficSkeleton() {
   return (
-    <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 space-y-4" aria-label="Loading daily traffic data">
+    <Surface className="space-y-4" aria-label="Loading daily traffic data">
       <div className="flex flex-wrap items-center gap-3">
         <div className="mr-auto space-y-2">
           <Skeleton className="h-4 w-28" />
@@ -63,7 +63,7 @@ function DailyTrafficSkeleton() {
           <Skeleton key={index} className="h-5 w-24 rounded-full" />
         ))}
       </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -230,7 +230,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
   }
 
   return (
-    <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
+    <Surface>
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="mr-auto">
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Daily Traffic</h2>
@@ -333,6 +333,6 @@ export default function DailyTrafficChart({ days }: { days: number }) {
           )}
         />
       )}
-    </div>
+    </Surface>
   );
 }
