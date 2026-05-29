@@ -33,7 +33,7 @@ export function SkeletonSummaryRow({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {[...Array(count)].map((_, i) => (
-        <Surface key={i} padding="none" className="p-4 space-y-2">
+        <Surface key={i} padding="sm" className="space-y-2">
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-6 w-20" />
         </Surface>
