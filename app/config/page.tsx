@@ -7,7 +7,7 @@ import PagespeedKeyForm from '../components/pagespeed-key-form';
 import SitesManager from '../components/sites-manager';
 import AlertDeliveryForm from '../components/alert-delivery-form';
 import AlertRulesManager from '../components/alert-rules-manager';
-import { Skeleton } from '@/components/ui';
+import { Skeleton, Surface } from '@/components/ui';
 import type { OperationalStatus } from '@/lib/db';
 import type { Site } from '@/lib/sites';
 
@@ -38,14 +38,14 @@ function StatusSectionSkeleton() {
       <Skeleton className="h-4 w-full max-w-3xl" />
       <div className="grid gap-3 md:grid-cols-2">
         {[...Array(4)].map((_, index) => (
-          <div key={index} className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 space-y-3">
+          <Surface key={index} padding="none" className="p-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-5 w-16 rounded-full" />
             </div>
             <Skeleton className="h-4 w-48" />
             <Skeleton className="h-3 w-36" />
-          </div>
+          </Surface>
         ))}
       </div>
     </section>
@@ -64,14 +64,14 @@ function SitesSectionSkeleton() {
       </div>
       <div className="grid gap-3">
         {[...Array(3)].map((_, index) => (
-          <div key={index} className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+          <Surface key={index} padding="none" className="p-4">
             <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-center">
               <Skeleton className="h-4 w-40" />
               <Skeleton className="h-4 w-48" />
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-8 w-20" />
             </div>
-          </div>
+          </Surface>
         ))}
       </div>
     </section>
