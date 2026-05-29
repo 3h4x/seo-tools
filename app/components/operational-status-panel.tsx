@@ -1,6 +1,6 @@
 import { formatRelativeTime } from '@/lib/format';
 import type { OperationalStatus } from '@/lib/db';
-import { Badge, Notice } from '@/components/ui';
+import { Badge, Notice, Surface } from '@/components/ui';
 
 const STATE_STYLES: Record<OperationalStatus['state'], string> = {
   fresh: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
@@ -44,7 +44,7 @@ export default function OperationalStatusPanel({
       )}
       <div className="grid gap-3 md:grid-cols-2">
         {statuses.map((status) => (
-          <div key={status.key} className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 space-y-2">
+          <Surface key={status.key} padding="none" className="p-4 space-y-2">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-sm font-medium text-white">{status.label}</h3>
               <Badge size="compact" className={STATE_STYLES[status.state]}>
@@ -56,7 +56,7 @@ export default function OperationalStatusPanel({
               <p>{renderTimestamp(status.timestamp)}</p>
               {status.details && <p>{status.details}</p>}
             </div>
-          </div>
+          </Surface>
         ))}
       </div>
     </section>
