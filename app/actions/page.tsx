@@ -60,7 +60,7 @@ export default async function ActionsPage() {
       <PartialFailureBanner failures={failures} />
 
       {items.length === 0 ? (
-        <Notice size="none" className="p-6">
+        <Notice size="lg">
           <p className="text-neutral-300 font-semibold">No ranked actions yet.</p>
           <p className="text-sm text-neutral-500 mt-1">Add managed sites, snapshots, and audit data to populate the queue.</p>
         </Notice>
