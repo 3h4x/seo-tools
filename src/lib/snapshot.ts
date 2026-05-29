@@ -39,6 +39,13 @@ const SNAPSHOT_STALE_LOCK_MS = 6 * 60 * 60 * 1000;
 let snapshotRunning = false;
 let schedulerIntervalId: ReturnType<typeof setInterval> | null = null;
 
+type SnapshotShutdownGlobal = typeof globalThis & {
+  __seoToolsSnapshotStop?: () => void;
+  __seoToolsSnapshotShutdownRegistered?: boolean;
+};
+
+const snapshotShutdownState = globalThis as SnapshotShutdownGlobal;
+
 export class SnapshotAlreadyRunningError extends Error {
   constructor() {
     super('snapshot_in_progress');
@@ -115,10 +122,24 @@ export function startSnapshotScheduler(): void {
       console.error('[snapshot] scheduled run failed:', (error as Error).message);
     });
   }, SNAPSHOT_CHECK_INTERVAL_MS);
+  registerSnapshotSchedulerShutdown();
 
   console.log(
     `[snapshot] Scheduled due-check every ${SNAPSHOT_CHECK_INTERVAL_MS / 3_600_000}h (window ${SNAPSHOT_INTERVAL_MS / 3_600_000}h)`,
   );
+}
+
+export function stopSnapshotScheduler(): void {
+  if (!schedulerIntervalId) return;
+  clearInterval(schedulerIntervalId);
+  schedulerIntervalId = null;
+}
+
+function registerSnapshotSchedulerShutdown(): void {
+  snapshotShutdownState.__seoToolsSnapshotStop = stopSnapshotScheduler;
+  if (snapshotShutdownState.__seoToolsSnapshotShutdownRegistered) return;
+  snapshotShutdownState.__seoToolsSnapshotShutdownRegistered = true;
+  process.once('SIGTERM', () => snapshotShutdownState.__seoToolsSnapshotStop?.());
 }
 
 function isSnapshotDue(state: SnapshotRunRow, now: number): boolean {
