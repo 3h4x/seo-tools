@@ -1,6 +1,14 @@
 import type { KeywordDelta } from '@/lib/keyword-history';
 import { DataTable, type DataTableColumn } from './data-table';
 
+const KEYWORD_COLUMNS: DataTableColumn[] = [
+  { label: 'Query', rowHeader: true, className: 'text-left py-2 pr-4 font-medium', cellClassName: 'py-1.5 pr-4 text-neutral-300 font-mono truncate max-w-xs' },
+  { label: 'Position', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono text-neutral-300' },
+  { label: '7d Δ', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono' },
+  { label: '30d Δ', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono' },
+  { label: 'Trend', align: 'right', className: 'py-2 pl-3 font-medium', cellClassName: 'py-1.5 pl-3 text-right' },
+];
+
 function KwDeltaCell({ delta }: { delta: number | null }) {
   if (delta === null) return <span className="text-neutral-700">—</span>;
   if (Math.abs(delta) < 0.1) return <span className="text-neutral-500">±0</span>;
@@ -47,17 +55,10 @@ function KwTrendArrow({ trend }: { trend: KeywordDelta['trend'] }) {
 
 export function KeywordRankTable({ deltas, limit = 20 }: { deltas: KeywordDelta[]; limit?: number }) {
   const visibleDeltas = deltas.slice(0, limit);
-  const columns: DataTableColumn[] = [
-    { label: 'Query', rowHeader: true, className: 'text-left py-2 pr-4 font-medium', cellClassName: 'py-1.5 pr-4 text-neutral-300 font-mono truncate max-w-xs' },
-    { label: 'Position', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono text-neutral-300' },
-    { label: '7d Δ', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono' },
-    { label: '30d Δ', align: 'right', className: 'py-2 px-3 font-medium', cellClassName: 'py-1.5 px-3 text-right font-mono' },
-    { label: 'Trend', align: 'right', className: 'py-2 pl-3 font-medium', cellClassName: 'py-1.5 pl-3 text-right' },
-  ];
 
   return (
     <DataTable
-      columns={columns}
+      columns={KEYWORD_COLUMNS}
       rows={visibleDeltas.map((kw) => [
         <span key="query">{kw.query}</span>,
         <span key="position">{kw.currentPosition.toFixed(1)}</span>,
