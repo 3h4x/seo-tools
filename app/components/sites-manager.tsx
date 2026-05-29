@@ -809,7 +809,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               variant="primary"
               onClick={handleSave}
               disabled={!canSave}
-              className="inline-flex items-center gap-1.5"
+              hasIcon
             >
               {saving && <Spinner />}
               {saving ? 'Saving…' : 'Save'}
@@ -830,7 +830,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               size="xs"
               onClick={handleDiscover}
               disabled={discovering || isEditing}
-              className="inline-flex items-center gap-1.5"
+              hasIcon
             >
               {discovering && <Spinner />}
               {discovering ? 'Discovering…' : 'Discover sites'}
@@ -908,7 +908,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   variant="primary"
                   onClick={handleImport}
                   disabled={importing || selected.size === 0}
-                  className="inline-flex items-center gap-1.5"
+                  hasIcon
                 >
                   {importing && <Spinner />}
                   {importing ? 'Importing…' : `Import Selected (${selected.size})`}
