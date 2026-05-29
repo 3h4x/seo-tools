@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormButton, Notice } from '@/components/ui';
+import { FormButton, Notice, Surface } from '@/components/ui';
 import { PositionBadge } from './position-badge';
 import { DataTable, type DataTableColumn } from './data-table';
 
@@ -118,20 +118,22 @@ export function ScTable({ heading, columnLabel, rows, emptyMessage, exportData, 
         )}
       </div>
       {rows.length > 0 ? (
-        <DataTable
-          columns={columns}
-          rows={rows.map((row) => [
-            <span key="label" title={row.title}>{row.label}</span>,
-            <span key="clicks">{row.clicks.toLocaleString()}</span>,
-            <span key="impressions">{row.impressions.toLocaleString()}</span>,
-            ...(showCtr ? [<span key="ctr">{row.ctr !== undefined ? `${(row.ctr * 100).toFixed(1)}%` : '—'}</span>] : []),
-            <PositionBadge key="position" position={row.position} />,
-          ])}
-          containerClassName="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden"
-          tableClassName="w-full text-sm"
-          headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
-          rowClassName="hover:bg-neutral-800/30 transition-colors"
-        />
+        <Surface padding="none" className="overflow-hidden">
+          <DataTable
+            columns={columns}
+            rows={rows.map((row) => [
+              <span key="label" title={row.title}>{row.label}</span>,
+              <span key="clicks">{row.clicks.toLocaleString()}</span>,
+              <span key="impressions">{row.impressions.toLocaleString()}</span>,
+              ...(showCtr ? [<span key="ctr">{row.ctr !== undefined ? `${(row.ctr * 100).toFixed(1)}%` : '—'}</span>] : []),
+              <PositionBadge key="position" position={row.position} />,
+            ])}
+            containerClassName="overflow-hidden"
+            tableClassName="w-full text-sm"
+            headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
+            rowClassName="hover:bg-neutral-800/30 transition-colors"
+          />
+        </Surface>
       ) : (
         <Notice size="sm" className="text-neutral-600">{emptyMessage}</Notice>
       )}
