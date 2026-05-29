@@ -95,7 +95,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
 
   return (
     <div className="space-y-6">
-      <Surface padding="none" className="p-4 space-y-3">
+      <Surface padding="sm" className="space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-neutral-500 text-xs font-semibold uppercase tracking-wider">Filter</span>
           {isFiltered && (
