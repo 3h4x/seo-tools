@@ -415,38 +415,40 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             </p>
           </Notice>
         ) : (
-          <DataTable
-            columns={DECAY_TABLE_COLUMNS}
-            rows={allDecaying.map((page) => {
-              let shortPage = page.page;
-              try { shortPage = new URL(page.page).pathname; } catch {}
-              const colors = DECAY_SEVERITY_COLORS[page.severity];
-              return [
-                <span key="site">{page.domain}</span>,
-                <span key="page" title={page.page}>{shortPage}</span>,
-                <span key="clicks">
-                  <span className="text-neutral-300">{page.currentClicks}</span>
-                  <span className="text-red-400 text-[10px] ml-1">{page.clicksDelta}%</span>
-                </span>,
-                <span key="impressions">
-                  <span className="text-neutral-400">{page.currentImpressions}</span>
-                  <span className="text-red-400 text-[10px] ml-1">{page.impressionsDelta}%</span>
-                </span>,
-                <span key="position">
-                  <span className="text-neutral-400">{page.currentPosition.toFixed(1)}</span>
-                  {page.positionDelta > 0 && <span className="text-red-400 text-[10px] ml-1">+{page.positionDelta}</span>}
-                </span>,
-                <Badge key="severity" uppercase className={`${colors.badgeBg} ${colors.badge} !border-0`}>
-                  {page.severity}
-                </Badge>,
-              ];
-            })}
-            rowKeys={allDecaying.map((page) => `${page.siteId}:${page.page}`)}
-            containerClassName="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden"
-            tableClassName="w-full text-sm"
-            headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
-            rowClassName="hover:bg-neutral-800/30 transition-colors"
-          />
+          <Surface padding="none" className="overflow-hidden">
+            <DataTable
+              columns={DECAY_TABLE_COLUMNS}
+              rows={allDecaying.map((page) => {
+                let shortPage = page.page;
+                try { shortPage = new URL(page.page).pathname; } catch {}
+                const colors = DECAY_SEVERITY_COLORS[page.severity];
+                return [
+                  <span key="site">{page.domain}</span>,
+                  <span key="page" title={page.page}>{shortPage}</span>,
+                  <span key="clicks">
+                    <span className="text-neutral-300">{page.currentClicks}</span>
+                    <span className="text-red-400 text-[10px] ml-1">{page.clicksDelta}%</span>
+                  </span>,
+                  <span key="impressions">
+                    <span className="text-neutral-400">{page.currentImpressions}</span>
+                    <span className="text-red-400 text-[10px] ml-1">{page.impressionsDelta}%</span>
+                  </span>,
+                  <span key="position">
+                    <span className="text-neutral-400">{page.currentPosition.toFixed(1)}</span>
+                    {page.positionDelta > 0 && <span className="text-red-400 text-[10px] ml-1">+{page.positionDelta}</span>}
+                  </span>,
+                  <Badge key="severity" uppercase className={`${colors.badgeBg} ${colors.badge} !border-0`}>
+                    {page.severity}
+                  </Badge>,
+                ];
+              })}
+              rowKeys={allDecaying.map((page) => `${page.siteId}:${page.page}`)}
+              containerClassName=""
+              tableClassName="w-full text-sm"
+              headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
+              rowClassName="hover:bg-neutral-800/30 transition-colors"
+            />
+          </Surface>
         )}
       </div>
     </div>
