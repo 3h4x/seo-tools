@@ -1,4 +1,4 @@
-import { Notice, TextLink } from '@/components/ui';
+import { Notice, Surface, TextLink } from '@/components/ui';
 import { loadOrFlag, loadSyncOrFallback, loadSyncOrFlag } from '@/lib/page-helpers';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
@@ -166,7 +166,7 @@ function OverviewTab({
 
           if (isSingle) {
             return (
-              <div key={site.id} className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
+              <Surface key={site.id}>
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-white font-semibold">{site.name}</span>
                   <span className="text-neutral-600 text-xs">{site.domain}</span>
@@ -194,12 +194,12 @@ function OverviewTab({
                     <div className="col-span-full text-neutral-600 text-sm">No metrics available</div>
                   )}
                 </div>
-              </div>
+              </Surface>
             );
           }
 
           return (
-            <div key={site.id} className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 space-y-5">
+            <Surface key={site.id} className="space-y-5">
               <div className="flex items-center gap-3">
                 <span className="text-white font-semibold">{site.name}</span>
                 <span className="text-neutral-600 text-xs">{site.domain}</span>
@@ -353,7 +353,7 @@ function OverviewTab({
                   />
                 )}
               </div>
-            </div>
+            </Surface>
           );
         })}
       </div>
@@ -418,7 +418,7 @@ function KeywordsSection({
             }));
 
             return (
-              <div key={site.id} className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 space-y-5">
+              <Surface key={site.id} className="space-y-5">
                 <div className="flex items-center gap-3">
                   <TextLink
                     href={`/${encodeURIComponent(site.id)}`}
@@ -454,7 +454,7 @@ function KeywordsSection({
                     <KeywordRankTable deltas={deltas} />
                   </div>
                 )}
-              </div>
+              </Surface>
             );
           })}
         </div>
