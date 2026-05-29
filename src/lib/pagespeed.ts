@@ -26,6 +26,7 @@ export function getPagespeedKey(): string | null {
 }
 
 const PSI_CACHE_TTL = 6 * 60 * 60 * 1000;
+const PSI_FETCH_TIMEOUT_MS = 30_000;
 
 const FIELD_METRIC_MAP: Record<CwvMetricName, string> = {
   LCP:  'LARGEST_CONTENTFUL_PAINT_MS',
@@ -67,7 +68,7 @@ async function getPagespeed(url: string, strategy: PsiStrategy): Promise<PsiData
   const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params.toString()}`;
 
   try {
-    const res = await fetch(endpoint);
+    const res = await fetch(endpoint, { signal: AbortSignal.timeout(PSI_FETCH_TIMEOUT_MS) });
     if (res.status === 429) {
       return {
         url,
