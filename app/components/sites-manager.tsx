@@ -7,7 +7,7 @@ import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteI
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
 import { CHART_NEUTRALS } from '@/lib/constants';
-import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, Notice, Spinner, TextButton } from '@/components/ui';
+import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, Notice, Spinner, Surface, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 
 interface Site {
@@ -651,7 +651,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
         </Notice>
       )}
       {isEditing && (
-        <div className="border border-neutral-700 rounded-lg p-4 space-y-4 bg-neutral-900/50">
+        <Surface className="space-y-4 border-neutral-700 bg-neutral-900/50 p-4" padding="none">
           <h3 className="text-sm font-medium text-white">
             {editMode === 'new' ? 'Add Site' : `Edit: ${form.name}`}
           </h3>
@@ -820,7 +820,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               Cancel
             </FormButton>
           </div>
-        </div>
+        </Surface>
       )}
       {hasAuth && (
         <div className="space-y-3">
@@ -849,7 +849,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             discovered.length === 0 ? (
               <p className="text-sm text-neutral-500">All accessible sites already added.</p>
             ) : (
-              <div className="border border-neutral-700 rounded-lg p-4 space-y-3">
+              <Surface className="space-y-3 border-neutral-700 p-4" padding="none">
                 <div className="flex items-center gap-3">
                   <TextButton
                     onClick={toggleSelectAll}
@@ -913,7 +913,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                   {importing && <Spinner />}
                   {importing ? 'Importing…' : `Import Selected (${selected.size})`}
                 </FormButton>
-              </div>
+              </Surface>
             )
           )}
         </div>
