@@ -129,7 +129,8 @@ export function IndexNowButton({
         onClick={handlePing}
         disabled={!configured || submitting}
         size="xs"
-        className="inline-flex items-center gap-1.5 border border-neutral-700"
+        hasIcon
+        className="border border-neutral-700"
       >
         {submitting && <Spinner />}
         {submitting ? 'Pinging…' : 'Ping IndexNow'}

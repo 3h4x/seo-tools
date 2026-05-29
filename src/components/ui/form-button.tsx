@@ -5,6 +5,7 @@ type FormButtonSize = 'md' | 'sm' | 'xs' | 'row';
 
 interface FormButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
+  hasIcon?: boolean;
   variant?: FormButtonVariant;
   size?: FormButtonSize;
 }
@@ -28,6 +29,7 @@ const SIZE_CLASSES: Record<FormButtonSize, string> = {
 export function FormButton({
   children,
   className = '',
+  hasIcon = false,
   size = 'md',
   type = 'button',
   variant = 'secondary',
@@ -35,7 +37,7 @@ export function FormButton({
 }: FormButtonProps) {
   return (
     <button
-      className={`${SIZE_CLASSES[size]} rounded-md transition-colors ${VARIANT_CLASSES[variant]} ${className}`}
+      className={`${SIZE_CLASSES[size]} rounded-md transition-colors ${VARIANT_CLASSES[variant]} ${hasIcon ? 'inline-flex items-center gap-1.5' : ''} ${className}`}
       type={type}
       {...props}
     >

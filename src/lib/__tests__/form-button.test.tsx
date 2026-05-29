@@ -66,4 +66,10 @@ describe('FormButton', () => {
     expect(muted).toContain('hover:text-neutral-300');
     expect(success).toContain('bg-emerald-500/20 text-emerald-400');
   });
+
+  it('supports icon and spinner alignment', () => {
+    const html = renderToStaticMarkup(<FormButton hasIcon>Refresh</FormButton>);
+
+    expect(html).toContain('inline-flex items-center gap-1.5');
+  });
 });
