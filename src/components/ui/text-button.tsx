@@ -7,12 +7,14 @@ type TextButtonSize = 'xs' | 'xxs' | 'inherit';
 
 interface TextButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
+  hasIcon?: boolean;
   variant?: TextButtonVariant;
   size?: TextButtonSize;
 }
 
 interface TextLinkProps extends LinkProps, Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof LinkProps> {
   children: ReactNode;
+  hasIcon?: boolean;
   variant?: TextButtonVariant;
   size?: TextButtonSize;
 }
@@ -35,15 +37,17 @@ const SIZE_CLASSES: Record<TextButtonSize, string> = {
 
 function getTextActionClassName(
   className: string | undefined,
+  hasIcon: boolean,
   size: TextButtonSize,
   variant: TextButtonVariant
 ) {
-  return `${SIZE_CLASSES[size]} transition-colors ${VARIANT_CLASSES[variant]} ${className ?? ''}`;
+  return `${SIZE_CLASSES[size]} transition-colors ${VARIANT_CLASSES[variant]} ${hasIcon ? 'inline-flex items-center gap-1.5' : ''} ${className ?? ''}`;
 }
 
 export function TextButton({
   children,
   className = '',
+  hasIcon = false,
   size = 'xs',
   type = 'button',
   variant = 'neutral',
@@ -51,7 +55,7 @@ export function TextButton({
 }: TextButtonProps) {
   return (
     <button
-      className={getTextActionClassName(className, size, variant)}
+      className={getTextActionClassName(className, hasIcon, size, variant)}
       type={type}
       {...props}
     >
@@ -63,13 +67,14 @@ export function TextButton({
 export function TextLink({
   children,
   className = '',
+  hasIcon = false,
   size = 'xs',
   variant = 'neutral',
   ...props
 }: TextLinkProps) {
   return (
     <Link
-      className={getTextActionClassName(className, size, variant)}
+      className={getTextActionClassName(className, hasIcon, size, variant)}
       {...props}
     >
       {children}

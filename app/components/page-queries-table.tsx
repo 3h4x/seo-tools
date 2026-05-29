@@ -162,7 +162,8 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
                             event.stopPropagation();
                             toggle(row.page);
                           }}
-                          className="inline-flex items-center gap-1.5 text-left"
+                          hasIcon
+                          className="text-left"
                         >
                           <span aria-hidden="true" className={`transition-transform text-neutral-600 text-[10px] ${isOpen ? 'rotate-90' : ''}`}>▶</span>
                           <span className="text-neutral-300">{pathname(row.page)}</span>

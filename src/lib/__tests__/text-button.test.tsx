@@ -55,6 +55,19 @@ describe('TextButton', () => {
     expect(html).toContain('disabled:opacity-30');
   });
 
+  it('supports icon and text alignment', () => {
+    const html = renderToStaticMarkup(
+      <TextButton hasIcon>
+        <span aria-hidden="true">›</span>
+        Expand
+      </TextButton>
+    );
+
+    expect(html).toContain('inline-flex');
+    expect(html).toContain('items-center');
+    expect(html).toContain('gap-1.5');
+  });
+
   it('renders shared text action styling for links', () => {
     const html = renderToStaticMarkup(
       <TextLink href="/site-a">
@@ -66,5 +79,19 @@ describe('TextButton', () => {
     expect(html).toContain('text-xs');
     expect(html).toContain('text-neutral-400');
     expect(html).toContain('hover:text-white');
+  });
+
+  it('supports icon and text alignment for links', () => {
+    const html = renderToStaticMarkup(
+      <TextLink href="/site-a" hasIcon>
+        <span aria-hidden="true">↗</span>
+        Open site
+      </TextLink>
+    );
+
+    expect(html).toContain('href="/site-a"');
+    expect(html).toContain('inline-flex');
+    expect(html).toContain('items-center');
+    expect(html).toContain('gap-1.5');
   });
 });
