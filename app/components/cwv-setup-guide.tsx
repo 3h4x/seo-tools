@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { Badge, FormButton } from '@/components/ui';
+import { Badge, FormButton, Surface } from '@/components/ui';
 
 const DATALAYER_SNIPPET = `import { onLCP, onINP, onCLS, onFCP, onTTFB } from 'web-vitals';
 
@@ -30,7 +30,7 @@ export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: b
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="border border-neutral-800 rounded-lg bg-neutral-900/40">
+    <Surface padding="none" className="bg-neutral-900/40">
       <FormButton
         id={SETUP_GUIDE_TRIGGER_ID}
         type="button"
@@ -122,7 +122,7 @@ export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: b
           </Step>
         </div>
       )}
-    </section>
+    </Surface>
   );
 }
 
