@@ -235,19 +235,21 @@ async function getCrossLinksForSourceSite(
     targets: managedSites
       .filter((target) => target.id !== site.id)
       .map((target) => {
-        const linkedExamples = crawledPages
-          .filter((page) => page.linkedTargetSiteIds.includes(target.id))
-          .map((page) => page.page)
-          .slice(0, 3);
+        let linkedPages = 0;
+        const linkedExamples: string[] = [];
+
+        for (const page of crawledPages) {
+          if (!page.linkedTargetSiteIds.includes(target.id)) continue;
+          linkedPages += 1;
+          if (linkedExamples.length < 3) linkedExamples.push(page.page);
+        }
 
         return {
           targetSiteId: target.id,
           targetSiteName: target.name,
           targetDomain: target.domain,
-          linkedPages: linkedExamples.length === 0
-            ? 0
-            : crawledPages.filter((page) => page.linkedTargetSiteIds.includes(target.id)).length,
-          missingPages: crawledPages.filter((page) => !page.linkedTargetSiteIds.includes(target.id)).length,
+          linkedPages,
+          missingPages: crawledPages.length - linkedPages,
           linkedExamples,
         };
       }),
