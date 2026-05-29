@@ -30,7 +30,7 @@ export function MetricCard({
   const up = invert ? diff < 0 : diff > 0;
   const diffLabel = `${up ? 'Improved' : 'Declined'} by ${Math.abs(diff).toFixed(0)}%`;
   return (
-    <Surface padding="none" className={`border-l-4 ${accent} p-4`}>
+    <Surface padding="sm" className={`border-l-4 ${accent}`}>
       <div className="flex items-center gap-2 text-neutral-500 mb-2">
         {icon}
         <span className="text-xs uppercase tracking-wider">{label}</span>
