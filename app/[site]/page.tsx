@@ -32,6 +32,7 @@ import { loadOrFallback, loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
 import { ProviderErrorBadge } from '../components/provider-error-badge';
+import { DataTable, type DataTableColumn } from '../components/data-table';
 import { Badge, Notice, Surface, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
@@ -48,6 +49,12 @@ type QueryBucketStat = (typeof QUERY_BUCKETS)[number] & {
   impressions: number;
   clicks: number;
 };
+
+const GA4_TOP_PAGE_COLUMNS: DataTableColumn[] = [
+  { label: 'Page', rowHeader: true, className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-2.5 font-normal text-left' },
+  { label: 'Views', align: 'right', className: 'px-4 py-3 font-semibold text-right', cellClassName: 'px-4 py-2.5 text-right' },
+  { label: 'Engagement', align: 'right', className: 'px-4 py-3 font-semibold text-right', cellClassName: 'px-4 py-2.5 text-right font-mono' },
+];
 
 function getQueryBucketStats(
   queries: Array<{ position: number; impressions: number; clicks: number }>,
@@ -385,33 +392,33 @@ export default async function SiteDashboardPage({
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Top Pages (GA4)</h2>
           {ga4 && ga4.topPages.length > 0 ? (
             <Surface padding="none" className="overflow-hidden">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-neutral-800 px-4 py-3 text-[11px] uppercase tracking-wider text-neutral-500">
-                <span>Page</span>
-                <span className="text-right">Views</span>
-                <span className="text-right">Engagement</span>
-              </div>
-              <div className="space-y-1.5 p-4">
-                {ga4.topPages.map((page, i) => {
+              <DataTable
+                columns={GA4_TOP_PAGE_COLUMNS}
+                rows={ga4.topPages.map((page) => {
                   const maxViews = ga4.topPages[0].views || 1;
-                  return (
-                    <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs">
-                      <div className="min-w-0">
-                        <span className="block truncate font-mono text-neutral-400">{page.path}</span>
-                        <span className="block text-[11px] text-neutral-600">{formatDuration(page.avgSessionDuration)}</span>
+                  return [
+                    <div key="page" className="min-w-0">
+                      <span className="block truncate font-mono text-neutral-400">{page.path}</span>
+                      <span className="block text-[11px] text-neutral-600">{formatDuration(page.avgSessionDuration)}</span>
+                    </div>,
+                    <div key="views" className="flex items-center justify-end gap-3">
+                      <div className="w-16 bg-neutral-800 h-1 rounded-full overflow-hidden shrink-0">
+                        <div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${(page.views / maxViews) * 100}%` }} />
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <div className="w-16 bg-neutral-800 h-1 rounded-full overflow-hidden shrink-0">
-                          <div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${(page.views / maxViews) * 100}%` }} />
-                        </div>
-                        <span className="w-20 text-right font-mono text-neutral-500">{pluralize(page.views, 'view')}</span>
-                      </div>
-                      <span className={`w-24 text-right font-mono ${engagementTone(page.engagementRate)}`}>
-                        {(page.engagementRate * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  );
+                      <span className="w-20 text-right font-mono text-neutral-500">{pluralize(page.views, 'view')}</span>
+                    </div>,
+                    <span key="engagement" className={engagementTone(page.engagementRate)}>
+                      {(page.engagementRate * 100).toFixed(0)}%
+                    </span>,
+                  ];
                 })}
-              </div>
+                rowKeys={ga4.topPages.map((page, i) => `${page.path}-${i}`)}
+                monospaceCells={false}
+                containerClassName="contents"
+                tableClassName="w-full text-xs"
+                bodyClassName="divide-y divide-neutral-900"
+                rowClassName="hover:bg-neutral-900/40"
+              />
             </Surface>
           ) : (
             <EmptyDataNotice>No GA4 page data available.</EmptyDataNotice>
