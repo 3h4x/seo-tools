@@ -16,7 +16,7 @@ import { GapsClient, type SiteGap } from '../components/gaps-client';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
-import { Badge, Notice, TextLink } from '@/components/ui';
+import { Badge, Notice, Surface, TextLink } from '@/components/ui';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
@@ -256,7 +256,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
       </div>
       <PartialFailureBanner failures={partialFailures} />
       <div className="flex gap-6 items-center">
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5 flex items-center gap-5 shrink-0">
+        <Surface className="flex items-center gap-5 shrink-0">
           <div className="relative size-24">
             <svg viewBox="0 0 100 100" className="size-24 -rotate-90">
               <circle cx="50" cy="50" r="42" fill="none" stroke={CHART_NEUTRALS.grid} strokeWidth="8" />
@@ -279,7 +279,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             <div className="text-neutral-500 text-xs">{healthySites}/{audits.length} sites healthy</div>
             {totalRecs > 0 && <div className="text-neutral-500 text-xs">{totalRecs} recommendations</div>}
           </div>
-        </div>
+        </Surface>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1">
           <MetricCard label="Passed" current={totalPass} accent="border-l-emerald-500" valueColor="text-emerald-400" />
           <MetricCard label="Warnings" current={totalWarn} accent="border-l-amber-500" valueColor="text-amber-400" />
