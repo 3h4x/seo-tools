@@ -30,7 +30,7 @@ const QUERY_COLUMNS: DataTableColumn[] = [
 
 function PageQueriesSkeleton() {
   return (
-    <Surface padding="none" className="p-4 space-y-3" aria-label="Loading page query data">
+    <Surface padding="sm" className="space-y-3" aria-label="Loading page query data">
       {[...Array(5)].map((_, index) => (
         <div key={index} className="grid grid-cols-[1fr_4rem_4rem] items-center gap-4 md:grid-cols-[1fr_4rem_4rem_4rem]">
           <div className="flex items-center gap-2">
