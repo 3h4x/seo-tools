@@ -32,7 +32,7 @@ import { loadOrFallback, loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
 import { ProviderErrorBadge } from '../components/provider-error-badge';
-import { Badge, Notice, TextLink } from '@/components/ui';
+import { Badge, Notice, Surface, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -318,7 +318,7 @@ export default async function SiteDashboardPage({
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">
             Ranking Distribution &middot; top {scQueries.length} queries
           </h2>
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4 space-y-4">
+          <Surface padding="none" className="p-4 space-y-4">
             <div className="flex h-2.5 rounded-full overflow-hidden gap-px bg-neutral-800">
               {queryBucketStats.map((bucket) => bucket.count > 0 && (
                 <div
@@ -353,7 +353,7 @@ export default async function SiteDashboardPage({
                 </div>
               ))}
             </div>
-          </div>
+          </Surface>
         </div>
       )}
       {hasSearchConsole && (
@@ -375,16 +375,16 @@ export default async function SiteDashboardPage({
             Keyword Rank Changes
             <TextLink href="/trends#keywords" variant="muted" className="ml-3 text-neutral-600 hover:text-neutral-400 normal-case font-normal">view history →</TextLink>
           </h2>
-          <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
+          <Surface padding="none" className="overflow-hidden">
             <KeywordRankTable deltas={keywordDeltas} />
-          </div>
+          </Surface>
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Top Pages (GA4)</h2>
           {ga4 && ga4.topPages.length > 0 ? (
-            <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
+            <Surface padding="none" className="overflow-hidden">
               <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-neutral-800 px-4 py-3 text-[11px] uppercase tracking-wider text-neutral-500">
                 <span>Page</span>
                 <span className="text-right">Views</span>
@@ -412,7 +412,7 @@ export default async function SiteDashboardPage({
                   );
                 })}
               </div>
-            </div>
+            </Surface>
           ) : (
             <EmptyDataNotice>No GA4 page data available.</EmptyDataNotice>
           )}
@@ -422,7 +422,7 @@ export default async function SiteDashboardPage({
           {(ga4?.trafficSources ?? []).length === 0 ? (
             <EmptyDataNotice>No traffic source data available.</EmptyDataNotice>
           ) : (
-            <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
+            <Surface padding="none" className="p-4">
               <div className="space-y-1.5">
                 {(ga4?.trafficSources ?? []).map((src, i) => (
                   <div key={i} className="flex items-center justify-between text-xs">
@@ -431,7 +431,7 @@ export default async function SiteDashboardPage({
                   </div>
                 ))}
               </div>
-            </div>
+            </Surface>
           )}
         </div>
       </div>
@@ -793,7 +793,7 @@ export default async function SiteDashboardPage({
             )}
           </CheckCard>
           {cwvSummary && Object.keys(cwvSummary.metrics).length > 0 && (
-            <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
+            <Surface>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-white font-semibold text-sm">Core Web Vitals</h2>
                 <div className="flex items-center gap-3">
@@ -830,7 +830,7 @@ export default async function SiteDashboardPage({
                   );
                 })}
               </div>
-            </div>
+            </Surface>
           )}
           {sections['other'] && sections['other'].length > 0 && (
             <AuditPanel title="Additional Recommendations">
@@ -845,19 +845,19 @@ export default async function SiteDashboardPage({
 
 function ChartPanel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
+    <Surface padding="none" className="p-4">
       <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">{title}</h3>
       {children}
-    </div>
+    </Surface>
   );
 }
 
 function AuditPanel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
+    <Surface>
       <h2 className="text-white font-semibold text-sm mb-4">{title}</h2>
       {children}
-    </div>
+    </Surface>
   );
 }
 
