@@ -143,7 +143,7 @@ function SummaryCard(
   { label, value, styles }: { label: string; value: number; styles: { accent: string; value: string } },
 ) {
   return (
-    <Surface padding="none" className={`border-l-4 ${styles.accent} p-4`}>
+    <Surface padding="sm" className={`border-l-4 ${styles.accent}`}>
       <div className="text-neutral-500 text-xs uppercase tracking-wider">{label}</div>
       <div className={`text-2xl font-bold font-mono mt-2 ${styles.value}`}>{value}</div>
     </Surface>
