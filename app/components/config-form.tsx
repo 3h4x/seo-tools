@@ -157,7 +157,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
         <FormButton
           onClick={handleTest}
           disabled={!canTest || testState === 'testing'}
-          className="inline-flex items-center gap-1.5"
+          hasIcon={testState === 'testing'}
         >
           {testState === 'testing' && <Spinner />}
           {testState === 'testing' ? 'Testing…' : 'Test Connection'}
@@ -167,7 +167,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
           onClick={handleSave}
           disabled={!canSave || saving}
           variant="primary"
-          className="inline-flex items-center gap-1.5"
+          hasIcon={saving}
         >
           {saving && <Spinner />}
           {saving ? 'Saving…' : source === 'env' ? 'Override with DB key' : 'Save'}
@@ -178,7 +178,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
             onClick={handleRemove}
             disabled={removing}
             variant="danger"
-            className="inline-flex items-center gap-1.5"
+            hasIcon={removing}
           >
             {removing && <Spinner />}
             {removing ? 'Removing…' : 'Remove'}
