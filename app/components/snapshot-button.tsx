@@ -91,7 +91,8 @@ export function SnapshotButton() {
         onClick={handleClick}
         disabled={state === 'running'}
         size="xs"
-        className="flex items-center gap-1.5 font-medium text-neutral-300 hover:text-white border border-neutral-700 hover:border-neutral-600 disabled:opacity-50 self-start"
+        hasIcon
+        className="font-medium text-neutral-300 hover:text-white border border-neutral-700 hover:border-neutral-600 disabled:opacity-50 self-start"
       >
         {state === 'running' ? (
           <Spinner />
