@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { getPerformanceSiteData } from '@/lib/performance-site';
-import { Notice, TextLink } from '@/components/ui';
+import { Notice, Surface, TextLink } from '@/components/ui';
 import {
   CWV_METRIC_ORDER,
   PERF_VALID_DAYS,
@@ -185,17 +185,19 @@ export default async function PerfSiteDetail({
       {slowestPages.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Slowest pages</h2>
-          <DataTable
-            columns={slowestPageColumns}
-            rows={slowestPageRows}
-            caption="Slowest pages by Core Web Vitals samples"
-            rowKeys={slowestPageRowKeys}
-            monospaceCells={false}
-            containerClassName="overflow-hidden rounded border border-neutral-800"
-            tableClassName="w-full text-sm"
-            headRowClassName="border-b border-neutral-800 text-neutral-500"
-            rowClassName="hover:bg-neutral-800/30"
-          />
+          <Surface padding="none" className="overflow-hidden">
+            <DataTable
+              columns={slowestPageColumns}
+              rows={slowestPageRows}
+              caption="Slowest pages by Core Web Vitals samples"
+              rowKeys={slowestPageRowKeys}
+              monospaceCells={false}
+              containerClassName="overflow-x-auto"
+              tableClassName="w-full text-sm"
+              headRowClassName="border-b border-neutral-800 text-neutral-500"
+              rowClassName="hover:bg-neutral-800/30"
+            />
+          </Surface>
         </section>
       )}
 
