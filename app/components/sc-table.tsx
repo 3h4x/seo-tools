@@ -50,11 +50,11 @@ function ExportButton({ data, filename, label = 'Export CSV' }: {
     <FormButton
       onClick={handleExport}
       title={`Download ${filename} as CSV`}
-      size="xs"
+      size="compact"
       variant={done ? 'success' : 'muted'}
       hasIcon
       className={[
-        '!px-2 !py-1 !text-[10px] font-medium !rounded border',
+        'text-[10px] font-medium !rounded border',
         done ? 'border-emerald-500/20' : 'border-neutral-700 hover:border-neutral-600',
       ].join(' ')}
     >
