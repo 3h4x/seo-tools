@@ -402,8 +402,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         {allDecaying.length === 0 ? (
           <Notice
             tone="success"
-            size="none"
-            className="border-l-4 border-l-emerald-500 p-8 text-center"
+            size="spacious"
+            className="border-l-4 border-l-emerald-500 text-center"
           >
             <svg className="size-12 mx-auto text-emerald-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
