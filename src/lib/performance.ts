@@ -12,6 +12,7 @@ const EVENT_NAME = 'core_web_vitals';
 // User-configured GA4 custom definitions (see CWV setup guide).
 const DIM_METRIC_NAME = 'customEvent:metric_name';
 const MET_METRIC_VALUE = 'customEvent:metric_value';
+const CWV_METRIC_NAMES = new Set<string>(CWV_METRIC_ORDER);
 
 export interface CwvMetric {
   value: number;
@@ -46,7 +47,7 @@ const eventFilter = {
 };
 
 function isCwvName(s: string | null | undefined): s is CwvMetricName {
-  return !!s && (CWV_METRIC_ORDER as string[]).includes(s);
+  return !!s && CWV_METRIC_NAMES.has(s);
 }
 
 interface Aggregator {
