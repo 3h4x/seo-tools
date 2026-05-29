@@ -1,14 +1,14 @@
 import { Skeleton } from '@/components/ui';
-import { SkeletonSummaryRow, SkeletonTable } from '../../components/skeletons';
+import { SkeletonHeader, SkeletonSummaryRow, SkeletonTable } from '../../components/skeletons';
 
 export default function Loading() {
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-7 w-48" />
-        <Skeleton className="h-4 w-56" />
-      </div>
+      <SkeletonHeader
+        eyebrowClassName="h-4 w-24"
+        titleClassName="h-7 w-48"
+        subtitleClassName="h-4 w-56"
+      />
       <div className="flex gap-2">
         <Skeleton className="h-8 w-16" />
         <Skeleton className="h-8 w-16" />
