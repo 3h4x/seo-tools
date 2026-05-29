@@ -32,7 +32,8 @@ export default function RefreshButton() {
         onClick={triggerRefresh}
         disabled={refreshing}
         size="xs"
-        className="flex items-center gap-1.5 font-medium text-neutral-300 hover:text-white border border-neutral-700 hover:border-neutral-600 disabled:opacity-50"
+        hasIcon
+        className="font-medium text-neutral-300 hover:text-white border border-neutral-700 hover:border-neutral-600 disabled:opacity-50"
         title="Clear cache and refresh data"
       >
         {refreshing ? (
