@@ -63,6 +63,7 @@ async function fetchKeywordOpportunities(
 
     const rows = response.data.rows ?? [];
     const opportunities: KeywordOpportunity[] = [];
+    const targetCtr = expectedCtrForPosition(3);
 
     for (const row of rows) {
       const position = row.position ?? 0;
@@ -70,7 +71,7 @@ async function fetchKeywordOpportunities(
 
       const impressions = row.impressions ?? 0;
       const actualCtr = row.ctr ?? 0;
-      const expectedCtr = expectedCtrForPosition(3); // target: position 3
+      const expectedCtr = targetCtr; // target: position 3
       const ctrGap = expectedCtr - actualCtr;
       if (ctrGap <= 0) continue;
 
