@@ -7,6 +7,8 @@ function getSc() {
   return new searchconsole_v1.Searchconsole({ auth: getAuth() });
 }
 
+type SearchConsoleClient = ReturnType<typeof getSc>;
+
 function formatSiteUrl(siteUrl: string): string {
   return siteUrl.startsWith('sc-domain:') || siteUrl.startsWith('http')
     ? siteUrl
@@ -151,9 +153,10 @@ async function queryScPages(
   startDate: string,
   endDate: string,
   rowLimit: number = 20,
+  sc: SearchConsoleClient = getSc(),
 ): Promise<SCPageRow[] | null> {
   try {
-    const response = await getSc().searchanalytics.query({
+    const response = await sc.searchanalytics.query({
       siteUrl: formatSiteUrl(siteUrl),
       requestBody: { startDate, endDate, dimensions: ['page'], rowLimit },
     });
@@ -189,9 +192,10 @@ async function getQueriesForPage(
   siteUrl: string,
   pageUrl: string,
   days: number,
+  sc: SearchConsoleClient = getSc(),
 ): Promise<SCQueryRow[]> {
   try {
-    const response = await getSc().searchanalytics.query({
+    const response = await sc.searchanalytics.query({
       siteUrl: formatSiteUrl(siteUrl),
       requestBody: {
         startDate: daysAgo(days),
@@ -224,7 +228,8 @@ async function getTopPagesWithQueries(
   siteUrl: string,
   days: number = 7,
 ): Promise<PageQueryResult[] | null> {
-  const pages = await getSearchConsolePages(siteUrl, days);
+  const sc = getSc();
+  const pages = await queryScPages(siteUrl, daysAgo(days), daysAgo(1), 20, sc);
   if (!pages) return null;
   const top = pages.slice(0, 10);
   const results = await Promise.all(
@@ -234,7 +239,7 @@ async function getTopPagesWithQueries(
       impressions: p.impressions,
       ctr: p.ctr,
       position: p.position,
-      queries: await getQueriesForPage(siteUrl, p.page, days),
+      queries: await getQueriesForPage(siteUrl, p.page, days, sc),
     })),
   );
   return results;
