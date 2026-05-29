@@ -303,67 +303,69 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
               href={`/${encodeURIComponent(audit.siteId)}`}
               size="inherit"
               variant="inherit"
-              className={`block bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accentBorder[worst]} p-5 hover:bg-neutral-800/50 transition-colors`}
+              className="block"
             >
-              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-semibold">{audit.domain}</span>
-                    <CopyButton text={`https://${audit.domain}`} label="domain" className="text-[10px] px-1.5 py-0.5" />
+              <Surface className={`border-l-4 ${accentBorder[worst]} hover:bg-neutral-800/50 transition-colors`}>
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-semibold">{audit.domain}</span>
+                      <CopyButton text={`https://${audit.domain}`} label="domain" className="text-[10px] px-1.5 py-0.5" />
+                    </div>
+                    <StatusBadge status={worst} label={`${audit.score.pass}/${audit.score.total} passed`} />
+                    {gapCount > 0 && (
+                      <Badge className="border-neutral-700 text-neutral-500">
+                        {gapCount} {gapCount === 1 ? 'recommendation' : 'recommendations'}
+                      </Badge>
+                    )}
+                    {audit.sampledPages.length > 0 && (
+                      <Badge className="border-neutral-800 text-neutral-600">
+                        {audit.sampledPages.length} {audit.sampledPages.length === 1 ? 'page' : 'pages'} sampled
+                      </Badge>
+                    )}
                   </div>
-                  <StatusBadge status={worst} label={`${audit.score.pass}/${audit.score.total} passed`} />
-                  {gapCount > 0 && (
-                    <Badge className="border-neutral-700 text-neutral-500">
-                      {gapCount} {gapCount === 1 ? 'recommendation' : 'recommendations'}
-                    </Badge>
-                  )}
-                  {audit.sampledPages.length > 0 && (
-                    <Badge className="border-neutral-800 text-neutral-600">
-                      {audit.sampledPages.length} {audit.sampledPages.length === 1 ? 'page' : 'pages'} sampled
-                    </Badge>
-                  )}
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-neutral-600 text-xs">View details →</span>
+                    <span className={`${freshness.className} text-[10px]`}>
+                      {freshness.prefix}Checked {formatRelativeTime(audit.timestamp)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="text-neutral-600 text-xs">View details →</span>
-                  <span className={`${freshness.className} text-[10px]`}>
-                    {freshness.prefix}Checked {formatRelativeTime(audit.timestamp)}
-                  </span>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-10 gap-3">
-                <CheckItem label="robots.txt" status={audit.robotsTxt.status} />
-                <CheckItem label="Sitemap" status={audit.sitemap.status} />
-                <CheckItem label="SC Sitemap" status={audit.scSitemapFreshness.status} />
-                <CheckItem label="Indexing" status={audit.indexingCoverage.status} sublabel={audit.indexingCoverage.coveragePct != null ? `${audit.indexingCoverage.coveragePct}%` : undefined} />
-                <CheckItem label="Meta Tags" status={meta.status} sublabel={meta.label} />
-                <CheckItem label="Canonical" status={canonical.status} sublabel={canonical.compactLabel} />
-                <CheckItem label="OG Image" status={audit.ogImage.status} />
-                <CheckItem label="Images" status={images.status} sublabel={images.label} />
-                <CheckItem label="Int. Links" status={links.status} sublabel={links.label} />
-                <CheckItem label="TTFB" status={audit.ttfb.status} sublabel={audit.ttfb.ms ? `${audit.ttfb.ms}ms` : undefined} />
-              </div>
-              {cwv && Object.keys(cwv.metrics).length > 0 && (
-                <div className="mt-3 pt-3 border-t border-neutral-800 flex items-center gap-4 flex-wrap">
-                  <Badge uppercase className="shrink-0 border-neutral-800 text-neutral-600">
-                    CWV
-                  </Badge>
-                  {(['LCP', 'INP', 'CLS'] as CwvMetricName[]).map(name => {
-                    const metric = cwv.metrics[name];
-                    if (!metric) return null;
-                    const colors = CWV_RATING_COLORS[metric.rating];
-                    const t = CWV_THRESHOLDS[name];
-                    const display = t.unit === 'ms' ? `${Math.round(metric.value)}ms` : metric.value.toFixed(3);
-                    return (
-                      <div key={name} className="flex items-center gap-1.5">
-                        <span className="text-neutral-500 text-[10px]">{name}</span>
-                        <span className={`text-[10px] font-mono font-semibold ${colors.text}`}>{display}</span>
-                      </div>
-                    );
-                  })}
-                  <PerformanceSourceBadge source={cwv.source} className="ml-auto" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-10 gap-3">
+                  <CheckItem label="robots.txt" status={audit.robotsTxt.status} />
+                  <CheckItem label="Sitemap" status={audit.sitemap.status} />
+                  <CheckItem label="SC Sitemap" status={audit.scSitemapFreshness.status} />
+                  <CheckItem label="Indexing" status={audit.indexingCoverage.status} sublabel={audit.indexingCoverage.coveragePct != null ? `${audit.indexingCoverage.coveragePct}%` : undefined} />
+                  <CheckItem label="Meta Tags" status={meta.status} sublabel={meta.label} />
+                  <CheckItem label="Canonical" status={canonical.status} sublabel={canonical.compactLabel} />
+                  <CheckItem label="OG Image" status={audit.ogImage.status} />
+                  <CheckItem label="Images" status={images.status} sublabel={images.label} />
+                  <CheckItem label="Int. Links" status={links.status} sublabel={links.label} />
+                  <CheckItem label="TTFB" status={audit.ttfb.status} sublabel={audit.ttfb.ms ? `${audit.ttfb.ms}ms` : undefined} />
                 </div>
-              )}
+                {cwv && Object.keys(cwv.metrics).length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-neutral-800 flex items-center gap-4 flex-wrap">
+                    <Badge uppercase className="shrink-0 border-neutral-800 text-neutral-600">
+                      CWV
+                    </Badge>
+                    {(['LCP', 'INP', 'CLS'] as CwvMetricName[]).map(name => {
+                      const metric = cwv.metrics[name];
+                      if (!metric) return null;
+                      const colors = CWV_RATING_COLORS[metric.rating];
+                      const t = CWV_THRESHOLDS[name];
+                      const display = t.unit === 'ms' ? `${Math.round(metric.value)}ms` : metric.value.toFixed(3);
+                      return (
+                        <div key={name} className="flex items-center gap-1.5">
+                          <span className="text-neutral-500 text-[10px]">{name}</span>
+                          <span className={`text-[10px] font-mono font-semibold ${colors.text}`}>{display}</span>
+                        </div>
+                      );
+                    })}
+                    <PerformanceSourceBadge source={cwv.source} className="ml-auto" />
+                  </div>
+                )}
+              </Surface>
             </TextLink>
           );
         })}
