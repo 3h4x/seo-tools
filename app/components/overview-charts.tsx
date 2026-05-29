@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import ClientChart from './client-chart';
 import { CHART_COLORS, CHART_NEUTRALS } from '@/lib/constants';
+import { Surface } from '@/components/ui';
 
 interface SourceData {
   name: string;
@@ -18,7 +19,7 @@ export function TrafficSourcesChart({ data }: { data: SourceData[] }) {
   const total = data.reduce((s, d) => s + d.sessions, 0);
 
   return (
-    <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-5">
+    <Surface>
       <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-4 font-semibold">Traffic Sources</h2>
       <div className="flex items-center gap-6">
         <div className="w-48 h-48 shrink-0">
@@ -60,6 +61,6 @@ export function TrafficSourcesChart({ data }: { data: SourceData[] }) {
           ))}
         </div>
       </div>
-    </div>
+    </Surface>
   );
 }
