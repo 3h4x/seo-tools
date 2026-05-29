@@ -73,14 +73,14 @@ export default async function AlertsPage() {
       <PartialFailureBanner failures={partialFailures} />
 
       {eventsResult.failed ? (
-        <Notice tone="danger" size="none" className="border-l-4 border-l-red-500 p-6">
+        <Notice tone="danger" size="lg" className="border-l-4 border-l-red-500">
           <p className="font-semibold text-red-400">Couldn&apos;t load alert history</p>
           <p className="mt-2 text-sm text-neutral-500">
             The alert events table failed to read. Check the server logs and use Refresh to retry.
           </p>
         </Notice>
       ) : events.length === 0 ? (
-        <Notice size="none" className="p-6 text-sm text-neutral-500">
+        <Notice size="lg" className="text-sm text-neutral-500">
           No alerts have fired yet. Add rules in <TextLink href="/config" size="inherit" variant="inherit" className="text-sm text-white underline transition-colors">Config</TextLink> and run snapshots to populate history.
         </Notice>
       ) : (
