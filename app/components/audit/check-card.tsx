@@ -2,7 +2,7 @@ import type { CheckStatus, CheckResult } from '@/lib/audit';
 import type { GapRecommendation } from '@/lib/gap-definitions';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
 import { STATUS_COLORS } from '@/lib/constants';
-import { Badge } from '@/components/ui';
+import { Badge, Surface } from '@/components/ui';
 
 const statusColors: Record<CheckStatus, string> = {
   pass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -91,7 +91,7 @@ export function MetaChecksTable({ checks }: { checks: CheckResult[] }) {
 
 export function CheckCard({ check, gaps, children }: { check: CheckResult; gaps?: GapRecommendation[]; children?: React.ReactNode }) {
   return (
-    <div className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accentBorder[check.status]} p-5`}>
+    <Surface className={`border-l-4 ${accentBorder[check.status]}`}>
       <div className="flex items-center gap-3 mb-2">
         <StatusBadge status={check.status} />
         <span className="text-white font-semibold text-sm">{check.label}</span>
@@ -100,6 +100,6 @@ export function CheckCard({ check, gaps, children }: { check: CheckResult; gaps?
       {check.details && <p className="text-neutral-600 text-xs mt-2">{check.details}</p>}
       {children}
       {gaps?.map(g => <Recommendation key={g.id} gap={g} />)}
-    </div>
+    </Surface>
   );
 }
