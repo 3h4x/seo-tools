@@ -154,7 +154,7 @@ function OverviewTab({
 
           if (!hasData) {
             return (
-              <Notice key={site.id} size="none" className="rounded-lg p-5">
+              <Notice key={site.id} size="panel" className="rounded-lg">
                 <div className="flex items-center gap-3">
                   <span className="text-white font-semibold">{site.name}</span>
                   <span className="text-neutral-600 text-xs">{site.domain}</span>
