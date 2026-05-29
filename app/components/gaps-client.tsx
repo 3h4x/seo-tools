@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gap-definitions';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
-import { Badge, FilterChipGroup, Notice, TextButton, TextLink } from '@/components/ui';
+import { Badge, FilterChipGroup, Notice, Surface, TextButton, TextLink } from '@/components/ui';
 
 export interface SiteGap {
   gap: GapRecommendation;
@@ -17,7 +17,7 @@ function GapRow({ sg }: { sg: SiteGap }) {
   const s = GAP_SEVERITY_STYLES[gap.severity];
 
   return (
-    <div className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${s.accentBorder} p-4`}>
+    <Surface padding="none" className={`border-l-4 ${s.accentBorder} p-4`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -58,7 +58,7 @@ function GapRow({ sg }: { sg: SiteGap }) {
           <div className="text-neutral-500 text-[10px]">{domain}</div>
         </TextLink>
       </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -93,7 +93,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
 
   return (
     <div className="space-y-6">
-      <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4 space-y-3">
+      <Surface padding="none" className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-neutral-500 text-xs font-semibold uppercase tracking-wider">Filter</span>
           {isFiltered && (
@@ -154,7 +154,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
             })}
           />
         </div>
-      </div>
+      </Surface>
       <div className="grid grid-cols-3 gap-4">
         {([
           ['high', 'Fix immediately'],
@@ -163,11 +163,11 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
         ] as [GapSeverity, string][]).map(([sev, sublabel]) => {
           const s = GAP_SEVERITY_STYLES[sev];
           return (
-            <div key={sev} className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${s.accentBorder} p-4`}>
+            <Surface key={sev} padding="none" className={`border-l-4 ${s.accentBorder} p-4`}>
               <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">{s.label} Priority</div>
               <div className={`${s.text} text-3xl font-mono font-bold`}>{grouped[sev].length}</div>
               <div className="text-neutral-600 text-xs mt-1">{sublabel}</div>
-            </div>
+            </Surface>
           );
         })}
       </div>
