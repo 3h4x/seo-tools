@@ -352,6 +352,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
           variant="primary"
           onClick={() => void handleSave()}
           disabled={saving || formMetricBlocked}
+          hasIcon={saving}
         >
           {saving && <Spinner />}
           {saving ? 'Saving…' : form.id ? 'Update rule' : 'Create rule'}
