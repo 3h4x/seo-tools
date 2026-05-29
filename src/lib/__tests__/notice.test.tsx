@@ -38,6 +38,16 @@ describe('Notice', () => {
     expect(html).toContain('role="status"');
   });
 
+  it('supports compact inline notices', () => {
+    const html = renderToStaticMarkup(
+      <Notice size="xs">
+        IndexNow ping submitted
+      </Notice>
+    );
+
+    expect(html).toContain('px-3 py-1.5 text-xs');
+  });
+
   it('supports panel-density notices', () => {
     const html = renderToStaticMarkup(
       <Notice size="panel">

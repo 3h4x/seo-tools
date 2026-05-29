@@ -141,8 +141,7 @@ export function IndexNowButton({
       {result && (
         <Notice
           tone={result.tone}
-          size="none"
-          className="px-3 py-1.5 text-xs"
+          size="xs"
           role={result.tone === 'danger' ? 'alert' : 'status'}
         >
           {result.message}
