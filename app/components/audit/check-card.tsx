@@ -2,7 +2,7 @@ import type { CheckStatus, CheckResult } from '@/lib/audit';
 import type { GapRecommendation } from '@/lib/gap-definitions';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
 import { STATUS_COLORS } from '@/lib/constants';
-import { Badge, Surface } from '@/components/ui';
+import { Badge, Notice, Surface } from '@/components/ui';
 
 const statusColors: Record<CheckStatus, string> = {
   pass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -37,7 +37,7 @@ export function StatusBadge({ status, label }: { status: CheckStatus; label?: st
 export function Recommendation({ gap }: { gap: GapRecommendation }) {
   const s = GAP_SEVERITY_STYLES[gap.severity];
   return (
-    <div className={`mt-3 rounded-md ${s.bg} border border-neutral-800 p-4`}>
+    <Notice size="none" className={`mt-3 ${s.bg} border-neutral-800 p-4`}>
       <div className="flex items-center gap-2 mb-1.5">
         <Badge size="compact" shape="rounded" className={`gap-1.5 ${s.bg} ${s.text} border-neutral-800`}>
           <span className={`size-1.5 rounded-full ${s.dot}`} aria-hidden="true" />
@@ -62,7 +62,7 @@ export function Recommendation({ gap }: { gap: GapRecommendation }) {
         <summary className="text-neutral-500 text-xs cursor-pointer hover:text-neutral-300 transition-colors">How to fix</summary>
         <pre className="text-neutral-400 text-xs font-mono mt-1.5 whitespace-pre-wrap">{gap.hint}</pre>
       </details>
-    </div>
+    </Notice>
   );
 }
 
