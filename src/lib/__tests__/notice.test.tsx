@@ -47,4 +47,14 @@ describe('Notice', () => {
 
     expect(html).toContain('p-5');
   });
+
+  it('supports spacious notices', () => {
+    const html = renderToStaticMarkup(
+      <Notice size="spacious">
+        Empty state
+      </Notice>
+    );
+
+    expect(html).toContain('p-8');
+  });
 });

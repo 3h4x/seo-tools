@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
 type NoticeTone = 'warning' | 'info' | 'neutral' | 'danger' | 'success';
-type NoticeSize = 'sm' | 'md' | 'panel' | 'lg' | 'none';
+type NoticeSize = 'sm' | 'md' | 'panel' | 'lg' | 'spacious' | 'none';
 
 interface NoticeProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
@@ -22,6 +22,7 @@ const SIZE_CLASSES: Record<NoticeSize, string> = {
   md: 'px-4 py-3 text-sm',
   panel: 'p-5',
   lg: 'p-6',
+  spacious: 'p-8',
   none: '',
 };
 
