@@ -92,7 +92,7 @@ export function SnapshotButton() {
         disabled={state === 'running'}
         size="xs"
         hasIcon
-        className="font-medium text-neutral-300 hover:text-white border border-neutral-700 hover:border-neutral-600 disabled:opacity-50 self-start"
+        className="self-start"
       >
         {state === 'running' ? (
           <Spinner />
