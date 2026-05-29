@@ -25,7 +25,7 @@ No credentials required to start. Paste your Google Service Account key in the *
 
 ## Docker
 
-The pre-built image is published to GHCR on every push to `main`:
+The pre-built image is published to GHCR when a push to `main` publishes a new release:
 
 ```bash
 docker pull ghcr.io/3h4x/seo-tools:latest
