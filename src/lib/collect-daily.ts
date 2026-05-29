@@ -195,6 +195,26 @@ async function collectDaily(): Promise<void> {
 
 let _intervalId: ReturnType<typeof setInterval> | null = null;
 
+type CollectorShutdownGlobal = typeof globalThis & {
+  __seoToolsCollectDailyStop?: () => void;
+  __seoToolsCollectDailyShutdownRegistered?: boolean;
+};
+
+const collectorShutdownState = globalThis as CollectorShutdownGlobal;
+
+export function stopCollector(): void {
+  if (!_intervalId) return;
+  clearInterval(_intervalId);
+  _intervalId = null;
+}
+
+function registerCollectorShutdown(): void {
+  collectorShutdownState.__seoToolsCollectDailyStop = stopCollector;
+  if (collectorShutdownState.__seoToolsCollectDailyShutdownRegistered) return;
+  collectorShutdownState.__seoToolsCollectDailyShutdownRegistered = true;
+  process.once('SIGTERM', () => collectorShutdownState.__seoToolsCollectDailyStop?.());
+}
+
 export function startCollector(): void {
   if (_intervalId) return; // already running
 
@@ -203,6 +223,7 @@ export function startCollector(): void {
   _intervalId = setInterval(() => {
     collectDaily().catch(e => console.error('[collect-daily] interval error:', e.message));
   }, COLLECT_INTERVAL_MS);
+  registerCollectorShutdown();
 
   console.log(`[collect-daily] Scheduled every ${COLLECT_INTERVAL_MS / 60000}m`);
 }
