@@ -16,7 +16,7 @@ describe('classifySeverity', () => {
     expect(classifySeverity(-51, 0)).toBe('severe');
   });
 
-  it('classifies as severe when clicks dropped by exactly 50%', () => {
+  it('classifies as moderate when clicks dropped by exactly 50%', () => {
     // boundary: < -50 is severe, so -50 is NOT severe
     expect(classifySeverity(-50, 0)).toBe('moderate');
   });

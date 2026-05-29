@@ -118,7 +118,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           <Notice
             tone="danger"
             size="none"
-            className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-red-500 p-6"
+            className="border-l-4 border-l-red-500 p-6"
             role="alert"
           >
             <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
@@ -144,7 +144,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         <Notice
           tone="warning"
           size="none"
-          className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-amber-500 p-6"
+          className="border-l-4 border-l-amber-500 p-6"
         >
           <p className="text-amber-400 font-semibold">No audit data available</p>
           <p className="text-neutral-500 text-sm mt-2">
@@ -403,7 +403,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           <Notice
             tone="success"
             size="none"
-            className="bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 border-l-emerald-500 p-8 text-center"
+            className="border-l-4 border-l-emerald-500 p-8 text-center"
           >
             <svg className="size-12 mx-auto text-emerald-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
