@@ -873,7 +873,7 @@ function SerpSnippetPreview({ page, domain, titleRaw, titleLen, descRaw, descLen
   const DESC_LIMIT = 160;
   const breadcrumb = `${domain}${page === '/' ? '' : page}`;
   return (
-    <div className="mt-3 border border-neutral-700/40 rounded bg-neutral-800/20 p-3">
+    <Surface padding="none" className="mt-3 !rounded border-neutral-700/40 bg-neutral-800/20 p-3">
       <div className="text-[10px] text-neutral-500 uppercase tracking-wider mb-2 font-semibold">SERP Preview</div>
       <div className="max-w-xl">
         <div className="text-[11px] text-green-700 font-mono mb-0.5 truncate">{breadcrumb}</div>
@@ -912,6 +912,6 @@ function SerpSnippetPreview({ page, domain, titleRaw, titleLen, descRaw, descLen
           )}
         </div>
       </div>
-    </div>
+    </Surface>
   );
 }
