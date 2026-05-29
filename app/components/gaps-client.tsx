@@ -17,7 +17,7 @@ function GapRow({ sg }: { sg: SiteGap }) {
   const s = GAP_SEVERITY_STYLES[gap.severity];
 
   return (
-    <Surface padding="none" className={`border-l-4 ${s.accentBorder} p-4`}>
+    <Surface padding="sm" className={`border-l-4 ${s.accentBorder}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -165,7 +165,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
         ] as [GapSeverity, string][]).map(([sev, sublabel]) => {
           const s = GAP_SEVERITY_STYLES[sev];
           return (
-            <Surface key={sev} padding="none" className={`border-l-4 ${s.accentBorder} p-4`}>
+            <Surface key={sev} padding="sm" className={`border-l-4 ${s.accentBorder}`}>
               <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">{s.label} Priority</div>
               <div className={`${s.text} text-3xl font-mono font-bold`}>{grouped[sev].length}</div>
               <div className="text-neutral-600 text-xs mt-1">{sublabel}</div>
