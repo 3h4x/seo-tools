@@ -9,6 +9,7 @@ const SCOPES = [
   'https://www.googleapis.com/auth/analytics.readonly',
   'https://www.googleapis.com/auth/analytics.edit',
 ];
+const VALIDATION_TIMEOUT_MS = 10_000;
 
 async function validateKey(raw: string): Promise<string> {
   let parsed: Record<string, unknown>;
@@ -30,7 +31,7 @@ async function validateKey(raw: string): Promise<string> {
   const auth = new GoogleAuth({ credentials: parsed, scopes: SCOPES });
   const sc = new searchconsole_v1.Searchconsole({ auth });
   // Lightweight call to verify credentials work
-  await sc.sites.list();
+  await sc.sites.list({}, { timeout: VALIDATION_TIMEOUT_MS });
   return raw;
 }
 
