@@ -50,7 +50,7 @@ export default async function TrendsPage({
           <h1 className="text-2xl font-bold text-white">Trends</h1>
           <p className="text-neutral-500 text-sm mt-1">Historical data over time</p>
         </div>
-        <Notice tone="warning" size="none" className="rounded-lg border-l-4 border-l-amber-500 p-8 text-center">
+        <Notice tone="warning" size="spacious" className="rounded-lg border-l-4 border-l-amber-500 text-center">
           <svg className="size-12 mx-auto text-amber-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
           </svg>
@@ -375,7 +375,7 @@ function KeywordsSection({
           <h2 className="text-lg font-bold text-white">Keyword History</h2>
           <p className="text-neutral-500 text-sm mt-1">Rank movement over time across tracked queries</p>
         </div>
-        <Notice tone="warning" size="none" className="rounded-lg border-l-4 border-l-amber-500 p-8 text-center">
+        <Notice tone="warning" size="spacious" className="rounded-lg border-l-4 border-l-amber-500 text-center">
           <p className="text-amber-400 font-bold">No keyword history yet</p>
           <p className="text-neutral-500 text-sm mt-2">
             Run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> to start capturing per-keyword rank data.
