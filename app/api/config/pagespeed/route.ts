@@ -13,7 +13,17 @@ async function validatePagespeedKey(raw: string): Promise<string> {
     strategy: 'mobile',
     key: trimmed,
   });
-  const res = await fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params}`);
+  let res: Response;
+  try {
+    res = await fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params}`, {
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (error) {
+    if ((error as Error).name === 'AbortError' || (error as Error).name === 'TimeoutError') {
+      throw new Error('Validation timed out');
+    }
+    throw error;
+  }
   if (res.status === 400 || res.status === 401 || res.status === 403) {
     const body = await res.json().catch(() => ({})) as { error?: { message?: string } };
     throw new Error(body.error?.message || `HTTP ${res.status}`);
