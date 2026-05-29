@@ -22,7 +22,7 @@ export function getCredentials(): Record<string, unknown> {
 export function hasGoogleCredentials(): boolean {
   try {
     const creds = getCredentials();
-    return typeof creds.private_key === 'string' && (creds.private_key as string).length > 0;
+    return typeof creds.private_key === 'string' && creds.private_key.length > 0;
   } catch {
     return false;
   }
@@ -34,4 +34,3 @@ export function getAuth(): GoogleAuth {
     scopes: SCOPES,
   });
 }
-
