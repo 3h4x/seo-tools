@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Badge, FormButton, FormInput, FormSelect, Notice, Skeleton, Spinner, TextButton, ToggleButtonGroup } from '@/components/ui';
+import { Badge, FormButton, FormInput, FormSelect, Notice, Skeleton, Spinner, Surface, TextButton, ToggleButtonGroup } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -110,7 +110,7 @@ export async function readAlertRulesResponse(res: Response): Promise<AlertRule[]
 
 function AlertRulesSkeleton() {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 space-y-3" aria-label="Loading alert rules">
+    <Surface padding="none" className="space-y-3 p-4" aria-label="Loading alert rules">
       {[...Array(3)].map((_, index) => (
         <div key={index} className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_1fr_4rem]">
           <Skeleton className="h-4 w-32" />
@@ -120,7 +120,7 @@ function AlertRulesSkeleton() {
           <Skeleton className="h-4 w-16" />
         </div>
       ))}
-    </div>
+    </Surface>
   );
 }
 
@@ -284,7 +284,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
         />
       )}
 
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 space-y-4">
+      <Surface padding="none" className="space-y-4 p-4">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-white">{form.id ? 'Edit rule' : 'New rule'}</h3>
           {form.id && (
@@ -356,7 +356,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
           {saving && <Spinner />}
           {saving ? 'Saving…' : form.id ? 'Update rule' : 'Create rule'}
         </FormButton>
-      </div>
+      </Surface>
     </div>
   );
 }
