@@ -3,14 +3,13 @@
 import { useRef, useEffect } from 'react';
 import { Skeleton } from '@/components/ui';
 import { useRefresh } from './refresh-context';
-import { SkeletonCard, SkeletonTable, SkeletonSummaryRow } from './skeletons';
+import { SkeletonCard, SkeletonHeader, SkeletonTable, SkeletonSummaryRow } from './skeletons';
 
 function SkeletonPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Skeleton className="h-6 w-40" />
-        <Skeleton className="h-4 w-64" />
+        <SkeletonHeader titleClassName="h-6 w-40" />
         <div className="flex gap-6 mt-3">
           <Skeleton className="h-5 w-20" />
           <Skeleton className="h-5 w-24" />
