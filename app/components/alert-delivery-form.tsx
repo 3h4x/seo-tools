@@ -249,7 +249,7 @@ export default function AlertDeliveryForm() {
           variant="primary"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-1.5"
+          hasIcon
         >
           {saving && <Spinner />}
           {saving ? 'Saving…' : 'Save'}
