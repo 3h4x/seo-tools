@@ -7,6 +7,7 @@ import PagespeedKeyForm from '../components/pagespeed-key-form';
 import SitesManager from '../components/sites-manager';
 import AlertDeliveryForm from '../components/alert-delivery-form';
 import AlertRulesManager from '../components/alert-rules-manager';
+import { SkeletonHeader } from '../components/skeletons';
 import { Skeleton, Surface } from '@/components/ui';
 import type { OperationalStatus } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -56,10 +57,7 @@ function SitesSectionSkeleton() {
   return (
     <section className="space-y-4 max-w-6xl">
       <div className="flex items-center justify-between gap-4">
-        <div className="space-y-2">
-          <Skeleton className="h-5 w-36" />
-          <Skeleton className="h-4 w-72" />
-        </div>
+        <SkeletonHeader titleClassName="h-5 w-36" subtitleClassName="h-4 w-72" />
         <Skeleton className="h-9 w-32" />
       </div>
       <div className="grid gap-3">
