@@ -1,4 +1,5 @@
 import React from 'react';
+import { Surface } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 
 interface TrendsTableProps {
@@ -15,14 +16,16 @@ export function TrendsTable({ title, columns, rows }: TrendsTableProps) {
   return (
     <div>
       <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-2 font-semibold">{title}</h3>
-      <DataTable
-        columns={tableColumns}
-        rows={rows}
-        tableClassName="w-full text-xs"
-        containerClassName="overflow-hidden rounded border border-neutral-800 max-h-64 overflow-y-auto"
-        headClassName="sticky top-0 bg-neutral-900"
-        headRowClassName="border-b border-neutral-800 text-neutral-500"
-      />
+      <Surface padding="none" className="max-h-64 overflow-y-auto !rounded">
+        <DataTable
+          columns={tableColumns}
+          rows={rows}
+          tableClassName="w-full text-xs"
+          containerClassName=""
+          headClassName="sticky top-0 bg-neutral-900"
+          headRowClassName="border-b border-neutral-800 text-neutral-500"
+        />
+      </Surface>
     </div>
   );
 }
