@@ -3,7 +3,7 @@ import { dbGetAlertEvents } from '@/lib/db';
 import { formatAlertMetricValue, getAlertMetricLabel } from '@/lib/alerts';
 import { loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
-import { Badge, Notice, TextLink } from '@/components/ui';
+import { Badge, Notice, Surface, TextLink } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 
@@ -84,16 +84,18 @@ export default async function AlertsPage() {
           No alerts have fired yet. Add rules in <TextLink href="/config" size="inherit" variant="inherit" className="text-sm text-white underline transition-colors">Config</TextLink> and run snapshots to populate history.
         </Notice>
       ) : (
-        <DataTable
-          columns={ALERT_COLUMNS}
-          rows={rows}
-          rowKeys={rowKeys}
-          monospaceCells={false}
-          containerClassName="overflow-x-auto rounded-lg border border-neutral-800 bg-neutral-900"
-          tableClassName="w-full text-sm text-left"
-          bodyClassName=""
-          rowClassName="border-b border-neutral-900 last:border-b-0"
-        />
+        <Surface padding="none" className="overflow-x-auto">
+          <DataTable
+            columns={ALERT_COLUMNS}
+            rows={rows}
+            rowKeys={rowKeys}
+            monospaceCells={false}
+            containerClassName="contents"
+            tableClassName="w-full text-sm text-left"
+            bodyClassName=""
+            rowClassName="border-b border-neutral-900 last:border-b-0"
+          />
+        </Surface>
       )}
     </div>
   );
