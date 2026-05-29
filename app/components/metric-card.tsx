@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Badge } from '@/components/ui';
+import { Badge, Surface } from '@/components/ui';
 
 export function MetricCard({
   label,
@@ -30,7 +30,7 @@ export function MetricCard({
   const up = invert ? diff < 0 : diff > 0;
   const diffLabel = `${up ? 'Improved' : 'Declined'} by ${Math.abs(diff).toFixed(0)}%`;
   return (
-    <div className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${accent} p-4`}>
+    <Surface padding="none" className={`border-l-4 ${accent} p-4`}>
       <div className="flex items-center gap-2 text-neutral-500 mb-2">
         {icon}
         <span className="text-xs uppercase tracking-wider">{label}</span>
@@ -46,6 +46,6 @@ export function MetricCard({
         )}
       </div>
       {footer != null && <div className="text-[10px] text-neutral-500 mt-1">{footer}</div>}
-    </div>
+    </Surface>
   );
 }
