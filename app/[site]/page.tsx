@@ -318,7 +318,7 @@ export default async function SiteDashboardPage({
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">
             Ranking Distribution &middot; top {scQueries.length} queries
           </h2>
-          <Surface padding="none" className="p-4 space-y-4">
+          <Surface padding="sm" className="space-y-4">
             <div className="flex h-2.5 rounded-full overflow-hidden gap-px bg-neutral-800">
               {queryBucketStats.map((bucket) => bucket.count > 0 && (
                 <div
@@ -422,7 +422,7 @@ export default async function SiteDashboardPage({
           {(ga4?.trafficSources ?? []).length === 0 ? (
             <EmptyDataNotice>No traffic source data available.</EmptyDataNotice>
           ) : (
-            <Surface padding="none" className="p-4">
+            <Surface padding="sm">
               <div className="space-y-1.5">
                 {(ga4?.trafficSources ?? []).map((src, i) => (
                   <div key={i} className="flex items-center justify-between text-xs">
@@ -845,7 +845,7 @@ export default async function SiteDashboardPage({
 
 function ChartPanel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Surface padding="none" className="p-4">
+    <Surface padding="sm">
       <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">{title}</h3>
       {children}
     </Surface>
