@@ -48,7 +48,7 @@ function PageQueriesSkeleton() {
 
 function PageQueriesError({ message }: { message: string }) {
   return (
-    <Notice tone="danger" size="none" className="p-4" role="alert">
+    <Notice tone="danger" size="card" role="alert">
       <div className="h-32 flex flex-col items-center justify-center text-center">
         <h3 className="text-xs uppercase tracking-wider text-red-300 font-semibold">Page Queries Unavailable</h3>
         <p className="mt-2 max-w-md text-sm text-neutral-400">{message}</p>
