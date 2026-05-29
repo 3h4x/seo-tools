@@ -543,7 +543,7 @@ export function getAlertDeliveryConfigResponse(): AlertDeliveryConfigResponse {
 }
 
 export function validateAlertDeliveryInput(raw: unknown): AlertDeliveryStored {
-  const body = raw as Record<string, unknown>;
+  const body = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
   const resendApiKey = typeof body.resendApiKey === 'string' ? body.resendApiKey.trim() : '';
   const fromEmail = typeof body.fromEmail === 'string' ? body.fromEmail.trim() : '';
   const toEmail = typeof body.toEmail === 'string' ? body.toEmail.trim() : '';
