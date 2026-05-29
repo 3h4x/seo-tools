@@ -5,7 +5,7 @@ import { loadOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
 import { NoSitesNotice } from '../../components/no-sites-notice';
 import { PartialFailureBanner } from '../../components/partial-failure-banner';
-import { Notice, TextLink } from '@/components/ui';
+import { Notice, Surface, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -141,10 +141,10 @@ function SummaryCard(
   { label, value, styles }: { label: string; value: number; styles: { accent: string; value: string } },
 ) {
   return (
-    <div className={`bg-neutral-900 rounded-lg border border-neutral-800 border-l-4 ${styles.accent} p-4`}>
+    <Surface padding="none" className={`border-l-4 ${styles.accent} p-4`}>
       <div className="text-neutral-500 text-xs uppercase tracking-wider">{label}</div>
       <div className={`text-2xl font-bold font-mono mt-2 ${styles.value}`}>{value}</div>
-    </div>
+    </Surface>
   );
 }
 
