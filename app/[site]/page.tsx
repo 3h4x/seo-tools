@@ -547,7 +547,7 @@ export default async function SiteDashboardPage({
             <AuditPanel title={`URL Inspection · ${audit.urlInspection.length} test pages`}>
               <div className="space-y-3">
                 {audit.urlInspection.map((inspection) => (
-                  <div key={inspection.page} className="rounded border border-neutral-800 bg-neutral-950/40 p-3">
+                  <Surface key={inspection.page} padding="none" className="!bg-neutral-950/40 p-3">
                     <div className="flex flex-wrap items-center gap-3 text-xs">
                       <div className={`size-1.5 rounded-full shrink-0 ${statusDots[inspection.status]}`} />
                       <span className="text-neutral-300 font-mono">{inspection.page}</span>
@@ -582,7 +582,7 @@ export default async function SiteDashboardPage({
                         </TextLink>
                       </div>
                     )}
-                  </div>
+                  </Surface>
                 ))}
               </div>
             </AuditPanel>
@@ -720,7 +720,7 @@ export default async function SiteDashboardPage({
           <AuditPanel title={`Internal Links · ${audit.internalLinks.length} pages checked`}>
             <div className="space-y-3">
               {audit.internalLinks.map((link, i) => (
-                <div key={i} className="rounded border border-neutral-800 bg-neutral-950/40 p-3">
+                <Surface key={i} padding="none" className="!bg-neutral-950/40 p-3">
                   <div className="flex flex-wrap items-center gap-4 text-xs">
                     <div className={`size-1.5 rounded-full shrink-0 ${statusDots[link.status]}`} />
                     <span className="text-neutral-400 font-mono w-32 shrink-0">{link.page}</span>
@@ -750,7 +750,7 @@ export default async function SiteDashboardPage({
                       </div>
                     </details>
                   )}
-                </div>
+                </Surface>
               ))}
             </div>
             {sections['internalLinks']?.map(g => <Recommendation key={g.id} gap={g} />)}
