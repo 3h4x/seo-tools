@@ -117,8 +117,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         {managedSitesResult.failed ? (
           <Notice
             tone="danger"
-            size="none"
-            className="border-l-4 border-l-red-500 p-6"
+            size="lg"
+            className="border-l-4 border-l-red-500"
             role="alert"
           >
             <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
@@ -143,8 +143,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         <PartialFailureBanner failures={partialFailures} />
         <Notice
           tone="warning"
-          size="none"
-          className="border-l-4 border-l-amber-500 p-6"
+          size="lg"
+          className="border-l-4 border-l-amber-500"
         >
           <p className="text-amber-400 font-semibold">No audit data available</p>
           <p className="text-neutral-500 text-sm mt-2">
