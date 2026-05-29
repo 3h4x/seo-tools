@@ -105,7 +105,8 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
       label: (
         <TextButton
           type="button"
-          className="inline-flex items-center justify-end rounded-sm !text-inherit hover:!text-neutral-300 focus:outline-none focus-visible:!text-neutral-200 focus-visible:ring-1 focus-visible:ring-emerald-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900"
+          hasIcon
+          className="justify-end rounded-sm !text-inherit hover:!text-neutral-300 focus:outline-none focus-visible:!text-neutral-200 focus-visible:ring-1 focus-visible:ring-emerald-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900"
           onClick={() => handleSort(col.key, col.defaultDir)}
           title={`Sort by ${col.label}`}
           aria-label={`Sort by ${col.label} ${getNextSortDir(col.key, col.defaultDir) === 'asc' ? 'ascending' : 'descending'}`}
