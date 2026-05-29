@@ -37,4 +37,14 @@ describe('Notice', () => {
     expect(html).toContain('border-emerald-500/30 bg-emerald-500/10 text-emerald-200');
     expect(html).toContain('role="status"');
   });
+
+  it('supports panel-density notices', () => {
+    const html = renderToStaticMarkup(
+      <Notice size="panel">
+        Larger operational state
+      </Notice>
+    );
+
+    expect(html).toContain('p-5');
+  });
 });

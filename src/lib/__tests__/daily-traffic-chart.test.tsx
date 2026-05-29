@@ -26,6 +26,7 @@ describe('DailyTrafficChart', () => {
     expect(html).toContain('role="alert"');
     expect(html).toContain('Daily Traffic Unavailable');
     expect(html).toContain('Daily traffic data could not be loaded.');
+    expect(html).toContain('p-5');
     expect(html).not.toContain('aria-label="Loading daily traffic data"');
   });
 
@@ -39,6 +40,7 @@ describe('DailyTrafficChart', () => {
 
     expect(html).toContain('Need 2+ days of collected data.');
     expect(html).toContain('rounded-md border');
+    expect(html).toContain('p-5');
     expect(html).not.toContain('aria-label="Loading daily traffic data"');
   });
 });

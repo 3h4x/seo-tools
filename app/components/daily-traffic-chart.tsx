@@ -69,7 +69,7 @@ function DailyTrafficSkeleton() {
 
 function DailyTrafficError({ message }: { message: string }) {
   return (
-    <Notice tone="danger" size="none" className="rounded-lg p-5" role="alert">
+    <Notice tone="danger" size="panel" className="rounded-lg" role="alert">
       <div className="h-40 flex flex-col items-center justify-center text-center">
         <h2 className="text-xs uppercase tracking-wider text-red-300 font-semibold">Daily Traffic Unavailable</h2>
         <p className="mt-2 max-w-md text-sm text-neutral-400">{message}</p>
@@ -141,7 +141,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
   const dates = collectedDates.includes(today) ? collectedDates : [...collectedDates, today];
   if (collectedDates.length < 2) {
     return (
-      <Notice size="none" className="rounded-lg p-5">
+      <Notice size="panel" className="rounded-lg">
         <div className="h-40 flex items-center justify-center text-neutral-600 text-sm">
           Need 2+ days of collected data. Run the daily collector first.
         </div>
