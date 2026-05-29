@@ -89,50 +89,52 @@ export default async function CrossLinksPage() {
         <SummaryCard label="Unavailable Sources" value={unavailableSources} styles={CROSS_LINK_SUMMARY_STYLES.unavailable} />
       </div>
 
-      <DataTable
-        columns={[...BASE_COLUMNS, ...targetColumns]}
-        rows={matrix.map((row) => [
-          <div key="source" className="space-y-0.5">
-            <div className="text-white font-semibold">{row.sourceSiteName}</div>
-            <div className="text-neutral-500 text-[10px]">{row.sourceDomain}</div>
-          </div>,
-          <SourcePagesCell key="pages" row={row} />,
-          ...sites.map((site) => {
-            if (site.id === row.sourceSiteId) {
-              return <span key={site.id} className="text-neutral-700">—</span>;
-            }
+      <Surface padding="none">
+        <DataTable
+          columns={[...BASE_COLUMNS, ...targetColumns]}
+          rows={matrix.map((row) => [
+            <div key="source" className="space-y-0.5">
+              <div className="text-white font-semibold">{row.sourceSiteName}</div>
+              <div className="text-neutral-500 text-[10px]">{row.sourceDomain}</div>
+            </div>,
+            <SourcePagesCell key="pages" row={row} />,
+            ...sites.map((site) => {
+              if (site.id === row.sourceSiteId) {
+                return <span key={site.id} className="text-neutral-700">—</span>;
+              }
 
-            const target = row.targets.find((entry) => entry.targetSiteId === site.id);
-            if (!target) {
-              return <span key={site.id} className="text-neutral-700">—</span>;
-            }
+              const target = row.targets.find((entry) => entry.targetSiteId === site.id);
+              if (!target) {
+                return <span key={site.id} className="text-neutral-700">—</span>;
+              }
 
-            return (
-              <div key={site.id} className="space-y-0.5">
-                {row.status !== 'ok' || target.linkedPages === null || target.missingPages === null ? (
-                  <>
-                    <div className={CROSS_LINK_CELL_STYLES.unavailable}>{sourceStatusLabel(row.status)}</div>
-                    <div className="text-neutral-700 text-[10px]">Not evaluated</div>
-                  </>
-                ) : (
-                  <>
-                    <div className={target.linkedPages === 0 ? CROSS_LINK_CELL_STYLES.gap : CROSS_LINK_CELL_STYLES.linked}>
-                      {target.linkedPages === 0 ? '0 links' : `${target.linkedPages} link${target.linkedPages === 1 ? '' : 's'}`}
-                    </div>
-                    <div className="text-neutral-600 text-[10px]">{target.missingPages} pages missing</div>
-                  </>
-                )}
-              </div>
-            );
-          }),
-        ])}
-        rowKeys={matrix.map((row) => row.sourceSiteId)}
-        monospaceCells={false}
-        containerClassName="bg-neutral-900 rounded-lg border border-neutral-800 overflow-x-auto"
-        tableClassName="w-full min-w-[840px] text-sm"
-        headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
-        rowClassName="hover:bg-neutral-800/30 transition-colors align-top"
-      />
+              return (
+                <div key={site.id} className="space-y-0.5">
+                  {row.status !== 'ok' || target.linkedPages === null || target.missingPages === null ? (
+                    <>
+                      <div className={CROSS_LINK_CELL_STYLES.unavailable}>{sourceStatusLabel(row.status)}</div>
+                      <div className="text-neutral-700 text-[10px]">Not evaluated</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={target.linkedPages === 0 ? CROSS_LINK_CELL_STYLES.gap : CROSS_LINK_CELL_STYLES.linked}>
+                        {target.linkedPages === 0 ? '0 links' : `${target.linkedPages} link${target.linkedPages === 1 ? '' : 's'}`}
+                      </div>
+                      <div className="text-neutral-600 text-[10px]">{target.missingPages} pages missing</div>
+                    </>
+                  )}
+                </div>
+              );
+            }),
+          ])}
+          rowKeys={matrix.map((row) => row.sourceSiteId)}
+          monospaceCells={false}
+          containerClassName="overflow-x-auto"
+          tableClassName="w-full min-w-[840px] text-sm"
+          headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
+          rowClassName="hover:bg-neutral-800/30 transition-colors align-top"
+        />
+      </Surface>
     </div>
   );
 }
