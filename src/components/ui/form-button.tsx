@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 type FormButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'muted' | 'success';
-type FormButtonSize = 'md' | 'sm' | 'xs' | 'row';
+type FormButtonSize = 'md' | 'sm' | 'xs' | 'compact' | 'row';
 
 interface FormButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -23,6 +23,7 @@ const SIZE_CLASSES: Record<FormButtonSize, string> = {
   md: 'px-4 py-2 text-sm',
   sm: 'px-3 py-1.5 text-sm',
   xs: 'px-3 py-1.5 text-xs',
+  compact: 'px-2 py-1 text-xs',
   row: 'px-4 py-3 text-sm',
 };
 

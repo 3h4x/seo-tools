@@ -12,7 +12,8 @@ describe('CopyButton', () => {
       />
     );
 
-    expect(html).toContain('px-2 py-1 rounded');
+    expect(html).toContain('px-2 py-1 text-xs');
+    expect(html).toContain('rounded');
     expect(html).not.toContain('!px-2');
     expect(html).not.toContain('!py-1');
     expect(html).not.toContain('!rounded');

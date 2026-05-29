@@ -46,6 +46,12 @@ describe('FormButton', () => {
     expect(html).toContain('bg-white text-black');
   });
 
+  it('supports compact inline action sizing', () => {
+    const html = renderToStaticMarkup(<FormButton size="compact">Copy</FormButton>);
+
+    expect(html).toContain('px-2 py-1 text-xs');
+  });
+
   it('supports ghost row controls without local important overrides', () => {
     const html = renderToStaticMarkup(
       <FormButton variant="ghost" size="row">

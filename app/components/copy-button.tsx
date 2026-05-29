@@ -29,9 +29,9 @@ export function CopyButton({ text, label, className = '' }: CopyButtonProps) {
     <FormButton
       onClick={handleCopy}
       hasIcon
-      size="xs"
+      size="compact"
       variant={copied ? 'success' : 'muted'}
-      className={`gap-1 px-2 py-1 rounded text-xs font-medium ${className}`}
+      className={`gap-1 rounded font-medium ${className}`}
       title={`Copy ${label || 'to clipboard'}`}
     >
       <span className="sr-only" role="status" aria-live="polite">
