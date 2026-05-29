@@ -110,7 +110,7 @@ export async function readAlertRulesResponse(res: Response): Promise<AlertRule[]
 
 function AlertRulesSkeleton() {
   return (
-    <Surface padding="none" className="space-y-3 p-4" aria-label="Loading alert rules">
+    <Surface padding="sm" className="space-y-3" aria-label="Loading alert rules">
       {[...Array(3)].map((_, index) => (
         <div key={index} className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_1fr_4rem]">
           <Skeleton className="h-4 w-32" />
@@ -284,7 +284,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
         />
       )}
 
-      <Surface padding="none" className="space-y-4 p-4">
+      <Surface padding="sm" className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-white">{form.id ? 'Edit rule' : 'New rule'}</h3>
           {form.id && (
