@@ -1,4 +1,4 @@
-import { Badge, Notice, TextLink } from '@/components/ui';
+import { Badge, Notice, Surface, TextLink } from '@/components/ui';
 import { loadActionQueue, type ActionQueueItem } from '@/lib/actions';
 import { ACTION_KIND_STYLES, ACTION_PRIORITY_STYLES } from '@/lib/constants';
 import { DataTable, type DataTableColumn } from '../components/data-table';
@@ -65,14 +65,16 @@ export default async function ActionsPage() {
           <p className="text-sm text-neutral-500 mt-1">Add managed sites, snapshots, and audit data to populate the queue.</p>
         </Notice>
       ) : (
-        <DataTable
-          columns={COLUMNS}
-          rows={rows}
-          rowKeys={items.map((item) => item.id)}
-          monospaceCells={false}
-          containerClassName="overflow-x-auto rounded border border-neutral-800 bg-neutral-900"
-          tableClassName="w-full text-sm min-w-[900px]"
-        />
+        <Surface padding="none" className="overflow-x-auto">
+          <DataTable
+            columns={COLUMNS}
+            rows={rows}
+            rowKeys={items.map((item) => item.id)}
+            monospaceCells={false}
+            containerClassName="overflow-x-auto"
+            tableClassName="w-full text-sm min-w-[900px]"
+          />
+        </Surface>
       )}
     </div>
   );
