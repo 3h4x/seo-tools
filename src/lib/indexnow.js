@@ -1,6 +1,7 @@
 const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow';
 const MAX_URLS_PER_REQUEST = 10000;
 const MAX_SITEMAP_DEPTH = 3;
+const FETCH_TIMEOUT_MS = 15_000;
 
 function getSiteOrigin(domain) {
   return domain.startsWith('http://') || domain.startsWith('https://')
@@ -22,6 +23,7 @@ async function fetchText(url) {
     headers: {
       'user-agent': 'seo-tools/1.0 (+https://github.com/3h4x/seo-tools)',
     },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   const text = await response.text();
   return { response, text };
@@ -152,6 +154,7 @@ export async function submitIndexNowForSite(site) {
       'user-agent': 'seo-tools/1.0 (+https://github.com/3h4x/seo-tools)',
     },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
