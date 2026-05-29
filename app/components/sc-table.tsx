@@ -52,8 +52,9 @@ function ExportButton({ data, filename, label = 'Export CSV' }: {
       title={`Download ${filename} as CSV`}
       size="xs"
       variant={done ? 'success' : 'muted'}
+      hasIcon
       className={[
-        'inline-flex items-center gap-1.5 !px-2 !py-1 !text-[10px] font-medium !rounded border',
+        '!px-2 !py-1 !text-[10px] font-medium !rounded border',
         done ? 'border-emerald-500/20' : 'border-neutral-700 hover:border-neutral-600',
       ].join(' ')}
     >
