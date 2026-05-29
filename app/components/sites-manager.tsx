@@ -651,7 +651,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
         </Notice>
       )}
       {isEditing && (
-        <Surface className="space-y-4 border-neutral-700 bg-neutral-900/50 p-4" padding="none">
+        <Surface className="space-y-4 border-neutral-700 bg-neutral-900/50" padding="sm">
           <h3 className="text-sm font-medium text-white">
             {editMode === 'new' ? 'Add Site' : `Edit: ${form.name}`}
           </h3>
@@ -849,7 +849,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
             discovered.length === 0 ? (
               <p className="text-sm text-neutral-500">All accessible sites already added.</p>
             ) : (
-              <Surface className="space-y-3 border-neutral-700 p-4" padding="none">
+              <Surface className="space-y-3 border-neutral-700" padding="sm">
                 <div className="flex items-center gap-3">
                   <TextButton
                     onClick={toggleSelectAll}
