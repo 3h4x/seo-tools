@@ -44,7 +44,7 @@ export default function OperationalStatusPanel({
       )}
       <div className="grid gap-3 md:grid-cols-2">
         {statuses.map((status) => (
-          <Surface key={status.key} padding="none" className="p-4 space-y-2">
+          <Surface key={status.key} padding="sm" className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-sm font-medium text-white">{status.label}</h3>
               <Badge size="compact" className={STATE_STYLES[status.state]}>
