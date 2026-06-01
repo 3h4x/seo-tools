@@ -20,8 +20,8 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@google-analytics/admin": "^9.0.1",
-    "@google-analytics/data": "^5.2.1",
+    "@google-analytics/admin": "^9.1.0",
+    "@google-analytics/data": "^6.1.0",
     "@googleapis/searchconsole": "^6.0.1",
     "@tailwindcss/postcss": "^4.2.3",
     "@types/react": "^19.2.14",
