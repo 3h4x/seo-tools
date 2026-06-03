@@ -847,7 +847,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
 
           {discovered !== null && (
             discovered.length === 0 ? (
-              <p className="text-sm text-neutral-500">All accessible sites already added.</p>
+              <Notice size="none" className="border-0 bg-transparent p-0 text-sm text-neutral-500">
+                All accessible sites already added.
+              </Notice>
             ) : (
               <Surface className="space-y-3 border-neutral-700" padding="sm">
                 <div className="flex items-center gap-3">
