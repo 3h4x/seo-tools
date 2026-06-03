@@ -66,7 +66,7 @@ export default async function AlertsPage() {
         <h1 className="text-2xl font-bold text-white">Alerts</h1>
         <p className="mt-1 text-sm text-neutral-500">
           Recent fired alerts from the snapshot pipeline. Configure rules and delivery in{' '}
-          <TextLink href="/config" size="inherit" variant="inherit" className="text-sm text-white underline transition-colors">Config</TextLink>.
+          <TextLink href="/config" size="inherit" variant="inherit" className="text-sm text-white underline">Config</TextLink>.
         </p>
       </div>
 
@@ -81,7 +81,7 @@ export default async function AlertsPage() {
         </Notice>
       ) : events.length === 0 ? (
         <Notice size="lg" className="text-sm text-neutral-500">
-          No alerts have fired yet. Add rules in <TextLink href="/config" size="inherit" variant="inherit" className="text-sm text-white underline transition-colors">Config</TextLink> and run snapshots to populate history.
+          No alerts have fired yet. Add rules in <TextLink href="/config" size="inherit" variant="inherit" className="text-sm text-white underline">Config</TextLink> and run snapshots to populate history.
         </Notice>
       ) : (
         <Surface padding="none" className="overflow-x-auto">
