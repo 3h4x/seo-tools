@@ -256,9 +256,9 @@ export default async function SiteDashboardPage({
             <span className="text-neutral-500 text-xs">recommendations</span>
             {(['high', 'medium', 'low'] satisfies GapSeverity[]).map((severity) => (
               gapAnalysis.counts[severity] > 0 && (
-                <span key={severity} className={`${GAP_SEVERITY_STYLES[severity].text} text-xs font-mono`}>
+                <Badge key={severity} className={`!border-0 !px-0 !py-0 font-mono !text-xs !font-normal ${GAP_SEVERITY_STYLES[severity].text}`}>
                   {gapAnalysis.counts[severity]} {severity === 'medium' ? 'med' : severity}
-                </span>
+                </Badge>
               )
             ))}
           </div>
