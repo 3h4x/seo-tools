@@ -739,7 +739,7 @@ async function checkSitemap(domain: string, sitemapUrl?: string): Promise<Sitema
     let fresh = false;
     if (mostRecent) {
       const d = new Date(mostRecent);
-      fresh = Date.now() - d.getTime() < 30 * 24 * 60 * 60 * 1000;
+      fresh = Date.now() - d.getTime() < SITEMAP_STALE_LASTMOD_DAYS * 24 * 60 * 60 * 1000;
     }
 
     const locs = isIndex ? [] : extractLocsFromSitemap(res.text);

@@ -71,7 +71,12 @@ export default async function PerformancePage({
 
   const tableRows = rows.map((row) => [
       <div key="site">
-        <TextLink href={`/performance/${encodeURIComponent(row.id)}`} className="text-sm text-white hover:underline">
+        <TextLink
+          href={`/performance/${encodeURIComponent(row.id)}`}
+          size="inherit"
+          variant="inherit"
+          className="text-sm text-white hover:underline"
+        >
           {row.name}
         </TextLink>
         <div className="text-xs text-neutral-500 font-mono">{row.domain}</div>
