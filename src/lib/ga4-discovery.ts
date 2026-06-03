@@ -93,15 +93,19 @@ export function findMatchingGa4Property(domain: string, properties: DiscoveredGa
   const safeVariants = getSafeDomainVariants(domain);
   if (safeVariants.size === 0) return undefined;
 
-  const matches = prepareGa4Properties(properties).filter((property) => {
-    return property.matchDomain ? safeVariants.has(property.matchDomain) : false;
-  });
+  let match: PreparedGa4Property | undefined;
+  for (const property of prepareGa4Properties(properties)) {
+    if (!property.matchDomain || !safeVariants.has(property.matchDomain)) continue;
 
-  if (matches.length !== 1) return undefined;
+    if (match) return undefined;
+    match = property;
+  }
+
+  if (!match) return undefined;
 
   return {
-    displayName: matches[0].displayName,
-    propertyId: matches[0].propertyId,
+    displayName: match.displayName,
+    propertyId: match.propertyId,
   };
 }
 
