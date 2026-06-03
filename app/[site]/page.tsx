@@ -595,6 +595,8 @@ export default async function SiteDashboardPage({
                           href={inspection.inspectionResultLink}
                           target="_blank"
                           rel="noreferrer"
+                          size="inherit"
+                          variant="inherit"
                           className="text-[11px] text-neutral-400 hover:text-neutral-200"
                         >
                           Open in Search Console →
