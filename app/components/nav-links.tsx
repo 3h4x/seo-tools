@@ -28,7 +28,7 @@ export default function NavLinks() {
             aria-current={active ? 'page' : undefined}
             size="inherit"
             variant="inherit"
-            className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+            className={`px-3 py-1.5 rounded-md text-sm ${
               active
                 ? 'text-white bg-neutral-800'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
