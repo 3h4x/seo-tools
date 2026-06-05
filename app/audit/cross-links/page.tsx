@@ -48,7 +48,7 @@ export default async function CrossLinksPage() {
         </div>
         <PartialFailureBanner failures={partialFailures} />
         {sitesResult.failed ? (
-          <Notice tone="danger" size="lg" className="rounded-lg border-l-4 border-l-red-500" role="alert">
+          <Notice tone="danger" size="lg" accent="left" className="rounded-lg" role="alert">
             <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
             <p className="text-neutral-500 text-sm mt-2">
               The sites table failed to read. Check the server logs and use Refresh to retry.
