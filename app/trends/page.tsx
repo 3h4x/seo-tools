@@ -22,6 +22,7 @@ import { PositionBadge } from '../components/position-badge';
 import { TrendBadge } from '../components/trend-badge';
 import { TrendsTable } from '../components/trends-table';
 import { KeywordRankTable } from '../components/keyword-rank-table';
+import { Icons } from '../components/icons';
 
 export const revalidate = 300;
 
@@ -51,9 +52,9 @@ export default async function TrendsPage({
           <p className="text-neutral-500 text-sm mt-1">Historical data over time</p>
         </div>
         <Notice tone="warning" size="spacious" accent="left" className="rounded-lg text-center">
-          <svg className="size-12 mx-auto text-amber-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-          </svg>
+          <span className="mx-auto mb-3 block w-fit text-amber-500 [&>svg]:size-12 [&>svg]:stroke-[1.5]">
+            {Icons.ctr}
+          </span>
           <p className="text-amber-400 font-bold text-lg">No trend data yet</p>
           <p className="text-neutral-500 text-sm mt-2 max-w-lg mx-auto">
             Take snapshots to track SEO performance over time. Each snapshot captures Search Console + GA4 metrics and top-50 keyword rankings for all sites.
