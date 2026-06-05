@@ -138,7 +138,7 @@ describe('Opportunities page', () => {
     expect(html).toContain('Managed sites');
     expect(html).toContain("Couldn't load managed sites");
     expect(html).toContain('The sites table failed to read. Check the server logs and use Refresh to retry.');
-    expect(html).toContain('border border-red-950 bg-neutral-900 text-neutral-300 p-8 rounded-lg border-l-4 border-l-red-500 text-neutral-500');
+    expect(html).toContain('border border-red-950 bg-neutral-900 text-neutral-300 p-8 border-l-4 border-l-red-500 rounded-lg text-neutral-500');
     expect(html).not.toContain('Enable Search Console for at least one managed site in Config to populate keyword opportunities.');
     expect(consoleError).toHaveBeenCalledWith(
       '[OpportunitiesPage managed sites]',

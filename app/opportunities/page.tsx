@@ -135,8 +135,9 @@ export default async function OpportunitiesPage({
         <Notice
           size="spacious"
           tone={emptyNoticeTone}
+          accent={sitesResult.failed ? 'left' : 'none'}
           className={sitesResult.failed
-            ? 'rounded-lg border-l-4 border-l-red-500 text-neutral-500'
+            ? 'rounded-lg text-neutral-500'
             : 'rounded-lg text-center text-neutral-500'}
         >
           <p className={`mb-1 ${sitesResult.failed ? 'font-semibold text-red-400' : 'font-medium'}`}>{emptyTitle}</p>
