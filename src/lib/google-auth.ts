@@ -13,7 +13,7 @@ export function getCredentials(): Record<string, unknown> {
   const dbValue = getConfig('google_sa_key');
   const raw = dbValue ?? process.env.GOOGLE_SA_KEY_JSON ?? '{}';
   const credentials = JSON.parse(raw);
-  if (credentials.private_key) {
+  if (typeof credentials.private_key === 'string') {
     credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
   }
   return credentials;
