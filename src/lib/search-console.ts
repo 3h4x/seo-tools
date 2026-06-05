@@ -81,9 +81,10 @@ async function getSearchConsoleDataWithComparison(
 ): Promise<{ current: SCAggregates; previous: SCAggregates } | null> {
   try {
     const url = formatSiteUrl(siteUrl);
+    const sc = getSc();
 
     const [currentRes, previousRes] = await Promise.all([
-      getSc().searchanalytics.query({
+      sc.searchanalytics.query({
         siteUrl: url,
         requestBody: {
           startDate: daysAgo(days),
@@ -92,7 +93,7 @@ async function getSearchConsoleDataWithComparison(
           rowLimit: 1,
         },
       }),
-      getSc().searchanalytics.query({
+      sc.searchanalytics.query({
         siteUrl: url,
         requestBody: {
           startDate: daysAgo(days * 2),
