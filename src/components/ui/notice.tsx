@@ -2,9 +2,11 @@ import type { HTMLAttributes, ReactNode } from 'react';
 
 type NoticeTone = 'warning' | 'info' | 'neutral' | 'danger' | 'success';
 type NoticeSize = 'xs' | 'sm' | 'md' | 'card' | 'panel' | 'lg' | 'spacious' | 'none';
+type NoticeAccent = 'none' | 'left';
 
 interface NoticeProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
+  accent?: NoticeAccent;
   tone?: NoticeTone;
   size?: NoticeSize;
 }
@@ -28,8 +30,17 @@ const SIZE_CLASSES: Record<NoticeSize, string> = {
   none: '',
 };
 
+const LEFT_ACCENT_CLASSES: Record<NoticeTone, string> = {
+  warning: 'border-l-4 border-l-amber-500',
+  info: 'border-l-4 border-l-blue-500',
+  neutral: 'border-l-4 border-l-neutral-600',
+  danger: 'border-l-4 border-l-red-500',
+  success: 'border-l-4 border-l-emerald-500',
+};
+
 export function Notice({
   children,
+  accent = 'none',
   className,
   size = 'md',
   tone = 'neutral',
@@ -41,6 +52,7 @@ export function Notice({
         'rounded-md border',
         TONE_CLASSES[tone],
         SIZE_CLASSES[size],
+        accent === 'left' ? LEFT_ACCENT_CLASSES[tone] : undefined,
         className,
       ].filter(Boolean).join(' ')}
       {...props}
