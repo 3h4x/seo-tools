@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { PropsWithChildren } from 'react';
 import { notFound } from 'next/navigation';
 import { getManagedSite, getSCUrl } from '@/lib/sites';
 import { getCwvAuditSummary } from '@/lib/performance-site';
@@ -111,14 +111,6 @@ function SearchConsoleDisabledNotice() {
       <p className="mt-2 text-sm text-neutral-500">
         Search Console is disabled for this site in Config. Metrics, query tables, and keyword history are hidden.
       </p>
-    </Notice>
-  );
-}
-
-function EmptyDataNotice({ children }: { children: ReactNode }) {
-  return (
-    <Notice size="sm" className="text-neutral-500">
-      {children}
     </Notice>
   );
 }
@@ -426,13 +418,13 @@ export default async function SiteDashboardPage({
               />
             </Surface>
           ) : (
-            <EmptyDataNotice>No GA4 page data available.</EmptyDataNotice>
+            <Notice size="sm" className="text-neutral-500">No GA4 page data available.</Notice>
           )}
         </div>
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Traffic Sources</h2>
           {(ga4?.trafficSources ?? []).length === 0 ? (
-            <EmptyDataNotice>No traffic source data available.</EmptyDataNotice>
+            <Notice size="sm" className="text-neutral-500">No traffic source data available.</Notice>
           ) : (
             <Surface padding="sm">
               <DataTable
@@ -864,7 +856,7 @@ export default async function SiteDashboardPage({
   );
 }
 
-function ChartPanel({ title, children }: { title: string; children: ReactNode }) {
+function ChartPanel({ title, children }: PropsWithChildren<{ title: string }>) {
   return (
     <Surface padding="sm">
       <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-3 font-semibold">{title}</h3>
@@ -873,7 +865,7 @@ function ChartPanel({ title, children }: { title: string; children: ReactNode })
   );
 }
 
-function AuditPanel({ title, children }: { title: string; children: ReactNode }) {
+function AuditPanel({ title, children }: PropsWithChildren<{ title: string }>) {
   return (
     <Surface>
       <h2 className="text-white font-semibold text-sm mb-4">{title}</h2>
