@@ -174,6 +174,7 @@ export default async function SiteDashboardPage({
   const ga4 = ga4Data.data;
   const ga4Error = ga4Data.error;
   const hasGa4 = ga4 && ga4.current.users > 0;
+  const ga4TopPagesMaxViews = ga4?.topPages[0]?.views || 1;
   const queryBucketStats = scQueries ? getQueryBucketStats(scQueries) : [];
   const scQueryRows: Array<{ label: string; clicks: number; impressions: number; ctr: number; position: number }> = [];
   const scQueryExportRows: Array<{ query: string; clicks: number; impressions: number; ctr: string; position: string }> = [];
@@ -392,7 +393,6 @@ export default async function SiteDashboardPage({
               <DataTable
                 columns={GA4_TOP_PAGE_COLUMNS}
                 rows={ga4.topPages.map((page) => {
-                  const maxViews = ga4.topPages[0].views || 1;
                   return [
                     <div key="page" className="min-w-0">
                       <span className="block truncate font-mono text-neutral-400">{page.path}</span>
@@ -400,7 +400,7 @@ export default async function SiteDashboardPage({
                     </div>,
                     <div key="views" className="flex items-center justify-end gap-3">
                       <div className="w-16 bg-neutral-800 h-1 rounded-full overflow-hidden shrink-0">
-                        <div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${(page.views / maxViews) * 100}%` }} />
+                        <div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${(page.views / ga4TopPagesMaxViews) * 100}%` }} />
                       </div>
                       <span className="w-20 text-right font-mono text-neutral-500">{pluralize(page.views, 'view')}</span>
                     </div>,
