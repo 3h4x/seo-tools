@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import { Notice, Skeleton, Surface, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { PositionBadge } from './position-badge';
@@ -60,14 +60,6 @@ function PageQueriesError({ message }: { message: string }) {
         <h3 className="text-xs uppercase tracking-wider text-red-300 font-semibold">Page Queries Unavailable</h3>
         <p className="mt-2 max-w-md text-sm text-neutral-400">{message}</p>
       </div>
-    </Notice>
-  );
-}
-
-function PageQueriesEmpty({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return (
-    <Notice tone="neutral" size="sm" className={`text-neutral-500 ${className}`}>
-      {children}
     </Notice>
   );
 }
@@ -157,7 +149,9 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
     if (!expanded.has(row.page)) return null;
 
     return row.queries.length === 0 ? (
-      <PageQueriesEmpty className="text-xs">No query data for this page.</PageQueriesEmpty>
+      <Notice tone="neutral" size="sm" className="text-neutral-500 text-xs">
+        No query data for this page.
+      </Notice>
     ) : (
       <DataTable
         columns={QUERY_COLUMNS}
@@ -190,7 +184,9 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
       ) : loadError ? (
         <PageQueriesError message={loadError} />
       ) : rows.length === 0 ? (
-        <PageQueriesEmpty>No page data available.</PageQueriesEmpty>
+        <Notice tone="neutral" size="sm" className="text-neutral-500">
+          No page data available.
+        </Notice>
       ) : (
         <Surface padding="none" className="overflow-hidden">
           <DataTable
