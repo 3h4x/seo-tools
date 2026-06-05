@@ -159,6 +159,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const propertyIdBySite = new Map(
     discoveredSites.map((site) => [site.id, site.ga4PropertyId || '']),
   );
+  const managedSitesById = new Map(managedSites.map((site) => [site.id, site]));
 
   const cwvEntries = await Promise.all(
     managedSites.map((site) => loadCwvSummaryForAudit(site.id))
@@ -189,7 +190,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const allSiteGaps: SiteGap[] = [];
   const gapCountBySite = new Map<string, number>();
   const siteGapRows = await Promise.all(audits.map(async (audit) => {
-    const site = managedSites.find((candidate) => candidate.id === audit.siteId);
+    const site = managedSitesById.get(audit.siteId);
     if (!site) return null;
 
     const propertyId = propertyIdBySite.get(site.id) || site.ga4PropertyId || '';
@@ -229,8 +230,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const totalRecs = allSiteGaps.length;
   const gapSiteIds = [...new Set(allSiteGaps.map(sg => sg.siteId))];
   const gapSites = gapSiteIds
-    .map(id => managedSites.find(s => s.id === id))
-    .filter((s): s is NonNullable<typeof s> => s !== null)
+    .map(id => managedSitesById.get(id))
+    .filter((s): s is NonNullable<typeof s> => s != null)
     .map(s => ({ id: s.id, name: s.name, domain: s.domain }));
   const categoryOrder: GapCategory[] = ['crawlability', 'content', 'social', 'indexing', 'structured-data', 'performance', 'security'];
   const gapCategories = ([...new Set(allSiteGaps.map(sg => sg.gap.category))] as GapCategory[])
@@ -294,7 +295,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           const canonical = summarizeCanonicalChecks(audit.metaTags);
           const images = checksSummary(audit.imageSeo, { fail: 'missing alt', warn: 'need alt', pass: 'All images have alt' });
           const links = checksSummary(audit.internalLinks, { fail: 'no links', warn: 'low links', pass: 'Good linking' });
-          const site = managedSites.find(s => s.id === audit.siteId);
+          const site = managedSitesById.get(audit.siteId);
           const gapCount = gapCountBySite.get(audit.siteId) ?? 0;
           const cwv = cwvSummaries[audit.siteId] ?? null;
           const freshness = auditFreshness(audit.timestamp);
