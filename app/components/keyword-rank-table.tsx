@@ -55,18 +55,25 @@ function KwTrendArrow({ trend }: { trend: KeywordDelta['trend'] }) {
 
 export function KeywordRankTable({ deltas, limit = 20 }: { deltas: KeywordDelta[]; limit?: number }) {
   const visibleDeltas = deltas.slice(0, limit);
+  const rows = [];
+  const rowKeys = [];
+
+  for (const kw of visibleDeltas) {
+    rowKeys.push(kw.query);
+    rows.push([
+      <span key="query">{kw.query}</span>,
+      <span key="position">{kw.currentPosition.toFixed(1)}</span>,
+      <KwDeltaCell key="delta7d" delta={kw.delta7d} />,
+      <KwDeltaCell key="delta30d" delta={kw.delta30d} />,
+      <KwTrendArrow key="trend" trend={kw.trend} />,
+    ]);
+  }
 
   return (
     <DataTable
       columns={KEYWORD_COLUMNS}
-      rows={visibleDeltas.map((kw) => [
-        <span key="query">{kw.query}</span>,
-        <span key="position">{kw.currentPosition.toFixed(1)}</span>,
-        <KwDeltaCell key="delta7d" delta={kw.delta7d} />,
-        <KwDeltaCell key="delta30d" delta={kw.delta30d} />,
-        <KwTrendArrow key="trend" trend={kw.trend} />,
-      ])}
-      rowKeys={visibleDeltas.map((kw) => kw.query)}
+      rows={rows}
+      rowKeys={rowKeys}
       monospaceCells={false}
       containerClassName="overflow-x-auto"
       tableClassName="w-full text-xs"
