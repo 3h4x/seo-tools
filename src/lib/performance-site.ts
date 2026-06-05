@@ -292,10 +292,11 @@ export async function getCwvAuditSummary(siteId: string): Promise<CwvAuditSummar
     return { metrics: cloneRumMetrics(rum.overall), source: 'rum' };
   }
 
-  const psiDesktop = psiMobile && fromPsi(psiMobile).source !== 'none'
+  const mobileFallback = fromPsi(psiMobile);
+  const psiDesktop = psiMobile && mobileFallback.source !== 'none'
     ? null
     : await providerOrNull(`audit PSI desktop ${site.id}`, cachedGetPagespeed(url, 'desktop'));
-  const fallback = firstPsiWithMetrics(psiMobile, psiDesktop);
+  const fallback = psiDesktop ? firstPsiWithMetrics(psiMobile, psiDesktop) : mobileFallback;
   return { metrics: fallback.metrics, source: (eventCount ?? 0) > 0 ? 'rum-pending' : fallback.source };
 }
 
