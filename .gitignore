@@ -15,3 +15,13 @@ docs/*
 tsconfig.tsbuildinfo
 .claude/
 scripts/migrate-sites.mjs
+
+# This repo intentionally tracks TamTam agent/config files. Override global
+# ignore rules that may ignore the whole .tamtam directory, but keep generated
+# runtime cache out of commits.
+!.tamtam/
+!.tamtam/.gitignore
+!.tamtam/config.yml
+!.tamtam/agents/
+!.tamtam/agents/*.md
+.tamtam/cache/
