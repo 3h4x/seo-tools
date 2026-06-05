@@ -20,6 +20,7 @@ import { Badge, Notice, Surface, TextLink } from '@/components/ui';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
+import { Icons } from '../components/icons';
 
 const AUDIT_DECAY_PERIODS = [7, 30] as const;
 
@@ -406,10 +407,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             accent="left"
             className="text-center"
           >
-            <svg className="size-12 mx-auto text-emerald-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
+            <span className="mx-auto mb-3 block w-fit text-emerald-500">{Icons.checkCircle}</span>
             <p className="text-emerald-400 font-bold text-lg">All clear — no content decay</p>
             <p className="text-neutral-500 text-sm mt-2 max-w-md mx-auto">
               Every page across all {decayResults.length} sites is maintaining or growing traffic over the last {period} days.
