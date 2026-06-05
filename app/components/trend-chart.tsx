@@ -70,6 +70,7 @@ export default function TrendChart({
   const chartData = xKey === '_label'
     ? data.map((d) => ({ ...d, _label: formatDate(d.date as string) }))
     : data;
+  const lineLabels = new Map(lines.map((line) => [line.key, line.label]));
 
   return (
     <ClientChart height={height}><ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
@@ -110,8 +111,8 @@ export default function TrendChart({
           labelStyle={{ color: CHART_NEUTRALS.tooltipLabel, marginBottom: 4 }}
           itemStyle={{ padding: 0 }}
           formatter={(value, name) => {
-            const line = lines.find((l) => l.key === name);
-            return [formatTrendValue(Number(value), valueFormat), line?.label || String(name)];
+            const label = lineLabels.get(String(name));
+            return [formatTrendValue(Number(value), valueFormat), label || String(name)];
           }}
         />
         {lines.map((line) => (
