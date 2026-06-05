@@ -130,7 +130,8 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const formSite = sites.find((entry) => entry.id === form.siteId);
+  const siteById = new Map(sites.map((site) => [site.id, site]));
+  const formSite = siteById.get(form.siteId);
   const formMetricBlocked = isMetricBlockedBySite(form.metric, formSite);
 
   const loadRules = useCallback(async () => {
@@ -220,7 +221,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
   const ruleRowKeys: number[] = [];
 
   for (const rule of rules) {
-    const site = sites.find((entry) => entry.id === rule.siteId);
+    const site = siteById.get(rule.siteId);
     const metricBlocked = isMetricBlockedBySite(rule.metric, site);
 
     ruleRowKeys.push(rule.id);
