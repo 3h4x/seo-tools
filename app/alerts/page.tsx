@@ -73,7 +73,7 @@ export default async function AlertsPage() {
       <PartialFailureBanner failures={partialFailures} />
 
       {eventsResult.failed ? (
-        <Notice tone="danger" size="lg" className="border-l-4 border-l-red-500">
+        <Notice tone="danger" size="lg" accent="left">
           <p className="font-semibold text-red-400">Couldn&apos;t load alert history</p>
           <p className="mt-2 text-sm text-neutral-500">
             The alert events table failed to read. Check the server logs and use Refresh to retry.
