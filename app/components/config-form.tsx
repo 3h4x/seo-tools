@@ -12,6 +12,12 @@ interface Props {
 
 type TestState = 'idle' | 'testing' | 'ok' | 'error';
 
+const SOURCE_BADGE: Record<Source, string | null> = {
+  db: 'Source: database',
+  env: 'Source: environment variable',
+  none: null,
+};
+
 export default function ConfigForm({ source: initialSource }: Props) {
   const [input, setInput] = useState('');
   const [source] = useState<Source>(initialSource);
@@ -101,19 +107,13 @@ export default function ConfigForm({ source: initialSource }: Props) {
     }
   }
 
-  const sourceBadge: Record<Source, string | null> = {
-    db: 'Source: database',
-    env: 'Source: environment variable',
-    none: null,
-  };
-
   return (
     <div className="space-y-4 max-w-2xl">
       <div className="flex items-center gap-3">
         <h1 className="text-lg font-semibold text-white">Google Service Account Key</h1>
-        {sourceBadge[source] && (
+        {SOURCE_BADGE[source] && (
           <Badge size="compact" shape="rounded" className="border-neutral-700 bg-neutral-800 text-neutral-400">
-            {sourceBadge[source]}
+            {SOURCE_BADGE[source]}
           </Badge>
         )}
       </div>

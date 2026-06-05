@@ -30,7 +30,7 @@ Use the **Config tab → Managed Sites** section to add, edit, delete, or discov
 - [x] Sitemaps submitted to Search Console
 - [x] Dashboard Overview Page (Real-time metrics)
 - [x] Navigation & Routing
-- [x] CLI tool (`pnpm seo <command>`: sites, sitemaps, submit-sitemap, stats, snapshot, check)
+- [x] CLI tool (`pnpm seo <command>`: sites, sitemaps, submit-sitemap, stats, pages, snapshot, check)
 - [x] GA4 Analytics on Dashboard (active users, sessions, page views, traffic sources)
 - [x] SEO Health Audit Logic (robots.txt, Sitemap, Meta tags)
 - [x] Detailed Analytics Reporting Pages
