@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FormButton, Notice, Surface } from '@/components/ui';
 import { PositionBadge } from './position-badge';
 import { DataTable, type DataTableColumn } from './data-table';
+import { Icons } from './icons';
 
 type Row = Record<string, string | number | null | undefined>;
 
@@ -63,9 +64,7 @@ function ExportButton({ data, filename, label = 'Export CSV' }: {
       </span>
       {done ? (
         <>
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="shrink-0">
-            <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <span className="shrink-0 [&>svg]:!size-2.5">{Icons.check}</span>
           Saved
         </>
       ) : (
