@@ -120,6 +120,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
   const pageRows = rows.map((row, index) => {
     const isOpen = expanded.has(row.page);
     const panelId = pageQueryPanelId(index);
+    const pagePathname = pathname(row.page);
 
     return [
       <TextButton
@@ -127,7 +128,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
         type="button"
         aria-expanded={isOpen ? 'true' : 'false'}
         aria-controls={panelId}
-        aria-label={`${isOpen ? 'Hide' : 'Show'} queries for ${pathname(row.page)}`}
+        aria-label={`${isOpen ? 'Hide' : 'Show'} queries for ${pagePathname}`}
         title={row.page}
         onClick={(event) => {
           event.stopPropagation();
@@ -137,7 +138,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
         className="text-left"
       >
         <span aria-hidden="true" className={`transition-transform text-neutral-600 text-[10px] ${isOpen ? 'rotate-90' : ''}`}>▶</span>
-        <span className="text-neutral-300">{pathname(row.page)}</span>
+        <span className="text-neutral-300">{pagePathname}</span>
       </TextButton>,
       row.clicks.toLocaleString(),
       row.impressions.toLocaleString(),
