@@ -18,8 +18,11 @@ export async function PUT(req: NextRequest) {
     return siteRouteError('Invalid JSON body');
   }
 
-  const body = parsed.body as { orderedIds?: unknown };
-  const orderedIds = parseOrderedSiteIds(body.orderedIds);
+  const orderedIds = parseOrderedSiteIds(
+    parsed.body && typeof parsed.body === 'object' && 'orderedIds' in parsed.body
+      ? parsed.body.orderedIds
+      : undefined,
+  );
 
   if (!orderedIds) {
     return siteRouteError('orderedIds must be an array of site ids');
