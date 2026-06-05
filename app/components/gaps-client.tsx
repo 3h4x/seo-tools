@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gap-definitions';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
 import { Badge, FilterChipGroup, Notice, Surface, TextButton, TextLink } from '@/components/ui';
+import { Icons } from './icons';
 
 export interface SiteGap {
   gap: GapRecommendation;
@@ -217,7 +218,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
             </>
           ) : (
             <>
-              <div className="text-emerald-400 text-4xl mb-3">✓</div>
+              <span className="mx-auto mb-3 block w-fit text-emerald-400">{Icons.checkCircle}</span>
               <div className="text-white font-semibold">All clear!</div>
               <div className="text-neutral-500 text-sm mt-1">No SEO gaps detected across all sites.</div>
             </>
