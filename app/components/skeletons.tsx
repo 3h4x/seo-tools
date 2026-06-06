@@ -42,6 +42,16 @@ export function SkeletonSummaryRow({ count = 4 }: { count?: number }) {
   );
 }
 
+export function SkeletonChipRow({ count = 3 }: { count?: number }) {
+  return (
+    <div className="flex gap-2">
+      {[...Array(count)].map((_, i) => (
+        <Skeleton key={i} className="h-8 w-16" />
+      ))}
+    </div>
+  );
+}
+
 function SkeletonSiteCard() {
   return (
     <Surface className="space-y-4">
