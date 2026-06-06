@@ -1,4 +1,4 @@
-import { Badge, Notice, Surface, TextLink } from '@/components/ui';
+import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
 import { loadActionQueue, type ActionQueueItem } from '@/lib/actions';
 import { ACTION_KIND_STYLES, ACTION_PRIORITY_STYLES } from '@/lib/constants';
 import { DataTable, type DataTableColumn } from '../components/data-table';
@@ -61,8 +61,10 @@ export default async function ActionsPage() {
 
       {items.length === 0 ? (
         <Notice size="lg">
-          <p className="text-neutral-300 font-semibold">No ranked actions yet.</p>
-          <p className="text-sm text-neutral-500 mt-1">Add managed sites, snapshots, and audit data to populate the queue.</p>
+          <NoticeCenteredContent height="sm">
+            <p className="text-neutral-300 font-semibold">No ranked actions yet.</p>
+            <p className="text-sm text-neutral-500 mt-1">Add managed sites, snapshots, and audit data to populate the queue.</p>
+          </NoticeCenteredContent>
         </Notice>
       ) : (
         <Surface padding="none" className="overflow-x-auto">
