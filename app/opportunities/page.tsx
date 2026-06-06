@@ -8,7 +8,7 @@ import {
 } from '@/lib/opportunities';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFlag } from '@/lib/page-helpers';
-import { FilterChipGroup, Notice, Surface } from '@/components/ui';
+import { Badge, FilterChipGroup, Notice, Surface } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import TimeRange from '../components/time-range';
@@ -145,10 +145,10 @@ export default async function OpportunitiesPage({
         </Notice>
       ) : (
         <>
-          <div className="text-xs text-neutral-500">
+          <Badge size="xs" shape="rounded" className="border-transparent bg-transparent !px-0 text-neutral-500">
             Showing {top.length} of {allOpportunities.length} opportunities
             {siteFilter ? ` for ${siteFilter}` : ' across all sites'}
-          </div>
+          </Badge>
           <Surface padding="none" className="overflow-hidden">
             <DataTable
               columns={COLUMNS}
