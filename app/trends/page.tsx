@@ -1,4 +1,4 @@
-import { Badge, Notice, Surface, TextLink } from '@/components/ui';
+import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
 import { loadOrFlag, loadSyncOrFallback, loadSyncOrFlag } from '@/lib/page-helpers';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
@@ -51,21 +51,23 @@ export default async function TrendsPage({
           <h1 className="text-2xl font-bold text-white">Trends</h1>
           <p className="text-neutral-500 text-sm mt-1">Historical data over time</p>
         </div>
-        <Notice tone="warning" size="spacious" accent="left" className="rounded-lg text-center">
-          <span className="mx-auto mb-3 block w-fit text-amber-500 [&>svg]:size-12 [&>svg]:stroke-[1.5]">
-            {Icons.ctr}
-          </span>
-          <p className="text-amber-400 font-bold text-lg">No trend data yet</p>
-          <p className="text-neutral-500 text-sm mt-2 max-w-lg mx-auto">
-            Take snapshots to track SEO performance over time. Each snapshot captures Search Console + GA4 metrics and top-50 keyword rankings for all sites.
-          </p>
-          <Surface padding="sm" className="mt-4 !bg-neutral-800 max-w-md mx-auto text-left">
-            <p className="text-neutral-400 text-xs mb-2 font-semibold">Quick start:</p>
-            <div className="flex justify-center">
-              <SnapshotButton />
-            </div>
-            <p className="text-neutral-600 text-xs mt-3 text-center">Or run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> from the CLI. Charts appear after 2+ snapshots.</p>
-          </Surface>
+        <Notice tone="warning" size="spacious" accent="left" className="rounded-lg">
+          <NoticeCenteredContent className="h-auto">
+            <span className="mx-auto mb-3 block w-fit text-amber-500 [&>svg]:size-12 [&>svg]:stroke-[1.5]">
+              {Icons.ctr}
+            </span>
+            <p className="text-amber-400 font-bold text-lg">No trend data yet</p>
+            <p className="text-neutral-500 text-sm mt-2 max-w-lg mx-auto">
+              Take snapshots to track SEO performance over time. Each snapshot captures Search Console + GA4 metrics and top-50 keyword rankings for all sites.
+            </p>
+            <Surface padding="sm" className="mt-4 !bg-neutral-800 max-w-md mx-auto text-left">
+              <p className="text-neutral-400 text-xs mb-2 font-semibold">Quick start:</p>
+              <div className="flex justify-center">
+                <SnapshotButton />
+              </div>
+              <p className="text-neutral-600 text-xs mt-3 text-center">Or run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> from the CLI. Charts appear after 2+ snapshots.</p>
+            </Surface>
+          </NoticeCenteredContent>
         </Notice>
       </div>
     );
@@ -380,11 +382,13 @@ function KeywordsSection({
           <h2 className="text-lg font-bold text-white">Keyword History</h2>
           <p className="text-neutral-500 text-sm mt-1">Rank movement over time across tracked queries</p>
         </div>
-        <Notice tone="warning" size="spacious" accent="left" className="rounded-lg text-center">
-          <p className="text-amber-400 font-bold">No keyword history yet</p>
-          <p className="text-neutral-500 text-sm mt-2">
-            Run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> to start capturing per-keyword rank data.
-          </p>
+        <Notice tone="warning" size="spacious" accent="left" className="rounded-lg">
+          <NoticeCenteredContent className="h-auto">
+            <p className="text-amber-400 font-bold">No keyword history yet</p>
+            <p className="text-neutral-500 text-sm mt-2">
+              Run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> to start capturing per-keyword rank data.
+            </p>
+          </NoticeCenteredContent>
         </Notice>
       </section>
     );
