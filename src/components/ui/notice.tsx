@@ -11,6 +11,11 @@ interface NoticeProps extends HTMLAttributes<HTMLDivElement> {
   size?: NoticeSize;
 }
 
+interface NoticeCenteredContentProps extends HTMLAttributes<HTMLDivElement> {
+  children: ReactNode;
+  height?: 'sm' | 'md';
+}
+
 const TONE_CLASSES: Record<NoticeTone, string> = {
   warning: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
   info: 'border-blue-500/40 bg-blue-500/10 text-blue-200',
@@ -38,6 +43,11 @@ const LEFT_ACCENT_CLASSES: Record<NoticeTone, string> = {
   success: 'border-l-4 border-l-emerald-500',
 };
 
+const CENTERED_HEIGHT_CLASSES: Record<NonNullable<NoticeCenteredContentProps['height']>, string> = {
+  sm: 'h-32',
+  md: 'h-40',
+};
+
 export function Notice({
   children,
   accent = 'none',
@@ -53,6 +63,26 @@ export function Notice({
         TONE_CLASSES[tone],
         SIZE_CLASSES[size],
         accent === 'left' ? LEFT_ACCENT_CLASSES[tone] : undefined,
+        className,
+      ].filter(Boolean).join(' ')}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function NoticeCenteredContent({
+  children,
+  className,
+  height = 'md',
+  ...props
+}: NoticeCenteredContentProps) {
+  return (
+    <div
+      className={[
+        CENTERED_HEIGHT_CLASSES[height],
+        'flex flex-col items-center justify-center text-center',
         className,
       ].filter(Boolean).join(' ')}
       {...props}

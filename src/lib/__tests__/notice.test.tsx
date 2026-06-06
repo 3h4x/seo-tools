@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { Notice } from '../../../src/components/ui/notice';
+import { Notice, NoticeCenteredContent } from '../../../src/components/ui/notice';
 
 describe('Notice', () => {
   it('renders shared in-page status banner styling', () => {
@@ -76,5 +76,16 @@ describe('Notice', () => {
     );
 
     expect(html).toContain('p-8');
+  });
+
+  it('supports centered notice content panels', () => {
+    const html = renderToStaticMarkup(
+      <NoticeCenteredContent height="sm">
+        Page Queries Unavailable
+      </NoticeCenteredContent>
+    );
+
+    expect(html).toContain('h-32');
+    expect(html).toContain('flex flex-col items-center justify-center text-center');
   });
 });

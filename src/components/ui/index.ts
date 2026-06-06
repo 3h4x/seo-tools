@@ -3,7 +3,7 @@ export { ConfiguredNotice } from './configured-notice';
 export { FilterChipGroup } from './filter-chip-group';
 export { FormButton } from './form-button';
 export { FormCheckbox, FormInput, FormSelect, FormTextarea } from './form-control';
-export { Notice } from './notice';
+export { Notice, NoticeCenteredContent } from './notice';
 export { SegmentedControl } from './segmented-control';
 export { Skeleton } from './skeleton';
 export { Spinner } from './spinner';
