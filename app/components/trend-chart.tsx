@@ -12,7 +12,7 @@ import {
 import ClientChart from './client-chart';
 import { formatDateShort } from '@/lib/format';
 import { CHART_NEUTRALS } from '@/lib/constants';
-import { Notice } from '@/components/ui';
+import { Notice, NoticeCenteredContent } from '@/components/ui';
 
 interface TrendDataPoint {
   date: string;
@@ -58,10 +58,12 @@ export default function TrendChart({
     return (
       <Notice
         size="none"
-        className="flex items-center justify-center rounded border-neutral-800 bg-transparent text-xs text-neutral-600"
+        className="rounded border-neutral-800 bg-transparent text-xs text-neutral-600"
         style={{ height }}
       >
-        Need 2+ snapshots for charts
+        <NoticeCenteredContent className="h-full">
+          Need 2+ snapshots for charts
+        </NoticeCenteredContent>
       </Notice>
     );
   }
