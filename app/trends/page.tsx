@@ -1,4 +1,4 @@
-import { Notice, Surface, TextLink } from '@/components/ui';
+import { Badge, Notice, Surface, TextLink } from '@/components/ui';
 import { loadOrFlag, loadSyncOrFallback, loadSyncOrFlag } from '@/lib/page-helpers';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
@@ -206,7 +206,9 @@ function OverviewTab({
               <div className="flex items-center gap-3">
                 <span className="text-white font-semibold">{site.name}</span>
                 <span className="text-neutral-600 text-xs">{site.domain}</span>
-                <span className="text-neutral-700 text-[10px] ml-auto">{ga4Trends.length || scTrends.length} data points</span>
+                <Badge size="xs" shape="rounded" className="ml-auto border-transparent bg-transparent !px-0 text-neutral-700">
+                  {ga4Trends.length || scTrends.length} data points
+                </Badge>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {ga4Trends.length > 0 && (
