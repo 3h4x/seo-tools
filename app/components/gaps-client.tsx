@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gap-definitions';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
-import { Badge, FilterChipGroup, Notice, Surface, TextButton, TextLink } from '@/components/ui';
+import { Badge, FilterChipGroup, Notice, NoticeCenteredContent, Surface, TextButton, TextLink } from '@/components/ui';
 import { Icons } from './icons';
 
 export interface SiteGap {
@@ -201,28 +201,30 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
       })}
 
       {filtered.length === 0 && (
-        <Notice size="spacious" className="text-center">
-          {isFiltered ? (
-            <>
-              <div className="text-neutral-500 text-4xl mb-3">⊘</div>
-              <div className="text-white font-semibold">No matches</div>
-              <div className="text-neutral-500 text-sm mt-1">
-                No gaps match the current filters.{' '}
-                <TextButton
-                  onClick={() => { setFilterSite(null); setFilterCategory(null); setFilterSeverity(null); }}
-                  className="!text-sm underline"
-                >
-                  Clear filters
-                </TextButton>
-              </div>
-            </>
-          ) : (
-            <>
-              <span className="mx-auto mb-3 block w-fit text-emerald-400">{Icons.checkCircle}</span>
-              <div className="text-white font-semibold">All clear!</div>
-              <div className="text-neutral-500 text-sm mt-1">No SEO gaps detected across all sites.</div>
-            </>
-          )}
+        <Notice size="spacious">
+          <NoticeCenteredContent height="sm">
+            {isFiltered ? (
+              <>
+                <div className="text-neutral-500 text-4xl mb-3">⊘</div>
+                <div className="text-white font-semibold">No matches</div>
+                <div className="text-neutral-500 text-sm mt-1">
+                  No gaps match the current filters.{' '}
+                  <TextButton
+                    onClick={() => { setFilterSite(null); setFilterCategory(null); setFilterSeverity(null); }}
+                    className="!text-sm underline"
+                  >
+                    Clear filters
+                  </TextButton>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="mx-auto mb-3 block w-fit text-emerald-400">{Icons.checkCircle}</span>
+                <div className="text-white font-semibold">All clear!</div>
+                <div className="text-neutral-500 text-sm mt-1">No SEO gaps detected across all sites.</div>
+              </>
+            )}
+          </NoticeCenteredContent>
         </Notice>
       )}
     </div>
