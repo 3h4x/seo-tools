@@ -8,7 +8,7 @@ import {
 } from '@/lib/opportunities';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFlag } from '@/lib/page-helpers';
-import { Badge, FilterChipGroup, Notice, Surface } from '@/components/ui';
+import { Badge, FilterChipGroup, Notice, NoticeCenteredContent, Surface } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import TimeRange from '../components/time-range';
@@ -138,10 +138,19 @@ export default async function OpportunitiesPage({
           accent={sitesResult.failed ? 'left' : 'none'}
           className={sitesResult.failed
             ? 'rounded-lg text-neutral-500'
-            : 'rounded-lg text-center text-neutral-500'}
+            : 'rounded-lg text-neutral-500'}
         >
-          <p className={`mb-1 ${sitesResult.failed ? 'font-semibold text-red-400' : 'font-medium'}`}>{emptyTitle}</p>
-          <p className="text-sm">{emptyMessage}</p>
+          {sitesResult.failed ? (
+            <>
+              <p className="mb-1 font-semibold text-red-400">{emptyTitle}</p>
+              <p className="text-sm">{emptyMessage}</p>
+            </>
+          ) : (
+            <NoticeCenteredContent className="h-auto">
+              <p className="mb-1 font-medium">{emptyTitle}</p>
+              <p className="text-sm">{emptyMessage}</p>
+            </NoticeCenteredContent>
+          )}
         </Notice>
       ) : (
         <>
