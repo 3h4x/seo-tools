@@ -5,7 +5,7 @@ import { loadOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
 import { NoSitesNotice } from '../../components/no-sites-notice';
 import { PartialFailureBanner } from '../../components/partial-failure-banner';
-import { Notice, Surface, TextLink } from '@/components/ui';
+import { Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -49,10 +49,12 @@ export default async function CrossLinksPage() {
         <PartialFailureBanner failures={partialFailures} />
         {sitesResult.failed ? (
           <Notice tone="danger" size="lg" accent="left" className="rounded-lg" role="alert">
-            <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
-            <p className="text-neutral-500 text-sm mt-2">
-              The sites table failed to read. Check the server logs and use Refresh to retry.
-            </p>
+            <NoticeCenteredContent className="h-auto items-start text-left">
+              <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
+              <p className="text-neutral-500 text-sm mt-2">
+                The sites table failed to read. Check the server logs and use Refresh to retry.
+              </p>
+            </NoticeCenteredContent>
           </Notice>
         ) : (
           <NoSitesNotice variant="inline" />
