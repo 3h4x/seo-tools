@@ -74,10 +74,12 @@ export default async function AlertsPage() {
 
       {eventsResult.failed ? (
         <Notice tone="danger" size="lg" accent="left">
-          <p className="font-semibold text-red-400">Couldn&apos;t load alert history</p>
-          <p className="mt-2 text-sm text-neutral-500">
-            The alert events table failed to read. Check the server logs and use Refresh to retry.
-          </p>
+          <NoticeCenteredContent className="h-auto items-start text-left">
+            <p className="font-semibold text-red-400">Couldn&apos;t load alert history</p>
+            <p className="mt-2 text-sm text-neutral-500">
+              The alert events table failed to read. Check the server logs and use Refresh to retry.
+            </p>
+          </NoticeCenteredContent>
         </Notice>
       ) : events.length === 0 ? (
         <Notice size="lg" className="text-sm text-neutral-500">
