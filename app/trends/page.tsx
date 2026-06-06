@@ -438,7 +438,9 @@ function KeywordsSection({
                     {site.name}
                   </TextLink>
                   <span className="text-neutral-600 text-xs">{site.domain}</span>
-                  <span className="text-neutral-700 text-[10px] ml-auto">{deltas.length} tracked queries</span>
+                  <Badge size="xs" shape="rounded" className="ml-auto border-transparent bg-transparent !px-0 text-neutral-700">
+                    {deltas.length} tracked queries
+                  </Badge>
                 </div>
 
                 {chartData.length >= 2 && (
