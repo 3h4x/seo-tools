@@ -16,7 +16,7 @@ import { GapsClient, type SiteGap } from '../components/gaps-client';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
-import { Badge, Notice, Surface, TextLink } from '@/components/ui';
+import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
@@ -147,10 +147,12 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           size="lg"
           accent="left"
         >
-          <p className="text-amber-400 font-semibold">No audit data available</p>
-          <p className="text-neutral-500 text-sm mt-2">
-            Audit results could not be loaded for the configured sites. Use Refresh to retry the cached checks.
-          </p>
+          <NoticeCenteredContent className="h-auto items-start text-left">
+            <p className="text-amber-400 font-semibold">No audit data available</p>
+            <p className="text-neutral-500 text-sm mt-2">
+              Audit results could not be loaded for the configured sites. Use Refresh to retry the cached checks.
+            </p>
+          </NoticeCenteredContent>
         </Notice>
       </div>
     );
