@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { getPerformanceSiteData } from '@/lib/performance-site';
-import { Notice, Surface, TextLink } from '@/components/ui';
+import { Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
 import {
   CWV_METRIC_ORDER,
   PERF_VALID_DAYS,
@@ -110,13 +110,15 @@ export default async function PerfSiteDetail({
       )}
 
       {!hasOverallMetrics && !propagating && (
-        <Notice className="space-y-1">
-          <div className="font-semibold text-white">No Core Web Vitals data yet</div>
-          <div className="text-xs text-neutral-500">
-            No RUM events were queryable for the last {days} days, and PageSpeed Insights returned no CrUX
-            or Lighthouse metrics for <span className="font-mono text-neutral-400">{perf.url}</span>.
-            Use the setup guide below to wire GTM and GA4, then refresh after events start flowing.
-          </div>
+        <Notice>
+          <NoticeCenteredContent height="sm" className="gap-1">
+            <div className="font-semibold text-white">No Core Web Vitals data yet</div>
+            <div className="max-w-2xl text-xs text-neutral-500">
+              No RUM events were queryable for the last {days} days, and PageSpeed Insights returned no CrUX
+              or Lighthouse metrics for <span className="font-mono text-neutral-400">{perf.url}</span>.
+              Use the setup guide below to wire GTM and GA4, then refresh after events start flowing.
+            </div>
+          </NoticeCenteredContent>
         </Notice>
       )}
 
