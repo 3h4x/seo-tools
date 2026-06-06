@@ -1,4 +1,5 @@
 import type { KeywordDelta } from '@/lib/keyword-history';
+import { Badge } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 
 const KEYWORD_COLUMNS: DataTableColumn[] = [
@@ -39,10 +40,10 @@ function KwTrendArrow({ trend }: { trend: KeywordDelta['trend'] }) {
   }
   if (trend === 'new') {
     return (
-      <span className="text-blue-400 text-[10px]">
+      <Badge className="!border-0 !px-0 !py-0 !text-[10px] !font-normal text-blue-400">
         <span aria-hidden="true">new</span>
         <span className="sr-only">New keyword</span>
-      </span>
+      </Badge>
     );
   }
   return (
