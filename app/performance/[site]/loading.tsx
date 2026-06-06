@@ -1,5 +1,5 @@
 import { Skeleton } from '@/components/ui';
-import { SkeletonHeader, SkeletonSummaryRow, SkeletonTable } from '../../components/skeletons';
+import { SkeletonChart, SkeletonHeader, SkeletonSummaryRow, SkeletonTable } from '../../components/skeletons';
 
 export default function Loading() {
   return (
@@ -16,10 +16,10 @@ export default function Loading() {
       </div>
       <SkeletonSummaryRow count={5} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
+        <SkeletonChart />
+        <SkeletonChart />
       </div>
-      <Skeleton className="h-64 w-full" />
+      <SkeletonChart />
       <SkeletonTable rows={6} />
     </div>
   );
