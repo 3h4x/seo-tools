@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Badge, ConfiguredNotice, FormButton, FormInput, Notice, Skeleton, Spinner } from '@/components/ui';
+import { Badge, ConfiguredNotice, FormButton, FormInput, Notice, Skeleton, Spinner, Surface } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -44,7 +44,7 @@ export async function readPagespeedConfigResponse(response: Response): Promise<S
 
 function PagespeedKeyFormSkeleton() {
   return (
-    <div className="space-y-3 max-w-2xl" aria-label="Loading PageSpeed config">
+    <Surface padding="sm" className="space-y-3 max-w-2xl" aria-label="Loading PageSpeed config">
       <div className="flex items-center gap-3">
         <Skeleton className="h-5 w-56" />
         <Skeleton className="h-5 w-28 rounded-full" />
@@ -55,7 +55,7 @@ function PagespeedKeyFormSkeleton() {
         <Skeleton className="h-9 w-16" />
         <Skeleton className="h-9 w-28" />
       </div>
-    </div>
+    </Surface>
   );
 }
 
