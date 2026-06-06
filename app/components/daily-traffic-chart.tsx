@@ -142,9 +142,9 @@ export default function DailyTrafficChart({ days }: { days: number }) {
   if (collectedDates.length < 2) {
     return (
       <Notice size="panel" className="rounded-lg">
-        <div className="h-40 flex items-center justify-center text-neutral-600 text-sm">
+        <NoticeCenteredContent className="text-neutral-600 text-sm">
           Need 2+ days of collected data. Run the daily collector first.
-        </div>
+        </NoticeCenteredContent>
       </Notice>
     );
   }
