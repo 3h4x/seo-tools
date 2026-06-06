@@ -89,7 +89,7 @@ export function validateAndNormalizeSiteInput(
   raw: unknown,
   existingSites: Site[],
 ): { errors: SiteFieldErrors; normalized: null } | { errors: null; normalized: NormalizedSiteInput } {
-  const body = raw as Record<string, unknown>;
+  const body = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
   const errors: SiteFieldErrors = {};
 
   const id = typeof body.id === 'string' ? body.id.trim() : '';
