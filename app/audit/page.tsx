@@ -408,13 +408,14 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             tone="success"
             size="spacious"
             accent="left"
-            className="text-center"
           >
-            <span className="mx-auto mb-3 block w-fit text-emerald-500">{Icons.checkCircle}</span>
-            <p className="text-emerald-400 font-bold text-lg">All clear — no content decay</p>
-            <p className="text-neutral-500 text-sm mt-2 max-w-md mx-auto">
-              Every page across all {decayResults.length} sites is maintaining or growing traffic over the last {period} days.
-            </p>
+            <NoticeCenteredContent className="h-auto">
+              <span className="mx-auto mb-3 block w-fit text-emerald-500">{Icons.checkCircle}</span>
+              <p className="text-emerald-400 font-bold text-lg">All clear — no content decay</p>
+              <p className="text-neutral-500 text-sm mt-2 max-w-md mx-auto">
+                Every page across all {decayResults.length} sites is maintaining or growing traffic over the last {period} days.
+              </p>
+            </NoticeCenteredContent>
           </Notice>
         ) : (
           <Surface padding="none" className="overflow-hidden">
