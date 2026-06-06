@@ -1,4 +1,4 @@
-import { Notice, TextLink } from '@/components/ui';
+import { Notice, NoticeCenteredContent, TextLink } from '@/components/ui';
 import { hasGoogleCredentials } from '@/lib/google-auth';
 
 interface Props {
@@ -30,8 +30,10 @@ export function NoSitesNotice({ variant = 'card' }: Props) {
   }
 
   return (
-    <Notice size="spacious" className="rounded bg-transparent text-center text-sm text-neutral-500">
-      {content}
+    <Notice size="spacious" className="rounded bg-transparent">
+      <NoticeCenteredContent className="h-auto text-sm text-neutral-500">
+        {content}
+      </NoticeCenteredContent>
     </Notice>
   );
 }
