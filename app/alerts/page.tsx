@@ -3,7 +3,7 @@ import { dbGetAlertEvents } from '@/lib/db';
 import { formatAlertMetricValue, getAlertMetricLabel } from '@/lib/alerts';
 import { loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
-import { Badge, Notice, Surface, TextLink } from '@/components/ui';
+import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 
@@ -81,7 +81,9 @@ export default async function AlertsPage() {
         </Notice>
       ) : events.length === 0 ? (
         <Notice size="lg" className="text-sm text-neutral-500">
-          No alerts have fired yet. Add rules in <TextLink href="/config" size="inherit" variant="inherit" className="text-sm text-white underline">Config</TextLink> and run snapshots to populate history.
+          <NoticeCenteredContent className="h-auto items-start text-left">
+            No alerts have fired yet. Add rules in <TextLink href="/config" size="inherit" variant="inherit" className="text-sm text-white underline">Config</TextLink> and run snapshots to populate history.
+          </NoticeCenteredContent>
         </Notice>
       ) : (
         <Surface padding="none" className="overflow-x-auto">
