@@ -141,10 +141,10 @@ export default async function OpportunitiesPage({
             : 'rounded-lg text-neutral-500'}
         >
           {sitesResult.failed ? (
-            <>
+            <NoticeCenteredContent className="h-auto items-start text-left">
               <p className="mb-1 font-semibold text-red-400">{emptyTitle}</p>
               <p className="text-sm">{emptyMessage}</p>
-            </>
+            </NoticeCenteredContent>
           ) : (
             <NoticeCenteredContent className="h-auto">
               <p className="mb-1 font-medium">{emptyTitle}</p>
