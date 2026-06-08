@@ -2,7 +2,7 @@ import type { CheckStatus, CheckResult } from '@/lib/audit';
 import type { GapRecommendation } from '@/lib/gap-definitions';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
 import { STATUS_COLORS } from '@/lib/constants';
-import { Badge, Notice, Surface } from '@/components/ui';
+import { Badge, Disclosure, Notice, Surface } from '@/components/ui';
 
 const statusColors: Record<CheckStatus, string> = {
   pass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -58,10 +58,13 @@ export function Recommendation({ gap }: { gap: GapRecommendation }) {
           ))}
         </div>
       )}
-      <details className="mt-2">
-        <summary className="text-neutral-500 text-xs cursor-pointer hover:text-neutral-300 transition-colors">How to fix</summary>
+      <Disclosure
+        className="mt-2"
+        summary="How to fix"
+        summaryClassName="text-neutral-500 text-xs cursor-pointer hover:text-neutral-300 transition-colors"
+      >
         <pre className="text-neutral-400 text-xs font-mono mt-1.5 whitespace-pre-wrap">{gap.hint}</pre>
-      </details>
+      </Disclosure>
     </Notice>
   );
 }
