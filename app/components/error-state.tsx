@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { FormButton, Notice, NoticeCenteredContent } from '@/components/ui';
+import { Disclosure, FormButton, Notice, NoticeCenteredContent } from '@/components/ui';
 
 interface ErrorStateProps {
   error: Error & { digest?: string };
@@ -24,13 +24,16 @@ export function ErrorState({ error, reset, title = 'Something went wrong', descr
             {description ?? 'The page failed to load. This is usually a transient API error — try again.'}
           </p>
         </div>
-        <details className="text-xs text-neutral-500">
-          <summary className="cursor-pointer hover:text-neutral-300">Error detail</summary>
+        <Disclosure
+          className="text-xs text-neutral-500"
+          summary="Error detail"
+          summaryClassName="cursor-pointer hover:text-neutral-300"
+        >
           <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] text-neutral-400">
             {error.message || 'Unknown error'}
             {error.digest ? `\n\ndigest: ${error.digest}` : ''}
           </pre>
-        </details>
+        </Disclosure>
         <FormButton variant="primary" size="sm" onClick={reset}>
           Try again
         </FormButton>
