@@ -42,11 +42,19 @@ export function SkeletonSummaryRow({ count = 4 }: { count?: number }) {
   );
 }
 
-export function SkeletonChipRow({ count = 3 }: { count?: number }) {
+export function SkeletonChipRow({
+  className = 'gap-2',
+  count = 3,
+  itemClassName = 'h-8 w-16',
+}: {
+  className?: string;
+  count?: number;
+  itemClassName?: string;
+}) {
   return (
-    <div className="flex gap-2">
+    <div className={`flex ${className}`}>
       {[...Array(count)].map((_, i) => (
-        <Skeleton key={i} className="h-8 w-16" />
+        <Skeleton key={i} className={itemClassName} />
       ))}
     </div>
   );
