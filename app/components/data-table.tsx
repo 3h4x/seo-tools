@@ -1,7 +1,9 @@
 import { Fragment, type HTMLAttributes, type ReactNode } from 'react';
+import { Surface } from '@/components/ui';
 
 const FONT_WEIGHT_CLASS_RE = /\bfont-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)\b/;
 const TEXT_ALIGN_CLASS_RE = /\btext-(?:left|center|right|justify|start|end)\b/;
+const DEFAULT_CONTAINER_CLASS_NAME = 'overflow-hidden rounded border border-neutral-800';
 
 function joinClassNames(...parts: Array<string | undefined>) {
   return [...new Set(parts.flatMap((part) => (part ? part.split(/\s+/) : [])))].join(' ');
@@ -53,7 +55,7 @@ export function DataTable({
   rowKeys,
   monospaceCells = true,
   tableClassName = 'w-full text-sm',
-  containerClassName = 'overflow-hidden rounded border border-neutral-800',
+  containerClassName = DEFAULT_CONTAINER_CLASS_NAME,
   headClassName,
   headRowClassName = 'border-b border-neutral-800 text-neutral-500',
   bodyClassName = 'divide-y divide-neutral-800',
@@ -93,81 +95,93 @@ export function DataTable({
     );
   };
 
-  return (
-    <div className={containerClassName}>
-      <table className={tableClassName}>
-        {caption != null && <caption className="sr-only">{caption}</caption>}
-        <thead className={headClassName}>
-          <tr className={headRowClassName}>
-            {columns.map((col, i) => (
-              <th
-                key={col.key ?? `${String(col.label)}-${i}`}
-                scope="col"
-                aria-sort={col.ariaSort}
-                className={getHeaderClassName(col)}
-              >
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className={bodyClassName}>
-          {rows.map((cells, i) => {
-            const key = rowKeys?.[i] ?? i;
-            const rowProps = getRowProps?.(cells, i);
-            const baseRowClassName = typeof rowClassName === 'function' ? rowClassName(cells, i) : rowClassName;
-            const row = (
-              <tr
-                key={key}
-                {...rowProps}
-                className={joinClassNames(baseRowClassName, rowProps?.className)}
-              >
-                {cells.map((cell, j) => {
-                  const column = columns[j];
-                  const className = getCellClassName(column);
+  const table = (
+    <table className={tableClassName}>
+      {caption != null && <caption className="sr-only">{caption}</caption>}
+      <thead className={headClassName}>
+        <tr className={headRowClassName}>
+          {columns.map((col, i) => (
+            <th
+              key={col.key ?? `${String(col.label)}-${i}`}
+              scope="col"
+              aria-sort={col.ariaSort}
+              className={getHeaderClassName(col)}
+            >
+              {col.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody className={bodyClassName}>
+        {rows.map((cells, i) => {
+          const key = rowKeys?.[i] ?? i;
+          const rowProps = getRowProps?.(cells, i);
+          const baseRowClassName = typeof rowClassName === 'function' ? rowClassName(cells, i) : rowClassName;
+          const row = (
+            <tr
+              key={key}
+              {...rowProps}
+              className={joinClassNames(baseRowClassName, rowProps?.className)}
+            >
+              {cells.map((cell, j) => {
+                const column = columns[j];
+                const className = getCellClassName(column);
 
-                  if (column?.rowHeader) {
-                    return (
-                      <th
-                        key={j}
-                        scope="row"
-                        className={className}
-                      >
-                        {cell}
-                      </th>
-                    );
-                  }
-
+                if (column?.rowHeader) {
                   return (
-                    <td
+                    <th
                       key={j}
+                      scope="row"
                       className={className}
                     >
                       {cell}
-                    </td>
+                    </th>
                   );
-                })}
-              </tr>
-            );
-            const expandedRow = expandedRows?.[i];
+                }
 
-            if (expandedRow == null) {
-              return row;
-            }
-
-            return (
-              <Fragment key={key}>
-                {row}
-                <tr id={expandedRowIds?.[i]} className={expandedRowClassName}>
-                  <td colSpan={columns.length} className={expandedCellClassName}>
-                    {expandedRow}
+                return (
+                  <td
+                    key={j}
+                    className={className}
+                  >
+                    {cell}
                   </td>
-                </tr>
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+                );
+              })}
+            </tr>
+          );
+          const expandedRow = expandedRows?.[i];
+
+          if (expandedRow == null) {
+            return row;
+          }
+
+          return (
+            <Fragment key={key}>
+              {row}
+              <tr id={expandedRowIds?.[i]} className={expandedRowClassName}>
+                <td colSpan={columns.length} className={expandedCellClassName}>
+                  {expandedRow}
+                </td>
+              </tr>
+            </Fragment>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
+  if (containerClassName === DEFAULT_CONTAINER_CLASS_NAME) {
+    return (
+      <Surface padding="none" className="overflow-hidden !rounded">
+        {table}
+      </Surface>
+    );
+  }
+
+  return (
+    <div className={containerClassName}>
+      {table}
     </div>
   );
 }
