@@ -7,7 +7,7 @@ import PagespeedKeyForm from '../components/pagespeed-key-form';
 import SitesManager from '../components/sites-manager';
 import AlertDeliveryForm from '../components/alert-delivery-form';
 import AlertRulesManager from '../components/alert-rules-manager';
-import { SkeletonHeader } from '../components/skeletons';
+import { SkeletonChipRow, SkeletonHeader } from '../components/skeletons';
 import { Skeleton, Surface } from '@/components/ui';
 import type { OperationalStatus } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -21,10 +21,7 @@ function FormSectionSkeleton({ compact = false }: { compact?: boolean }) {
       </div>
       <Skeleton className="h-4 w-full max-w-xl" />
       <Skeleton className={compact ? 'h-11 w-full' : 'h-48 w-full'} />
-      <div className="flex gap-2">
-        <Skeleton className="h-9 w-20" />
-        <Skeleton className="h-9 w-24" />
-      </div>
+      <SkeletonChipRow count={2} itemClassName="h-9 w-20 first:w-20 last:w-24" />
     </section>
   );
 }
