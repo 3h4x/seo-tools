@@ -3,6 +3,7 @@ import { getCrossLinkMatrix, type CrossLinkSourceMatrix, type CrossLinkSourceSta
 import { CROSS_LINK_CELL_STYLES, CROSS_LINK_SUMMARY_STYLES } from '@/lib/constants';
 import { loadOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
+import { MetricCard } from '../../components/metric-card';
 import { NoSitesNotice } from '../../components/no-sites-notice';
 import { PartialFailureBanner } from '../../components/partial-failure-banner';
 import { Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
@@ -149,10 +150,13 @@ function SummaryCard(
   { label, value, styles }: { label: string; value: number; styles: { accent: string; value: string } },
 ) {
   return (
-    <Surface padding="sm" className={`border-l-4 ${styles.accent}`}>
-      <div className="text-neutral-500 text-xs uppercase tracking-wider">{label}</div>
-      <div className={`text-2xl font-bold font-mono mt-2 ${styles.value}`}>{value}</div>
-    </Surface>
+    <MetricCard
+      label={label}
+      current={value}
+      value={value.toLocaleString()}
+      accent={styles.accent}
+      valueColor={styles.value}
+    />
   );
 }
 
