@@ -69,9 +69,7 @@ function ExportButton({ data, filename, label = 'Export CSV' }: {
         </>
       ) : (
         <>
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="shrink-0">
-            <path d="M5 1v5.5M2.5 4.5L5 7l2.5-2.5M2 8.5h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <span className="shrink-0">{Icons.download}</span>
           {label}
         </>
       )}
