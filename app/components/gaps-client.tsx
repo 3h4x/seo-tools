@@ -54,11 +54,17 @@ function GapRow({ sg }: { sg: SiteGap }) {
           href={`/${encodeURIComponent(siteId)}`}
           size="inherit"
           variant="inherit"
-          className="shrink-0 rounded-md bg-neutral-800 px-3 py-1.5 text-right hover:bg-neutral-700"
+          className="shrink-0 hover:bg-neutral-700"
           title={`View ${domain} full audit`}
         >
-          <div className="text-white text-xs font-semibold">{siteName}</div>
-          <div className="text-neutral-500 text-[10px]">{domain}</div>
+          <Badge
+            size="md"
+            shape="rounded"
+            className="flex-col items-end border-transparent bg-neutral-800 !py-1.5 text-right hover:bg-neutral-700"
+          >
+            <span className="block text-white text-xs font-semibold">{siteName}</span>
+            <span className="block text-neutral-500 text-[10px]">{domain}</span>
+          </Badge>
         </TextLink>
       </div>
     </Surface>
