@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
 import { loadOrFlag, loadSyncOrFallback, loadSyncOrFlag } from '@/lib/page-helpers';
 import { NoSitesNotice } from '../components/no-sites-notice';
@@ -212,9 +213,7 @@ function OverviewTab({
               <div className="flex items-center gap-3">
                 <span className="text-white font-semibold">{site.name}</span>
                 <span className="text-neutral-600 text-xs">{site.domain}</span>
-                <Badge size="xs" shape="rounded" className="ml-auto border-transparent bg-transparent !px-0 text-neutral-700">
-                  {ga4Trends.length || scTrends.length} data points
-                </Badge>
+                <MutedCountBadge>{ga4Trends.length || scTrends.length} data points</MutedCountBadge>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {ga4Trends.length > 0 && (
@@ -442,9 +441,7 @@ function KeywordsSection({
                     {site.name}
                   </TextLink>
                   <span className="text-neutral-600 text-xs">{site.domain}</span>
-                  <Badge size="xs" shape="rounded" className="ml-auto border-transparent bg-transparent !px-0 text-neutral-700">
-                    {deltas.length} tracked queries
-                  </Badge>
+                  <MutedCountBadge>{deltas.length} tracked queries</MutedCountBadge>
                 </div>
 
                 {chartData.length >= 2 && (
@@ -506,5 +503,13 @@ function MetricCell({ label, value, color }: { label: string; value: string; col
       <div className="text-neutral-500 text-[10px] uppercase tracking-wider mb-0.5">{label}</div>
       <div className={`${color} font-mono text-sm font-semibold`}>{value}</div>
     </div>
+  );
+}
+
+function MutedCountBadge({ children }: { children: ReactNode }) {
+  return (
+    <Badge size="xs" shape="rounded" className="ml-auto border-transparent bg-transparent !px-0 text-neutral-700">
+      {children}
+    </Badge>
   );
 }
