@@ -16,6 +16,7 @@ import { formatDateShort } from '@/lib/format';
 import { CHART_NEUTRALS, METRIC_COLORS } from '@/lib/constants';
 import { todayDateOnly } from '@/lib/date-only';
 import { Notice, NoticeCenteredContent, SegmentedControl, Skeleton, Surface, ToggleButtonGroup } from '@/components/ui';
+import { SkeletonChipRow } from './skeletons';
 
 const METRICS = ['views', 'users', 'clicks', 'impressions'] as const;
 const METRIC_OPTIONS = METRICS.map(metric => ({
@@ -58,11 +59,7 @@ function DailyTrafficSkeleton() {
         <Skeleton className="h-8 w-24" />
       </div>
       <Skeleton className="h-80 w-full" />
-      <div className="flex flex-wrap gap-2">
-        {[...Array(4)].map((_, index) => (
-          <Skeleton key={index} className="h-5 w-24 rounded-full" />
-        ))}
-      </div>
+      <SkeletonChipRow className="flex-wrap gap-2" count={4} itemClassName="h-5 w-24 rounded-full" />
     </Surface>
   );
 }
