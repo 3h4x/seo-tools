@@ -33,7 +33,7 @@ import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
 import { ProviderErrorBadge } from '../components/provider-error-badge';
 import { DataTable, type DataTableColumn } from '../components/data-table';
-import { Badge, Notice, Surface, TextLink } from '@/components/ui';
+import { Badge, Disclosure, Notice, Surface, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -749,10 +749,11 @@ export default async function SiteDashboardPage({
                     )}
                   </div>
                   {link.brokenLinks.length > 0 && (
-                    <details className="mt-3">
-                      <summary className="cursor-pointer text-xs text-red-400 font-mono">
-                        Show broken internal URLs
-                      </summary>
+                    <Disclosure
+                      className="mt-3"
+                      summary="Show broken internal URLs"
+                      summaryClassName="cursor-pointer text-xs text-red-400 font-mono"
+                    >
                       <div className="mt-2 space-y-1">
                         {link.brokenLinks.map((brokenLink) => (
                           <div key={`${link.page}-${brokenLink.url}`} className="text-[11px] font-mono text-neutral-500 break-all">
@@ -763,7 +764,7 @@ export default async function SiteDashboardPage({
                           </div>
                         ))}
                       </div>
-                    </details>
+                    </Disclosure>
                   )}
                 </Surface>
               ))}
