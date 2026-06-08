@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { GapRecommendation, GapSeverity, GapCategory } from '@/lib/gap-definitions';
 import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
-import { Badge, FilterChipGroup, Notice, NoticeCenteredContent, Surface, TextButton, TextLink } from '@/components/ui';
+import { Badge, Disclosure, FilterChipGroup, Notice, NoticeCenteredContent, Surface, TextButton, TextLink } from '@/components/ui';
 import { Icons } from './icons';
 
 export interface SiteGap {
@@ -40,15 +40,20 @@ function GapRow({ sg }: { sg: SiteGap }) {
               ))}
             </div>
           )}
-          <details className="mt-2 group">
-            <summary className="text-neutral-500 text-xs cursor-pointer hover:text-neutral-300 transition-colors list-none flex items-center gap-1">
-              <span className="inline-flex text-neutral-600 transition-transform group-open:rotate-90">{Icons.disclosure}</span>
-              <span>How to fix</span>
-            </summary>
+          <Disclosure
+            className="mt-2 group"
+            summaryClassName="text-neutral-500 text-xs cursor-pointer hover:text-neutral-300 transition-colors list-none flex items-center gap-1"
+            summary={(
+              <>
+                <span className="inline-flex text-neutral-600 transition-transform group-open:rotate-90">{Icons.disclosure}</span>
+                <span>How to fix</span>
+              </>
+            )}
+          >
             <pre className="text-neutral-400 text-xs font-mono mt-2 whitespace-pre-wrap bg-neutral-800 rounded p-3 overflow-x-auto">
               {gap.hint}
             </pre>
-          </details>
+          </Disclosure>
         </div>
         <TextLink
           href={`/${encodeURIComponent(siteId)}`}
