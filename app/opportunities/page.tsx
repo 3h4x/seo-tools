@@ -90,6 +90,8 @@ export default async function OpportunitiesPage({
       ? 'Enable Search Console for at least one managed site in Config to populate keyword opportunities.'
       : 'No queries ranking in positions 5-20 for the selected period. Try a longer date range.';
   const emptyNoticeTone = sitesResult.failed ? 'danger' : 'neutral';
+  const emptyContentClassName = sitesResult.failed ? 'h-auto items-start text-left' : 'h-auto';
+  const emptyTitleClassName = sitesResult.failed ? 'mb-1 font-semibold text-red-400' : 'mb-1 font-medium';
 
   const rows = top.map(({ domain, opportunity: o }) => [
     <span key="q" className="font-medium text-neutral-200">{o.query}</span>,
@@ -136,21 +138,12 @@ export default async function OpportunitiesPage({
           size="spacious"
           tone={emptyNoticeTone}
           accent={sitesResult.failed ? 'left' : 'none'}
-          className={sitesResult.failed
-            ? 'rounded-lg text-neutral-500'
-            : 'rounded-lg text-neutral-500'}
+          className="rounded-lg text-neutral-500"
         >
-          {sitesResult.failed ? (
-            <NoticeCenteredContent className="h-auto items-start text-left">
-              <p className="mb-1 font-semibold text-red-400">{emptyTitle}</p>
-              <p className="text-sm">{emptyMessage}</p>
-            </NoticeCenteredContent>
-          ) : (
-            <NoticeCenteredContent className="h-auto">
-              <p className="mb-1 font-medium">{emptyTitle}</p>
-              <p className="text-sm">{emptyMessage}</p>
-            </NoticeCenteredContent>
-          )}
+          <NoticeCenteredContent className={emptyContentClassName}>
+            <p className={emptyTitleClassName}>{emptyTitle}</p>
+            <p className="text-sm">{emptyMessage}</p>
+          </NoticeCenteredContent>
         </Notice>
       ) : (
         <>
