@@ -647,12 +647,14 @@ export default async function SiteDashboardPage({
           <CheckCard check={audit.ogImage} gaps={sections['ogImage']}>
             {audit.ogImage.url && (
               <div className="mt-3 space-y-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={audit.ogImage.url}
-                  alt={`OG image for ${site.domain}`}
-                  className="rounded border border-neutral-700 max-w-md w-full"
-                />
+                <Surface padding="none" className="max-w-md w-full overflow-hidden !rounded border-neutral-700">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={audit.ogImage.url}
+                    alt={`OG image for ${site.domain}`}
+                    className="w-full"
+                  />
+                </Surface>
                 <div className="space-y-1">
                   <p className="text-neutral-600 text-xs font-mono">URL: {audit.ogImage.url}</p>
                   {audit.ogImage.contentType && <p className="text-neutral-600 text-xs font-mono">Type: {audit.ogImage.contentType}</p>}
