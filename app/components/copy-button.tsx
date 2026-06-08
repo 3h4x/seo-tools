@@ -32,7 +32,7 @@ export function CopyButton({ text, label, className = '' }: CopyButtonProps) {
       hasIcon
       size="compact"
       variant={copied ? 'success' : 'muted'}
-      className={`gap-1 rounded font-medium ${className}`}
+      className={`font-medium ${className}`}
       title={`Copy ${label || 'to clipboard'}`}
     >
       <span className="sr-only" role="status" aria-live="polite">
