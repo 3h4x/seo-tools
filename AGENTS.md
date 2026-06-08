@@ -45,6 +45,7 @@ Use the **Config tab → Managed Sites** section to add, edit, delete, or discov
 - [x] DB-Managed Sites (sites stored in SQLite, Config UI for CRUD + discovery, no hardcoded domains)
 - [x] SA key stored in SQLite via Config tab (DB takes priority over env var)
 - [x] Skip checks per site — checkbox list in Config UI
+- [x] Performance Tab (Core Web Vitals via GA4 RUM with PSI fallback)
 - [x] Husky pre-commit hooks (lint + type-check + test)
 
 ## Google Service Account
@@ -70,6 +71,7 @@ Alternatively, set `GOOGLE_SA_KEY_JSON` as an environment variable (Config tab D
 - `/audit` — SEO health audit results per site (with "Last checked" timestamps)
 - `/audit/[site]` — Redirects to `/{site}` for detailed audit and analytics
 - `/trends` — Historical trend data from SQLite snapshots (SC + GA4 + audit scores)
+- `/performance` — Core Web Vitals overview (RUM via GA4 with PSI fallback per site)
 - `/config` — Service account key management + managed sites CRUD
 
 ## Audit Checks

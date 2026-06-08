@@ -238,6 +238,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const categoryOrder: GapCategory[] = ['crawlability', 'content', 'social', 'indexing', 'structured-data', 'performance', 'security'];
   const gapCategories = ([...new Set(allSiteGaps.map(sg => sg.gap.category))] as GapCategory[])
     .sort((a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b));
+  const highPriorityGapCount = allSiteGaps.filter(sg => sg.gap.severity === 'high').length;
 
   const allDecaying = decayResults.flatMap(r => r.decayingPages);
   const severeCount = allDecaying.filter(p => p.severity === 'severe').length;
@@ -380,8 +381,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             <h2 className="text-lg font-bold text-white">Gap Analysis</h2>
             <p className="text-neutral-500 text-sm mt-1">
               Cross-site SEO recommendations · {totalRecs} issues
-              {allSiteGaps.filter(sg => sg.gap.severity === 'high').length > 0 && (
-                <span className="text-red-400 ml-2">· {allSiteGaps.filter(sg => sg.gap.severity === 'high').length} high priority</span>
+              {highPriorityGapCount > 0 && (
+                <span className="text-red-400 ml-2">· {highPriorityGapCount} high priority</span>
               )}
             </p>
           </div>
