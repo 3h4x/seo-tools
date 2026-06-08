@@ -138,7 +138,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
         hasIcon
         className="text-left"
       >
-        <span className={`transition-transform text-neutral-600 ${isOpen ? 'rotate-90' : ''}`}>{Icons.disclosure}</span>
+        <span className={`inline-flex transition-transform text-neutral-600 ${isOpen ? 'rotate-90' : ''}`}>{Icons.disclosure}</span>
         <span className="text-neutral-300">{pagePathname}</span>
       </TextButton>,
       row.clicks.toLocaleString(),
