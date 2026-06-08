@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Notice, NoticeCenteredContent, Skeleton, Surface, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
+import { Icons } from './icons';
 import { PositionBadge } from './position-badge';
 import type { SCQueryRow, PageQueryResult } from '@/lib/search-console';
 
@@ -137,7 +138,7 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
         hasIcon
         className="text-left"
       >
-        <span aria-hidden="true" className={`transition-transform text-neutral-600 text-[10px] ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+        <span className={`transition-transform text-neutral-600 ${isOpen ? 'rotate-90' : ''}`}>{Icons.disclosure}</span>
         <span className="text-neutral-300">{pagePathname}</span>
       </TextButton>,
       row.clicks.toLocaleString(),

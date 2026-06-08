@@ -82,6 +82,11 @@ export const Icons = {
       <path d="M5 21h14" />
     </svg>
   ),
+  disclosure: (
+    <svg aria-hidden="true" className="size-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  ),
   sortInactive: (
     <svg aria-hidden="true" className="inline ml-1 opacity-25" width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
       <path d="M5 2l3 3H2l3-3zm0 6L2 5h6L5 8z" />
