@@ -7,6 +7,7 @@ import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
 import { PerformanceSourceBadge } from './performance-source-badge';
 import { ProviderErrorBadge } from './provider-error-badge';
+import { Icons } from './icons';
 import { formatBounce, formatDuration } from '@/lib/format';
 import type { PerformanceSource } from '@/lib/performance-site';
 
@@ -41,18 +42,8 @@ const COLUMNS: { key: SortKey; label: string; defaultDir: 'asc' | 'desc'; classN
 ];
 
 function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
-  if (!active) return (
-    <svg aria-hidden="true" className="inline ml-1 opacity-25" width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-      <path d="M5 2l3 3H2l3-3zm0 6L2 5h6L5 8z" />
-    </svg>
-  );
-  return (
-    <svg aria-hidden="true" className="inline ml-1 text-emerald-400" width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-      {dir === 'desc'
-        ? <path d="M2 3h6L5 7 2 3z" />
-        : <path d="M2 7h6L5 3l-3 4z" />}
-    </svg>
-  );
+  if (!active) return Icons.sortInactive;
+  return dir === 'desc' ? Icons.sortDesc : Icons.sortAsc;
 }
 
 export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
