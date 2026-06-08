@@ -63,9 +63,11 @@ export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: b
               Install <code className="font-mono text-neutral-200">web-vitals</code> and emit each metric
               into <code className="font-mono text-neutral-200">dataLayer</code> in production builds only:
             </p>
-            <pre className="bg-neutral-950 border border-neutral-800 rounded p-3 text-xs overflow-x-auto font-mono text-neutral-300 whitespace-pre">
+            <Surface padding="none" className="overflow-hidden rounded border-neutral-800 bg-neutral-950">
+              <pre className="overflow-x-auto p-3 font-mono text-xs text-neutral-300 whitespace-pre">
 {DATALAYER_SNIPPET}
-            </pre>
+              </pre>
+            </Surface>
           </Step>
 
           <Step n={2} title="GTM — Data Layer Variables">
