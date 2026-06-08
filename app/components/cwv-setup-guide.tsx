@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { Badge, FormButton, Surface } from '@/components/ui';
+import { Badge, Disclosure, Surface } from '@/components/ui';
 
 const DATALAYER_SNIPPET = `import { onLCP, onINP, onCLS, onFCP, onTTFB } from 'web-vitals';
 
@@ -31,31 +31,33 @@ export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: b
 
   return (
     <Surface padding="none" className="bg-neutral-900/40">
-      <FormButton
-        id={SETUP_GUIDE_TRIGGER_ID}
-        type="button"
-        variant="ghost"
-        size="row"
-        aria-controls={SETUP_GUIDE_PANEL_ID}
-        aria-expanded={open ? 'true' : 'false'}
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between text-left"
+      <Disclosure
+        open={open}
+        onToggle={(event) => setOpen(event.currentTarget.open)}
+        summary={
+          <span
+            aria-controls={SETUP_GUIDE_PANEL_ID}
+            aria-expanded={open ? 'true' : 'false'}
+            className="flex w-full items-center justify-between gap-3 text-left"
+          >
+            <span id={SETUP_GUIDE_TRIGGER_ID} className="flex items-center gap-2">
+              <span className="text-neutral-500" aria-hidden="true">{open ? '▾' : '▸'}</span>
+              How to wire Core Web Vitals (GTM + GA4)
+            </span>
+            <Badge size="compact" shape="rounded" className="border-neutral-800 bg-neutral-950/40 text-neutral-500">
+              required once per project
+            </Badge>
+          </span>
+        }
+        summaryClassName="flex min-h-11 cursor-pointer list-none items-center px-4 py-2 text-sm font-medium text-neutral-200 transition-colors hover:bg-neutral-800/50 [&::-webkit-details-marker]:hidden"
+        contentClassName="px-4 pb-5 space-y-5 text-sm text-neutral-300"
       >
-        <span className="flex items-center gap-2">
-          <span className="text-neutral-500" aria-hidden="true">{open ? '▾' : '▸'}</span>
-          How to wire Core Web Vitals (GTM + GA4)
-        </span>
-        <Badge size="compact" shape="rounded" className="border-neutral-800 bg-neutral-950/40 text-neutral-500">
-          required once per project
-        </Badge>
-      </FormButton>
-      {open && (
-        <div
-          id={SETUP_GUIDE_PANEL_ID}
-          role="region"
-          aria-labelledby={SETUP_GUIDE_TRIGGER_ID}
-          className="px-4 pb-5 space-y-5 text-sm text-neutral-300"
-        >
+        {open && (
+          <div
+            id={SETUP_GUIDE_PANEL_ID}
+            role="region"
+            aria-labelledby={SETUP_GUIDE_TRIGGER_ID}
+          >
           <Step n={1} title="Push CWV to dataLayer in your app">
             <p className="text-neutral-400">
               Install <code className="font-mono text-neutral-200">web-vitals</code> and emit each metric
@@ -120,8 +122,9 @@ export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: b
               of cache TTL; standard reports lag 24–48h.
             </p>
           </Step>
-        </div>
-      )}
+          </div>
+        )}
+      </Disclosure>
     </Surface>
   );
 }
