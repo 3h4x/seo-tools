@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Badge, ConfiguredNotice, FormButton, FormInput, Notice, Skeleton, Spinner, Surface } from '@/components/ui';
+import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormInput, Notice, Skeleton, Spinner, Surface } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -146,9 +146,9 @@ export default function PagespeedKeyForm() {
       <div className="flex items-center gap-3">
         <h2 className="text-base font-semibold text-white">PageSpeed Insights API Key</h2>
         {SOURCE_LABEL[source] && (
-          <Badge size="compact" shape="rounded" className="border-neutral-700 bg-neutral-800 text-neutral-400">
+          <ConfigSourceBadge>
             {SOURCE_LABEL[source]}
-          </Badge>
+          </ConfigSourceBadge>
         )}
       </div>
       <p className="text-xs text-neutral-500">
