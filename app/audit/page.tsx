@@ -286,9 +286,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           </div>
         </Surface>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1">
-          <MetricCard label="Passed" current={totalPass} accent="border-l-emerald-500" valueColor="text-emerald-400" />
-          <MetricCard label="Warnings" current={totalWarn} accent="border-l-amber-500" valueColor="text-amber-400" />
-          <MetricCard label="Failures" current={totalFail} accent="border-l-red-500" valueColor="text-red-400" />
+          <MetricCard label="Passed" current={totalPass} accentTone="success" valueColor="text-emerald-400" />
+          <MetricCard label="Warnings" current={totalWarn} accentTone="warning" valueColor="text-amber-400" />
+          <MetricCard label="Failures" current={totalFail} accentTone="danger" valueColor="text-red-400" />
         </div>
       </div>
       <div className="space-y-4">
@@ -399,9 +399,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <MetricCard label="Decaying Pages" current={allDecaying.length} accent="border-l-red-500" valueColor="text-red-400" />
-          <MetricCard label="Severe" current={severeCount} accent="border-l-amber-500" valueColor="text-amber-400" />
-          <MetricCard label="Sites Affected" current={decaySitesAffected} accent="border-l-blue-500" valueColor="text-blue-400" />
+          <MetricCard label="Decaying Pages" current={allDecaying.length} accentTone="danger" valueColor="text-red-400" />
+          <MetricCard label="Severe" current={severeCount} accentTone="warning" valueColor="text-amber-400" />
+          <MetricCard label="Sites Affected" current={decaySitesAffected} accentTone="info" valueColor="text-blue-400" />
         </div>
 
         {allDecaying.length === 0 ? (

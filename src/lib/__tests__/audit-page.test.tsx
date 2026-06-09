@@ -350,9 +350,9 @@ describe('Audit page', () => {
     expect(mockGetCwvAuditSummary).toHaveBeenCalledTimes(2);
     expect(mockGetCwvAuditSummary).toHaveBeenNthCalledWith(1, 'site-a');
     expect(mockGetCwvAuditSummary).toHaveBeenNthCalledWith(2, 'site-b');
-    expect(mockMetricCard).toHaveBeenCalledWith(expect.objectContaining({ label: 'Decaying Pages', current: 1 }), undefined);
-    expect(mockMetricCard).toHaveBeenCalledWith(expect.objectContaining({ label: 'Severe', current: 1 }), undefined);
-    expect(mockMetricCard).toHaveBeenCalledWith(expect.objectContaining({ label: 'Sites Affected', current: 1 }), undefined);
+    expect(mockMetricCard).toHaveBeenCalledWith(expect.objectContaining({ label: 'Decaying Pages', current: 1, accentTone: 'danger' }), undefined);
+    expect(mockMetricCard).toHaveBeenCalledWith(expect.objectContaining({ label: 'Severe', current: 1, accentTone: 'warning' }), undefined);
+    expect(mockMetricCard).toHaveBeenCalledWith(expect.objectContaining({ label: 'Sites Affected', current: 1, accentTone: 'info' }), undefined);
 
     const gapsCall = (mockGapsClient.mock.calls as unknown as Array<[{
       allSiteGaps: Array<{ siteId: string; gap: { severity: string; category: string; title: string } }>;

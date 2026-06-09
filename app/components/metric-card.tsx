@@ -1,12 +1,22 @@
 import type { ReactNode } from 'react';
 import { Badge, Surface } from '@/components/ui';
 
+type MetricAccentTone = 'success' | 'warning' | 'danger' | 'info';
+
+const METRIC_ACCENT_CLASSES: Record<MetricAccentTone, string> = {
+  success: 'border-l-emerald-500',
+  warning: 'border-l-amber-500',
+  danger: 'border-l-red-500',
+  info: 'border-l-blue-500',
+};
+
 export function MetricCard({
   label,
   value,
   current,
   previous = 0,
   accent,
+  accentTone,
   icon,
   invert,
   valueColor = 'text-white',
@@ -17,20 +27,22 @@ export function MetricCard({
   value?: string;
   current: number;
   previous?: number;
-  accent: string;
+  accent?: string;
+  accentTone?: MetricAccentTone;
   icon?: ReactNode;
   invert?: boolean;
   valueColor?: string;
   labelAddon?: ReactNode;
   footer?: ReactNode;
 }) {
+  const accentClassName = accent ?? (accentTone ? METRIC_ACCENT_CLASSES[accentTone] : undefined);
   const displayValue = value ?? (current > 0 ? current.toLocaleString() : '\u2014');
   const diff = previous > 0 ? ((current - previous) / previous) * 100 : 0;
   const show = previous > 0 && Math.abs(diff) >= 1;
   const up = invert ? diff < 0 : diff > 0;
   const diffLabel = `${up ? 'Improved' : 'Declined'} by ${Math.abs(diff).toFixed(0)}%`;
   return (
-    <Surface padding="sm" leftAccentClassName={accent}>
+    <Surface padding="sm" leftAccentClassName={accentClassName}>
       <div className="flex items-center gap-2 text-neutral-500 mb-2">
         {icon}
         <span className="text-xs uppercase tracking-wider">{label}</span>
