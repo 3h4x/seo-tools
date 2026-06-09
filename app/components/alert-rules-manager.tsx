@@ -230,7 +230,7 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
       <div key="metric" className="flex flex-wrap items-center gap-2">
         <span>{METRIC_OPTIONS.find((option) => option.value === rule.metric)?.label ?? rule.metric}</span>
         {metricBlocked && (
-          <Badge className="border-amber-500/40 bg-amber-500/10 text-amber-300">
+          <Badge tone="warning">
             {METRIC_DISABLED_REASONS[rule.metric] ?? 'Inactive'}
           </Badge>
         )}
