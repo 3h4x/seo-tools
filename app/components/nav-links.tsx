@@ -26,13 +26,7 @@ export default function NavLinks() {
             key={link.href}
             href={link.href}
             aria-current={active ? 'page' : undefined}
-            size="inherit"
-            variant={active ? 'inherit' : 'neutral'}
-            className={`px-3 py-1.5 rounded-md text-sm ${
-              active
-                ? 'text-white bg-neutral-800'
-                : 'hover:bg-neutral-800/50'
-            }`}
+            variant={active ? 'navActive' : 'nav'}
           >
             {link.label}
           </TextLink>

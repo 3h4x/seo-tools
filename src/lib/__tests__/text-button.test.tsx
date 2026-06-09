@@ -94,4 +94,14 @@ describe('TextButton', () => {
     expect(html).toContain('items-center');
     expect(html).toContain('gap-1.5');
   });
+
+  it('supports dashboard nav link variants', () => {
+    const inactive = renderToStaticMarkup(<TextLink href="/audit" variant="nav">Audit</TextLink>);
+    const active = renderToStaticMarkup(<TextLink href="/audit" variant="navActive">Audit</TextLink>);
+
+    expect(inactive).toContain('rounded-md');
+    expect(inactive).toContain('hover:bg-neutral-800/50');
+    expect(active).toContain('bg-neutral-800');
+    expect(active).toContain('text-white');
+  });
 });

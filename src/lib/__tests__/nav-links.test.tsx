@@ -21,6 +21,7 @@ describe('NavLinks', () => {
     const html = renderToStaticMarkup(<NavLinks />);
 
     expect(html).toMatch(/<a href="\/performance"[^>]*aria-current="page"/);
+    expect(html).toMatch(/<a href="\/performance"[^>]*bg-neutral-800/);
     expect(html).not.toContain('<a href="/audit" aria-current="page"');
     expect(html).not.toContain('<a href="/" aria-current="page"');
   });

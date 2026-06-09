@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { LinkProps } from 'next/link';
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
 
-type TextButtonVariant = 'neutral' | 'quiet' | 'muted' | 'danger' | 'danger-muted' | 'reorder' | 'inherit';
+type TextButtonVariant = 'neutral' | 'quiet' | 'muted' | 'danger' | 'danger-muted' | 'reorder' | 'nav' | 'navActive' | 'inherit';
 type TextButtonSize = 'xs' | 'xxs' | 'inherit';
 
 interface TextButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -26,6 +26,8 @@ const VARIANT_CLASSES: Record<TextButtonVariant, string> = {
   danger: 'text-red-400 hover:text-red-300 disabled:opacity-40',
   'danger-muted': 'text-neutral-600 hover:text-red-400 disabled:opacity-40',
   reorder: 'text-neutral-500 hover:text-white disabled:opacity-30',
+  nav: 'rounded-md px-3 py-1.5 text-sm text-neutral-400 hover:bg-neutral-800/50 hover:text-white',
+  navActive: 'rounded-md bg-neutral-800 px-3 py-1.5 text-sm text-white',
   inherit: '',
 };
 
