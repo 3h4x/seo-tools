@@ -23,6 +23,7 @@ const BADGE_TONE = {
   danger: 'border-red-900/80 bg-red-950/40 text-red-300',
   dangerText: 'text-red-400',
   warning: 'border-amber-900/80 bg-amber-950/40 text-amber-300',
+  warningText: 'text-amber-400',
   info: 'border-sky-900/80 bg-sky-950/40 text-sky-300',
   accent: 'border-violet-900/80 bg-violet-950/40 text-violet-300',
 } as const;

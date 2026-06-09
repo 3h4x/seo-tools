@@ -47,14 +47,26 @@ describe('Badge', () => {
   });
 
   it('supports inline borderless text badges', () => {
-    const html = renderToStaticMarkup(
+    const success = renderToStaticMarkup(
       <Badge size="inline" borderless tone="successText">
         ↑20%
       </Badge>
     );
+    const warning = renderToStaticMarkup(
+      <Badge size="inline" borderless tone="warningText">
+        Needs improvement
+      </Badge>
+    );
+    const danger = renderToStaticMarkup(
+      <Badge size="inline" borderless tone="dangerText">
+        ↓20%
+      </Badge>
+    );
 
-    expect(html).toContain('border-0 bg-transparent');
-    expect(html).toContain('p-0 text-[10px]');
-    expect(html).toContain('text-emerald-400');
+    expect(success).toContain('border-0 bg-transparent');
+    expect(success).toContain('p-0 text-[10px]');
+    expect(success).toContain('text-emerald-400');
+    expect(warning).toContain('text-amber-400');
+    expect(danger).toContain('text-red-400');
   });
 });

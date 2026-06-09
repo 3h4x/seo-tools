@@ -4,6 +4,12 @@ import { Badge } from '@/components/ui';
 import { formatCwv } from './cwv-cell';
 import { MetricCard } from './metric-card';
 
+const RATING_BADGE_TONES = {
+  good: 'successText',
+  ni: 'warningText',
+  poor: 'dangerText',
+} as const;
+
 export function CwvMetricsCards({
   metrics,
   source,
@@ -31,7 +37,7 @@ export function CwvMetricsCards({
             current={m?.value ?? 0}
             accent={accent}
             labelAddon={m && (
-              <Badge className={`!border-0 !px-0 !py-0 !text-[10px] !font-normal ${CWV_RATING_COLORS[m.rating].text}`}>
+              <Badge size="inline" borderless tone={RATING_BADGE_TONES[m.rating]} className="font-normal">
                 {CWV_RATING_COLORS[m.rating].label}
               </Badge>
             )}
