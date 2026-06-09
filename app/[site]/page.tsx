@@ -33,7 +33,7 @@ import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
 import { ProviderErrorBadge } from '../components/provider-error-badge';
 import { DataTable, type DataTableColumn } from '../components/data-table';
-import { Badge, Disclosure, Notice, Surface, TextLink } from '@/components/ui';
+import { Badge, Disclosure, Notice, ProgressBar, Surface, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -405,9 +405,10 @@ export default async function SiteDashboardPage({
                       <span className="block text-[11px] text-neutral-600">{formatDuration(page.avgSessionDuration)}</span>
                     </div>,
                     <div key="views" className="flex items-center justify-end gap-3">
-                      <div className="w-16 bg-neutral-800 h-1 rounded-full overflow-hidden shrink-0">
-                        <div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${(page.views / ga4TopPagesMaxViews) * 100}%` }} />
-                      </div>
+                      <ProgressBar
+                        value={(page.views / ga4TopPagesMaxViews) * 100}
+                        className="w-16 h-1 shrink-0"
+                      />
                       <span className="w-20 text-right font-mono text-neutral-500">{pluralize(page.views, 'view')}</span>
                     </div>,
                     <span key="engagement" className={engagementTone(page.engagementRate)}>
@@ -542,12 +543,11 @@ export default async function SiteDashboardPage({
                   <span>Indexed: <span className="text-white font-mono">{audit.indexingCoverage.indexedPages}</span> pages</span>
                   <span>Gap: <span className="text-red-400 font-mono">{Math.max(audit.indexingCoverage.sitemapUrls - audit.indexingCoverage.indexedPages, 0)}</span> not indexed</span>
                 </div>
-                <div className="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${STATUS_COLORS[coverageStatus(audit.indexingCoverage.coveragePct ?? 0)].dot}`}
-                    style={{ width: `${Math.min(audit.indexingCoverage.coveragePct ?? 0, 100)}%` }}
-                  />
-                </div>
+                <ProgressBar
+                  value={audit.indexingCoverage.coveragePct ?? 0}
+                  className="w-full h-2"
+                  fillClassName={STATUS_COLORS[coverageStatus(audit.indexingCoverage.coveragePct ?? 0)].dot}
+                />
                 <div className="flex justify-between text-[10px] text-neutral-600 mt-1">
                   <span>0%</span>
                   <span>30%</span>
@@ -799,12 +799,11 @@ export default async function SiteDashboardPage({
           <CheckCard check={audit.ttfb} gaps={sections['ttfb']}>
             {audit.ttfb.ms !== undefined && (
               <div className="mt-3">
-                <div className="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${STATUS_COLORS[ttfbStatus(audit.ttfb.ms)].dot}`}
-                    style={{ width: `${Math.min((audit.ttfb.ms / 3000) * 100, 100)}%` }}
-                  />
-                </div>
+                <ProgressBar
+                  value={(audit.ttfb.ms / 3000) * 100}
+                  className="w-full h-2"
+                  fillClassName={STATUS_COLORS[ttfbStatus(audit.ttfb.ms)].dot}
+                />
                 <div className="flex justify-between text-[10px] text-neutral-600 mt-1">
                   <span>0ms</span>
                   <span>800ms</span>
