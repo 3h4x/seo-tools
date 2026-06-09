@@ -25,7 +25,7 @@ export default function RootLayout({
               <div className="flex items-center justify-between h-14">
                 <div className="flex items-center gap-6">
                   <span className="text-white font-bold text-lg">SEO Tools</span>
-                  <Badge size="compact" shape="rounded" className="font-mono bg-neutral-800 text-neutral-400 border-neutral-800">
+                  <Badge size="compact" shape="rounded" tone="muted" className="font-mono border-neutral-800">
                     {process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev'}
                   </Badge>
                   <NavLinks />
