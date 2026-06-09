@@ -310,7 +310,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
               variant="inherit"
               className="block"
             >
-              <Surface className={`border-l-4 ${accentBorder[worst]} hover:bg-neutral-800/50 transition-colors`}>
+              <Surface leftAccentClassName={accentBorder[worst]} className="hover:bg-neutral-800/50 transition-colors">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
