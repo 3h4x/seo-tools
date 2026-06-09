@@ -1,10 +1,22 @@
 import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
 import { loadActionQueue, type ActionQueueItem } from '@/lib/actions';
-import { ACTION_KIND_STYLES, ACTION_PRIORITY_STYLES } from '@/lib/constants';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 
 export const revalidate = 300;
+
+const ACTION_PRIORITY_TONES = {
+  critical: 'danger',
+  high: 'danger',
+  medium: 'warning',
+  low: 'info',
+} as const;
+
+const ACTION_KIND_TONES = {
+  gap: 'accent',
+  decay: 'info',
+  keyword: 'successMuted',
+} as const;
 
 const COLUMNS: DataTableColumn[] = [
   { label: 'Priority', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-3 whitespace-nowrap' },
@@ -20,10 +32,10 @@ export default async function ActionsPage() {
 
   const rows = items.map((item) => ([
     <div key={`${item.id}-priority`} className="flex items-center gap-2">
-      <Badge uppercase className={`font-semibold ${ACTION_PRIORITY_STYLES[item.priority]}`}>
+      <Badge uppercase tone={ACTION_PRIORITY_TONES[item.priority]} className="font-semibold">
         {item.priority}
       </Badge>
-      <Badge uppercase className={`hidden sm:inline-flex font-semibold ${ACTION_KIND_STYLES[item.kind]}`}>
+      <Badge uppercase tone={ACTION_KIND_TONES[item.kind]} className="hidden sm:inline-flex font-semibold">
         {item.kind}
       </Badge>
     </div>,
@@ -92,7 +104,7 @@ function PriorityCountBadge({
   tone: 'critical' | 'high' | 'medium' | 'low';
 }) {
   return (
-    <Badge size="md" shape="rounded" className={`gap-2 ${ACTION_PRIORITY_STYLES[tone]}`}>
+    <Badge size="md" shape="rounded" tone={ACTION_PRIORITY_TONES[tone]} className="gap-2">
       <span className="font-semibold">{label}</span>
       <span className="font-mono">{value}</span>
     </Badge>
