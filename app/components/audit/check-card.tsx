@@ -11,6 +11,12 @@ const statusBadgeTones: Record<CheckStatus, 'successMuted' | 'warning' | 'danger
   error: 'muted',
 };
 
+const gapSeverityBadgeTones: Record<GapRecommendation['severity'], 'gapHigh' | 'gapMedium' | 'gapLow'> = {
+  high: 'gapHigh',
+  medium: 'gapMedium',
+  low: 'gapLow',
+};
+
 export const statusDots: Record<CheckStatus, string> = {
   pass: STATUS_COLORS.pass.dot,
   warn: STATUS_COLORS.warn.dot,
@@ -39,7 +45,7 @@ export function Recommendation({ gap }: { gap: GapRecommendation }) {
   return (
     <Notice size="card" className={`mt-3 ${s.bg} border-neutral-800`}>
       <div className="flex items-center gap-2 mb-1.5">
-        <Badge size="compact" shape="rounded" className={`gap-1.5 ${s.bg} ${s.text} border-neutral-800`}>
+        <Badge size="compact" shape="rounded" tone={gapSeverityBadgeTones[gap.severity]} className="gap-1.5">
           <span className={`size-1.5 rounded-full ${s.dot}`} aria-hidden="true" />
           {s.label} priority
         </Badge>
