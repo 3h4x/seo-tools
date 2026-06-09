@@ -118,7 +118,7 @@ describe('alerts page', () => {
     expect(html).toContain('SC clicks');
     expect(html).toContain('40.0%');
     expect(html).toContain('email: delivery failed');
-    expect(html).toContain('border-amber-500/30 bg-amber-500/10 text-amber-300');
+    expect(html).toContain('border-amber-900/80 bg-amber-950/40 text-amber-300');
     expect(html).not.toContain('<span>email<div');
   });
 });

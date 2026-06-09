@@ -49,7 +49,7 @@ export default async function AlertsPage() {
       <>
         {event.deliveredChannels.length > 0 ? event.deliveredChannels.join(', ') : 'none'}
         {event.deliveryError && (
-          <Badge size="xs" shape="rounded" className="mt-1 border-amber-500/30 bg-amber-500/10 text-amber-300">
+          <Badge size="xs" shape="rounded" tone="warning" className="mt-1">
             {event.deliveryError}
           </Badge>
         )}
