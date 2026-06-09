@@ -1,12 +1,10 @@
 import { Badge } from '@/components/ui';
 
-const trendBadgeClassName = '!border-0 !px-0 !py-0 !text-[10px] !font-medium ml-1';
-
 export function TrendBadge({ current, previous }: { current: number; previous: number }) {
   if (previous === 0 && current === 0) return null;
   if (previous === 0) {
     return (
-      <Badge className={`${trendBadgeClassName} text-emerald-400`} title="New value">
+      <Badge size="inline" borderless tone="successText" className="ml-1" title="New value">
         <span aria-hidden="true">NEW</span>
         <span className="sr-only">New value</span>
       </Badge>
@@ -18,7 +16,7 @@ export function TrendBadge({ current, previous }: { current: number; previous: n
   const pctValue = Math.abs(pct).toFixed(0);
   const pctLabel = `${up ? 'Increased' : 'Decreased'} by ${pctValue}%`;
   return (
-    <Badge className={`${trendBadgeClassName} ${up ? 'text-emerald-400' : 'text-red-400'}`} title={pctLabel}>
+    <Badge size="inline" borderless tone={up ? 'successText' : 'dangerText'} className="ml-1" title={pctLabel}>
       <span aria-hidden="true">{up ? '\u2191' : '\u2193'}{pctValue}%</span>
       <span className="sr-only">{pctLabel}</span>
     </Badge>
