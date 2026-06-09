@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Surface, TextButton, TextLink } from '@/components/ui';
+import { TextButton, TextLink } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
@@ -187,20 +187,17 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
   ]);
 
   return (
-    <Surface padding="none" className="overflow-hidden">
-      <DataTable
-        columns={columns}
-        rows={tableRows}
-        rowKeys={sorted.map((row) => row.id)}
-        monospaceCells={false}
-        containerClassName=""
-        headRowClassName="border-b border-neutral-800 text-neutral-500 text-left text-xs uppercase tracking-wider"
-        rowClassName={(_, idx) => {
-          const row = sorted[idx];
-          const hasProviderError = row.ga4Error || row.scError;
-          return `transition-colors ${row.hasData || hasProviderError ? 'hover:bg-neutral-800/30 cursor-pointer' : 'opacity-40'} ${idx === 0 && row.hasData ? 'border-l-2 border-l-emerald-500' : ''}`;
-        }}
-      />
-    </Surface>
+    <DataTable
+      columns={columns}
+      rows={tableRows}
+      rowKeys={sorted.map((row) => row.id)}
+      monospaceCells={false}
+      headRowClassName="border-b border-neutral-800 text-neutral-500 text-left text-xs uppercase tracking-wider"
+      rowClassName={(_, idx) => {
+        const row = sorted[idx];
+        const hasProviderError = row.ga4Error || row.scError;
+        return `transition-colors ${row.hasData || hasProviderError ? 'hover:bg-neutral-800/30 cursor-pointer' : 'opacity-40'} ${idx === 0 && row.hasData ? 'border-l-2 border-l-emerald-500' : ''}`;
+      }}
+    />
   );
 }
