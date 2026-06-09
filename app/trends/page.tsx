@@ -161,12 +161,12 @@ function OverviewTab({
           if (!hasData) {
             return (
               <Notice key={site.id} size="panel" className="rounded-lg">
-                <NoticeCenteredContent height="auto" className="items-start text-left">
+                <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left">
                   <div className="flex items-center gap-3">
                     <span className="text-white font-semibold">{site.name}</span>
                     <span className="text-neutral-600 text-xs">{site.domain}</span>
                   </div>
-                  <p className="text-neutral-600 text-sm mt-2">No data captured yet.</p>
+                  <p className="mt-2">No data captured yet.</p>
                 </NoticeCenteredContent>
               </Notice>
             );
