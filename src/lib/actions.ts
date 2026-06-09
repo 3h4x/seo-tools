@@ -59,8 +59,9 @@ function normalizePageKey(value: string): string {
 }
 
 function sumClicksByPage(pages: Array<{ page: string; clicks: number }>, affectedPages?: string[]): number {
-  const totalClicks = pages.reduce((sum, page) => sum + page.clicks, 0);
-  if (!affectedPages || affectedPages.length === 0) return totalClicks;
+  if (!affectedPages || affectedPages.length === 0) {
+    return pages.reduce((sum, page) => sum + page.clicks, 0);
+  }
 
   const pageClicks = new Map(
     pages.map((page) => [normalizePageKey(page.page), page.clicks] as const),
