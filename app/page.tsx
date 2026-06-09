@@ -153,10 +153,10 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       ) : (
       <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <MetricCard icon={Icons.users} label="Users" current={totals.users} previous={totals.prevUsers} accent="border-blue-500" />
+        <MetricCard icon={Icons.users} label="Users" current={totals.users} previous={totals.prevUsers} accentTone="info" />
         <MetricCard icon={Icons.sessions} label="Sessions" current={totals.sessions} previous={totals.prevSessions} accent="border-violet-500" />
-        <MetricCard icon={Icons.views} label="Page Views" current={totals.views} previous={totals.prevViews} accent="border-amber-500" />
-        <MetricCard icon={Icons.clicks} label="SC Clicks" current={totals.clicks} accent="border-emerald-500" />
+        <MetricCard icon={Icons.views} label="Page Views" current={totals.views} previous={totals.prevViews} accentTone="warning" />
+        <MetricCard icon={Icons.clicks} label="SC Clicks" current={totals.clicks} accentTone="success" />
         <MetricCard icon={Icons.impressions} label="SC Impressions" current={totals.impressions} accent="border-cyan-500" />
       </div>
       <DailyTrafficChart days={days} />
