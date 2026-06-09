@@ -881,7 +881,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                         />
                         <span className="text-sm text-white">{site.domain}</span>
                         {site.isUpdate && (
-                          <Badge size="compact" shape="rounded" className="border-amber-700 text-amber-400">
+                          <Badge size="compact" shape="rounded" tone="warning">
                             update
                           </Badge>
                         )}
