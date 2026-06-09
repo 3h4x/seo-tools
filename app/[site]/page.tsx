@@ -45,10 +45,10 @@ const QUERY_BUCKETS = [
 ] as const;
 
 const GAP_SEVERITY_BADGE_TONES = {
-  high: 'danger',
-  medium: 'warning',
-  low: 'muted',
-} as const satisfies Record<GapSeverity, 'danger' | 'warning' | 'muted'>;
+  high: 'dangerText',
+  medium: 'warningText',
+  low: 'mutedText',
+} as const satisfies Record<GapSeverity, 'dangerText' | 'warningText' | 'mutedText'>;
 
 type QueryBucketStat = (typeof QUERY_BUCKETS)[number] & {
   count: number;
@@ -255,7 +255,7 @@ export default async function SiteDashboardPage({
             <span className="text-neutral-500 text-xs">recommendations</span>
             {(['high', 'medium', 'low'] satisfies GapSeverity[]).map((severity) => (
               gapAnalysis.counts[severity] > 0 && (
-                <Badge key={severity} tone={GAP_SEVERITY_BADGE_TONES[severity]} className="!border-0 !bg-transparent !px-0 !py-0 font-mono !text-xs !font-normal">
+                <Badge key={severity} tone={GAP_SEVERITY_BADGE_TONES[severity]} size="inline" borderless className="font-mono font-normal">
                   {gapAnalysis.counts[severity]} {severity === 'medium' ? 'med' : severity}
                 </Badge>
               )
