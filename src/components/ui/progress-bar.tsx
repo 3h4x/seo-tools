@@ -11,7 +11,7 @@ export function ProgressBar({
   fillClassName = 'bg-blue-500/50',
   ...props
 }: ProgressBarProps) {
-  const width = Math.min(Math.max(value, 0), 100);
+  const width = Number.isFinite(value) ? Math.min(Math.max(value, 0), 100) : 0;
 
   return (
     <div
