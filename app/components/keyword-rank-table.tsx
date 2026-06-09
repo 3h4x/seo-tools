@@ -40,7 +40,7 @@ function KwTrendArrow({ trend }: { trend: KeywordDelta['trend'] }) {
   }
   if (trend === 'new') {
     return (
-      <Badge className="!border-0 !px-0 !py-0 !text-[10px] !font-normal text-blue-400">
+      <Badge size="inline" borderless tone="infoText" className="font-normal">
         <span aria-hidden="true">new</span>
         <span className="sr-only">New keyword</span>
       </Badge>

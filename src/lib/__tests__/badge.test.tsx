@@ -57,6 +57,11 @@ describe('Badge', () => {
         Needs improvement
       </Badge>
     );
+    const info = renderToStaticMarkup(
+      <Badge size="inline" borderless tone="infoText">
+        new
+      </Badge>
+    );
     const danger = renderToStaticMarkup(
       <Badge size="inline" borderless tone="dangerText">
         ↓20%
@@ -67,6 +72,7 @@ describe('Badge', () => {
     expect(success).toContain('p-0 text-[10px]');
     expect(success).toContain('text-emerald-400');
     expect(warning).toContain('text-amber-400');
+    expect(info).toContain('text-blue-400');
     expect(danger).toContain('text-red-400');
   });
 });
