@@ -17,7 +17,7 @@ export function ErrorState({ error, reset, title = 'Something went wrong', descr
 
   return (
     <Notice tone="danger" size="lg" accent="left" className="rounded-lg border-neutral-800">
-      <NoticeCenteredContent className="h-auto items-start text-left space-y-4">
+      <NoticeCenteredContent height="auto" className="items-start text-left space-y-4">
         <div className="space-y-1">
           <h2 className="text-sm font-medium text-white">{title}</h2>
           <p className="text-xs text-neutral-400">

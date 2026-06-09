@@ -88,4 +88,16 @@ describe('Notice', () => {
     expect(html).toContain('h-32');
     expect(html).toContain('flex flex-col items-center justify-center text-center');
   });
+
+  it('supports content-driven centered notice height', () => {
+    const html = renderToStaticMarkup(
+      <NoticeCenteredContent height="auto">
+        Error detail
+      </NoticeCenteredContent>
+    );
+
+    expect(html).toContain('h-auto');
+    expect(html).not.toContain('h-32');
+    expect(html).not.toContain('h-40');
+  });
 });
