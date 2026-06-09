@@ -53,7 +53,7 @@ export default async function TrendsPage({
           <p className="text-neutral-500 text-sm mt-1">Historical data over time</p>
         </div>
         <Notice tone="warning" size="spacious" accent="left" className="rounded-lg">
-          <NoticeCenteredContent className="h-auto">
+          <NoticeCenteredContent height="auto">
             <span className="mx-auto mb-3 block w-fit text-amber-500 [&>svg]:size-12 [&>svg]:stroke-[1.5]">
               {Icons.ctr}
             </span>
@@ -87,7 +87,7 @@ export default async function TrendsPage({
         <PartialFailureBanner failures={partialFailures} />
         {managedSitesResult.failed ? (
           <Notice tone="danger" size="lg" accent="left" className="rounded-lg" role="alert">
-            <NoticeCenteredContent className="h-auto items-start text-left">
+            <NoticeCenteredContent height="auto" className="items-start text-left">
               <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
               <p className="text-neutral-500 text-sm mt-2">
                 The sites table failed to read. Check the server logs and use Refresh to retry.
@@ -161,7 +161,7 @@ function OverviewTab({
           if (!hasData) {
             return (
               <Notice key={site.id} size="panel" className="rounded-lg">
-                <NoticeCenteredContent className="h-auto items-start text-left">
+                <NoticeCenteredContent height="auto" className="items-start text-left">
                   <div className="flex items-center gap-3">
                     <span className="text-white font-semibold">{site.name}</span>
                     <span className="text-neutral-600 text-xs">{site.domain}</span>
@@ -386,7 +386,7 @@ function KeywordsSection({
           <p className="text-neutral-500 text-sm mt-1">Rank movement over time across tracked queries</p>
         </div>
         <Notice tone="warning" size="spacious" accent="left" className="rounded-lg">
-          <NoticeCenteredContent className="h-auto">
+          <NoticeCenteredContent height="auto">
             <p className="text-amber-400 font-bold">No keyword history yet</p>
             <p className="text-neutral-500 text-sm mt-2">
               Run <code className="text-emerald-400 font-mono">pnpm seo snapshot</code> to start capturing per-keyword rank data.
