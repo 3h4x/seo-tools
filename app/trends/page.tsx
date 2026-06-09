@@ -508,7 +508,7 @@ function MetricCell({ label, value, color }: { label: string; value: string; col
 
 function MutedCountBadge({ children }: { children: ReactNode }) {
   return (
-    <Badge size="xs" shape="rounded" className="ml-auto border-transparent bg-transparent !px-0 text-neutral-700">
+    <Badge size="xs" shape="rounded" tone="mutedText" borderless className="ml-auto !px-0">
       {children}
     </Badge>
   );

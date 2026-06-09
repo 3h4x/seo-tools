@@ -37,11 +37,14 @@ describe('Badge', () => {
   it('supports shared dashboard tones', () => {
     const success = renderToStaticMarkup(<Badge tone="success">ok</Badge>);
     const successMuted = renderToStaticMarkup(<Badge tone="successMuted">ga4</Badge>);
+    const mutedText = renderToStaticMarkup(<Badge tone="mutedText" borderless>3 data points</Badge>);
     const subtle = renderToStaticMarkup(<Badge tone="subtle">loading</Badge>);
     const accent = renderToStaticMarkup(<Badge tone="accent">SC + GA4</Badge>);
 
     expect(success).toContain('border-emerald-800/80 bg-emerald-950/50 text-emerald-300');
     expect(successMuted).toContain('border-emerald-900/80 bg-emerald-950/40 text-emerald-300');
+    expect(mutedText).toContain('border-0 bg-transparent');
+    expect(mutedText).toContain('text-neutral-700');
     expect(subtle).toContain('border-neutral-700 bg-neutral-900 text-neutral-500');
     expect(accent).toContain('border-violet-900/80 bg-violet-950/40 text-violet-300');
   });

@@ -16,6 +16,7 @@ const BADGE_SHAPE = {
 const BADGE_TONE = {
   neutral: '',
   muted: 'border-neutral-700 bg-neutral-900 text-neutral-400',
+  mutedText: 'text-neutral-700',
   subtle: 'border-neutral-700 bg-neutral-900 text-neutral-500',
   success: 'border-emerald-800/80 bg-emerald-950/50 text-emerald-300',
   successMuted: 'border-emerald-900/80 bg-emerald-950/40 text-emerald-300',
