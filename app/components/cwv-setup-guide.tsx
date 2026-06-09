@@ -45,7 +45,7 @@ export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: b
               <span className="text-neutral-500" aria-hidden="true">{open ? '▾' : '▸'}</span>
               How to wire Core Web Vitals (GTM + GA4)
             </span>
-            <Badge size="compact" shape="rounded" className="border-neutral-800 bg-neutral-950/40 text-neutral-500">
+            <Badge size="compact" shape="rounded" tone="subtle">
               required once per project
             </Badge>
           </span>
@@ -137,7 +137,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-        <Badge className="size-5 justify-center border-transparent bg-neutral-800 !p-0 text-neutral-400">{n}</Badge>
+        <Badge tone="muted" className="size-5 justify-center !p-0">{n}</Badge>
         {title}
       </h4>
       <div className="pl-7 space-y-2 text-xs">{children}</div>
