@@ -147,7 +147,7 @@ export default async function OpportunitiesPage({
         </Notice>
       ) : (
         <>
-          <Badge size="xs" shape="rounded" className="border-transparent bg-transparent !px-0 text-neutral-500">
+          <Badge size="xs" shape="rounded" borderless className="!px-0 text-neutral-500">
             Showing {top.length} of {allOpportunities.length} opportunities
             {siteFilter ? ` for ${siteFilter}` : ' across all sites'}
           </Badge>
