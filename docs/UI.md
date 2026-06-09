@@ -7,7 +7,7 @@ Use these primitives for repeated dashboard patterns before adding local ad-hoc 
 Current primitives:
 - `Badge` — shared compact bordered status badge for operational labels, source tags, small table badges, and dashboard count chips. Supports `xs`, `sm`, `compact`, and `md` sizing, `rounded` or `pill` shape, and optional uppercase tracking.
 - `ConfigSourceBadge` / `ConfiguredNotice` — compact neutral source badge and configured status row used by config forms.
-- `Disclosure` — shared `details` / `summary` wrapper for compact expandable help, error detail, and recommendation detail sections. Pass existing visual classes with `className` and `summaryClassName`; use `contentClassName` only when the content should be wrapped.
+- `Disclosure` — shared `details` / `summary` wrapper for compact expandable help, error detail, and recommendation detail sections. Pass existing visual classes with `className` and `summaryClassName`; use `summaryProps` and `contentProps` for ARIA wiring, and `contentClassName` only when the content should be wrapped.
 - `FilterChipGroup` — rounded-pill chip filter group with optional per-chip count badges and per-chip active styling. Clicking the active button chip deselects (single-toggle). Options may also provide `href` for URL-backed server filters. Supports `hideZeroCounts` to hide empty options.
 - `FormButton` — form action button with `primary`, `secondary`, `danger`, muted low-emphasis, success-state, and transparent `ghost` variants plus `md`, `sm`, `xs`, compact inline, and row-sized controls. Use `hasIcon` for spinner/icon + text actions that need inline alignment and standard spacing.
 - `FormCheckbox` — shared checkbox input for config and manager forms.
