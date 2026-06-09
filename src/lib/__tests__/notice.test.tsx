@@ -111,4 +111,14 @@ describe('Notice', () => {
     expect(html).toContain('h-full');
     expect(html).toContain('flex flex-col items-center justify-center text-center');
   });
+
+  it('supports muted centered notice copy', () => {
+    const html = renderToStaticMarkup(
+      <NoticeCenteredContent textTone="muted">
+        Need more data
+      </NoticeCenteredContent>
+    );
+
+    expect(html).toContain('text-neutral-600 text-sm');
+  });
 });

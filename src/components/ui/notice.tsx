@@ -14,6 +14,7 @@ interface NoticeProps extends HTMLAttributes<HTMLDivElement> {
 interface NoticeCenteredContentProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   height?: 'auto' | 'full' | 'sm' | 'md';
+  textTone?: 'default' | 'muted';
 }
 
 const TONE_CLASSES: Record<NoticeTone, string> = {
@@ -78,6 +79,7 @@ export function NoticeCenteredContent({
   children,
   className,
   height = 'md',
+  textTone = 'default',
   ...props
 }: NoticeCenteredContentProps) {
   return (
@@ -85,6 +87,7 @@ export function NoticeCenteredContent({
       className={[
         CENTERED_HEIGHT_CLASSES[height],
         'flex flex-col items-center justify-center text-center',
+        textTone === 'muted' ? 'text-neutral-600 text-sm' : undefined,
         className,
       ].filter(Boolean).join(' ')}
       {...props}
