@@ -147,7 +147,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           size="lg"
           accent="left"
         >
-          <NoticeCenteredContent className="h-auto items-start text-left">
+          <NoticeCenteredContent height="auto" className="items-start text-left">
             <p className="text-amber-400 font-semibold">No audit data available</p>
             <p className="text-neutral-500 text-sm mt-2">
               Audit results could not be loaded for the configured sites. Use Refresh to retry the cached checks.
@@ -410,7 +410,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             size="spacious"
             accent="left"
           >
-            <NoticeCenteredContent className="h-auto">
+            <NoticeCenteredContent height="auto">
               <span className="mx-auto mb-3 block w-fit text-emerald-500">{Icons.checkCircle}</span>
               <p className="text-emerald-400 font-bold text-lg">All clear — no content decay</p>
               <p className="text-neutral-500 text-sm mt-2 max-w-md mx-auto">
