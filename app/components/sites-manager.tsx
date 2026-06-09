@@ -622,7 +622,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
         </FormButton>
       </div>
       {sites.length === 0 && !isEditing && (
-        <Notice size="none" className="border-0 bg-transparent p-0 text-sm text-neutral-500">
+        <Notice size="sm" className="text-neutral-500">
           No sites configured — add a site or use Discover to import from Google.
         </Notice>
       )}
@@ -847,7 +847,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
 
           {discovered !== null && (
             discovered.length === 0 ? (
-              <Notice size="none" className="border-0 bg-transparent p-0 text-sm text-neutral-500">
+              <Notice size="sm" className="text-neutral-500">
                 All accessible sites already added.
               </Notice>
             ) : (
