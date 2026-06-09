@@ -94,7 +94,7 @@ export function MetaChecksTable({ checks }: { checks: CheckResult[] }) {
 
 export function CheckCard({ check, gaps, children }: { check: CheckResult; gaps?: GapRecommendation[]; children?: React.ReactNode }) {
   return (
-    <Surface className={`border-l-4 ${accentBorder[check.status]}`}>
+    <Surface leftAccentClassName={accentBorder[check.status]}>
       <div className="flex items-center gap-3 mb-2">
         <StatusBadge status={check.status} />
         <span className="text-white font-semibold text-sm">{check.label}</span>
