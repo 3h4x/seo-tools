@@ -41,6 +41,7 @@ interface DataTableProps {
   headRowClassName?: string;
   bodyClassName?: string;
   rowClassName?: string | ((row: ReactNode[], index: number) => string);
+  rowAccentClassName?: string | ((row: ReactNode[], index: number) => string | undefined);
   expandedRowClassName?: string;
   expandedCellClassName?: string;
   getRowProps?: (row: ReactNode[], index: number) => HTMLAttributes<HTMLTableRowElement>;
@@ -60,6 +61,7 @@ export function DataTable({
   headRowClassName = 'border-b border-neutral-800 text-neutral-500',
   bodyClassName = 'divide-y divide-neutral-800',
   rowClassName = 'hover:bg-neutral-800/30',
+  rowAccentClassName,
   expandedRowClassName,
   expandedCellClassName,
   getRowProps,
@@ -117,11 +119,19 @@ export function DataTable({
           const key = rowKeys?.[i] ?? i;
           const rowProps = getRowProps?.(cells, i);
           const baseRowClassName = typeof rowClassName === 'function' ? rowClassName(cells, i) : rowClassName;
+          const accentClassName = typeof rowAccentClassName === 'function'
+            ? rowAccentClassName(cells, i)
+            : rowAccentClassName;
           const row = (
             <tr
               key={key}
               {...rowProps}
-              className={joinClassNames(baseRowClassName, rowProps?.className)}
+              className={joinClassNames(
+                baseRowClassName,
+                accentClassName ? 'border-l-2' : undefined,
+                accentClassName,
+                rowProps?.className,
+              )}
             >
               {cells.map((cell, j) => {
                 const column = columns[j];

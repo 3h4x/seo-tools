@@ -198,8 +198,9 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
       rowClassName={(_, idx) => {
         const row = sorted[idx];
         const hasProviderError = row.ga4Error || row.scError;
-        return `transition-colors ${row.hasData || hasProviderError ? 'hover:bg-neutral-800/30 cursor-pointer' : 'opacity-40'} ${idx === 0 && row.hasData ? 'border-l-2 border-l-emerald-500' : ''}`;
+        return `transition-colors ${row.hasData || hasProviderError ? 'hover:bg-neutral-800/30 cursor-pointer' : 'opacity-40'}`;
       }}
+      rowAccentClassName={(_, idx) => idx === 0 && sorted[idx].hasData ? 'border-l-emerald-500' : undefined}
     />
   );
 }

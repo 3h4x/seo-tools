@@ -275,6 +275,19 @@ describe('DataTable', () => {
     expect(html).toContain('<tr class="hover:bg-neutral-800/30 transition-colors">');
   });
 
+  it('centralizes row accent structure while callers provide the accent tone', () => {
+    const html = renderToStaticMarkup(
+      <DataTable
+        columns={[{ label: 'Site' }]}
+        rows={[[<span key="site">Example</span>], [<span key="site">Other</span>]]}
+        rowAccentClassName={(_, index) => index === 0 ? 'border-l-emerald-500' : undefined}
+      />
+    );
+
+    expect(html).toContain('<tr class="hover:bg-neutral-800/30 border-l-2 border-l-emerald-500">');
+    expect(html).toContain('<tr class="hover:bg-neutral-800/30"><td class="px-3 py-2 font-mono"><span>Other</span></td></tr>');
+  });
+
   it('renders an accessible caption when provided', () => {
     const html = renderToStaticMarkup(
       <DataTable
