@@ -11,7 +11,7 @@ import {
 } from '@/lib/search-console';
 import { cachedAuditSite, createFailedSiteAuditResult, normalizeSiteAuditResult, type CheckStatus } from '@/lib/audit';
 import { analyzeSiteGaps, createSiteGapSignals } from '@/lib/gaps';
-import { GAP_SEVERITY_STYLES, type GapSeverity } from '@/lib/gap-definitions';
+import type { GapSeverity } from '@/lib/gap-definitions';
 import { summarizeCanonicalChecks } from '@/lib/canonical';
 import { getScDaily, getGa4Daily, getKeywordDeltas } from '@/lib/db';
 import type { KeywordDelta } from '@/lib/keyword-history';
@@ -43,6 +43,12 @@ const QUERY_BUCKETS = [
   { label: '11–20', sublabel: 'second page', color: STATUS_COLORS.warn.chart, test: (position: number) => position > 10 && position <= 20 },
   { label: '20+', sublabel: 'buried', color: CHART_NEUTRALS.inactive, test: (position: number) => position > 20 },
 ] as const;
+
+const GAP_SEVERITY_BADGE_TONES = {
+  high: 'danger',
+  medium: 'warning',
+  low: 'muted',
+} as const satisfies Record<GapSeverity, 'danger' | 'warning' | 'muted'>;
 
 type QueryBucketStat = (typeof QUERY_BUCKETS)[number] & {
   count: number;
@@ -249,7 +255,7 @@ export default async function SiteDashboardPage({
             <span className="text-neutral-500 text-xs">recommendations</span>
             {(['high', 'medium', 'low'] satisfies GapSeverity[]).map((severity) => (
               gapAnalysis.counts[severity] > 0 && (
-                <Badge key={severity} className={`!border-0 !px-0 !py-0 font-mono !text-xs !font-normal ${GAP_SEVERITY_STYLES[severity].text}`}>
+                <Badge key={severity} tone={GAP_SEVERITY_BADGE_TONES[severity]} className="!border-0 !bg-transparent !px-0 !py-0 font-mono !text-xs !font-normal">
                   {gapAnalysis.counts[severity]} {severity === 'medium' ? 'med' : severity}
                 </Badge>
               )
@@ -508,17 +514,17 @@ export default async function SiteDashboardPage({
                       downloaded: <span className="text-neutral-300">{s.lastDownloaded ? new Date(s.lastDownloaded).toLocaleString() : '—'}</span>
                     </span>
                     {s.isPending && (
-                      <Badge size="xs" shape="rounded" className="border-amber-500/30 bg-amber-500/10 text-amber-300">
+                      <Badge size="xs" shape="rounded" tone="warning">
                         pending
                       </Badge>
                     )}
                     {s.errors > 0 && (
-                      <Badge size="xs" shape="rounded" className="border-red-500/40 bg-red-500/10 text-red-300">
+                      <Badge size="xs" shape="rounded" tone="danger">
                         {s.errors} errors
                       </Badge>
                     )}
                     {s.warnings > 0 && (
-                      <Badge size="xs" shape="rounded" className="border-amber-500/30 bg-amber-500/10 text-amber-300">
+                      <Badge size="xs" shape="rounded" tone="warning">
                         {s.warnings} warnings
                       </Badge>
                     )}
@@ -680,12 +686,12 @@ export default async function SiteDashboardPage({
                         <div key={j} className="flex items-start gap-2 text-xs">
                           <span className="text-neutral-600 font-mono truncate max-w-xs shrink-0">{d.src.length > 60 ? d.src.slice(0, 57) + '...' : d.src}</span>
                           {!d.hasAlt && (
-                            <Badge size="xs" shape="rounded" className="border-red-500/40 bg-red-500/10 text-red-300 whitespace-nowrap">
+                            <Badge size="xs" shape="rounded" tone="danger" className="whitespace-nowrap">
                               missing alt
                             </Badge>
                           )}
                           {!d.isLazy && (
-                            <Badge size="xs" shape="rounded" className="border-amber-500/30 bg-amber-500/10 text-amber-300 whitespace-nowrap">
+                            <Badge size="xs" shape="rounded" tone="warning" className="whitespace-nowrap">
                               not lazy
                             </Badge>
                           )}
@@ -743,7 +749,7 @@ export default async function SiteDashboardPage({
                     <span className="text-neutral-500 font-mono">{link.externalLinks} external</span>
                     <span className="text-neutral-600 font-mono">{link.brokenLinksMessage}</span>
                     {link.brokenLinks.length > 0 && (
-                      <Badge size="xs" shape="rounded" className="border-red-500/40 bg-red-500/10 text-red-300 font-mono">
+                      <Badge size="xs" shape="rounded" tone="danger" className="font-mono">
                         {link.brokenLinks.length} broken
                       </Badge>
                     )}
@@ -757,7 +763,7 @@ export default async function SiteDashboardPage({
                       <div className="mt-2 space-y-1">
                         {link.brokenLinks.map((brokenLink) => (
                           <div key={`${link.page}-${brokenLink.url}`} className="text-[11px] font-mono text-neutral-500 break-all">
-                            <Badge size="xs" shape="rounded" className="mr-1 border-red-500/40 bg-red-500/10 text-red-300 font-mono">
+                            <Badge size="xs" shape="rounded" tone="danger" className="mr-1 font-mono">
                               HTTP {brokenLink.status || 0}
                             </Badge>
                             {brokenLink.url}
