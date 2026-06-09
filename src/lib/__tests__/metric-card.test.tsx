@@ -46,4 +46,12 @@ describe('MetricCard', () => {
 
     expect(html).toContain('border-l-neutral-600');
   });
+
+  it('maps semantic muted accents to the shared surface accent class', () => {
+    const html = renderToStaticMarkup(
+      <MetricCard label="No data" current={0} accentTone="muted" />
+    );
+
+    expect(html).toContain('border-l-neutral-700');
+  });
 });

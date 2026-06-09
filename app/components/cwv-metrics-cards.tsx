@@ -10,6 +10,12 @@ const RATING_BADGE_TONES = {
   poor: 'dangerText',
 } as const;
 
+const RATING_ACCENT_TONES = {
+  good: 'success',
+  ni: 'warning',
+  poor: 'danger',
+} as const;
+
 export function CwvMetricsCards({
   metrics,
   source,
@@ -23,7 +29,6 @@ export function CwvMetricsCards({
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {CWV_METRIC_ORDER.map((name) => {
         const m = metrics[name];
-        const accent = m ? CWV_RATING_COLORS[m.rating].border : 'border-neutral-700';
         const footer = getFooter
           ? getFooter(name)
           : source
@@ -35,7 +40,7 @@ export function CwvMetricsCards({
             label={name}
             value={m ? formatCwv(name, m.value) : undefined}
             current={m?.value ?? 0}
-            accent={accent}
+            accentTone={m ? RATING_ACCENT_TONES[m.rating] : 'muted'}
             labelAddon={m && (
               <Badge size="inline" borderless tone={RATING_BADGE_TONES[m.rating]} className="font-normal">
                 {CWV_RATING_COLORS[m.rating].label}

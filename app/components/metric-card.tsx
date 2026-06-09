@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Badge, Surface } from '@/components/ui';
 
-type MetricAccentTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+type MetricAccentTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'muted';
 
 const METRIC_ACCENT_CLASSES: Record<MetricAccentTone, string> = {
   success: 'border-l-emerald-500',
@@ -9,6 +9,7 @@ const METRIC_ACCENT_CLASSES: Record<MetricAccentTone, string> = {
   danger: 'border-l-red-500',
   info: 'border-l-blue-500',
   neutral: 'border-l-neutral-600',
+  muted: 'border-l-neutral-700',
 };
 
 export function MetricCard({
