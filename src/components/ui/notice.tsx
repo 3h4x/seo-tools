@@ -13,7 +13,7 @@ interface NoticeProps extends HTMLAttributes<HTMLDivElement> {
 
 interface NoticeCenteredContentProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
-  height?: 'auto' | 'sm' | 'md';
+  height?: 'auto' | 'full' | 'sm' | 'md';
 }
 
 const TONE_CLASSES: Record<NoticeTone, string> = {
@@ -45,6 +45,7 @@ const LEFT_ACCENT_CLASSES: Record<NoticeTone, string> = {
 
 const CENTERED_HEIGHT_CLASSES: Record<NonNullable<NoticeCenteredContentProps['height']>, string> = {
   auto: 'h-auto',
+  full: 'h-full',
   sm: 'h-32',
   md: 'h-40',
 };

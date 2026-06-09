@@ -61,7 +61,7 @@ export default function TrendChart({
         className="rounded border-neutral-800 bg-transparent text-xs text-neutral-600"
         style={{ height }}
       >
-        <NoticeCenteredContent className="h-full">
+        <NoticeCenteredContent height="full">
           Need 2+ snapshots for charts
         </NoticeCenteredContent>
       </Notice>

@@ -100,4 +100,15 @@ describe('Notice', () => {
     expect(html).not.toContain('h-32');
     expect(html).not.toContain('h-40');
   });
+
+  it('supports parent-driven full-height centered notice content', () => {
+    const html = renderToStaticMarkup(
+      <NoticeCenteredContent height="full">
+        Chart unavailable
+      </NoticeCenteredContent>
+    );
+
+    expect(html).toContain('h-full');
+    expect(html).toContain('flex flex-col items-center justify-center text-center');
+  });
 });
