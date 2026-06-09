@@ -90,7 +90,7 @@ export default async function CrossLinksPage() {
         <SummaryCard label="Source Sites" value={matrix.length} accentTone="info" valueColor="text-blue-400" />
         <SummaryCard label="Cells With Links" value={totalLinkedCells} accentTone="success" valueColor={STATUS_COLORS.pass.text} />
         <SummaryCard label="Zero-Link Gaps" value={zeroLinkCells} accentTone="danger" valueColor={STATUS_COLORS.fail.text} />
-        <SummaryCard label="Unavailable Sources" value={unavailableSources} accent="border-l-neutral-600" valueColor="text-neutral-300" />
+        <SummaryCard label="Unavailable Sources" value={unavailableSources} accentTone="neutral" valueColor="text-neutral-300" />
       </div>
 
       <Surface padding="none">
@@ -151,13 +151,11 @@ function SummaryCard(
   {
     label,
     value,
-    accent,
     accentTone,
     valueColor,
   }: {
     label: string;
     value: number;
-    accent?: string;
     accentTone?: ComponentProps<typeof MetricCard>['accentTone'];
     valueColor: string;
   },
@@ -167,7 +165,6 @@ function SummaryCard(
       label={label}
       current={value}
       value={value.toLocaleString()}
-      accent={accent}
       accentTone={accentTone}
       valueColor={valueColor}
     />

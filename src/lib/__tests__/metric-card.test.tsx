@@ -38,4 +38,12 @@ describe('MetricCard', () => {
     expect(html).toContain('<span>good</span>');
     expect(html).toContain('12 samples');
   });
+
+  it('maps semantic neutral accents to the shared surface accent class', () => {
+    const html = renderToStaticMarkup(
+      <MetricCard label="Unavailable" current={2} accentTone="neutral" />
+    );
+
+    expect(html).toContain('border-l-neutral-600');
+  });
 });
