@@ -61,9 +61,9 @@ export default async function ActionsPage() {
 
       {items.length === 0 ? (
         <Notice size="lg">
-          <NoticeCenteredContent height="sm">
+          <NoticeCenteredContent height="sm" textTone="muted">
             <p className="text-neutral-300 font-semibold">No ranked actions yet.</p>
-            <p className="text-sm text-neutral-500 mt-1">Add managed sites, snapshots, and audit data to populate the queue.</p>
+            <p className="mt-1">Add managed sites, snapshots, and audit data to populate the queue.</p>
           </NoticeCenteredContent>
         </Notice>
       ) : (
