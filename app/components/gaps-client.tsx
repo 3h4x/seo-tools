@@ -31,7 +31,7 @@ function GapRow({ sg }: { sg: SiteGap }) {
             <Badge tone={GAP_SEVERITY_BADGE_TONES[gap.severity]} className="shrink-0">
               {s.label}
             </Badge>
-            <Badge className="shrink-0 border-neutral-700 text-neutral-400">
+            <Badge tone="muted" className="shrink-0">
               {CATEGORY_LABELS[gap.category]}
             </Badge>
             <span className="text-white font-semibold text-sm">{gap.title}</span>
