@@ -31,7 +31,7 @@ export function NoSitesNotice({ variant = 'card' }: Props) {
 
   return (
     <Notice size="spacious" className="rounded bg-transparent">
-      <NoticeCenteredContent className="h-auto text-sm text-neutral-500">
+      <NoticeCenteredContent height="auto" className="text-sm text-neutral-500">
         {content}
       </NoticeCenteredContent>
     </Notice>
