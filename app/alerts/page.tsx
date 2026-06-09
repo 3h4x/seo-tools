@@ -74,7 +74,7 @@ export default async function AlertsPage() {
 
       {eventsResult.failed ? (
         <Notice tone="danger" size="lg" accent="left">
-          <NoticeCenteredContent className="h-auto items-start text-left">
+          <NoticeCenteredContent height="auto" className="items-start text-left">
             <p className="font-semibold text-red-400">Couldn&apos;t load alert history</p>
             <p className="mt-2 text-sm text-neutral-500">
               The alert events table failed to read. Check the server logs and use Refresh to retry.
@@ -83,7 +83,7 @@ export default async function AlertsPage() {
         </Notice>
       ) : events.length === 0 ? (
         <Notice size="lg" className="text-sm text-neutral-500">
-          <NoticeCenteredContent className="h-auto items-start text-left">
+          <NoticeCenteredContent height="auto" className="items-start text-left">
             No alerts have fired yet. Add rules in <TextLink href="/config" size="inherit" variant="inherit" className="text-sm text-white underline">Config</TextLink> and run snapshots to populate history.
           </NoticeCenteredContent>
         </Notice>
