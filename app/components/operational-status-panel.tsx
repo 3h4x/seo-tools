@@ -1,11 +1,14 @@
+import type { ComponentProps } from 'react';
 import { formatRelativeTime } from '@/lib/format';
 import type { OperationalStatus } from '@/lib/db';
 import { Badge, Notice, Surface } from '@/components/ui';
 
-const STATE_STYLES: Record<OperationalStatus['state'], string> = {
-  fresh: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-  stale: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-  never: 'bg-neutral-800 text-neutral-400 border-neutral-700',
+type BadgeTone = NonNullable<ComponentProps<typeof Badge>['tone']>;
+
+const STATE_TONES: Record<OperationalStatus['state'], BadgeTone> = {
+  fresh: 'success',
+  stale: 'warning',
+  never: 'muted',
 };
 
 const STATE_LABELS: Record<OperationalStatus['state'], string> = {
@@ -30,7 +33,7 @@ export default function OperationalStatusPanel({
     <section className="space-y-3 max-w-5xl">
       <div className="flex items-center gap-3">
         <h2 className="text-base font-semibold text-white">Operational Status</h2>
-        <Badge shape="rounded" size="compact" className="border-transparent bg-neutral-800 text-neutral-400">
+        <Badge shape="rounded" size="compact" tone="muted">
           Cached status
         </Badge>
       </div>
@@ -47,7 +50,7 @@ export default function OperationalStatusPanel({
           <Surface key={status.key} padding="sm" className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-sm font-medium text-white">{status.label}</h3>
-              <Badge size="compact" className={STATE_STYLES[status.state]}>
+              <Badge size="compact" tone={STATE_TONES[status.state]}>
                 {STATE_LABELS[status.state]}
               </Badge>
             </div>
