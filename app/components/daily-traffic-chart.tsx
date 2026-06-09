@@ -110,7 +110,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
         if (cancelled) return;
         setData(d.data ?? {});
         const map = new Map<string, SiteMeta>();
-        for (const s of (d.sites ?? []) as SiteMeta[]) map.set(s.id, s);
+        for (const s of d.sites ?? []) map.set(s.id, s);
         setSitesMap(map);
       })
       .catch(error => {

@@ -70,7 +70,7 @@ export default function TrendChart({
 
   const xKey = xDataKey ?? '_label';
   const chartData = xKey === '_label'
-    ? data.map((d) => ({ ...d, _label: formatDate(d.date as string) }))
+    ? data.map((d) => ({ ...d, _label: formatDate(d.date) }))
     : data;
   const lineLabels = new Map(lines.map((line) => [line.key, line.label]));
 
