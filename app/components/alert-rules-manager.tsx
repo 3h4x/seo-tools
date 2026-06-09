@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Badge, FormButton, FormInput, FormSelect, Notice, Skeleton, Spinner, Surface, TextButton, ToggleButtonGroup } from '@/components/ui';
+import { Badge, FormButton, FormInput, FormSelect, Notice, NoticeCenteredContent, Skeleton, Spinner, Surface, TextButton, ToggleButtonGroup } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -269,7 +269,11 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
       {loading ? (
         <AlertRulesSkeleton />
       ) : rules.length === 0 ? (
-        <Notice size="sm">No rules yet.</Notice>
+        <Notice size="sm">
+          <NoticeCenteredContent height="auto" textTone="muted">
+            No rules yet.
+          </NoticeCenteredContent>
+        </Notice>
       ) : (
         <DataTable
           caption="Configured alert rules"
