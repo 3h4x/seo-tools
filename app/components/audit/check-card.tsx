@@ -4,11 +4,11 @@ import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
 import { STATUS_COLORS } from '@/lib/constants';
 import { Badge, Disclosure, Notice, Surface } from '@/components/ui';
 
-const statusColors: Record<CheckStatus, string> = {
-  pass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  warn: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  fail: 'bg-red-500/10 text-red-400 border-red-500/20',
-  error: 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20',
+const statusBadgeTones: Record<CheckStatus, 'successMuted' | 'warning' | 'danger' | 'muted'> = {
+  pass: 'successMuted',
+  warn: 'warning',
+  fail: 'danger',
+  error: 'muted',
 };
 
 export const statusDots: Record<CheckStatus, string> = {
@@ -28,7 +28,7 @@ export const accentBorder: Record<CheckStatus, string> = {
 export function StatusBadge({ status, label }: { status: CheckStatus; label?: string }) {
   const labels: Record<CheckStatus, string> = { pass: 'Pass', warn: 'Warn', fail: 'Fail', error: 'Error' };
   return (
-    <Badge className={statusColors[status]}>
+    <Badge tone={statusBadgeTones[status]}>
       {label ?? labels[status]}
     </Badge>
   );
