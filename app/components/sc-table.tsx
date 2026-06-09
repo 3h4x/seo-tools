@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormButton, Notice, Surface } from '@/components/ui';
+import { FormButton, Notice, NoticeCenteredContent, Surface } from '@/components/ui';
 import { PositionBadge } from './position-badge';
 import { DataTable, type DataTableColumn } from './data-table';
 import { Icons } from './icons';
@@ -133,7 +133,11 @@ export function ScTable({ heading, columnLabel, rows, emptyMessage, exportData, 
           />
         </Surface>
       ) : (
-        <Notice size="sm" className="text-neutral-600">{emptyMessage}</Notice>
+        <Notice size="sm">
+          <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left">
+            {emptyMessage}
+          </NoticeCenteredContent>
+        </Notice>
       )}
     </div>
   );

@@ -11,31 +11,43 @@ const KEYWORD_COLUMNS: DataTableColumn[] = [
 ];
 
 function KwDeltaCell({ delta }: { delta: number | null }) {
-  if (delta === null) return <span className="text-neutral-700">—</span>;
-  if (Math.abs(delta) < 0.1) return <span className="text-neutral-500">±0</span>;
+  if (delta === null) {
+    return (
+      <Badge size="inline" borderless tone="mutedText" className="!text-xs !font-normal">
+        —
+      </Badge>
+    );
+  }
+  if (Math.abs(delta) < 0.1) {
+    return (
+      <Badge size="inline" borderless className="!text-xs !font-normal text-neutral-500">
+        ±0
+      </Badge>
+    );
+  }
   const improved = delta > 0;
   return (
-    <span className={improved ? 'text-emerald-400' : 'text-red-400'}>
+    <Badge size="inline" borderless tone={improved ? 'successText' : 'dangerText'} className="!text-xs !font-normal">
       {improved ? '+' : ''}{delta.toFixed(1)}
-    </span>
+    </Badge>
   );
 }
 
 function KwTrendArrow({ trend }: { trend: KeywordDelta['trend'] }) {
   if (trend === 'up') {
     return (
-      <span className="text-emerald-400">
+      <Badge size="inline" borderless tone="successText" className="!text-xs !font-normal">
         <span aria-hidden="true">↑</span>
         <span className="sr-only">Ranking improved</span>
-      </span>
+      </Badge>
     );
   }
   if (trend === 'down') {
     return (
-      <span className="text-red-400">
+      <Badge size="inline" borderless tone="dangerText" className="!text-xs !font-normal">
         <span aria-hidden="true">↓</span>
         <span className="sr-only">Ranking declined</span>
-      </span>
+      </Badge>
     );
   }
   if (trend === 'new') {
@@ -47,10 +59,10 @@ function KwTrendArrow({ trend }: { trend: KeywordDelta['trend'] }) {
     );
   }
   return (
-    <span className="text-neutral-600">
+    <Badge size="inline" borderless className="!text-xs !font-normal text-neutral-600">
       <span aria-hidden="true">→</span>
       <span className="sr-only">Ranking stable</span>
-    </span>
+    </Badge>
   );
 }
 
