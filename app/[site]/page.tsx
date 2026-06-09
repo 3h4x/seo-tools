@@ -270,10 +270,10 @@ export default async function SiteDashboardPage({
             {scError && <ProviderErrorBadge />}
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <MetricCard icon={Icons.clicks} label="Clicks" current={sc?.current.clicks ?? 0} previous={sc?.previous.clicks} accent="border-emerald-500" />
+            <MetricCard icon={Icons.clicks} label="Clicks" current={sc?.current.clicks ?? 0} previous={sc?.previous.clicks} accentTone="success" />
             <MetricCard icon={Icons.impressions} label="Impressions" current={sc?.current.impressions ?? 0} previous={sc?.previous.impressions} accent="border-cyan-500" />
             <MetricCard label="CTR" value={hasSc ? `${(sc!.current.ctr * 100).toFixed(2)}%` : '\u2014'} current={hasSc ? sc!.current.ctr * 100 : 0} previous={hasSc ? sc!.previous.ctr * 100 : 0} accent="border-violet-500" icon={Icons.ctr} />
-            <MetricCard label="Avg Position" value={hasSc ? sc!.current.position.toFixed(1) : '\u2014'} current={hasSc ? sc!.current.position : 0} previous={hasSc ? sc!.previous.position : 0} accent="border-amber-500" icon={Icons.position} invert />
+            <MetricCard label="Avg Position" value={hasSc ? sc!.current.position.toFixed(1) : '\u2014'} current={hasSc ? sc!.current.position : 0} previous={hasSc ? sc!.previous.position : 0} accentTone="warning" icon={Icons.position} invert />
           </div>
         </div>
       ) : (
@@ -285,10 +285,10 @@ export default async function SiteDashboardPage({
           {ga4Error && <ProviderErrorBadge />}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <MetricCard icon={Icons.users} label="Users" current={ga4?.current.users ?? 0} previous={ga4?.previous.users} accent="border-blue-500" />
+          <MetricCard icon={Icons.users} label="Users" current={ga4?.current.users ?? 0} previous={ga4?.previous.users} accentTone="info" />
           <MetricCard icon={Icons.sessions} label="Sessions" current={ga4?.current.sessions ?? 0} previous={ga4?.previous.sessions} accent="border-pink-500" />
-          <MetricCard icon={Icons.views} label="Page Views" current={ga4?.current.views ?? 0} previous={ga4?.previous.views} accent="border-amber-500" />
-          <MetricCard label="Bounce Rate" value={hasGa4 ? formatBounce(ga4!.current.bounceRate) : '\u2014'} current={hasGa4 ? ga4!.current.bounceRate * 100 : 0} previous={hasGa4 ? ga4!.previous.bounceRate * 100 : 0} accent="border-red-500" icon={Icons.bounce} invert />
+          <MetricCard icon={Icons.views} label="Page Views" current={ga4?.current.views ?? 0} previous={ga4?.previous.views} accentTone="warning" />
+          <MetricCard label="Bounce Rate" value={hasGa4 ? formatBounce(ga4!.current.bounceRate) : '\u2014'} current={hasGa4 ? ga4!.current.bounceRate * 100 : 0} previous={hasGa4 ? ga4!.previous.bounceRate * 100 : 0} accentTone="danger" icon={Icons.bounce} invert />
           <MetricCard label="Avg Duration" value={hasGa4 ? formatDuration(ga4!.current.avgSessionDuration) : '\u2014'} current={hasGa4 ? ga4!.current.avgSessionDuration : 0} previous={hasGa4 ? ga4!.previous.avgSessionDuration : 0} accent="border-teal-500" icon={Icons.duration} />
         </div>
       </div>
