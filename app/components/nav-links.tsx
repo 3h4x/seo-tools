@@ -27,11 +27,11 @@ export default function NavLinks() {
             href={link.href}
             aria-current={active ? 'page' : undefined}
             size="inherit"
-            variant="inherit"
+            variant={active ? 'inherit' : 'neutral'}
             className={`px-3 py-1.5 rounded-md text-sm ${
               active
                 ? 'text-white bg-neutral-800'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                : 'hover:bg-neutral-800/50'
             }`}
           >
             {link.label}
