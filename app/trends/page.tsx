@@ -199,7 +199,7 @@ function OverviewTab({
                     <MetricCell label="TTFB" value={`${latestTtfb.ttfbMs}ms`} color="text-orange-400" />
                   )}
                   {!latestGa4 && !latestSc && !latestTtfb && (
-                    <Notice size="none" className="col-span-full border-0 bg-transparent p-0 text-sm text-neutral-600">
+                    <Notice size="sm" className="col-span-full text-neutral-600">
                       No metrics available
                     </Notice>
                   )}
