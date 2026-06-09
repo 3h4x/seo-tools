@@ -45,4 +45,16 @@ describe('Badge', () => {
     expect(subtle).toContain('border-neutral-700 bg-neutral-900 text-neutral-500');
     expect(accent).toContain('border-violet-900/80 bg-violet-950/40 text-violet-300');
   });
+
+  it('supports inline borderless text badges', () => {
+    const html = renderToStaticMarkup(
+      <Badge size="inline" borderless tone="successText">
+        ↑20%
+      </Badge>
+    );
+
+    expect(html).toContain('border-0 bg-transparent');
+    expect(html).toContain('p-0 text-[10px]');
+    expect(html).toContain('text-emerald-400');
+  });
 });

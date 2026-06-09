@@ -39,7 +39,7 @@ export function MetricCard({
       <div className="flex items-baseline gap-2">
         <span className={`${valueColor} text-2xl font-mono font-bold`}>{displayValue}</span>
         {show && (
-          <Badge className={`!border-0 !px-0 !py-0 !text-[10px] ${up ? 'text-emerald-400' : 'text-red-400'}`} title={diffLabel}>
+          <Badge size="inline" borderless tone={up ? 'successText' : 'dangerText'} title={diffLabel}>
             <span aria-hidden="true">{diff > 0 ? '\u2191' : '\u2193'}{Math.abs(diff).toFixed(0)}%</span>
             <span className="sr-only">{diffLabel}</span>
           </Badge>
