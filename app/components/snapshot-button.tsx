@@ -106,7 +106,7 @@ export function SnapshotButton() {
         <Notice size="sm" className="max-w-xl text-xs">
           Snapshot saved for {result.date} — {result.sc} SC pages, {result.keywords} keywords, {result.ga4} GA4 sites
           {result.errors.length > 0 && (
-            <Badge size="xs" shape="rounded" className="ml-1 border-amber-500/30 bg-amber-500/10 text-amber-300">
+            <Badge size="xs" shape="rounded" tone="warning" className="ml-1">
               {result.errors.length} error{result.errors.length !== 1 ? 's' : ''}
             </Badge>
           )}
