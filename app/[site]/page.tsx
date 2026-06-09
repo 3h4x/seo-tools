@@ -823,7 +823,6 @@ export default async function SiteDashboardPage({
                   <TextLink
                     href={`/performance/${encodeURIComponent(siteId)}`}
                     variant="muted"
-                    onClick={e => e.stopPropagation()}
                   >
                     Full detail →
                   </TextLink>

@@ -26,10 +26,10 @@ const AUDIT_DECAY_PERIODS = [7, 30] as const;
 
 export const revalidate = 300;
 
-const DECAY_SEVERITY_COLORS: Record<DecaySeverity, { badge: string; badgeBg: string }> = {
-  severe: { badge: 'text-red-400', badgeBg: 'bg-red-500/10' },
-  moderate: { badge: 'text-amber-400', badgeBg: 'bg-amber-500/10' },
-  mild: { badge: 'text-blue-400', badgeBg: 'bg-blue-500/10' },
+const DECAY_SEVERITY_BADGE_TONES: Record<DecaySeverity, 'gapHigh' | 'gapMedium' | 'gapLow'> = {
+  severe: 'gapHigh',
+  moderate: 'gapMedium',
+  mild: 'gapLow',
 };
 
 const AUDIT_STALE_MS = 24 * 60 * 60 * 1000;
@@ -319,12 +319,12 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                     </div>
                     <StatusBadge status={worst} label={`${audit.score.pass}/${audit.score.total} passed`} />
                     {gapCount > 0 && (
-                      <Badge className="border-neutral-700 text-neutral-500">
+                      <Badge tone="subtle">
                         {gapCount} {gapCount === 1 ? 'recommendation' : 'recommendations'}
                       </Badge>
                     )}
                     {audit.sampledPages.length > 0 && (
-                      <Badge className="border-neutral-800 text-neutral-600">
+                      <Badge tone="mutedText">
                         {audit.sampledPages.length} {audit.sampledPages.length === 1 ? 'page' : 'pages'} sampled
                       </Badge>
                     )}
@@ -351,7 +351,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                 </div>
                 {cwv && Object.keys(cwv.metrics).length > 0 && (
                   <div className="mt-3 pt-3 border-t border-neutral-800 flex items-center gap-4 flex-wrap">
-                    <Badge uppercase className="shrink-0 border-neutral-800 text-neutral-600">
+                    <Badge uppercase tone="mutedText" className="shrink-0">
                       CWV
                     </Badge>
                     {(['LCP', 'INP', 'CLS'] as CwvMetricName[]).map(name => {
@@ -425,7 +425,6 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
               rows={allDecaying.map((page) => {
                 let shortPage = page.page;
                 try { shortPage = new URL(page.page).pathname; } catch {}
-                const colors = DECAY_SEVERITY_COLORS[page.severity];
                 return [
                   <span key="site">{page.domain}</span>,
                   <span key="page" title={page.page}>{shortPage}</span>,
@@ -441,7 +440,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                     <span className="text-neutral-400">{page.currentPosition.toFixed(1)}</span>
                     {page.positionDelta > 0 && <span className="text-red-400 text-[10px] ml-1">+{page.positionDelta}</span>}
                   </span>,
-                  <Badge key="severity" uppercase className={`${colors.badgeBg} ${colors.badge} !border-0`}>
+                  <Badge key="severity" uppercase tone={DECAY_SEVERITY_BADGE_TONES[page.severity]}>
                     {page.severity}
                   </Badge>,
                 ];
