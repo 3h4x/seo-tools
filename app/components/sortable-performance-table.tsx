@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { TextButton, TextLink } from '@/components/ui';
+import { ProgressBar, TextButton, TextLink } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
@@ -129,9 +129,11 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
         </div>
         <span className="text-neutral-600 text-xs">{row.domain}</span>
         {row.hasData ? (
-          <div className="w-24 bg-neutral-800 h-1 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: `${(row.users / maxUsers) * 100}%` }} />
-          </div>
+          <ProgressBar
+            value={(row.users / maxUsers) * 100}
+            className="w-24 h-1"
+            fillClassName="bg-emerald-500/60"
+          />
         ) : (
           <span className={row.ga4Error ? 'text-red-400/70 text-xs' : 'text-neutral-600 text-xs'}>
             {row.ga4Error ? 'GA4 failed' : 'No GA4 data'}
