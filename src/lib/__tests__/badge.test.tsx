@@ -33,4 +33,16 @@ describe('Badge', () => {
     expect(small).toContain('px-2 py-0.5 text-[11px]');
     expect(medium).toContain('px-3 py-2 text-xs');
   });
+
+  it('supports shared dashboard tones', () => {
+    const success = renderToStaticMarkup(<Badge tone="success">ok</Badge>);
+    const successMuted = renderToStaticMarkup(<Badge tone="successMuted">ga4</Badge>);
+    const subtle = renderToStaticMarkup(<Badge tone="subtle">loading</Badge>);
+    const accent = renderToStaticMarkup(<Badge tone="accent">SC + GA4</Badge>);
+
+    expect(success).toContain('border-emerald-800/80 bg-emerald-950/50 text-emerald-300');
+    expect(successMuted).toContain('border-emerald-900/80 bg-emerald-950/40 text-emerald-300');
+    expect(subtle).toContain('border-neutral-700 bg-neutral-900 text-neutral-500');
+    expect(accent).toContain('border-violet-900/80 bg-violet-950/40 text-violet-300');
+  });
 });

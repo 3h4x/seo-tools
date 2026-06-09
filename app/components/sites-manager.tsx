@@ -131,31 +131,31 @@ function StatusBadge({
   status: SiteDiagnosticResult['searchConsole']['status'] | 'loading';
   message: string;
 }) {
-  const styles = {
-    ok: 'border-emerald-800/80 bg-emerald-950/50 text-emerald-300',
-    'missing-config': 'border-neutral-700 bg-neutral-900 text-neutral-400',
-    'permission-error': 'border-red-900/80 bg-red-950/40 text-red-300',
-    'not-found': 'border-amber-900/80 bg-amber-950/40 text-amber-300',
-    'provider-error': 'border-red-900/80 bg-red-950/40 text-red-300',
-    loading: 'border-neutral-700 bg-neutral-900 text-neutral-500',
+  const tones = {
+    ok: 'success',
+    'missing-config': 'muted',
+    'permission-error': 'danger',
+    'not-found': 'warning',
+    'provider-error': 'danger',
+    loading: 'subtle',
   } as const;
 
   return (
-    <Badge shape="rounded" size="sm" className={styles[status]}>
+    <Badge shape="rounded" size="sm" tone={tones[status]}>
       {message}
     </Badge>
   );
 }
 
 function DiscoverySourceBadge({ source }: { source: DiscoverySource }) {
-  const styles = {
-    sc: 'border-sky-900/80 bg-sky-950/40 text-sky-300',
-    ga4: 'border-emerald-900/80 bg-emerald-950/40 text-emerald-300',
-    'sc+ga4': 'border-violet-900/80 bg-violet-950/40 text-violet-300',
+  const tones = {
+    sc: 'info',
+    ga4: 'successMuted',
+    'sc+ga4': 'accent',
   } as const;
 
   return (
-    <Badge shape="rounded" size="compact" className={styles[source]}>
+    <Badge shape="rounded" size="compact" tone={tones[source]}>
       {source === 'sc+ga4' ? 'SC + GA4' : source.toUpperCase()}
     </Badge>
   );

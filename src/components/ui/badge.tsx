@@ -12,10 +12,23 @@ const BADGE_SHAPE = {
   pill: 'rounded-full',
 } as const;
 
+const BADGE_TONE = {
+  neutral: '',
+  muted: 'border-neutral-700 bg-neutral-900 text-neutral-400',
+  subtle: 'border-neutral-700 bg-neutral-900 text-neutral-500',
+  success: 'border-emerald-800/80 bg-emerald-950/50 text-emerald-300',
+  successMuted: 'border-emerald-900/80 bg-emerald-950/40 text-emerald-300',
+  danger: 'border-red-900/80 bg-red-950/40 text-red-300',
+  warning: 'border-amber-900/80 bg-amber-950/40 text-amber-300',
+  info: 'border-sky-900/80 bg-sky-950/40 text-sky-300',
+  accent: 'border-violet-900/80 bg-violet-950/40 text-violet-300',
+} as const;
+
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   children: ReactNode;
   size?: keyof typeof BADGE_SIZE;
   shape?: keyof typeof BADGE_SHAPE;
+  tone?: keyof typeof BADGE_TONE;
   uppercase?: boolean;
 };
 
@@ -24,6 +37,7 @@ export function Badge({
   className,
   size = 'xs',
   shape = 'pill',
+  tone = 'neutral',
   uppercase = false,
   ...props
 }: BadgeProps) {
@@ -33,6 +47,7 @@ export function Badge({
         'inline-flex items-center border font-medium',
         BADGE_SIZE[size],
         BADGE_SHAPE[shape],
+        BADGE_TONE[tone],
         uppercase ? 'uppercase tracking-wider' : undefined,
         className,
       ].filter(Boolean).join(' ')}
