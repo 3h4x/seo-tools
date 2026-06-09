@@ -1,30 +1,33 @@
+import type { ComponentProps } from 'react';
 import type { PerformanceSource } from '@/lib/performance-site';
 import { Badge } from '@/components/ui';
 
-const SOURCE_BADGE: Record<PerformanceSource, { label: string; className: string; title: string }> = {
+type BadgeTone = NonNullable<ComponentProps<typeof Badge>['tone']>;
+
+const SOURCE_BADGE: Record<PerformanceSource, { label: string; tone: BadgeTone; title: string }> = {
   rum: {
     label: 'RUM',
-    className: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    tone: 'success',
     title: 'Real-user data via GA4 core_web_vitals',
   },
   'rum-pending': {
     label: 'RUM 24h',
-    className: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+    tone: 'info',
     title: 'Events flowing; custom dimensions are still propagating to the Data API',
   },
   'psi-field': {
     label: 'CrUX',
-    className: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+    tone: 'info',
     title: 'PageSpeed Insights field data (CrUX, p75)',
   },
   'psi-lab': {
     label: 'Lab',
-    className: 'bg-violet-500/15 text-violet-300 border-violet-500/30',
+    tone: 'accent',
     title: 'Lighthouse lab synthetic measurements',
   },
   none: {
     label: 'No data',
-    className: 'bg-neutral-800 text-neutral-500 border-neutral-700',
+    tone: 'subtle',
     title: 'No RUM events and PSI returned no metrics',
   },
 };
@@ -38,7 +41,7 @@ export function PerformanceSourceBadge({ source, className }: PerformanceSourceB
   const badge = SOURCE_BADGE[source];
 
   return (
-    <Badge title={badge.title} shape="rounded" uppercase className={[badge.className, className].filter(Boolean).join(' ')}>
+    <Badge title={badge.title} shape="rounded" uppercase tone={badge.tone} className={className}>
       {badge.label}
     </Badge>
   );
