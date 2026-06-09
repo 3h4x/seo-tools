@@ -4,7 +4,7 @@ export { Skeleton };
 
 export function SkeletonCard() {
   return (
-    <Surface className="border-l-4 border-l-neutral-700 space-y-3">
+    <Surface leftAccentClassName="border-l-neutral-700" className="space-y-3">
       <div className="flex items-center gap-3">
         <Skeleton className="h-5 w-12 rounded-full" />
         <Skeleton className="h-4 w-24" />
