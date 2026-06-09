@@ -6,6 +6,12 @@ import { CATEGORY_LABELS, GAP_SEVERITY_STYLES } from '@/lib/gap-definitions';
 import { Badge, Disclosure, FilterChipGroup, Notice, NoticeCenteredContent, Surface, TextButton, TextLink } from '@/components/ui';
 import { Icons } from './icons';
 
+const GAP_SEVERITY_BADGE_TONES: Record<GapSeverity, 'gapHigh' | 'gapMedium' | 'gapLow'> = {
+  high: 'gapHigh',
+  medium: 'gapMedium',
+  low: 'gapLow',
+};
+
 export interface SiteGap {
   gap: GapRecommendation;
   siteId: string;
@@ -22,7 +28,7 @@ function GapRow({ sg }: { sg: SiteGap }) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <Badge className={`shrink-0 ${s.bg} ${s.text} ${s.border}`}>
+            <Badge tone={GAP_SEVERITY_BADGE_TONES[gap.severity]} className="shrink-0">
               {s.label}
             </Badge>
             <Badge className="shrink-0 border-neutral-700 text-neutral-400">
@@ -197,7 +203,7 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
               <h2 className="text-white font-semibold text-sm uppercase tracking-wider">
                 {s.label} Priority
               </h2>
-              <Badge className={`${s.bg} ${s.text} ${s.border}`}>
+              <Badge tone={GAP_SEVERITY_BADGE_TONES[severity]}>
                 {items.length}
               </Badge>
             </div>

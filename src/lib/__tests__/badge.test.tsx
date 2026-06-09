@@ -40,6 +40,9 @@ describe('Badge', () => {
     const mutedText = renderToStaticMarkup(<Badge tone="mutedText" borderless>3 data points</Badge>);
     const subtle = renderToStaticMarkup(<Badge tone="subtle">loading</Badge>);
     const accent = renderToStaticMarkup(<Badge tone="accent">SC + GA4</Badge>);
+    const gapHigh = renderToStaticMarkup(<Badge tone="gapHigh">High</Badge>);
+    const gapMedium = renderToStaticMarkup(<Badge tone="gapMedium">Medium</Badge>);
+    const gapLow = renderToStaticMarkup(<Badge tone="gapLow">Low</Badge>);
 
     expect(success).toContain('border-emerald-800/80 bg-emerald-950/50 text-emerald-300');
     expect(successMuted).toContain('border-emerald-900/80 bg-emerald-950/40 text-emerald-300');
@@ -47,6 +50,9 @@ describe('Badge', () => {
     expect(mutedText).toContain('text-neutral-700');
     expect(subtle).toContain('border-neutral-700 bg-neutral-900 text-neutral-500');
     expect(accent).toContain('border-violet-900/80 bg-violet-950/40 text-violet-300');
+    expect(gapHigh).toContain('border-red-500/20 bg-red-500/10 text-red-400');
+    expect(gapMedium).toContain('border-amber-500/20 bg-amber-500/10 text-amber-400');
+    expect(gapLow).toContain('border-blue-500/20 bg-blue-500/10 text-blue-400');
   });
 
   it('supports inline borderless text badges', () => {
