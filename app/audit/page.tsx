@@ -122,10 +122,12 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             accent="left"
             role="alert"
           >
-            <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
-            <p className="text-neutral-500 text-sm mt-2">
-              The sites table failed to read. Check the server logs and use Refresh to retry.
-            </p>
+            <NoticeCenteredContent height="auto" className="items-start text-left">
+              <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
+              <p className="text-neutral-500 text-sm mt-2">
+                The sites table failed to read. Check the server logs and use Refresh to retry.
+              </p>
+            </NoticeCenteredContent>
           </Notice>
         ) : (
           <NoSitesNotice variant="inline" />
