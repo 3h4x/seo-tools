@@ -621,9 +621,10 @@ export default async function SiteDashboardPage({
             <div className="space-y-5">
               {audit.metaTags.map((meta, i) => (
                 <div key={i}>
-                  <div className="text-neutral-400 text-xs font-mono mb-2 pb-1 border-b border-neutral-800">
+                  <div className="text-neutral-400 text-xs font-mono pb-1">
                     {meta.page}
                   </div>
+                  <Divider className="mb-2" />
                   <MetaChecksTable
                     checks={[meta.title, meta.description, meta.ogTitle, meta.ogImage, meta.ogDescription, meta.twitterCard, meta.canonical, meta.jsonLd]}
                   />
