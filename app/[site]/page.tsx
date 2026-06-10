@@ -112,7 +112,7 @@ function ttfbStatus(ms: number): CheckStatus {
 
 function SearchConsoleDisabledNotice() {
   return (
-    <Notice size="panel" className="rounded-lg">
+    <Notice size="panel">
       <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Search Console</h2>
       <p className="mt-2 text-sm text-neutral-500">
         Search Console is disabled for this site in Config. Metrics, query tables, and keyword history are hidden.
