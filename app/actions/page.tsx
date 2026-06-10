@@ -1,5 +1,5 @@
 import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
-import { loadActionQueue, type ActionQueueItem } from '@/lib/actions';
+import { loadActionQueue } from '@/lib/actions';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 
@@ -17,6 +17,13 @@ const ACTION_KIND_TONES = {
   decay: 'info',
   keyword: 'successMuted',
 } as const;
+
+const PRIORITY_COUNTS = [
+  { label: 'Critical', key: 'critical' },
+  { label: 'High', key: 'high' },
+  { label: 'Medium', key: 'medium' },
+  { label: 'Low', key: 'low' },
+] as const;
 
 const COLUMNS: DataTableColumn[] = [
   { label: 'Priority', className: 'px-4 py-3 font-semibold', cellClassName: 'px-4 py-3 whitespace-nowrap' },
@@ -62,10 +69,12 @@ export default async function ActionsPage() {
           <p className="text-sm text-neutral-500 mt-1">Ranked fixes across all sites using existing audit, decay, and keyword snapshot signals.</p>
         </div>
         <div className="flex gap-2 flex-wrap text-xs">
-          <PriorityCountBadge label="Critical" value={counts.critical} tone="critical" />
-          <PriorityCountBadge label="High" value={counts.high} tone="high" />
-          <PriorityCountBadge label="Medium" value={counts.medium} tone="medium" />
-          <PriorityCountBadge label="Low" value={counts.low} tone="low" />
+          {PRIORITY_COUNTS.map(({ label, key }) => (
+            <Badge key={key} size="md" shape="rounded" tone={ACTION_PRIORITY_TONES[key]} className="gap-2">
+              <span className="font-semibold">{label}</span>
+              <span className="font-mono">{counts[key]}</span>
+            </Badge>
+          ))}
         </div>
       </div>
 
@@ -91,22 +100,5 @@ export default async function ActionsPage() {
         </Surface>
       )}
     </div>
-  );
-}
-
-function PriorityCountBadge({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: 'critical' | 'high' | 'medium' | 'low';
-}) {
-  return (
-    <Badge size="md" shape="rounded" tone={ACTION_PRIORITY_TONES[tone]} className="gap-2">
-      <span className="font-semibold">{label}</span>
-      <span className="font-mono">{value}</span>
-    </Badge>
   );
 }
