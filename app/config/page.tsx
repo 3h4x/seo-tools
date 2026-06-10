@@ -8,7 +8,7 @@ import SitesManager from '../components/sites-manager';
 import AlertDeliveryForm from '../components/alert-delivery-form';
 import AlertRulesManager from '../components/alert-rules-manager';
 import { SkeletonChipRow, SkeletonHeader } from '../components/skeletons';
-import { Skeleton, Surface } from '@/components/ui';
+import { Divider, Skeleton, Surface } from '@/components/ui';
 import type { OperationalStatus } from '@/lib/db';
 import type { Site } from '@/lib/sites';
 
@@ -77,15 +77,15 @@ function ConfigPageSkeleton() {
   return (
     <div className="p-6 space-y-10" aria-label="Loading configuration">
       <FormSectionSkeleton />
-      <hr className="border-neutral-800" />
+      <Divider />
       <StatusSectionSkeleton />
-      <hr className="border-neutral-800" />
+      <Divider />
       <FormSectionSkeleton compact />
-      <hr className="border-neutral-800" />
+      <Divider />
       <FormSectionSkeleton compact />
-      <hr className="border-neutral-800" />
+      <Divider />
       <SitesSectionSkeleton />
-      <hr className="border-neutral-800" />
+      <Divider />
       <SitesSectionSkeleton />
     </div>
   );
@@ -155,15 +155,15 @@ export default function ConfigPage() {
   return (
     <div className="p-6 space-y-10">
       <ConfigForm source={source} />
-      <hr className="border-neutral-800" />
+      <Divider />
       <OperationalStatusPanel statuses={statuses} error={statusError} />
-      <hr className="border-neutral-800" />
+      <Divider />
       <PagespeedKeyForm />
-      <hr className="border-neutral-800" />
+      <Divider />
       <AlertDeliveryForm />
-      <hr className="border-neutral-800" />
+      <Divider />
       <AlertRulesManager sites={sites} />
-      <hr className="border-neutral-800" />
+      <Divider />
       <SitesManager initialSites={sites} hasAuth={hasAuth} />
     </div>
   );

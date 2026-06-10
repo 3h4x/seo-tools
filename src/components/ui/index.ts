@@ -1,6 +1,7 @@
 export { Badge } from './badge';
 export { ConfigSourceBadge, ConfiguredNotice } from './configured-notice';
 export { Disclosure } from './disclosure';
+export { Divider } from './divider';
 export { FilterChipGroup } from './filter-chip-group';
 export { FormButton } from './form-button';
 export { FormCheckbox, FormInput, FormSelect, FormTextarea } from './form-control';
