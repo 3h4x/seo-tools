@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormInput, Notice, Skeleton, Spinner, Surface } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
+import { SkeletonChipRow } from './skeletons';
 
 type Source = 'db' | 'env' | 'none';
 type TestState = 'idle' | 'testing' | 'ok' | 'error';
@@ -51,10 +52,7 @@ function PagespeedKeyFormSkeleton() {
       </div>
       <Skeleton className="h-4 w-full max-w-xl" />
       <Skeleton className="h-11 w-full" />
-      <div className="flex gap-2">
-        <Skeleton className="h-9 w-16" />
-        <Skeleton className="h-9 w-28" />
-      </div>
+      <SkeletonChipRow count={2} itemClassName="h-9 w-16 last:w-28" />
     </Surface>
   );
 }
