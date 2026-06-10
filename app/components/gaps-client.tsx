@@ -56,9 +56,11 @@ function GapRow({ sg }: { sg: SiteGap }) {
               </>
             )}
           >
-            <pre className="text-neutral-400 text-xs font-mono mt-2 whitespace-pre-wrap bg-neutral-800 rounded p-3 overflow-x-auto">
-              {gap.hint}
-            </pre>
+            <Surface padding="xs" className="mt-2 !rounded bg-neutral-800">
+              <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-xs text-neutral-400">
+                {gap.hint}
+              </pre>
+            </Surface>
           </Disclosure>
         </div>
         <TextLink
