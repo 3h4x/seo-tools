@@ -268,18 +268,20 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
           </NoticeCenteredContent>
         </Notice>
       ) : (
-        <DataTable
-          caption="Configured alert rules"
-          columns={ALERT_RULE_COLUMNS}
-          rows={ruleRows}
-          rowKeys={ruleRowKeys}
-          monospaceCells={false}
-          containerClassName="overflow-x-auto"
-          tableClassName="w-full text-sm text-left"
-          headRowClassName="text-neutral-500 border-b border-neutral-800"
-          bodyClassName=""
-          rowClassName="border-b border-neutral-900"
-        />
+        <Surface padding="none" className="overflow-x-auto">
+          <DataTable
+            caption="Configured alert rules"
+            columns={ALERT_RULE_COLUMNS}
+            rows={ruleRows}
+            rowKeys={ruleRowKeys}
+            monospaceCells={false}
+            containerClassName="contents"
+            tableClassName="w-full text-sm text-left"
+            headRowClassName="text-neutral-500 border-b border-neutral-800"
+            bodyClassName=""
+            rowClassName="border-b border-neutral-900"
+          />
+        </Surface>
       )}
 
       <Surface padding="sm" className="space-y-4">
