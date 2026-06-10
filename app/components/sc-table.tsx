@@ -54,7 +54,7 @@ function ExportButton({ data, filename, label = 'Export CSV' }: {
       size="compact"
       variant={done ? 'success' : 'muted'}
       hasIcon
-      className="text-[10px] font-medium !rounded"
+      className="text-[10px] font-medium"
     >
       <span className="sr-only" role="status" aria-live="polite">
         {done ? `Saved ${filename}` : ''}
