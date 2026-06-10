@@ -186,7 +186,9 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
           const s = GAP_SEVERITY_STYLES[sev];
           return (
             <Surface key={sev} padding="sm" leftAccentClassName={s.accentBorder}>
-              <div className="text-neutral-500 text-xs uppercase tracking-wider mb-1">{s.label} Priority</div>
+              <Badge size="inline" borderless uppercase className="mb-1 !text-xs !font-normal text-neutral-500">
+                {s.label} Priority
+              </Badge>
               <div className={`${s.text} text-3xl font-mono font-bold`}>{grouped[sev].length}</div>
               <div className="text-neutral-600 text-xs mt-1">{sublabel}</div>
             </Surface>
