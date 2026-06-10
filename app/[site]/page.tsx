@@ -243,11 +243,11 @@ export default async function SiteDashboardPage({
           { status: 'warn', value: audit.score.warn, label: 'warnings' },
           { status: 'fail', value: audit.score.fail + audit.score.error, label: 'failures' },
         ] satisfies Array<{ status: CheckStatus; value: number; label: string }>).map(({ status, value, label }) => (
-          <div key={label} className="flex items-center gap-2">
-            <div className={`size-2 rounded-full ${STATUS_COLORS[status].dot}`} />
+          <Badge key={label} size="inline" borderless className="gap-2 font-normal">
+            <span className={`size-2 rounded-full ${STATUS_COLORS[status].dot}`} aria-hidden="true" />
             <span className={`${STATUS_COLORS[status].text} font-mono text-sm font-bold`}>{value}</span>
             <span className="text-neutral-500 text-xs">{label}</span>
-          </div>
+          </Badge>
         ))}
         {totalGaps > 0 && (
           <div className="flex items-center gap-2 ml-auto">
