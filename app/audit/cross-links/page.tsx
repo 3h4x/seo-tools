@@ -50,7 +50,7 @@ export default async function CrossLinksPage() {
         </div>
         <PartialFailureBanner failures={partialFailures} />
         {sitesResult.failed ? (
-          <Notice tone="danger" size="lg" accent="left" className="rounded-lg" role="alert">
+          <Notice tone="danger" size="lg" accent="left" role="alert">
             <NoticeCenteredContent height="auto" className="items-start text-left">
               <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
               <p className="text-neutral-500 text-sm mt-2">

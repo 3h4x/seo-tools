@@ -52,7 +52,7 @@ export default async function TrendsPage({
           <h1 className="text-2xl font-bold text-white">Trends</h1>
           <p className="text-neutral-500 text-sm mt-1">Historical data over time</p>
         </div>
-        <Notice tone="warning" size="spacious" accent="left" className="rounded-lg">
+        <Notice tone="warning" size="spacious" accent="left">
           <NoticeCenteredContent height="auto">
             <span className="mx-auto mb-3 block w-fit text-amber-500 [&>svg]:size-12 [&>svg]:stroke-[1.5]">
               {Icons.ctr}
@@ -86,7 +86,7 @@ export default async function TrendsPage({
         </div>
         <PartialFailureBanner failures={partialFailures} />
         {managedSitesResult.failed ? (
-          <Notice tone="danger" size="lg" accent="left" className="rounded-lg" role="alert">
+          <Notice tone="danger" size="lg" accent="left" role="alert">
             <NoticeCenteredContent height="auto" className="items-start text-left">
               <p className="text-red-400 font-semibold">Couldn&apos;t load managed sites</p>
               <p className="text-neutral-500 text-sm mt-2">
@@ -160,7 +160,7 @@ function OverviewTab({
 
           if (!hasData) {
             return (
-              <Notice key={site.id} size="panel" className="rounded-lg">
+              <Notice key={site.id} size="panel">
                 <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left">
                   <div className="flex items-center gap-3">
                     <span className="text-white font-semibold">{site.name}</span>
@@ -385,7 +385,7 @@ function KeywordsSection({
           <h2 className="text-lg font-bold text-white">Keyword History</h2>
           <p className="text-neutral-500 text-sm mt-1">Rank movement over time across tracked queries</p>
         </div>
-        <Notice tone="warning" size="spacious" accent="left" className="rounded-lg">
+        <Notice tone="warning" size="spacious" accent="left">
           <NoticeCenteredContent height="auto">
             <p className="text-amber-400 font-bold">No keyword history yet</p>
             <p className="text-neutral-500 text-sm mt-2">
