@@ -130,7 +130,6 @@ export function IndexNowButton({
         disabled={!configured || submitting}
         size="xs"
         hasIcon
-        className="border border-neutral-700"
       >
         {submitting && <Spinner />}
         {submitting ? 'Pinging…' : 'Ping IndexNow'}
