@@ -88,7 +88,6 @@ export function KeywordRankTable({ deltas, limit = 20 }: { deltas: KeywordDelta[
       rows={rows}
       rowKeys={rowKeys}
       monospaceCells={false}
-      containerClassName="overflow-x-auto"
       tableClassName="w-full text-xs"
       headRowClassName="text-neutral-600 border-b border-neutral-800"
       bodyClassName=""
