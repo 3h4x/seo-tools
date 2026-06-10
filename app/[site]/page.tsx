@@ -665,7 +665,7 @@ export default async function SiteDashboardPage({
           <CheckCard check={audit.ogImage} gaps={sections['ogImage']}>
             {audit.ogImage.url && (
               <div className="mt-3 space-y-3">
-                <Surface padding="none" className="max-w-md w-full overflow-hidden !rounded border-neutral-700">
+                <Surface padding="none" className="max-w-md w-full overflow-hidden border-neutral-700">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={audit.ogImage.url}
@@ -905,7 +905,7 @@ function SerpSnippetPreview({ page, domain, titleRaw, titleLen, descRaw, descLen
   const DESC_LIMIT = 160;
   const breadcrumb = `${domain}${page === '/' ? '' : page}`;
   return (
-    <Surface padding="xs" className="mt-3 !rounded border-neutral-700/40 bg-neutral-800/20">
+    <Surface padding="xs" className="mt-3 border-neutral-700/40 bg-neutral-800/20">
       <Badge size="inline" borderless uppercase className="mb-2 text-neutral-500 font-semibold">
         SERP Preview
       </Badge>
