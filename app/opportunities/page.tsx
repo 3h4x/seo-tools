@@ -138,7 +138,7 @@ export default async function OpportunitiesPage({
           size="spacious"
           tone={emptyNoticeTone}
           accent={sitesResult.failed ? 'left' : 'none'}
-          className="rounded-lg text-neutral-500"
+          className="text-neutral-500"
         >
           <NoticeCenteredContent height="auto" className={emptyContentClassName}>
             <p className={emptyTitleClassName}>{emptyTitle}</p>
