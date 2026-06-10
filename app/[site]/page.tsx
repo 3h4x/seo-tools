@@ -33,7 +33,7 @@ import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
 import { ProviderErrorBadge } from '../components/provider-error-badge';
 import { DataTable, type DataTableColumn } from '../components/data-table';
-import { Badge, Disclosure, Notice, ProgressBar, Surface, TextLink } from '@/components/ui';
+import { Badge, Disclosure, Divider, Notice, ProgressBar, Surface, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -453,7 +453,8 @@ export default async function SiteDashboardPage({
           )}
         </div>
       </div>
-      <div className="border-t border-neutral-800 pt-8">
+      <div>
+        <Divider className="mb-8" />
         <h2 className="text-lg font-bold text-white mb-6">Site Audit</h2>
 
         <div className="space-y-6">
