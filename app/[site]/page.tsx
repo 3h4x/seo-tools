@@ -33,7 +33,7 @@ import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
 import { ProviderErrorBadge } from '../components/provider-error-badge';
 import { DataTable, type DataTableColumn } from '../components/data-table';
-import { Badge, Disclosure, Divider, Notice, ProgressBar, Surface, TextLink } from '@/components/ui';
+import { Badge, Disclosure, Divider, Notice, NoticeCenteredContent, ProgressBar, Surface, TextLink } from '@/components/ui';
 
 export const revalidate = 300;
 
@@ -425,13 +425,21 @@ export default async function SiteDashboardPage({
               />
             </Surface>
           ) : (
-            <Notice size="sm" className="text-neutral-500">No GA4 page data available.</Notice>
+            <Notice size="sm">
+              <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left">
+                No GA4 page data available.
+              </NoticeCenteredContent>
+            </Notice>
           )}
         </div>
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Traffic Sources</h2>
           {(ga4?.trafficSources ?? []).length === 0 ? (
-            <Notice size="sm" className="text-neutral-500">No traffic source data available.</Notice>
+            <Notice size="sm">
+              <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left">
+                No traffic source data available.
+              </NoticeCenteredContent>
+            </Notice>
           ) : (
             <Surface padding="sm">
               <DataTable
