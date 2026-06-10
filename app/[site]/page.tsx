@@ -470,7 +470,8 @@ export default async function SiteDashboardPage({
               <p className="text-neutral-600 text-xs font-mono mt-2">URL: {audit.sitemap.url}</p>
             )}
             {(audit.sitemap.checkedUrlCount != null || audit.sitemap.crawledPagesChecked != null || audit.sitemap.checkedLastmodCount != null) && (
-              <div className="mt-3 border-t border-neutral-800 pt-3 space-y-2 text-xs font-mono">
+              <div className="mt-3 space-y-2 text-xs font-mono">
+                <Divider className="mb-3" />
                 {audit.sitemap.checkedUrlCount != null && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-neutral-500">
                     <span>
@@ -504,7 +505,8 @@ export default async function SiteDashboardPage({
               </div>
             )}
             {(sitemapSubmissions ?? []).length > 0 && (
-              <div className="mt-3 border-t border-neutral-800 pt-3 space-y-2">
+              <div className="mt-3 space-y-2">
+                <Divider className="mb-3" />
                 <p className="text-neutral-500 text-xs font-semibold uppercase tracking-wide">Google Search Console</p>
                 {(sitemapSubmissions ?? []).map((s, i) => (
                   <div key={i} className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono">
