@@ -94,7 +94,7 @@ export default async function ActionsPage() {
             rows={rows}
             rowKeys={items.map((item) => item.id)}
             monospaceCells={false}
-            containerClassName="overflow-x-auto"
+            containerClassName="contents"
             tableClassName="w-full text-sm min-w-[900px]"
           />
         </Surface>
