@@ -16,7 +16,7 @@ export function TrendsTable({ title, columns, rows }: TrendsTableProps) {
   return (
     <div>
       <h3 className="text-neutral-500 text-xs uppercase tracking-wider mb-2 font-semibold">{title}</h3>
-      <Surface padding="none" className="max-h-64 overflow-y-auto !rounded">
+      <Surface padding="none" className="max-h-64 overflow-y-auto">
         <DataTable
           columns={tableColumns}
           rows={rows}
