@@ -897,7 +897,9 @@ function SerpSnippetPreview({ page, domain, titleRaw, titleLen, descRaw, descLen
   const breadcrumb = `${domain}${page === '/' ? '' : page}`;
   return (
     <Surface padding="xs" className="mt-3 !rounded border-neutral-700/40 bg-neutral-800/20">
-      <div className="text-[10px] text-neutral-500 uppercase tracking-wider mb-2 font-semibold">SERP Preview</div>
+      <Badge size="inline" borderless uppercase className="mb-2 text-neutral-500 font-semibold">
+        SERP Preview
+      </Badge>
       <div className="max-w-xl">
         <div className="text-[11px] text-green-700 font-mono mb-0.5 truncate">{breadcrumb}</div>
         <div className="text-[15px] leading-snug mb-1">
