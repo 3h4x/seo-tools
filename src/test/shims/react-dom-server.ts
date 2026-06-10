@@ -1,5 +1,5 @@
 import { Fragment, isValidElement } from './react';
-import type { ReactElement, ReactNode } from './react';
+import type { ReactNode } from './react';
 
 const voidElements = new Set([
   'area',
@@ -62,7 +62,7 @@ function renderNode(node: ReactNode): string {
   if (Array.isArray(node)) return node.map(renderNode).join('');
   if (!isValidElement(node)) return '';
 
-  const element = node as ReactElement;
+  const element = node;
   if (typeof element.type === 'function') {
     return renderNode(element.type(element.props, undefined));
   }
