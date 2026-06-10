@@ -115,7 +115,9 @@ export function GapsClient({ allSiteGaps, sites, categories }: GapsClientProps) 
     <div className="space-y-6">
       <Surface padding="sm" className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-neutral-500 text-xs font-semibold uppercase tracking-wider">Filter</span>
+          <Badge size="inline" borderless uppercase className="text-xs text-neutral-500 font-semibold">
+            Filter
+          </Badge>
           {isFiltered && (
             <TextButton
               variant="quiet"
