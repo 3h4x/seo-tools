@@ -16,7 +16,7 @@ import { GapsClient, type SiteGap } from '../components/gaps-client';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import TimeRange from '../components/time-range';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
-import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
+import { Badge, Divider, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
 import { NoSitesNotice } from '../components/no-sites-notice';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import { PerformanceSourceBadge } from '../components/performance-source-badge';
@@ -352,25 +352,28 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                   <CheckItem label="TTFB" status={audit.ttfb.status} sublabel={audit.ttfb.ms ? `${audit.ttfb.ms}ms` : undefined} />
                 </div>
                 {cwv && Object.keys(cwv.metrics).length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-neutral-800 flex items-center gap-4 flex-wrap">
-                    <Badge uppercase tone="mutedText" className="shrink-0">
-                      CWV
-                    </Badge>
-                    {(['LCP', 'INP', 'CLS'] as CwvMetricName[]).map(name => {
-                      const metric = cwv.metrics[name];
-                      if (!metric) return null;
-                      const colors = CWV_RATING_COLORS[metric.rating];
-                      const t = CWV_THRESHOLDS[name];
-                      const display = t.unit === 'ms' ? `${Math.round(metric.value)}ms` : metric.value.toFixed(3);
-                      return (
-                        <div key={name} className="flex items-center gap-1.5">
-                          <span className="text-neutral-500 text-[10px]">{name}</span>
-                          <span className={`text-[10px] font-mono font-semibold ${colors.text}`}>{display}</span>
-                        </div>
-                      );
-                    })}
-                    <PerformanceSourceBadge source={cwv.source} className="ml-auto" />
-                  </div>
+                  <>
+                    <Divider className="mt-3" />
+                    <div className="pt-3 flex items-center gap-4 flex-wrap">
+                      <Badge uppercase tone="mutedText" className="shrink-0">
+                        CWV
+                      </Badge>
+                      {(['LCP', 'INP', 'CLS'] as CwvMetricName[]).map(name => {
+                        const metric = cwv.metrics[name];
+                        if (!metric) return null;
+                        const colors = CWV_RATING_COLORS[metric.rating];
+                        const t = CWV_THRESHOLDS[name];
+                        const display = t.unit === 'ms' ? `${Math.round(metric.value)}ms` : metric.value.toFixed(3);
+                        return (
+                          <div key={name} className="flex items-center gap-1.5">
+                            <span className="text-neutral-500 text-[10px]">{name}</span>
+                            <span className={`text-[10px] font-mono font-semibold ${colors.text}`}>{display}</span>
+                          </div>
+                        );
+                      })}
+                      <PerformanceSourceBadge source={cwv.source} className="ml-auto" />
+                    </div>
+                  </>
                 )}
               </Surface>
             </TextLink>
