@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Badge, FormButton, FormInput, FormSelect, Notice, NoticeCenteredContent, Skeleton, Spinner, Surface, TextButton, ToggleButtonGroup } from '@/components/ui';
+import { Badge, FormButton, FormInput, FormSelect, Notice, NoticeCenteredContent, Spinner, Surface, TextButton, ToggleButtonGroup } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
 import { DataTable, type DataTableColumn } from './data-table';
+import { SkeletonTable } from './skeletons';
 
 type FormState = {
   id?: number;
@@ -110,17 +111,9 @@ export async function readAlertRulesResponse(res: Response): Promise<AlertRule[]
 
 function AlertRulesSkeleton() {
   return (
-    <Surface padding="sm" className="space-y-3" aria-label="Loading alert rules">
-      {[...Array(3)].map((_, index) => (
-        <div key={index} className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_1fr_4rem]">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-4 w-16" />
-        </div>
-      ))}
-    </Surface>
+    <div aria-label="Loading alert rules">
+      <SkeletonTable rows={3} />
+    </div>
   );
 }
 
