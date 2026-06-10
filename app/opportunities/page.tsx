@@ -90,7 +90,7 @@ export default async function OpportunitiesPage({
       ? 'Enable Search Console for at least one managed site in Config to populate keyword opportunities.'
       : 'No queries ranking in positions 5-20 for the selected period. Try a longer date range.';
   const emptyNoticeTone = sitesResult.failed ? 'danger' : 'neutral';
-  const emptyContentClassName = sitesResult.failed ? 'h-auto items-start text-left' : 'h-auto';
+  const emptyContentClassName = sitesResult.failed ? 'items-start text-left' : undefined;
   const emptyTitleClassName = sitesResult.failed ? 'mb-1 font-semibold text-red-400' : 'mb-1 font-medium';
 
   const rows = top.map(({ domain, opportunity: o }) => [
@@ -140,7 +140,7 @@ export default async function OpportunitiesPage({
           accent={sitesResult.failed ? 'left' : 'none'}
           className="rounded-lg text-neutral-500"
         >
-          <NoticeCenteredContent className={emptyContentClassName}>
+          <NoticeCenteredContent height="auto" className={emptyContentClassName}>
             <p className={emptyTitleClassName}>{emptyTitle}</p>
             <p className="text-sm">{emptyMessage}</p>
           </NoticeCenteredContent>

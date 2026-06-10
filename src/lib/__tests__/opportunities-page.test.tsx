@@ -214,7 +214,7 @@ describe('Opportunities page', () => {
     expect(mockCachedGetKeywordOpportunities).not.toHaveBeenCalled();
     expect(html).toContain('Enable Search Console for at least one managed site in Config to populate keyword opportunities.');
     expect(html).toContain('border border-neutral-800 bg-neutral-900/60 text-neutral-300 p-8 rounded-lg text-neutral-500');
-    expect(html).toContain('flex flex-col items-center justify-center text-center h-auto');
+    expect(html).toContain('h-auto flex flex-col items-center justify-center text-center');
     expect(html).not.toContain('Try a longer date range.');
   });
 });
