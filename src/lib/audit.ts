@@ -3,7 +3,8 @@ import { normalizeSkipChecks } from './skip-checks';
 import { checkIndexNowKey } from './indexnow.js';
 import { withCache, CACHE_TTL_WEEK } from './db';
 import { GOOGLEBOT_UA, safeFetch } from './audit-fetch';
-import { checkOgImage, checkRedirectChain, checkRobotsTxt, checkSecurity, checkTtfb } from './audit-checks';
+import { checkOgImage, checkRobotsTxt, checkSecurity, checkTtfb } from './audit-checks';
+import { checkRedirectChain } from './audit-redirects';
 import { createFailedSiteAuditResult, normalizeSiteAuditResult } from './audit-results';
 import { buildSiteAuditResult } from './audit-score';
 import {
