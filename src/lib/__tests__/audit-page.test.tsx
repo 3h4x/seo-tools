@@ -411,7 +411,7 @@ describe('Audit page', () => {
       const html = renderToStaticMarkup(page);
 
       expect(html).toContain('Stale · Checked moments ago');
-      expect(html).toContain('text-amber-400 text-[10px]');
+      expect(html).toContain('p-0 text-[10px] rounded-full text-amber-400 !font-normal');
     } finally {
       nowSpy.mockRestore();
     }

@@ -333,9 +333,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-neutral-600 text-xs">View details →</span>
-                    <span className={`${freshness.className} text-[10px]`}>
+                    <Badge size="inline" borderless className={`${freshness.className} !font-normal`}>
                       {freshness.prefix}Checked {formatRelativeTime(audit.timestamp)}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
 
