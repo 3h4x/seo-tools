@@ -314,9 +314,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
           activeValues={visibleSiteIds}
           onToggle={toggleSite}
           className="flex flex-wrap gap-3 mt-3"
-          getButtonClassName={(_option, active) => `flex items-center gap-2 text-xs px-2 py-1 rounded transition-colors ${
-            active ? 'hover:bg-neutral-800' : 'opacity-40 hover:opacity-60'
-          }`}
+          buttonVariant="legend"
           renderLabel={(option, active) => (
             <>
               <div

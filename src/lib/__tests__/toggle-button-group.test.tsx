@@ -60,4 +60,22 @@ describe('ToggleButtonGroup', () => {
     expect(html).toContain('class="custom-inactive"');
     expect(html).not.toContain('bg-neutral-800');
   });
+
+  it('renders compact legend controls for chart legends', () => {
+    const html = renderToStaticMarkup(
+      <ToggleButtonGroup
+        options={[
+          { value: 'one', label: 'One' },
+          { value: 'two', label: 'Two' },
+        ]}
+        activeValues={new Set(['one'])}
+        onToggle={() => {}}
+        buttonVariant="legend"
+      />,
+    );
+
+    expect(html).toContain('flex items-center gap-2 text-xs px-2 py-1 rounded transition-colors hover:bg-neutral-800');
+    expect(html).toContain('flex items-center gap-2 text-xs px-2 py-1 rounded transition-colors opacity-40 hover:opacity-60');
+    expect(html).not.toContain('bg-neutral-700');
+  });
 });
