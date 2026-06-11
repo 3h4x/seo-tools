@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps } from 'react';
 import { DataTable, type DataTableColumn } from '../../components/data-table';
 import { getCrossLinkMatrix, type CrossLinkSourceMatrix, type CrossLinkSourceStatus } from '@/lib/cross-links';
 import { CROSS_LINK_CELL_STYLES, STATUS_COLORS } from '@/lib/constants';
@@ -119,9 +119,9 @@ export default async function CrossLinksPage() {
                   <div key={site.id} className="space-y-0.5">
                     {row.status !== 'ok' || target.linkedPages === null || target.missingPages === null ? (
                       <>
-                        <CrossLinkStatusBadge className={CROSS_LINK_CELL_STYLES.unavailable}>
+                        <Badge size="inline" borderless className={CROSS_LINK_CELL_STYLES.unavailable}>
                           {sourceStatusLabel(row.status)}
-                        </CrossLinkStatusBadge>
+                        </Badge>
                         <div className="text-neutral-700 text-[10px]">Not evaluated</div>
                       </>
                     ) : (
@@ -177,9 +177,9 @@ function SourcePagesCell({ row }: { row: CrossLinkSourceMatrix }) {
   if (row.status !== 'ok') {
     return (
       <div className="space-y-0.5">
-        <CrossLinkStatusBadge className={CROSS_LINK_CELL_STYLES.sourceUnavailable}>
+        <Badge size="inline" borderless className={CROSS_LINK_CELL_STYLES.sourceUnavailable}>
           {sourceStatusLabel(row.status)}
-        </CrossLinkStatusBadge>
+        </Badge>
         <div className="text-neutral-700 text-[10px]">Not evaluated</div>
       </div>
     );
@@ -189,19 +189,11 @@ function SourcePagesCell({ row }: { row: CrossLinkSourceMatrix }) {
     <div className="space-y-0.5">
       <div>{row.crawledPages}</div>
       {row.failedPages > 0 && (
-        <CrossLinkStatusBadge className={CROSS_LINK_CELL_STYLES.fetchFailure}>
+        <Badge size="inline" borderless className={CROSS_LINK_CELL_STYLES.fetchFailure}>
           {row.failedPages} fetch {row.failedPages === 1 ? 'failed' : 'failures'}
-        </CrossLinkStatusBadge>
+        </Badge>
       )}
     </div>
-  );
-}
-
-function CrossLinkStatusBadge({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <Badge size="inline" borderless className={className}>
-      {children}
-    </Badge>
   );
 }
 
