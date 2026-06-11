@@ -3,7 +3,7 @@
 import { useRefresh } from './refresh-context';
 import { useEffect, useState } from 'react';
 import { formatRelativeTime } from '@/lib/format';
-import { FormButton, Spinner } from '@/components/ui';
+import { Badge, FormButton, Spinner } from '@/components/ui';
 import { Icons } from './icons';
 
 export default function RefreshButton() {
@@ -24,9 +24,15 @@ export default function RefreshButton() {
   return (
     <div className="flex items-center gap-2">
       {lastUpdated && displayTime && (
-        <span className="text-neutral-500 text-xs hidden sm:block" title={new Date(lastUpdated).toLocaleString()}>
+        <Badge
+          size="inline"
+          tone="mutedText"
+          borderless
+          className="hidden text-xs sm:block"
+          title={new Date(lastUpdated).toLocaleString()}
+        >
           Updated {displayTime}
-        </span>
+        </Badge>
       )}
       <FormButton
         type="button"
