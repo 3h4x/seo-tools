@@ -413,7 +413,11 @@ function KeywordsSection({
         <h2 className="text-lg font-bold text-white">Keyword History</h2>
         <p className="text-neutral-500 text-sm mt-1">
           Rank movement over time across tracked queries
-          {keywordCount > 0 && <span className="text-neutral-600 font-mono ml-2">{keywordCount.toLocaleString()} keywords</span>}
+          {keywordCount > 0 && (
+            <MutedCountBadge className="ml-2 !p-0 !text-sm font-mono text-neutral-600">
+              {keywordCount.toLocaleString()} keywords
+            </MutedCountBadge>
+          )}
         </p>
       </div>
 
@@ -506,9 +510,9 @@ function MetricCell({ label, value, color }: { label: string; value: string; col
   );
 }
 
-function MutedCountBadge({ children }: { children: ReactNode }) {
+function MutedCountBadge({ children, className = 'ml-auto !px-0' }: { children: ReactNode; className?: string }) {
   return (
-    <Badge size="xs" shape="rounded" tone="mutedText" borderless className="ml-auto !px-0">
+    <Badge size="xs" shape="rounded" tone="mutedText" borderless className={className}>
       {children}
     </Badge>
   );
