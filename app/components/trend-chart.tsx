@@ -58,7 +58,7 @@ export default function TrendChart({
     return (
       <Notice
         size="none"
-        className="rounded border-neutral-800 bg-transparent text-xs text-neutral-600"
+        className="bg-transparent text-xs text-neutral-600"
         style={{ height }}
       >
         <NoticeCenteredContent height="full">
