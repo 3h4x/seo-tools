@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { Badge, Disclosure, Surface } from '@/components/ui';
+import { Icons } from './icons';
 
 const DATALAYER_SNIPPET = `import { onLCP, onINP, onCLS, onFCP, onTTFB } from 'web-vitals';
 
@@ -42,7 +43,9 @@ export default function CwvSetupGuide({ defaultOpen = false }: { defaultOpen?: b
         summary={
           <span className="flex w-full items-center justify-between gap-3 text-left">
             <span className="flex items-center gap-2">
-              <span className="text-neutral-500" aria-hidden="true">{open ? '▾' : '▸'}</span>
+              <span className={`inline-flex text-neutral-500 transition-transform ${open ? 'rotate-90' : ''}`}>
+                {Icons.disclosure}
+              </span>
               How to wire Core Web Vitals (GTM + GA4)
             </span>
             <Badge size="compact" shape="rounded" tone="subtle">
