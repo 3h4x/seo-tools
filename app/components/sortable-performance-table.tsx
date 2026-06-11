@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { ProgressBar, TextButton, TextLink } from '@/components/ui';
+import { Badge, ProgressBar, TextButton, TextLink } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { TrendBadge } from './trend-badge';
 import { CopyButton } from './copy-button';
@@ -135,9 +135,9 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
             fillClassName="bg-emerald-500/60"
           />
         ) : (
-          <span className={row.ga4Error ? 'text-red-400/70 text-xs' : 'text-neutral-600 text-xs'}>
+          <Badge size="inline" borderless tone={row.ga4Error ? 'dangerText' : 'mutedText'} className="!text-xs !font-normal">
             {row.ga4Error ? 'GA4 failed' : 'No GA4 data'}
-          </span>
+          </Badge>
         )}
       </TextLink>
       <div className="pt-[1.375rem]">
