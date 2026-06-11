@@ -333,7 +333,10 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <Badge size="inline" tone="mutedText" borderless className="!font-normal">
-                      View details →
+                      <span>View details</span>
+                      <span aria-hidden="true" className="ml-1 inline-block align-middle">
+                        {Icons.disclosure}
+                      </span>
                     </Badge>
                     <Badge size="inline" borderless className={`${freshness.className} !font-normal`}>
                       {freshness.prefix}Checked {formatRelativeTime(audit.timestamp)}
