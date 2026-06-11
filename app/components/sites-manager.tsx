@@ -497,7 +497,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
   ];
   const siteTableRows = sites.map((site, index) => [
     <div key="order" className="flex items-center gap-2">
-      <span className="w-5 text-xs font-mono">{index + 1}</span>
+      <Badge size="inline" borderless className="w-5 justify-start font-mono text-xs text-neutral-400">
+        {index + 1}
+      </Badge>
       <TextButton
         onClick={() => handleMoveSite(index, -1)}
         disabled={isEditing || saving || index === 0}
