@@ -706,7 +706,9 @@ export default async function SiteDashboardPage({
                         </div>
                       ))}
                       {img.images.every(d => d.hasAlt && d.isLazy) && (
-                        <span className="text-emerald-400 text-xs">All images have alt text and lazy loading</span>
+                        <Badge size="inline" borderless tone="successText" className="text-xs font-normal">
+                          All images have alt text and lazy loading
+                        </Badge>
                       )}
                     </div>
                   )}
