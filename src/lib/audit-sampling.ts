@@ -20,6 +20,7 @@ export function sampleAuditPages(
   };
 
   for (const p of testPages) {
+    if (result.length >= MAX_SAMPLED_PAGES) break;
     addPath(p.startsWith('/') ? p : `/${p}`);
   }
 
