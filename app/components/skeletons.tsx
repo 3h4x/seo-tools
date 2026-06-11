@@ -14,9 +14,9 @@ export function SkeletonCard() {
   );
 }
 
-export function SkeletonTable({ rows = 4 }: { rows?: number }) {
+export function SkeletonTable({ ariaLabel, rows = 4 }: { ariaLabel?: string; rows?: number }) {
   return (
-    <Surface className="space-y-4">
+    <Surface className="space-y-4" aria-label={ariaLabel}>
       <Skeleton className="h-4 w-48" />
       {[...Array(rows)].map((_, i) => (
         <div key={i} className="flex items-center gap-4">
