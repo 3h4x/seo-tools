@@ -4,145 +4,35 @@ import { getAuth } from './google-auth';
 import { normalizeSkipChecks, type SkipCheckId } from './skip-checks';
 import { checkIndexNowKey } from './indexnow.js';
 import { dateOnlyDaysBack, dateStr } from './date-only';
+import { withCache, CACHE_TTL_WEEK } from './db';
+import { createFailedSiteAuditResult, normalizeSiteAuditResult } from './audit-results';
+import type {
+  CheckResult,
+  CheckStatus,
+  FetchResult,
+  ImageDetail,
+  ImageSeoResult,
+  IndexingCoverageResult,
+  InternalLinkResult,
+  MetaTagResult,
+  OgImageResult,
+  RedirectChainResult,
+  RedirectHop,
+  RobotsTxtResult,
+  SecurityResult,
+  SiteAuditResult,
+  SitemapResult,
+  TtfbResult,
+  UrlInspectionPageResult,
+} from './audit-types';
 
-export type CheckStatus = 'pass' | 'warn' | 'fail' | 'error';
-
-export interface CheckResult {
-  status: CheckStatus;
-  label: string;
-  message: string;
-  details?: string;
-  rawLength?: number;
-  rawValue?: string;
-}
-
-interface RobotsTxtResult extends CheckResult {
-  raw?: string;
-  hasSitemapDirective: boolean;
-  sitemapUrl?: string;
-}
-
-interface SitemapResult extends CheckResult {
-  url?: string;
-  urlCount?: number;
-  isIndex?: boolean;
-  hasLastmod?: boolean;
-  lastmodSample?: string;
-  locs?: string[];
-  checkedUrlCount?: number;
-  deadUrlCount?: number;
-  deadUrls?: string[];
-  crawledPagesInSitemap?: number;
-  crawledPagesChecked?: number;
-  crawlCoveragePct?: number;
-  staleLastmodCount?: number;
-  checkedLastmodCount?: number;
-  staleLastmodThresholdDays?: number;
-}
-
-interface MetaTagResult {
-  page: string;
-  ogImageUrl?: string;
-  noindex: boolean;
-  canonicalValid: boolean | null;
-  canonicalStatus: number | null;
-  canonicalTarget: string | null;
-  title: CheckResult;
-  description: CheckResult;
-  ogTitle: CheckResult;
-  ogImage: CheckResult;
-  ogDescription: CheckResult;
-  twitterCard: CheckResult;
-  canonical: CheckResult;
-  jsonLd: CheckResult;
-}
-
-interface OgImageResult extends CheckResult {
-  url?: string;
-  contentType?: string;
-  dimensions?: string;
-}
-
-interface TtfbResult extends CheckResult {
-  ms?: number;
-}
-
-interface RedirectHop {
-  url: string;
-  status: number;
-  location?: string;
-}
-
-interface RedirectChainResult extends CheckResult {
-  page: string;
-  requestedUrl: string;
-  finalUrl: string;
-  hops: RedirectHop[];
-  hopCount: number;
-  hasTemporaryRedirect: boolean;
-  loopDetected: boolean;
-}
-
-interface ImageDetail {
-  src: string;
-  hasAlt: boolean;
-  altText?: string;
-  isLazy: boolean;
-}
-
-interface ImageSeoResult {
-  page: string;
-  totalImages: number;
-  withAlt: number;
-  withoutAlt: number;
-  withLazyLoading: number;
-  status: CheckStatus;
-  label: string;
-  message: string;
-  images: ImageDetail[];
-}
-
-interface InternalLinkResult {
-  page: string;
-  internalLinks: number;
-  externalLinks: number;
-  checkedInternalLinks: number;
-  brokenLinks: Array<{
-    url: string;
-    status: number;
-  }>;
-  brokenLinksMessage: string;
-  status: CheckStatus;
-  label: string;
-  message: string;
-}
-
-interface SecurityResult {
-  https: CheckResult;
-  hsts: CheckResult;
-  favicon: CheckResult;
-}
-
-interface IndexingCoverageResult extends CheckResult {
-  sitemapUrls?: number;
-  indexedPages?: number;
-  coveragePct?: number;
-}
-
-interface UrlInspectionPageResult extends CheckResult {
-  page: string;
-  inspectionUrl: string;
-  verdict?: string;
-  coverageState?: string;
-  indexingState?: string;
-  lastCrawlTime?: string;
-  mobileUsabilityVerdict?: string;
-  richResultsVerdict?: string;
-  referringUrls?: string[];
-  googleCanonical?: string;
-  userCanonical?: string;
-  inspectionResultLink?: string;
-}
+export type {
+  CheckResult,
+  CheckStatus,
+  FetchResult,
+  SiteAuditResult,
+} from './audit-types';
+export { createFailedSiteAuditResult, normalizeSiteAuditResult } from './audit-results';
 
 function applySkipToCheck<T extends CheckResult>(check: T, skip: Set<SkipCheckId>, checkId: SkipCheckId): T {
   if (!skip.has(checkId)) return check;
@@ -150,86 +40,6 @@ function applySkipToCheck<T extends CheckResult>(check: T, skip: Set<SkipCheckId
     ...check,
     status: 'pass',
     message: `N/A — ${check.message}`,
-  };
-}
-
-export interface SiteAuditResult {
-  siteId: string;
-  domain: string;
-  timestamp: number;
-  robotsTxt: RobotsTxtResult;
-  sitemap: SitemapResult;
-  scSitemapFreshness: CheckResult;
-  indexingCoverage: IndexingCoverageResult;
-  indexNow: CheckResult;
-  urlInspection: UrlInspectionPageResult[];
-  redirectChains: RedirectChainResult[];
-  metaTags: MetaTagResult[];
-  ogImage: OgImageResult;
-  ttfb: TtfbResult;
-  imageSeo: ImageSeoResult[];
-  internalLinks: InternalLinkResult[];
-  security: SecurityResult;
-  score: { pass: number; warn: number; fail: number; error: number; total: number };
-  sampledPages: string[];
-}
-
-const LEGACY_INDEXNOW_DEFAULT: CheckResult = {
-  status: 'warn',
-  label: 'IndexNow',
-  message: 'Not audited (legacy cache — refresh to update)',
-};
-
-function makeAuditUnavailableCheck(label: string): CheckResult {
-  return {
-    status: 'error',
-    label,
-    message: 'Audit unavailable',
-  };
-}
-
-export function createFailedSiteAuditResult(site: Site): SiteAuditResult {
-  return {
-    siteId: site.id,
-    domain: site.domain,
-    timestamp: Date.now(),
-    robotsTxt: {
-      ...makeAuditUnavailableCheck('robots.txt'),
-      hasSitemapDirective: false,
-    },
-    sitemap: makeAuditUnavailableCheck('Sitemap'),
-    scSitemapFreshness: makeAuditUnavailableCheck('SC Sitemap'),
-    indexingCoverage: makeAuditUnavailableCheck('Indexing'),
-    indexNow: makeAuditUnavailableCheck('IndexNow'),
-    urlInspection: [],
-    redirectChains: [],
-    metaTags: [],
-    ogImage: makeAuditUnavailableCheck('OG Image'),
-    ttfb: makeAuditUnavailableCheck('TTFB'),
-    imageSeo: [],
-    internalLinks: [],
-    security: {
-      https: makeAuditUnavailableCheck('HTTPS'),
-      hsts: makeAuditUnavailableCheck('HSTS'),
-      favicon: makeAuditUnavailableCheck('Favicon'),
-    },
-    score: { pass: 0, warn: 0, fail: 0, error: 1, total: 1 },
-    sampledPages: site.testPages ?? [],
-  };
-}
-
-export function normalizeSiteAuditResult(audit: SiteAuditResult): SiteAuditResult {
-  return {
-    ...audit,
-    indexNow: audit.indexNow ?? LEGACY_INDEXNOW_DEFAULT,
-    urlInspection: audit.urlInspection ?? [],
-    redirectChains: audit.redirectChains ?? [],
-    internalLinks: (audit.internalLinks ?? []).map((link) => ({
-      ...link,
-      checkedInternalLinks: link.checkedInternalLinks ?? 0,
-      brokenLinks: link.brokenLinks ?? [],
-      brokenLinksMessage: link.brokenLinksMessage ?? 'Broken-link verification unavailable in cached audit',
-    })),
   };
 }
 
@@ -639,15 +449,6 @@ const MAX_REDIRECT_HOPS = 10;
 const PERMANENT_REDIRECT_STATUSES = new Set([301, 308]);
 const SITEMAP_URL_HEALTH_LIMIT = 50;
 const SITEMAP_STALE_LASTMOD_DAYS = 90;
-
-export interface FetchResult {
-  ok: boolean;
-  status: number;
-  text: string;
-  headers: Headers;
-  ttfbMs: number;
-  error?: string;
-}
 
 const MAX_RETRIES = 3;
 const BASE_DELAY = 1_000;
@@ -1819,8 +1620,6 @@ async function auditAllSites(): Promise<SiteAuditResult[]> {
 }
 
 // --- Cached versions ---
-
-import { withCache, CACHE_TTL_WEEK } from './db';
 
 export async function cachedAuditSite(site: Site): Promise<SiteAuditResult> {
   const audit = (await withCache<SiteAuditResult>('audit', site.id, () => runSiteAudit(site), CACHE_TTL_WEEK))!;
