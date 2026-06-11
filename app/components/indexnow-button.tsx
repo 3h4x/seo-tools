@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormButton, Notice, Spinner } from '@/components/ui';
+import { Badge, FormButton, Notice, Spinner } from '@/components/ui';
 import { formatNetworkError } from '@/lib/request-result';
 
 type PingState = {
@@ -135,9 +135,9 @@ export function IndexNowButton({
         {submitting ? 'Pinging…' : 'Ping IndexNow'}
       </FormButton>
       {!configured && (
-        <Notice size="none" className="border-0 bg-transparent p-0 text-xs text-neutral-500">
+        <Badge size="inline" borderless tone="mutedText" className="text-xs font-normal">
           Add an IndexNow key in Config first.
-        </Notice>
+        </Badge>
       )}
       {result && (
         <Notice
