@@ -906,7 +906,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                         )}
                       </div>
                       {site.importError && (
-                        <p className="pl-6 text-xs text-red-400">{site.importError}</p>
+                        <Notice tone="danger" size="none" role="alert" className="ml-6 border-0 bg-transparent p-0 text-xs text-red-400">
+                          {site.importError}
+                        </Notice>
                       )}
                     </div>
                   ))}
