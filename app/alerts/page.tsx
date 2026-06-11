@@ -73,7 +73,7 @@ export default async function AlertsPage() {
       <PartialFailureBanner failures={partialFailures} />
 
       {eventsResult.failed ? (
-        <Notice tone="danger" size="lg" accent="left">
+        <Notice tone="danger" size="lg" accent="left" role="alert">
           <NoticeCenteredContent height="auto" className="items-start text-left">
             <p className="font-semibold text-red-400">Couldn&apos;t load alert history</p>
             <p className="mt-2 text-sm text-neutral-500">
