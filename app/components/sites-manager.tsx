@@ -9,6 +9,7 @@ import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-ch
 import { CHART_NEUTRALS } from '@/lib/constants';
 import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, Notice, Spinner, Surface, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
+import { Icons } from './icons';
 
 interface Site {
   id: string;
@@ -617,8 +618,10 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
           size="sm"
           onClick={startNew}
           disabled={isEditing || saving}
+          hasIcon
         >
-          + Add Site
+          {Icons.plusCircle}
+          Add Site
         </FormButton>
       </div>
       {sites.length === 0 && !isEditing && (
