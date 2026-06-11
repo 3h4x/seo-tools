@@ -86,6 +86,7 @@ describe('cachedGetKeywordOpportunities', () => {
 
     expect(mockQuery).toHaveBeenCalledWith(
       expect.objectContaining({ siteUrl: 'sc-domain:example.com' }),
+      expect.objectContaining({ timeout: 30_000 }),
     );
   });
 
@@ -96,6 +97,7 @@ describe('cachedGetKeywordOpportunities', () => {
 
     expect(mockQuery).toHaveBeenCalledWith(
       expect.objectContaining({ siteUrl: 'https://example.com/' }),
+      expect.objectContaining({ timeout: 30_000 }),
     );
   });
 

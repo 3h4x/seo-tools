@@ -16,6 +16,7 @@ const EXPECTED_CTR: Record<number, number> = {
   1: 0.285, 2: 0.157, 3: 0.110, 4: 0.080, 5: 0.072,
   6: 0.051, 7: 0.040, 8: 0.032, 9: 0.028, 10: 0.025,
 };
+const GOOGLE_API_TIMEOUT_MS = 30_000;
 
 function expectedCtrForPosition(position: number): number {
   const rounded = Math.min(10, Math.max(1, Math.round(position)));
@@ -59,7 +60,7 @@ async function fetchKeywordOpportunities(
         dimensions: ['query', 'page'],
         rowLimit: 500,
       },
-    });
+    }, { timeout: GOOGLE_API_TIMEOUT_MS });
 
     const rows = response.data.rows ?? [];
     const opportunities: KeywordOpportunity[] = [];
