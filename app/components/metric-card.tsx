@@ -52,7 +52,7 @@ export function MetricCard({
     <Surface padding="sm" leftAccentClassName={accentClassName}>
       <div className="flex items-center gap-2 text-neutral-500 mb-2">
         {icon}
-        <Badge size="inline" borderless uppercase className="text-xs text-neutral-500 font-normal">
+        <Badge size="inline" borderless uppercase tone="mutedLabel" className="text-xs font-normal">
           {label}
         </Badge>
         {labelAddon}
