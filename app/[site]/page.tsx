@@ -464,9 +464,11 @@ export default async function SiteDashboardPage({
         <div className="space-y-6">
           <CheckCard check={audit.robotsTxt} gaps={sections['robotsTxt']}>
             {audit.robotsTxt.raw && (
-              <pre className="bg-neutral-800 rounded p-3 mt-3 text-xs text-neutral-400 font-mono overflow-x-auto max-h-40">
-                {audit.robotsTxt.raw}
-              </pre>
+              <Surface padding="none" className="mt-3 border-0 !bg-neutral-800">
+                <pre className="max-h-40 overflow-x-auto p-3 text-xs text-neutral-400 font-mono">
+                  {audit.robotsTxt.raw}
+                </pre>
+              </Surface>
             )}
           </CheckCard>
           <CheckCard check={audit.sitemap} gaps={sections['sitemap']}>
