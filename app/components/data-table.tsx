@@ -3,7 +3,6 @@ import { Surface } from '@/components/ui';
 
 const FONT_WEIGHT_CLASS_RE = /\bfont-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)\b/;
 const TEXT_ALIGN_CLASS_RE = /\btext-(?:left|center|right|justify|start|end)\b/;
-const DEFAULT_CONTAINER_CLASS_NAME = 'overflow-hidden rounded border border-neutral-800';
 
 function joinClassNames(...parts: Array<string | undefined>) {
   return [...new Set(parts.flatMap((part) => (part ? part.split(/\s+/) : [])))].join(' ');
@@ -56,7 +55,7 @@ export function DataTable({
   rowKeys,
   monospaceCells = true,
   tableClassName = 'w-full text-sm',
-  containerClassName = DEFAULT_CONTAINER_CLASS_NAME,
+  containerClassName,
   headClassName,
   headRowClassName = 'border-b border-neutral-800 text-neutral-500',
   bodyClassName = 'divide-y divide-neutral-800',
@@ -181,7 +180,7 @@ export function DataTable({
     </table>
   );
 
-  if (containerClassName === DEFAULT_CONTAINER_CLASS_NAME) {
+  if (containerClassName === undefined) {
     return (
       <Surface padding="none" className="overflow-hidden !rounded">
         {table}
