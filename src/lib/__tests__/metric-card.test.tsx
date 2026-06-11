@@ -3,6 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { MetricCard } from '../../../app/components/metric-card';
 
 describe('MetricCard', () => {
+  it('normalizes legacy border accents for the shared surface left accent', () => {
+    const html = renderToStaticMarkup(
+      <MetricCard label="Users" current={120} accent="border-blue-500" />
+    );
+
+    expect(html).toContain('border-l-blue-500');
+    expect(html).not.toContain(' border-blue-500');
+  });
+
   it('adds semantic trend text alongside compact visual arrows', () => {
     const html = renderToStaticMarkup(
       <MetricCard label="Users" current={120} previous={100} accent="border-blue-500" />

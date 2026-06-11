@@ -12,6 +12,11 @@ const METRIC_ACCENT_CLASSES: Record<MetricAccentTone, string> = {
   muted: 'border-l-neutral-700',
 };
 
+function toSurfaceAccentClassName(accent: string | undefined) {
+  if (!accent) return undefined;
+  return accent.replace(/\bborder-(?!l-|r-|t-|b-|x-|y-|s-|e-)/g, 'border-l-');
+}
+
 export function MetricCard({
   label,
   value,
@@ -37,7 +42,7 @@ export function MetricCard({
   labelAddon?: ReactNode;
   footer?: ReactNode;
 }) {
-  const accentClassName = accent ?? (accentTone ? METRIC_ACCENT_CLASSES[accentTone] : undefined);
+  const accentClassName = toSurfaceAccentClassName(accent) ?? (accentTone ? METRIC_ACCENT_CLASSES[accentTone] : undefined);
   const displayValue = value ?? (current > 0 ? current.toLocaleString() : '\u2014');
   const diff = previous > 0 ? ((current - previous) / previous) * 100 : 0;
   const show = previous > 0 && Math.abs(diff) >= 1;
