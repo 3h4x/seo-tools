@@ -290,13 +290,15 @@ export async function checkSecurity(domain: string): Promise<SecurityResult> {
     httpsCheck = { status: 'pass', label: 'HTTPS', message: 'HTTPS only (HTTP not available)' };
   }
 
-  const httpsRes = await safeFetch(`https://${domain}/`);
+  const [httpsRes, faviconRes] = await Promise.all([
+    safeFetch(`https://${domain}/`),
+    safeFetch(`https://${domain}/favicon.ico`),
+  ]);
   const hstsHeader = httpsRes.headers.get('strict-transport-security');
   const hstsCheck: CheckResult = hstsHeader
     ? { status: 'pass', label: 'HSTS', message: `Present: ${hstsHeader.slice(0, 80)}` }
     : { status: 'warn', label: 'HSTS', message: 'Missing Strict-Transport-Security header' };
 
-  const faviconRes = await safeFetch(`https://${domain}/favicon.ico`);
   const faviconCheck: CheckResult = faviconRes.ok
     ? { status: 'pass', label: 'Favicon', message: 'Found' }
     : { status: 'warn', label: 'Favicon', message: 'Missing /favicon.ico' };
