@@ -1,4 +1,5 @@
 import { CWV_RATING_COLORS, CWV_THRESHOLDS, type CwvMetricName, type CwvRating } from '@/lib/constants';
+import { Badge } from '@/components/ui';
 
 export function formatCwv(name: CwvMetricName, value: number): string {
   const unit = CWV_THRESHOLDS[name].unit;
@@ -14,13 +15,21 @@ export function CwvCell({ name, value, rating, sub }: {
   sub?: string;
 }) {
   if (value == null || rating == null) {
-    return <span className="text-neutral-600">—</span>;
+    return (
+      <Badge size="inline" borderless className="!text-sm !font-normal text-neutral-600">
+        —
+      </Badge>
+    );
   }
   const c = CWV_RATING_COLORS[rating];
   return (
-    <span className={`inline-flex flex-col leading-tight font-mono ${c.text}`}>
+    <Badge
+      size="inline"
+      borderless
+      className={`flex-col !items-start !text-sm !font-normal font-mono leading-tight ${c.text}`}
+    >
       <span>{formatCwv(name, value)}</span>
       {sub && <span className="text-[10px] text-neutral-500">{sub}</span>}
-    </span>
+    </Badge>
   );
 }
