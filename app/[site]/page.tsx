@@ -330,18 +330,14 @@ export default async function SiteDashboardPage({
             Ranking Distribution &middot; top {scQueries.length} queries
           </h2>
           <Surface padding="sm" className="space-y-4">
-            <div className="flex h-2.5 rounded-full overflow-hidden gap-px bg-neutral-800">
-              {queryBucketStats.map((bucket) => bucket.count > 0 && (
-                <div
-                  key={bucket.label}
-                  className="transition-all first:rounded-l-full last:rounded-r-full"
-                  style={{
-                    backgroundColor: bucket.color,
-                    width: `${(bucket.count / scQueries.length) * 100}%`,
-                  }}
-                />
-              ))}
-            </div>
+            <ProgressBar
+              className="h-2.5"
+              segments={queryBucketStats.map((bucket) => ({
+                key: bucket.label,
+                value: (bucket.count / scQueries.length) * 100,
+                style: { backgroundColor: bucket.color },
+              }))}
+            />
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {queryBucketStats.map((bucket) => (
                 <div key={bucket.label} className="space-y-0.5">
