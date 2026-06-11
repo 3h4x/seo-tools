@@ -31,6 +31,7 @@ interface SnapshotRunRow {
 
 type ScheduledSnapshotResult = 'started' | 'skipped-not-due' | 'skipped-running';
 
+const GOOGLE_API_TIMEOUT_MS = 30_000;
 const SNAPSHOT_JOB_KEY = 'daily';
 const SNAPSHOT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const SNAPSHOT_CHECK_INTERVAL_MS = 60 * 60 * 1000;
@@ -249,7 +250,7 @@ async function doSnapshot(): Promise<SnapshotResult> {
       const q = await sc.searchanalytics.query({
         siteUrl: getSCUrl(site),
         requestBody: { startDate, endDate, dimensions: ['page'], rowLimit: 100 },
-      });
+      }, { timeout: GOOGLE_API_TIMEOUT_MS });
       const rows = q.data.rows || [];
       db.transaction(() => {
         scDelete.run(site.id, today);
@@ -277,7 +278,7 @@ async function doSnapshot(): Promise<SnapshotResult> {
       const q = await sc.searchanalytics.query({
         siteUrl: getSCUrl(site),
         requestBody: { startDate, endDate, dimensions: ['query'], rowLimit: 50 },
-      });
+      }, { timeout: GOOGLE_API_TIMEOUT_MS });
       const rows = q.data.rows || [];
       db.transaction(() => {
         for (const row of rows) {
