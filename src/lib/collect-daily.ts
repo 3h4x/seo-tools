@@ -10,6 +10,7 @@ export { batchRanges } from './date-only';
 
 const LOOKBACK_DAYS = 90;
 const COLLECT_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+const GOOGLE_API_TIMEOUT_MS = 30_000;
 
 function daysBack(n: number): Date {
   const d = new Date();
@@ -90,7 +91,7 @@ async function collectDaily(): Promise<void> {
             dimensions: ['date'],
             rowLimit: 500,
           },
-        });
+        }, { timeout: GOOGLE_API_TIMEOUT_MS });
 
         const rows = (q.data.rows || []).map(row => ({
           date: row.keys?.[0] || '',
