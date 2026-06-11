@@ -231,7 +231,7 @@ describe('runSitemapSync', () => {
     expect(submit).toHaveBeenCalledWith({
       siteUrl: 'sc-domain:example.com',
       feedpath: 'https://example.com/sitemap.xml',
-    });
+    }, { timeout: 30000 });
     const callArgs = db._stmtRun.run.mock.calls[0][0] as Record<string, unknown>;
     expect(callArgs.submit_count).toBe(4);
   });
@@ -266,7 +266,7 @@ describe('runSitemapSync', () => {
     expect(submit).toHaveBeenCalledWith({
       siteUrl: 'sc-domain:new-example.com',
       feedpath: 'https://new-example.com/sitemap.xml',
-    });
+    }, { timeout: 30000 });
     const callArgs = db._stmtRun.run.mock.calls[0][0] as Record<string, unknown>;
     expect(callArgs.content_hash).toBe(hashContent(SAMPLE_XML));
     expect(callArgs.submit_count).toBe(1);
@@ -326,6 +326,7 @@ describe('runSitemapSync', () => {
 
     expect(submit).toHaveBeenCalledWith(
       expect.objectContaining({ siteUrl: 'https://mysite.io/' }),
+      { timeout: 30000 },
     );
   });
 
@@ -350,7 +351,7 @@ describe('runSitemapSync', () => {
     expect(submit).toHaveBeenCalledWith({
       siteUrl: 'https://mysite.io/',
       feedpath: 'https://mysite.io/sitemap.xml',
-    });
+    }, { timeout: 30000 });
   });
 
   it('treats loadSites failure as zero sites without throwing (catch path)', async () => {

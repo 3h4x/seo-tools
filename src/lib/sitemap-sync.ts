@@ -5,6 +5,7 @@ import { getDb } from './db';
 
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;   // check every 6h
 const MIN_SUBMIT_INTERVAL_MS = 24 * 60 * 60 * 1000; // submit at most once per 24h
+const GOOGLE_API_TIMEOUT_MS = 30_000;
 
 interface SitemapSite {
   id: string;
@@ -135,7 +136,7 @@ export async function runSitemapSync(): Promise<void> {
     }
 
     try {
-      await sc.sitemaps.submit({ siteUrl: site.scUrl, feedpath: site.sitemapUrl });
+      await sc.sitemaps.submit({ siteUrl: site.scUrl, feedpath: site.sitemapUrl }, { timeout: GOOGLE_API_TIMEOUT_MS });
       const newCount = (prev?.submit_count ?? 0) + 1;
       console.log(`[sitemap-sync] ${site.id}: changed → submitted ${site.sitemapUrl} (#${newCount})`);
       upsertState.run({ site_id: site.id, sitemap_url: site.sitemapUrl, content_hash: hash, url_count: urlCount, latest_lastmod: latestLastmod, last_submitted_at: now, last_checked_at: now, submit_count: newCount });
