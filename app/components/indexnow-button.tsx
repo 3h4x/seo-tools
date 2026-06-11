@@ -135,7 +135,9 @@ export function IndexNowButton({
         {submitting ? 'Pinging…' : 'Ping IndexNow'}
       </FormButton>
       {!configured && (
-        <span className="text-xs text-neutral-500">Add an IndexNow key in Config first.</span>
+        <Notice size="none" className="border-0 bg-transparent p-0 text-xs text-neutral-500">
+          Add an IndexNow key in Config first.
+        </Notice>
       )}
       {result && (
         <Notice
