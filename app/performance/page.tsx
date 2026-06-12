@@ -73,9 +73,8 @@ export default async function PerformancePage({
       <div key="site">
         <TextLink
           href={`/performance/${encodeURIComponent(row.id)}`}
-          size="inherit"
-          variant="inherit"
-          className="text-sm text-white hover:underline"
+          variant="neutral"
+          className="text-sm font-medium text-white"
         >
           {row.name}
         </TextLink>
