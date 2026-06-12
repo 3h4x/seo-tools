@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
 import { loadOrFlag, loadSyncOrFallback, loadSyncOrFlag } from '@/lib/page-helpers';
 import { NoSitesNotice } from '../components/no-sites-notice';
@@ -213,7 +212,9 @@ function OverviewTab({
               <div className="flex items-center gap-3">
                 <span className="text-white font-semibold">{site.name}</span>
                 <span className="text-neutral-600 text-xs">{site.domain}</span>
-                <MutedCountBadge>{ga4Trends.length || scTrends.length} data points</MutedCountBadge>
+                <Badge size="xs" shape="rounded" tone="mutedText" borderless className="ml-auto !px-0">
+                  {ga4Trends.length || scTrends.length} data points
+                </Badge>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {ga4Trends.length > 0 && (
@@ -414,9 +415,9 @@ function KeywordsSection({
         <p className="text-neutral-500 text-sm mt-1">
           Rank movement over time across tracked queries
           {keywordCount > 0 && (
-            <MutedCountBadge className="ml-2 !p-0 !text-sm font-mono text-neutral-600">
+            <Badge size="xs" shape="rounded" tone="mutedText" borderless className="ml-2 !p-0 !text-sm font-mono text-neutral-600">
               {keywordCount.toLocaleString()} keywords
-            </MutedCountBadge>
+            </Badge>
           )}
         </p>
       </div>
@@ -445,7 +446,9 @@ function KeywordsSection({
                     {site.name}
                   </TextLink>
                   <span className="text-neutral-600 text-xs">{site.domain}</span>
-                  <MutedCountBadge>{deltas.length} tracked queries</MutedCountBadge>
+                  <Badge size="xs" shape="rounded" tone="mutedText" borderless className="ml-auto !px-0">
+                    {deltas.length} tracked queries
+                  </Badge>
                 </div>
 
                 {chartData.length >= 2 && (
@@ -507,13 +510,5 @@ function MetricCell({ label, value, color }: { label: string; value: string; col
       <div className="text-neutral-500 text-[10px] uppercase tracking-wider mb-0.5">{label}</div>
       <div className={`${color} font-mono text-sm font-semibold`}>{value}</div>
     </div>
-  );
-}
-
-function MutedCountBadge({ children, className = 'ml-auto !px-0' }: { children: ReactNode; className?: string }) {
-  return (
-    <Badge size="xs" shape="rounded" tone="mutedText" borderless className={className}>
-      {children}
-    </Badge>
   );
 }
