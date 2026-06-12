@@ -457,7 +457,7 @@ function KeywordsSection({
                       Position Over Time · top {topQueries.length} queries · lower is better
                     </h3>
                     <TrendChart
-                      data={chartData as Parameters<typeof TrendChart>[0]['data']}
+                      data={chartData}
                       lines={chartLines}
                       yAxisReversed
                       valueFormat="fixed1"
