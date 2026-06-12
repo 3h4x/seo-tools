@@ -165,9 +165,23 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   );
   const managedSitesById = new Map(managedSites.map((site) => [site.id, site]));
 
-  const cwvEntries = await Promise.all(
-    managedSites.map((site) => loadCwvSummaryForAudit(site.id))
-  );
+  const [cwvEntries, siteGapRows] = await Promise.all([
+    Promise.all(managedSites.map((site) => loadCwvSummaryForAudit(site.id))),
+    Promise.all(audits.map(async (audit) => {
+      const site = managedSitesById.get(audit.siteId);
+      if (!site) return null;
+
+      const propertyId = propertyIdBySite.get(site.id) || site.ga4PropertyId || '';
+      const signalsResult = await loadOrFlag(
+        `AuditPage gaps ${site.id}`,
+        loadSiteGapSignals(site, propertyId, period),
+        null,
+      );
+      if (!signalsResult.value) return { site, gaps: [], failed: signalsResult.failed };
+      const { gaps } = analyzeSiteGaps(audit, site, signalsResult.value);
+      return { site, gaps, failed: signalsResult.failed };
+    })),
+  ]);
   const cwvSummaries: Record<string, CwvAuditSummary | null> = {};
   let cwvFailedCount = 0;
   for (const [siteId, result] of cwvEntries) {
@@ -193,20 +207,6 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
 
   const allSiteGaps: SiteGap[] = [];
   const gapCountBySite = new Map<string, number>();
-  const siteGapRows = await Promise.all(audits.map(async (audit) => {
-    const site = managedSitesById.get(audit.siteId);
-    if (!site) return null;
-
-    const propertyId = propertyIdBySite.get(site.id) || site.ga4PropertyId || '';
-    const signalsResult = await loadOrFlag(
-      `AuditPage gaps ${site.id}`,
-      loadSiteGapSignals(site, propertyId, period),
-      null,
-    );
-    if (!signalsResult.value) return { site, gaps: [], failed: signalsResult.failed };
-    const { gaps } = analyzeSiteGaps(audit, site, signalsResult.value);
-    return { site, gaps, failed: signalsResult.failed };
-  }));
 
   let gapSignalFailures = 0;
   for (const row of siteGapRows) {
