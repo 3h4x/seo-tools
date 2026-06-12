@@ -136,25 +136,30 @@ export default async function SiteDashboardPage({
   const days = parseAllowedIntegerParam(sp.days, VALID_DAYS, 7);
   const hasSearchConsole = site.searchConsole !== false;
 
-  // Discover GA4 property ID
-  const discoveredResult = await loadOrFlag(
+  const discoveredResultPromise = loadOrFlag(
     'SiteDashboard GA4 discovery',
     discoverPropertyIdsWithStatus(),
     { sites: [], failed: false },
   );
-  const discovered = discoveredResult.value.sites;
-  const propertyId = discovered.find((s) => s.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
 
   const scUrl = getSCUrl(site);
 
-  const [rawAuditResult, sitemapSubmissionsResult, scComparisonResult, scQueriesResult, scTopPagesResult, ga4DataResult, cwvSummaryResult] = await Promise.all([
+  const siteDataPromise = Promise.all([
     loadOrFlag(`SiteDashboard audit ${siteId}`, cachedAuditSite(site), createFailedSiteAuditResult(site)),
     hasSearchConsole ? loadOrFlag(`SiteDashboard sitemap submissions ${siteId}`, cachedGetSitemapSubmissions(scUrl), []) : Promise.resolve({ value: [], failed: false }),
     hasSearchConsole ? loadOrFlag(`SiteDashboard Search Console comparison ${siteId}`, cachedGetSearchConsoleDataWithComparison(scUrl, days), { data: null, error: true }) : Promise.resolve({ value: null, failed: false }),
     hasSearchConsole ? loadOrFlag(`SiteDashboard Search Console queries ${siteId}`, cachedGetSearchConsoleQueries(scUrl, days), null) : Promise.resolve({ value: null, failed: false }),
     hasSearchConsole ? loadOrFlag(`SiteDashboard Search Console pages ${siteId}`, cachedGetSearchConsolePages(scUrl, days), null) : Promise.resolve({ value: null, failed: false }),
-    loadOrFlag(`SiteDashboard GA4 ${siteId}`, cachedGetAnalytics(propertyId, days), { data: null, error: Boolean(propertyId) }),
     loadOrFlag(`SiteDashboard CWV ${siteId}`, getCwvAuditSummary(siteId), null),
+  ]);
+  const discoveredResult = await discoveredResultPromise;
+  const discovered = discoveredResult.value.sites;
+  const propertyId = discovered.find((s) => s.id === siteId)?.ga4PropertyId || site.ga4PropertyId || '';
+  const ga4DataPromise = loadOrFlag(`SiteDashboard GA4 ${siteId}`, cachedGetAnalytics(propertyId, days), { data: null, error: Boolean(propertyId) });
+
+  const [[rawAuditResult, sitemapSubmissionsResult, scComparisonResult, scQueriesResult, scTopPagesResult, cwvSummaryResult], ga4DataResult] = await Promise.all([
+    siteDataPromise,
+    ga4DataPromise,
   ]);
   const rawAudit = rawAuditResult.value;
   const sitemapSubmissions = sitemapSubmissionsResult.value;
