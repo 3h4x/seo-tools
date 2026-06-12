@@ -46,6 +46,14 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   return dir === 'desc' ? Icons.sortDesc : Icons.sortAsc;
 }
 
+function MissingMetricBadge() {
+  return (
+    <Badge size="inline" borderless tone="mutedText" className="!text-sm !font-normal">
+      —
+    </Badge>
+  );
+}
+
 export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
   const [sortKey, setSortKey] = useState<SortKey>('users');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -162,14 +170,14 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
         {formatBounce(row.bounceRate)}
       </span>
     ) : (
-      <span key="bounce" className="text-neutral-600">—</span>
+      <MissingMetricBadge key="bounce" />
     ),
     row.avgSessionDuration !== null && row.hasData
       ? <span key="duration">{formatDuration(row.avgSessionDuration)}</span>
-      : <span key="duration" className="text-neutral-600">—</span>,
+      : <MissingMetricBadge key="duration" />,
     row.scClicks === null
       ? <ProviderErrorBadge key="sc-clicks" label="error" />
-      : row.scClicks > 0 ? <span key="sc-clicks">{row.scClicks.toLocaleString()}</span> : <span key="sc-clicks" className="text-neutral-600">—</span>,
+      : row.scClicks > 0 ? <span key="sc-clicks">{row.scClicks.toLocaleString()}</span> : <MissingMetricBadge key="sc-clicks" />,
     row.scPosition === null ? (
       <ProviderErrorBadge key="sc-position" label="error" />
     ) : row.scPosition > 0 ? (
@@ -184,7 +192,7 @@ export function SortablePerformanceTable({ rows }: { rows: PerformanceRow[] }) {
         {row.scPosition}
       </span>
     ) : (
-      <span key="sc-position" className="text-neutral-600">—</span>
+      <MissingMetricBadge key="sc-position" />
     ),
   ]);
 
