@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import type { InputHTMLAttributes, LabelHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 const CONTROL_CLASSES =
   'w-full border border-neutral-700 text-sm focus:outline-none focus:border-neutral-500';
@@ -34,6 +34,8 @@ interface FormTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> 
 }
 
 type FormCheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>;
+
+type FormLabelProps = LabelHTMLAttributes<HTMLLabelElement>;
 
 function getControlClassName(
   className: string | undefined,
@@ -78,6 +80,15 @@ export function FormCheckbox({ className, ...props }: FormCheckboxProps) {
     <input
       type="checkbox"
       className={['rounded border-neutral-600', className].filter(Boolean).join(' ')}
+      {...props}
+    />
+  );
+}
+
+export function FormLabel({ className, ...props }: FormLabelProps) {
+  return (
+    <label
+      className={['text-xs text-neutral-400', className].filter(Boolean).join(' ')}
       {...props}
     />
   );

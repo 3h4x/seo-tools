@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { FormInput, FormSelect, FormTextarea } from '../../../src/components/ui/form-control';
+import { FormInput, FormLabel, FormSelect, FormTextarea } from '../../../src/components/ui/form-control';
 
 describe('form controls', () => {
   it('applies shared dashboard form control styling to inputs', () => {
@@ -53,5 +53,16 @@ describe('form controls', () => {
     expect(html).toContain('bg-neutral-800 rounded text-white');
     expect(html).toContain('px-3 py-2');
     expect(html).toContain('GA4 sessions');
+  });
+
+  it('renders shared compact form labels', () => {
+    const html = renderToStaticMarkup(
+      <FormLabel htmlFor="service-key" className="block">Service key</FormLabel>
+    );
+
+    expect(html).toContain('<label');
+    expect(html).toContain('for="service-key"');
+    expect(html).toContain('text-xs text-neutral-400');
+    expect(html).toContain('block');
   });
 });

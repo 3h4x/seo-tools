@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormTextarea, Notice, Spinner } from '@/components/ui';
+import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormLabel, FormTextarea, Notice, Spinner } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -125,7 +125,7 @@ export default function ConfigForm({ source: initialSource }: Props) {
       )}
 
       <div className="space-y-1">
-        <label htmlFor="google-sa-key-json" className="text-xs text-neutral-400">Service account JSON</label>
+        <FormLabel htmlFor="google-sa-key-json">Service account JSON</FormLabel>
         <FormTextarea
           id="google-sa-key-json"
           className="h-48 resize-y"
