@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormInput, FormTextarea, Notice, Spinner } from '@/components/ui';
+import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormInput, FormLabel, FormTextarea, Notice, Spinner } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -188,7 +188,7 @@ export default function AlertDeliveryForm() {
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="space-y-1">
-          <label htmlFor="alert-resend-api-key" className="text-xs text-neutral-400">Resend API key</label>
+          <FormLabel htmlFor="alert-resend-api-key">Resend API key</FormLabel>
           <FormInput
             id="alert-resend-api-key"
             type="password"
@@ -201,7 +201,7 @@ export default function AlertDeliveryForm() {
           />
         </div>
         <div className="space-y-1">
-          <label htmlFor="alert-from-email" className="text-xs text-neutral-400">Sender email</label>
+          <FormLabel htmlFor="alert-from-email">Sender email</FormLabel>
           <FormInput
             id="alert-from-email"
             type="email"
@@ -211,7 +211,7 @@ export default function AlertDeliveryForm() {
           />
         </div>
         <div className="space-y-1 md:col-span-2">
-          <label htmlFor="alert-to-email" className="text-xs text-neutral-400">Recipient emails</label>
+          <FormLabel htmlFor="alert-to-email">Recipient emails</FormLabel>
           <FormTextarea
             id="alert-to-email"
             className="min-h-24"
@@ -221,7 +221,7 @@ export default function AlertDeliveryForm() {
           />
         </div>
         <div className="space-y-1 md:col-span-2">
-          <label htmlFor="alert-webhook-url" className="text-xs text-neutral-400">Webhook URL</label>
+          <FormLabel htmlFor="alert-webhook-url">Webhook URL</FormLabel>
           <FormInput
             id="alert-webhook-url"
             type="url"
