@@ -256,8 +256,10 @@ export default async function SiteDashboardPage({
         ))}
         {totalGaps > 0 && (
           <div className="flex items-center gap-2 ml-auto">
-            <span className="text-neutral-300 font-mono text-sm font-bold">{totalGaps}</span>
-            <span className="text-neutral-500 text-xs">recommendations</span>
+            <Badge size="inline" borderless tone="mutedText" className="gap-2 font-normal">
+              <span className="text-neutral-300 font-mono text-sm font-bold">{totalGaps}</span>
+              <span className="text-neutral-500 text-xs">recommendations</span>
+            </Badge>
             {(['high', 'medium', 'low'] satisfies GapSeverity[]).map((severity) => (
               gapAnalysis.counts[severity] > 0 && (
                 <Badge key={severity} tone={GAP_SEVERITY_BADGE_TONES[severity]} size="inline" borderless className="font-mono font-normal">
