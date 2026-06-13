@@ -440,15 +440,23 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                   <span key="page" title={page.page}>{shortPage}</span>,
                   <span key="clicks">
                     <span className="text-neutral-300">{page.currentClicks}</span>
-                    <span className="text-red-400 text-[10px] ml-1">{page.clicksDelta}%</span>
+                    <Badge size="inline" borderless tone="dangerText" className="ml-1 !font-normal">
+                      {page.clicksDelta}%
+                    </Badge>
                   </span>,
                   <span key="impressions">
                     <span className="text-neutral-400">{page.currentImpressions}</span>
-                    <span className="text-red-400 text-[10px] ml-1">{page.impressionsDelta}%</span>
+                    <Badge size="inline" borderless tone="dangerText" className="ml-1 !font-normal">
+                      {page.impressionsDelta}%
+                    </Badge>
                   </span>,
                   <span key="position">
                     <span className="text-neutral-400">{page.currentPosition.toFixed(1)}</span>
-                    {page.positionDelta > 0 && <span className="text-red-400 text-[10px] ml-1">+{page.positionDelta}</span>}
+                    {page.positionDelta > 0 && (
+                      <Badge size="inline" borderless tone="dangerText" className="ml-1 !font-normal">
+                        +{page.positionDelta}
+                      </Badge>
+                    )}
                   </span>,
                   <Badge key="severity" uppercase tone={DECAY_SEVERITY_BADGE_TONES[page.severity]}>
                     {page.severity}
