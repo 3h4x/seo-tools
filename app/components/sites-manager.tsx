@@ -7,7 +7,7 @@ import { getSiteScUrlOverride, isReservedSiteId, isValidSiteDomain, isValidSiteI
 import type { SiteDiagnosticResult } from '@/lib/site-diagnostics';
 import { SKIP_CHECK_OPTIONS, hasSkipCheck, toggleSkipCheck } from '@/lib/skip-checks';
 import { CHART_NEUTRALS } from '@/lib/constants';
-import { Badge, FormButton, FormCheckbox, FormInput, FormTextarea, Notice, Spinner, Surface, TextButton } from '@/components/ui';
+import { Badge, FormButton, FormCheckbox, FormInput, FormLabel, FormTextarea, Notice, Spinner, Surface, TextButton } from '@/components/ui';
 import { DataTable, type DataTableColumn } from './data-table';
 import { Icons } from './icons';
 
@@ -663,7 +663,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label htmlFor="site-id" className="text-xs text-neutral-400">ID{editMode !== 'new' ? ' (locked)' : ' (auto from domain)'}</label>
+              <FormLabel htmlFor="site-id">ID{editMode !== 'new' ? ' (locked)' : ' (auto from domain)'}</FormLabel>
               <FormInput
                 id="site-id"
                 tone="dense"
@@ -677,7 +677,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="site-name" className="text-xs text-neutral-400">Name *</label>
+              <FormLabel htmlFor="site-name">Name *</FormLabel>
               <FormInput
                 id="site-name"
                 tone="dense"
@@ -688,7 +688,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="site-domain" className="text-xs text-neutral-400">Domain *</label>
+              <FormLabel htmlFor="site-domain">Domain *</FormLabel>
               <FormInput
                 id="site-domain"
                 tone="dense"
@@ -703,7 +703,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               )}
             </div>
             <div className="space-y-1">
-              <label htmlFor="site-sc-url" className="text-xs text-neutral-400">SC URL override</label>
+              <FormLabel htmlFor="site-sc-url">SC URL override</FormLabel>
               <FormInput
                 id="site-sc-url"
                 tone="dense"
@@ -715,7 +715,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="site-ga4-property-id" className="text-xs text-neutral-400">GA4 Property ID</label>
+              <FormLabel htmlFor="site-ga4-property-id">GA4 Property ID</FormLabel>
               <FormInput
                 id="site-ga4-property-id"
                 tone="dense"
@@ -727,7 +727,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="site-indexnow-key" className="text-xs text-neutral-400">IndexNow key</label>
+              <FormLabel htmlFor="site-indexnow-key">IndexNow key</FormLabel>
               <FormInput
                 id="site-indexnow-key"
                 tone="dense"
@@ -742,7 +742,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               </p>
             </div>
             <div className="space-y-1">
-              <label htmlFor="site-color" className="text-xs text-neutral-400">Color</label>
+              <FormLabel htmlFor="site-color">Color</FormLabel>
               <div className="flex items-center gap-2">
                 <FormInput
                   id="site-color"
@@ -765,7 +765,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               </div>
             </div>
             <div className="space-y-1 col-span-2">
-              <label htmlFor="site-test-pages" className="text-xs text-neutral-400">Test pages (one path per line)</label>
+              <FormLabel htmlFor="site-test-pages">Test pages (one path per line)</FormLabel>
               <FormTextarea
                 id="site-test-pages"
                 tone="dense"
@@ -779,7 +779,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               />
             </div>
             <div className="space-y-1 col-span-2">
-              <label className="text-xs text-neutral-400">Skip checks</label>
+              <FormLabel>Skip checks</FormLabel>
               <div className="grid grid-cols-3 gap-x-4 gap-y-1.5 pt-1">
                 {SKIP_CHECK_OPTIONS.map(({ id, label }) => (
                   <label key={id} className="flex items-center gap-2 cursor-pointer">
