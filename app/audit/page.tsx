@@ -255,7 +255,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         <p className="text-neutral-500 text-sm mt-1">Live checks · {audits.length} sites</p>
         <div className="mt-3">
           <TextLink href="/audit/cross-links" size="inherit" variant="inherit" className="inline-flex group">
-            <Badge size="compact" className="border-neutral-800 px-3 py-1 font-normal text-neutral-300 transition-colors group-hover:bg-neutral-800/50">
+            <Badge size="compact" shape="rounded" tone="muted" className="px-3 py-1 font-normal text-neutral-300 transition-colors group-hover:bg-neutral-800/50">
               Cross-site links
             </Badge>
           </TextLink>
