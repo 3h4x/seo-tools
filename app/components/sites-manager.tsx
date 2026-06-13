@@ -803,7 +803,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                 checked={form.searchConsole !== false}
                 onChange={e => setForm(f => ({ ...f, searchConsole: e.target.checked }))}
               />
-              <label htmlFor="sc-toggle" className="text-sm text-neutral-300">Search Console enabled</label>
+              <FormLabel htmlFor="sc-toggle" className="text-sm text-neutral-300">Search Console enabled</FormLabel>
             </div>
           </div>
 
