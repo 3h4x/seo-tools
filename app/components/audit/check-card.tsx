@@ -69,7 +69,9 @@ export function Recommendation({ gap }: { gap: GapRecommendation }) {
         summary="How to fix"
         summaryClassName="text-neutral-500 text-xs cursor-pointer hover:text-neutral-300 transition-colors"
       >
-        <pre className="text-neutral-400 text-xs font-mono mt-1.5 whitespace-pre-wrap">{gap.hint}</pre>
+        <Surface padding="xs" className="mt-2 bg-neutral-800">
+          <pre className="text-neutral-400 text-xs font-mono whitespace-pre-wrap">{gap.hint}</pre>
+        </Surface>
       </Disclosure>
     </Notice>
   );
