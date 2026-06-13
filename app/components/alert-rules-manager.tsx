@@ -195,8 +195,10 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
     return (
       <div className="space-y-2 max-w-4xl">
         <h2 className="text-lg font-semibold text-white">Alert Rules</h2>
-        <Notice size="none" className="border-0 bg-transparent p-0 text-sm text-neutral-500">
-          Add managed sites first, then create per-site alert thresholds here.
+        <Notice size="sm">
+          <NoticeCenteredContent height="auto" textTone="muted">
+            Add managed sites first, then create per-site alert thresholds here.
+          </NoticeCenteredContent>
         </Notice>
       </div>
     );

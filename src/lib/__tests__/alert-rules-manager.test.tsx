@@ -72,6 +72,14 @@ describe('AlertRulesManager', () => {
     expect(html).not.toContain('Loading rules');
   });
 
+  it('renders the no-sites guidance with the shared empty-state notice', () => {
+    const html = renderToStaticMarkup(<AlertRulesManager sites={[]} />);
+
+    expect(html).toContain('Add managed sites first, then create per-site alert thresholds here.');
+    expect(html).toContain('rounded-md border border-neutral-800 bg-neutral-900/60 text-neutral-300 px-3 py-2 text-sm');
+    expect(html).toContain('h-auto flex flex-col items-center justify-center text-center text-neutral-600 text-sm');
+  });
+
   it('blocks saving an SC click rule for a site with Search Console disabled', () => {
     const html = renderToStaticMarkup(
       <AlertRulesManager
