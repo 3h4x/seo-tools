@@ -23,7 +23,7 @@ export function PositionBadge({ position }: { position: number }) {
   }
 
   return (
-    <Badge size="inline" borderless className="gap-1 font-mono !text-xs !font-normal">
+    <Badge size="inline" borderless tone="mutedLabel" className="gap-1 font-mono !text-xs !font-normal">
       <Badge size="xs" shape="rounded" tone={tone} className="!px-1 !py-0 !text-[9px] !font-normal">
         {label}
       </Badge>
