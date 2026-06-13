@@ -111,13 +111,13 @@ export default async function PerfSiteDetail({
 
       {!hasOverallMetrics && !propagating && (
         <Notice>
-          <NoticeCenteredContent height="sm" className="gap-1">
-            <div className="font-semibold text-white">No Core Web Vitals data yet</div>
-            <div className="max-w-2xl text-xs text-neutral-500">
+          <NoticeCenteredContent height="sm" textTone="muted" className="gap-1">
+            <p className="font-semibold text-neutral-300">No Core Web Vitals data yet</p>
+            <p className="max-w-2xl text-xs text-neutral-500">
               No RUM events were queryable for the last {days} days, and PageSpeed Insights returned no CrUX
               or Lighthouse metrics for <span className="font-mono text-neutral-400">{perf.url}</span>.
               Use the setup guide below to wire GTM and GA4, then refresh after events start flowing.
-            </div>
+            </p>
           </NoticeCenteredContent>
         </Notice>
       )}
