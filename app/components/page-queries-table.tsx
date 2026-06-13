@@ -151,8 +151,10 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
     if (!expanded.has(row.page)) return null;
 
     return row.queries.length === 0 ? (
-      <Notice tone="neutral" size="sm" className="text-neutral-500 text-xs">
-        No query data for this page.
+      <Notice tone="neutral" size="sm">
+        <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left text-xs">
+          No query data for this page.
+        </NoticeCenteredContent>
       </Notice>
     ) : (
       <DataTable
@@ -186,8 +188,10 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
       ) : loadError ? (
         <PageQueriesError message={loadError} />
       ) : rows.length === 0 ? (
-        <Notice tone="neutral" size="sm" className="text-neutral-500">
-          No page data available.
+        <Notice tone="neutral" size="sm">
+          <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left">
+            No page data available.
+          </NoticeCenteredContent>
         </Notice>
       ) : (
         <Surface padding="none" className="overflow-hidden">
