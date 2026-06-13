@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormInput, Notice, Skeleton, Spinner, Surface } from '@/components/ui';
+import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormInput, FormLabel, Notice, Skeleton, Spinner, Surface } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { SkeletonChipRow } from './skeletons';
 
@@ -162,7 +162,7 @@ export default function PagespeedKeyForm() {
       )}
 
       <div className="space-y-1">
-        <label htmlFor="pagespeed-api-key" className="text-xs text-neutral-400">PageSpeed API key</label>
+        <FormLabel htmlFor="pagespeed-api-key">PageSpeed API key</FormLabel>
         <FormInput
           id="pagespeed-api-key"
           type="password"
