@@ -1,4 +1,3 @@
-import type { ComponentProps } from 'react';
 import { DataTable, type DataTableColumn } from '../../components/data-table';
 import { getCrossLinkMatrix, type CrossLinkSourceMatrix, type CrossLinkSourceStatus } from '@/lib/cross-links';
 import { CROSS_LINK_CELL_STYLES, STATUS_COLORS } from '@/lib/constants';
@@ -87,10 +86,10 @@ export default async function CrossLinksPage() {
       <PartialFailureBanner failures={partialFailures} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <SummaryCard label="Source Sites" value={matrix.length} accentTone="info" valueColor="text-blue-400" />
-        <SummaryCard label="Cells With Links" value={totalLinkedCells} accentTone="success" valueColor={STATUS_COLORS.pass.text} />
-        <SummaryCard label="Zero-Link Gaps" value={zeroLinkCells} accentTone="danger" valueColor={STATUS_COLORS.fail.text} />
-        <SummaryCard label="Unavailable Sources" value={unavailableSources} accentTone="neutral" valueColor="text-neutral-300" />
+        <MetricCard label="Source Sites" current={matrix.length} value={matrix.length.toLocaleString()} accentTone="info" valueColor="text-blue-400" />
+        <MetricCard label="Cells With Links" current={totalLinkedCells} value={totalLinkedCells.toLocaleString()} accentTone="success" valueColor={STATUS_COLORS.pass.text} />
+        <MetricCard label="Zero-Link Gaps" current={zeroLinkCells} value={zeroLinkCells.toLocaleString()} accentTone="danger" valueColor={STATUS_COLORS.fail.text} />
+        <MetricCard label="Unavailable Sources" current={unavailableSources} value={unavailableSources.toLocaleString()} accentTone="neutral" valueColor="text-neutral-300" />
       </div>
 
       <Surface padding="none">
@@ -146,30 +145,6 @@ export default async function CrossLinksPage() {
         />
       </Surface>
     </div>
-  );
-}
-
-function SummaryCard(
-  {
-    label,
-    value,
-    accentTone,
-    valueColor,
-  }: {
-    label: string;
-    value: number;
-    accentTone?: ComponentProps<typeof MetricCard>['accentTone'];
-    valueColor: string;
-  },
-) {
-  return (
-    <MetricCard
-      label={label}
-      current={value}
-      value={value.toLocaleString()}
-      accentTone={accentTone}
-      valueColor={valueColor}
-    />
   );
 }
 
