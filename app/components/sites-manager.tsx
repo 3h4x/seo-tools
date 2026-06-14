@@ -782,7 +782,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
               <FormLabel>Skip checks</FormLabel>
               <div className="grid grid-cols-3 gap-x-4 gap-y-1.5 pt-1">
                 {SKIP_CHECK_OPTIONS.map(({ id, label }) => (
-                  <label key={id} className="flex items-center gap-2 cursor-pointer">
+                  <FormLabel key={id} className="flex items-center gap-2 cursor-pointer">
                     <FormCheckbox
                       checked={hasSkipCheck(form.skipChecks, id)}
                       onChange={e => setForm(f => {
@@ -793,7 +793,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                       })}
                     />
                     <span className="text-xs text-neutral-300">{label}</span>
-                  </label>
+                  </FormLabel>
                 ))}
               </div>
             </div>
@@ -879,7 +879,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                 <div className="space-y-2">
                   {discovered.map(site => (
                     <div key={site.id} className="space-y-1">
-                      <label className="flex items-center gap-3 cursor-pointer">
+                      <FormLabel className="flex items-center gap-3 cursor-pointer">
                         <FormCheckbox
                           checked={selected.has(site.id)}
                           onChange={() => toggleSelect(site.id)}
@@ -891,7 +891,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                           </Badge>
                         )}
                         <DiscoverySourceBadge source={site.discoverySource} />
-                      </label>
+                      </FormLabel>
                       <div className="pl-6 space-y-1 text-xs text-neutral-500">
                         {site.ga4PropertyId ? (
                           <p>
