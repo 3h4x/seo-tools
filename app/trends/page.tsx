@@ -423,7 +423,11 @@ function KeywordsSection({
       </div>
 
       {sitesData.length === 0 ? (
-        <Notice size="sm">No keyword data found for any configured site.</Notice>
+        <Notice size="sm">
+          <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left">
+            No keyword data found for any configured site.
+          </NoticeCenteredContent>
+        </Notice>
       ) : (
         <div className="space-y-6">
           {sitesData.map(({ site, topQueries, history, deltas }) => {
