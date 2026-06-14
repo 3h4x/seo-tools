@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Badge, FormButton, FormInput, FormSelect, Notice, NoticeCenteredContent, Spinner, Surface, TextButton, ToggleButtonGroup } from '@/components/ui';
+import { Badge, FormButton, FormInput, FormLabel, FormSelect, Notice, NoticeCenteredContent, Spinner, Surface, TextButton, ToggleButtonGroup } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 import type { AlertChannel, AlertMetric, AlertRule } from '@/lib/db';
 import type { Site } from '@/lib/sites';
@@ -289,38 +289,47 @@ export default function AlertRulesManager({ sites }: { sites: Site[] }) {
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <FormSelect
-            tone="dense"
-            padding="dense"
-            aria-label="Alert site"
-            value={form.siteId}
-            onChange={(e) => setForm((current) => ({ ...current, siteId: e.target.value }))}
-          >
-            {sites.map((site) => (
-              <option key={site.id} value={site.id}>{site.name}</option>
-            ))}
-          </FormSelect>
-          <FormSelect
-            tone="dense"
-            padding="dense"
-            aria-label="Alert metric"
-            value={form.metric}
-            onChange={(e) => setForm((current) => ({ ...current, metric: e.target.value as AlertMetric }))}
-          >
-            {METRIC_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </FormSelect>
-          <FormInput
-            tone="dense"
-            padding="dense"
-            type="number"
-            min={1}
-            max={100}
-            aria-label="Drop threshold percent"
-            value={form.thresholdPct}
-            onChange={(e) => setForm((current) => ({ ...current, thresholdPct: e.target.value }))}
-          />
+          <div>
+            <FormLabel htmlFor="alert-rule-site" className="sr-only">Alert site</FormLabel>
+            <FormSelect
+              id="alert-rule-site"
+              tone="dense"
+              padding="dense"
+              value={form.siteId}
+              onChange={(e) => setForm((current) => ({ ...current, siteId: e.target.value }))}
+            >
+              {sites.map((site) => (
+                <option key={site.id} value={site.id}>{site.name}</option>
+              ))}
+            </FormSelect>
+          </div>
+          <div>
+            <FormLabel htmlFor="alert-rule-metric" className="sr-only">Alert metric</FormLabel>
+            <FormSelect
+              id="alert-rule-metric"
+              tone="dense"
+              padding="dense"
+              value={form.metric}
+              onChange={(e) => setForm((current) => ({ ...current, metric: e.target.value as AlertMetric }))}
+            >
+              {METRIC_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </FormSelect>
+          </div>
+          <div>
+            <FormLabel htmlFor="alert-rule-threshold" className="sr-only">Drop threshold percent</FormLabel>
+            <FormInput
+              id="alert-rule-threshold"
+              tone="dense"
+              padding="dense"
+              type="number"
+              min={1}
+              max={100}
+              value={form.thresholdPct}
+              onChange={(e) => setForm((current) => ({ ...current, thresholdPct: e.target.value }))}
+            />
+          </div>
         </div>
 
         <ToggleButtonGroup
