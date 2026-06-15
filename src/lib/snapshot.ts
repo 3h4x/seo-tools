@@ -316,7 +316,7 @@ async function doSnapshot(): Promise<SnapshotResult> {
           { name: 'bounceRate' },
           { name: 'averageSessionDuration' },
         ],
-      });
+      }, { timeout: GOOGLE_API_TIMEOUT_MS });
       const row = report.rows?.[0];
       const users = parseInt(row?.metricValues?.[0]?.value || '0');
       const sessions = parseInt(row?.metricValues?.[1]?.value || '0');
