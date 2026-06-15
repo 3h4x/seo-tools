@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormButton, Notice, NoticeCenteredContent, Surface } from '@/components/ui';
+import { FormButton, Notice, NoticeCenteredContent } from '@/components/ui';
 import { PositionBadge } from './position-badge';
 import { DataTable, type DataTableColumn } from './data-table';
 import { Icons } from './icons';
@@ -113,22 +113,19 @@ export function ScTable({ heading, columnLabel, rows, emptyMessage, exportData, 
         )}
       </div>
       {rows.length > 0 ? (
-        <Surface padding="none" className="overflow-hidden">
-          <DataTable
-            columns={columns}
-            rows={rows.map((row) => [
-              <span key="label" title={row.title}>{row.label}</span>,
-              <span key="clicks">{row.clicks.toLocaleString()}</span>,
-              <span key="impressions">{row.impressions.toLocaleString()}</span>,
-              ...(showCtr ? [<span key="ctr">{row.ctr !== undefined ? `${(row.ctr * 100).toFixed(1)}%` : '—'}</span>] : []),
-              <PositionBadge key="position" position={row.position} />,
-            ])}
-            containerClassName="overflow-hidden"
-            tableClassName="w-full text-sm"
-            headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
-            rowClassName="hover:bg-neutral-800/30 transition-colors"
-          />
-        </Surface>
+        <DataTable
+          columns={columns}
+          rows={rows.map((row) => [
+            <span key="label" title={row.title}>{row.label}</span>,
+            <span key="clicks">{row.clicks.toLocaleString()}</span>,
+            <span key="impressions">{row.impressions.toLocaleString()}</span>,
+            ...(showCtr ? [<span key="ctr">{row.ctr !== undefined ? `${(row.ctr * 100).toFixed(1)}%` : '—'}</span>] : []),
+            <PositionBadge key="position" position={row.position} />,
+          ])}
+          tableClassName="w-full text-sm"
+          headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
+          rowClassName="hover:bg-neutral-800/30 transition-colors"
+        />
       ) : (
         <Notice size="sm">
           <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left">
