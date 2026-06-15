@@ -155,7 +155,7 @@ async function collectDaily(): Promise<void> {
             { name: 'averageSessionDuration' },
           ],
           orderBys: [{ dimension: { dimensionName: 'date' } }],
-        });
+        }, { timeout: GOOGLE_API_TIMEOUT_MS });
 
         const rows = (report.rows || []).map(row => {
           const dateRaw = row.dimensionValues?.[0]?.value || '';
