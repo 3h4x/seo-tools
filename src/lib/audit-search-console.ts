@@ -12,6 +12,7 @@ import type {
 
 const CACHE_TTL_DAY = 24 * 60 * 60 * 1000;
 const SC_STALE_DAYS = 30;
+const GOOGLE_API_TIMEOUT_MS = 30_000;
 
 function getSc() {
   return new searchconsole_v1.Searchconsole({ auth: getAuth() });
@@ -78,7 +79,7 @@ async function checkUrlInspection(scUrl: string, pageUrl: string, page: string):
         siteUrl: scUrl,
         languageCode: 'en-US',
       },
-    });
+    }, { timeout: GOOGLE_API_TIMEOUT_MS });
     const described = describeUrlInspectionStatus(response.data.inspectionResult);
     return {
       page,
@@ -130,7 +131,7 @@ export async function checkScSitemapFreshness(site: Site): Promise<CheckResult> 
   }
 
   try {
-    const res = await getSc().sitemaps.list({ siteUrl: formatScUrl(site) });
+    const res = await getSc().sitemaps.list({ siteUrl: formatScUrl(site) }, { timeout: GOOGLE_API_TIMEOUT_MS });
     const sitemaps = res.data.sitemap || [];
 
     if (sitemaps.length === 0) {
@@ -189,7 +190,7 @@ export async function checkIndexingCoverage(site: Site, sitemapUrlCount?: number
         dimensions: ['page'],
         rowLimit: 5000,
       },
-    });
+    }, { timeout: GOOGLE_API_TIMEOUT_MS });
 
     const indexedPages = res.data.rows?.length || 0;
 
@@ -254,7 +255,7 @@ export async function fetchScTopPageUrls(site: Site, rowLimit: number): Promise<
         dimensions: ['page'],
         rowLimit,
       },
-    });
+    }, { timeout: GOOGLE_API_TIMEOUT_MS });
     return (res.data.rows || []).map(r => r.keys?.[0] || '').filter(Boolean);
   } catch {
     return [];
