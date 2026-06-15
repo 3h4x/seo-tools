@@ -199,7 +199,9 @@ function OverviewTab({
                   )}
                   {!latestGa4 && !latestSc && !latestTtfb && (
                     <Notice size="sm" className="col-span-full text-neutral-600">
-                      No metrics available
+                      <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left">
+                        No metrics available
+                      </NoticeCenteredContent>
                     </Notice>
                   )}
                 </div>
