@@ -194,27 +194,25 @@ export function PageQueriesTable({ siteId, days }: PageQueriesTableProps) {
           </NoticeCenteredContent>
         </Notice>
       ) : (
-        <Surface padding="none" className="overflow-hidden">
-          <DataTable
-            columns={PAGE_COLUMNS}
-            rows={pageRows}
-            expandedRows={expandedRows}
-            expandedRowIds={rows.map((_row, index) => pageQueryPanelId(index))}
-            caption="Top Search Console pages"
-            rowKeys={rows.map((row) => row.page)}
-            monospaceCells={false}
-            containerClassName="contents"
-            tableClassName="w-full text-sm"
-            headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
-            bodyClassName=""
-            rowClassName="hover:bg-neutral-800/30 transition-colors cursor-pointer border-b border-neutral-800/50 last:border-0"
-            expandedRowClassName="bg-neutral-950/50"
-            expandedCellClassName="px-6 pb-3 pt-1"
-            getRowProps={(_cells, index) => ({
-              onClick: () => toggle(rows[index].page),
-            })}
-          />
-        </Surface>
+        <DataTable
+          columns={PAGE_COLUMNS}
+          rows={pageRows}
+          expandedRows={expandedRows}
+          expandedRowIds={rows.map((_row, index) => pageQueryPanelId(index))}
+          caption="Top Search Console pages"
+          rowKeys={rows.map((row) => row.page)}
+          monospaceCells={false}
+          surfaceClassName="overflow-hidden"
+          tableClassName="w-full text-sm"
+          headRowClassName="border-b border-neutral-800 text-neutral-500 text-xs uppercase tracking-wider"
+          bodyClassName=""
+          rowClassName="hover:bg-neutral-800/30 transition-colors cursor-pointer border-b border-neutral-800/50 last:border-0"
+          expandedRowClassName="bg-neutral-950/50"
+          expandedCellClassName="px-6 pb-3 pt-1"
+          getRowProps={(_cells, index) => ({
+            onClick: () => toggle(rows[index].page),
+          })}
+        />
       )}
     </div>
   );
