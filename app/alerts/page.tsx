@@ -3,7 +3,7 @@ import { dbGetAlertEvents } from '@/lib/db';
 import { formatAlertMetricValue, getAlertMetricLabel } from '@/lib/alerts';
 import { loadOrFlag, loadSyncOrFlag } from '@/lib/page-helpers';
 import { getManagedSites } from '@/lib/sites';
-import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
+import { Badge, Notice, NoticeCenteredContent, TextLink } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 
@@ -88,18 +88,16 @@ export default async function AlertsPage() {
           </NoticeCenteredContent>
         </Notice>
       ) : (
-        <Surface padding="none" className="overflow-x-auto">
-          <DataTable
-            columns={ALERT_COLUMNS}
-            rows={rows}
-            rowKeys={rowKeys}
-            monospaceCells={false}
-            containerClassName="contents"
-            tableClassName="w-full text-sm text-left"
-            bodyClassName=""
-            rowClassName="border-b border-neutral-900 last:border-b-0"
-          />
-        </Surface>
+        <DataTable
+          columns={ALERT_COLUMNS}
+          rows={rows}
+          rowKeys={rowKeys}
+          monospaceCells={false}
+          surfaceClassName="overflow-x-auto"
+          tableClassName="w-full text-sm text-left"
+          bodyClassName=""
+          rowClassName="border-b border-neutral-900 last:border-b-0"
+        />
       )}
     </div>
   );
