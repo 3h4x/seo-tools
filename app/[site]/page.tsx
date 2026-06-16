@@ -398,35 +398,33 @@ export default async function SiteDashboardPage({
         <div>
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Top Pages (GA4)</h2>
           {ga4 && ga4.topPages.length > 0 ? (
-            <Surface padding="none" className="overflow-hidden">
-              <DataTable
-                columns={GA4_TOP_PAGE_COLUMNS}
-                rows={ga4.topPages.map((page) => {
-                  return [
-                    <div key="page" className="min-w-0">
-                      <span className="block truncate font-mono text-neutral-400">{page.path}</span>
-                      <span className="block text-[11px] text-neutral-600">{formatDuration(page.avgSessionDuration)}</span>
-                    </div>,
-                    <div key="views" className="flex items-center justify-end gap-3">
-                      <ProgressBar
-                        value={(page.views / ga4TopPagesMaxViews) * 100}
-                        className="w-16 h-1 shrink-0"
-                      />
-                      <span className="w-20 text-right font-mono text-neutral-500">{pluralize(page.views, 'view')}</span>
-                    </div>,
-                    <span key="engagement" className={engagementTone(page.engagementRate)}>
-                      {(page.engagementRate * 100).toFixed(0)}%
-                    </span>,
-                  ];
-                })}
-                rowKeys={ga4.topPages.map((page, i) => `${page.path}-${i}`)}
-                monospaceCells={false}
-                containerClassName="contents"
-                tableClassName="w-full text-xs"
-                bodyClassName="divide-y divide-neutral-900"
-                rowClassName="hover:bg-neutral-900/40"
-              />
-            </Surface>
+            <DataTable
+              columns={GA4_TOP_PAGE_COLUMNS}
+              rows={ga4.topPages.map((page) => {
+                return [
+                  <div key="page" className="min-w-0">
+                    <span className="block truncate font-mono text-neutral-400">{page.path}</span>
+                    <span className="block text-[11px] text-neutral-600">{formatDuration(page.avgSessionDuration)}</span>
+                  </div>,
+                  <div key="views" className="flex items-center justify-end gap-3">
+                    <ProgressBar
+                      value={(page.views / ga4TopPagesMaxViews) * 100}
+                      className="w-16 h-1 shrink-0"
+                    />
+                    <span className="w-20 text-right font-mono text-neutral-500">{pluralize(page.views, 'view')}</span>
+                  </div>,
+                  <span key="engagement" className={engagementTone(page.engagementRate)}>
+                    {(page.engagementRate * 100).toFixed(0)}%
+                  </span>,
+                ];
+              })}
+              rowKeys={ga4.topPages.map((page, i) => `${page.path}-${i}`)}
+              monospaceCells={false}
+              surfaceClassName="overflow-hidden"
+              tableClassName="w-full text-xs"
+              bodyClassName="divide-y divide-neutral-900"
+              rowClassName="hover:bg-neutral-900/40"
+            />
           ) : (
             <Notice size="sm">
               <NoticeCenteredContent height="auto" textTone="muted" className="items-start text-left">
@@ -444,23 +442,21 @@ export default async function SiteDashboardPage({
               </NoticeCenteredContent>
             </Notice>
           ) : (
-            <Surface padding="sm">
-              <DataTable
-                columns={GA4_TRAFFIC_SOURCE_COLUMNS}
-                rows={(ga4?.trafficSources ?? []).map((src) => [
-                  <span key="source" className="text-neutral-400 font-mono">{formatSource(src.source, src.medium)}</span>,
-                  <span key="sessions" className="text-neutral-500 font-mono">{pluralize(src.sessions, 'session')}</span>,
-                ])}
-                rowKeys={(ga4?.trafficSources ?? []).map((src, i) => `${src.source}-${src.medium}-${i}`)}
-                caption="GA4 traffic sources"
-                monospaceCells={false}
-                containerClassName="contents"
-                tableClassName="w-full text-xs"
-                headClassName="sr-only"
-                bodyClassName=""
-                rowClassName=""
-              />
-            </Surface>
+            <DataTable
+              columns={GA4_TRAFFIC_SOURCE_COLUMNS}
+              rows={(ga4?.trafficSources ?? []).map((src) => [
+                <span key="source" className="text-neutral-400 font-mono">{formatSource(src.source, src.medium)}</span>,
+                <span key="sessions" className="text-neutral-500 font-mono">{pluralize(src.sessions, 'session')}</span>,
+              ])}
+              rowKeys={(ga4?.trafficSources ?? []).map((src, i) => `${src.source}-${src.medium}-${i}`)}
+              caption="GA4 traffic sources"
+              monospaceCells={false}
+              surfaceClassName="p-4"
+              tableClassName="w-full text-xs"
+              headClassName="sr-only"
+              bodyClassName=""
+              rowClassName=""
+            />
           )}
         </div>
       </div>
