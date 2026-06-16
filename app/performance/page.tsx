@@ -23,6 +23,18 @@ import { PerformanceSourceBadge } from '../components/performance-source-badge';
 
 export const revalidate = 300;
 
+const PERFORMANCE_COLUMNS: DataTableColumn[] = [
+  { label: 'Site', rowHeader: true, className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2' },
+  { label: 'Source', className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2' },
+  ...CWV_METRIC_ORDER.map((name) => ({
+    label: name,
+    align: 'right' as const,
+    className: 'px-3 py-2 font-semibold',
+    cellClassName: 'px-3 py-2',
+  })),
+  { label: 'PSI', align: 'right', className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2 text-right font-mono' },
+];
+
 export default async function PerformancePage({
   searchParams,
 }: {
@@ -56,18 +68,6 @@ export default async function PerformancePage({
     const a = overallAgg[name];
     if (a.count > 0) overallMetrics[name] = { value: a.sum / a.count, rating: rateCwv(name, a.sum / a.count) };
   }
-
-  const columns: DataTableColumn[] = [
-    { label: 'Site', rowHeader: true, className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2' },
-    { label: 'Source', className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2' },
-    ...CWV_METRIC_ORDER.map((name) => ({
-      label: name,
-      align: 'right' as const,
-      className: 'px-3 py-2 font-semibold',
-      cellClassName: 'px-3 py-2',
-    })),
-    { label: 'PSI', align: 'right', className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2 text-right font-mono' },
-  ];
 
   const tableRows = rows.map((row) => [
       <div key="site">
@@ -123,7 +123,7 @@ export default async function PerformancePage({
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Per-site Core Web Vitals</h2>
         {rows.length > 0 ? (
           <DataTable
-            columns={columns}
+            columns={PERFORMANCE_COLUMNS}
             rows={tableRows}
             rowKeys={rows.map((row) => row.id)}
             monospaceCells={false}
