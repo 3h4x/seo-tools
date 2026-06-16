@@ -275,6 +275,19 @@ describe('DataTable', () => {
     expect(html).toContain('<tr class="hover:bg-neutral-800/30 transition-colors">');
   });
 
+  it('keeps the shared shell while allowing caller-specific shell classes', () => {
+    const html = renderToStaticMarkup(
+      <DataTable
+        columns={[{ label: 'Action' }]}
+        rows={[[<span key="action">Fix sitemap</span>]]}
+        surfaceClassName="overflow-x-auto"
+      />
+    );
+
+    expect(html).toContain('<div class="rounded-lg border border-neutral-800 bg-neutral-900 overflow-x-auto">');
+    expect(html).toContain('<table class="w-full text-sm">');
+  });
+
   it('centralizes row accent structure while callers provide the accent tone', () => {
     const html = renderToStaticMarkup(
       <DataTable

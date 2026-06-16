@@ -1,4 +1,4 @@
-import { Badge, Notice, NoticeCenteredContent, Surface, TextLink } from '@/components/ui';
+import { Badge, Notice, NoticeCenteredContent, TextLink } from '@/components/ui';
 import { loadActionQueue } from '@/lib/actions';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
@@ -88,16 +88,14 @@ export default async function ActionsPage() {
           </NoticeCenteredContent>
         </Notice>
       ) : (
-        <Surface padding="none" className="overflow-x-auto">
-          <DataTable
-            columns={COLUMNS}
-            rows={rows}
-            rowKeys={items.map((item) => item.id)}
-            monospaceCells={false}
-            containerClassName="contents"
-            tableClassName="w-full text-sm min-w-[900px]"
-          />
-        </Surface>
+        <DataTable
+          columns={COLUMNS}
+          rows={rows}
+          rowKeys={items.map((item) => item.id)}
+          monospaceCells={false}
+          tableClassName="w-full text-sm min-w-[900px]"
+          surfaceClassName="overflow-x-auto"
+        />
       )}
     </div>
   );

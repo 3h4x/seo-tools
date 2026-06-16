@@ -35,6 +35,7 @@ interface DataTableProps {
   rowKeys?: Array<string | number>;
   monospaceCells?: boolean;
   tableClassName?: string;
+  surfaceClassName?: string;
   containerClassName?: string;
   headClassName?: string;
   headRowClassName?: string;
@@ -55,6 +56,7 @@ export function DataTable({
   rowKeys,
   monospaceCells = true,
   tableClassName = 'w-full text-sm',
+  surfaceClassName = 'overflow-hidden !rounded',
   containerClassName,
   headClassName,
   headRowClassName = 'border-b border-neutral-800 text-neutral-500',
@@ -182,7 +184,7 @@ export function DataTable({
 
   if (containerClassName === undefined) {
     return (
-      <Surface padding="none" className="overflow-hidden !rounded">
+      <Surface padding="none" className={surfaceClassName}>
         {table}
       </Surface>
     );
