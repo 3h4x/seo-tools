@@ -8,7 +8,7 @@ import {
 } from '@/lib/opportunities';
 import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import { loadOrFlag } from '@/lib/page-helpers';
-import { Badge, FilterChipGroup, Notice, NoticeCenteredContent, Surface } from '@/components/ui';
+import { Badge, FilterChipGroup, Notice, NoticeCenteredContent } from '@/components/ui';
 import { DataTable, type DataTableColumn } from '../components/data-table';
 import { PartialFailureBanner } from '../components/partial-failure-banner';
 import TimeRange from '../components/time-range';
@@ -151,14 +151,12 @@ export default async function OpportunitiesPage({
             Showing {top.length} of {allOpportunities.length} opportunities
             {siteFilter ? ` for ${siteFilter}` : ' across all sites'}
           </Badge>
-          <Surface padding="none" className="overflow-hidden">
-            <DataTable
-              columns={COLUMNS}
-              rows={rows}
-              monospaceCells={false}
-              containerClassName="contents"
-            />
-          </Surface>
+          <DataTable
+            columns={COLUMNS}
+            rows={rows}
+            monospaceCells={false}
+            surfaceClassName="overflow-hidden"
+          />
           <p className="text-xs text-neutral-600">
             Est. Clicks = impressions × (11% expected CTR at position 3 − actual CTR). Cached for 30 min.
           </p>
