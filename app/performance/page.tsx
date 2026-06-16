@@ -11,7 +11,7 @@ import { parseAllowedIntegerParam, type QueryParamValue } from '@/lib/days';
 import {
   getPerformanceOverviewRows,
 } from '@/lib/performance-overview';
-import { Notice, Surface, TextLink } from '@/components/ui';
+import { Notice, TextLink } from '@/components/ui';
 import TimeRange from '../components/time-range';
 import CwvSetupGuide from '../components/cwv-setup-guide';
 import { CwvCell } from '../components/cwv-cell';
@@ -122,18 +122,15 @@ export default async function PerformancePage({
       <div>
         <h2 className="text-xs uppercase tracking-wider text-neutral-500 mb-3 font-semibold">Per-site Core Web Vitals</h2>
         {rows.length > 0 ? (
-          <Surface padding="none" className="overflow-hidden">
-            <DataTable
-              columns={columns}
-              rows={tableRows}
-              rowKeys={rows.map((row) => row.id)}
-              monospaceCells={false}
-              containerClassName="overflow-hidden"
-              tableClassName="w-full text-sm"
-              headRowClassName="border-b border-neutral-800 text-neutral-500"
-              rowClassName="hover:bg-neutral-800/30"
-            />
-          </Surface>
+          <DataTable
+            columns={columns}
+            rows={tableRows}
+            rowKeys={rows.map((row) => row.id)}
+            monospaceCells={false}
+            tableClassName="w-full text-sm"
+            headRowClassName="border-b border-neutral-800 text-neutral-500"
+            rowClassName="hover:bg-neutral-800/30"
+          />
         ) : (
           <NoSitesNotice />
         )}
