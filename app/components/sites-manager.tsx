@@ -74,6 +74,17 @@ const SITE_MUTATION_ERROR_MESSAGES: Record<string, string> = {
   failed_to_reorder_sites: 'Could not reorder sites. Check server logs.',
 };
 
+const SITE_TABLE_COLUMNS: DataTableColumn[] = [
+  { label: 'Order', key: 'order', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400' },
+  { label: 'Name', key: 'name', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 font-normal text-left text-white', rowHeader: true },
+  { label: 'Domain', key: 'domain', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400 font-mono text-xs' },
+  { label: 'Search Console', key: 'search-console', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400' },
+  { label: 'SC Access', key: 'sc-access', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4' },
+  { label: 'GA4', key: 'ga4', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400' },
+  { label: 'GA4 Access', key: 'ga4-access', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4' },
+  { label: <span className="sr-only">Actions</span>, key: 'actions', className: 'py-2 font-medium', cellClassName: 'py-2' },
+];
+
 export function formatDiscoverError(error: string | undefined, status: number): string {
   const trimmed = error?.trim();
   if (trimmed && DISCOVER_ERROR_MESSAGES[trimmed]) {
@@ -485,16 +496,6 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
 
   const isEditing = editMode !== 'none';
   const canSave = !saving && form.name.trim().length > 0 && isValidSiteDomain(form.domain);
-  const siteTableColumns: DataTableColumn[] = [
-    { label: 'Order', key: 'order', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400' },
-    { label: 'Name', key: 'name', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 font-normal text-left text-white', rowHeader: true },
-    { label: 'Domain', key: 'domain', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400 font-mono text-xs' },
-    { label: 'Search Console', key: 'search-console', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400' },
-    { label: 'SC Access', key: 'sc-access', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4' },
-    { label: 'GA4', key: 'ga4', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4 text-neutral-400' },
-    { label: 'GA4 Access', key: 'ga4-access', className: 'py-2 pr-4 font-medium', cellClassName: 'py-2 pr-4' },
-    { label: <span className="sr-only">Actions</span>, key: 'actions', className: 'py-2 font-medium', cellClassName: 'py-2' },
-  ];
   const siteTableRows = sites.map((site, index) => [
     <div key="order" className="flex items-center gap-2">
       <Badge size="inline" borderless className="w-5 justify-start font-mono text-xs text-neutral-400">
@@ -638,7 +639,7 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
 
       {sites.length > 0 && (
         <DataTable
-          columns={siteTableColumns}
+          columns={SITE_TABLE_COLUMNS}
           rows={siteTableRows}
           rowKeys={sites.map(site => site.id)}
           caption="Managed sites and provider access status"
