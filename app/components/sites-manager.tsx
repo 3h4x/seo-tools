@@ -699,7 +699,9 @@ export default function SitesManager({ initialSites, hasAuth }: Props) {
                 placeholder="example.com"
               />
               {form.domain.trim() && !isValidSiteDomain(form.domain) && (
-                <p className="text-xs text-amber-300">Use a bare domain or an `http(s)` site URL.</p>
+                <Notice tone="warning" size="none" role="alert" className="border-0 bg-transparent p-0 text-xs text-amber-300">
+                  Use a bare domain or an `http(s)` site URL.
+                </Notice>
               )}
             </div>
             <div className="space-y-1">
