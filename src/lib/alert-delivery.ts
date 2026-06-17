@@ -485,10 +485,20 @@ async function resolveWebhookTarget(webhookUrl: string): Promise<ResolvedWebhook
   }
 
   let addresses: LookupAddress[] = [];
+  let timer: ReturnType<typeof setTimeout> | null = null;
   try {
-    addresses = await lookup(hostname, { all: true, verbatim: true });
+    addresses = await Promise.race([
+      lookup(hostname, { all: true, verbatim: true }),
+      new Promise<LookupAddress[]>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('Webhook host resolution timed out')), DELIVERY_TIMEOUT_MS);
+      }),
+    ]);
   } catch {
     throw new Error('Webhook host could not be resolved');
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
   }
 
   if (
