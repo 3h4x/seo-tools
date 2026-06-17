@@ -4,6 +4,8 @@ import { getAuth } from './google-auth';
 import { getManagedSites, getSCUrl, type Site } from './sites';
 import { normalizeGa4PropertyId } from './ga4-property';
 
+const GOOGLE_API_TIMEOUT_MS = 30_000;
+
 export type DiagnosticStatus = 'ok' | 'missing-config' | 'permission-error' | 'not-found' | 'provider-error';
 
 export interface ProviderDiagnostic {
@@ -88,7 +90,7 @@ async function checkSearchConsoleAccess(site: Site): Promise<ProviderDiagnostic>
   }
 
   try {
-    await getSearchConsoleClient().sites.get({ siteUrl: getSCUrl(site) });
+    await getSearchConsoleClient().sites.get({ siteUrl: getSCUrl(site) }, { timeout: GOOGLE_API_TIMEOUT_MS });
     return { status: 'ok', message: 'Accessible' };
   } catch (error) {
     return classifyProviderError(error);
@@ -107,7 +109,7 @@ async function checkGa4Access(site: Site): Promise<ProviderDiagnostic> {
       dateRanges: [{ startDate: 'yesterday', endDate: 'yesterday' }],
       metrics: [{ name: 'activeUsers' }],
       limit: 1,
-    });
+    }, { timeout: GOOGLE_API_TIMEOUT_MS });
     return { status: 'ok', message: 'Accessible' };
   } catch (error) {
     return classifyProviderError(error);

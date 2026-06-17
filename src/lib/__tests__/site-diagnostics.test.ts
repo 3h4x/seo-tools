@@ -60,8 +60,14 @@ describe('getSiteDiagnostics', () => {
         ga4: { status: 'ok', message: 'Accessible' },
       },
     ]);
-    expect(mockScSitesGet).toHaveBeenCalledWith({ siteUrl: 'sc-domain:example.com' });
-    expect(mockGa4RunReport).toHaveBeenCalledWith(expect.objectContaining({ property: 'properties/123' }));
+    expect(mockScSitesGet).toHaveBeenCalledWith(
+      { siteUrl: 'sc-domain:example.com' },
+      { timeout: 30000 },
+    );
+    expect(mockGa4RunReport).toHaveBeenCalledWith(
+      expect.objectContaining({ property: 'properties/123' }),
+      { timeout: 30000 },
+    );
   });
 
   it('returns missing-config when provider config is absent', async () => {
