@@ -225,6 +225,7 @@ export default function DailyTrafficChart({ days }: { days: number }) {
       }
     }
   }
+  const seriesLabels = new Map(seriesKeys.map((series) => [series.key, series.label]));
 
   return (
     <Surface>
@@ -290,8 +291,8 @@ export default function DailyTrafficChart({ days }: { days: number }) {
                 contentStyle={TOOLTIP_STYLE}
                 labelStyle={{ color: CHART_NEUTRALS.tooltipLabel, marginBottom: 4 }}
                 formatter={(value, name) => {
-                  const s = seriesKeys.find(k => k.key === name);
-                  return [Number(value).toLocaleString(), s?.label || String(name)];
+                  const label = seriesLabels.get(String(name));
+                  return [Number(value).toLocaleString(), label || String(name)];
                 }}
               />
               {seriesKeys.map(s => (
