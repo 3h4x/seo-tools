@@ -40,7 +40,7 @@ Use the **Config tab → Managed Sites** section to add, edit, delete, or discov
 - [x] Internal Linking Audit (per-page link count analysis)
 - [x] Historical Snapshots (SQLite storage, `pnpm seo snapshot` CLI)
 - [x] Trends Page (SC + GA4 + audit score over time, recharts area charts)
-- [x] SQLite Caching (30-min TTL for audit, SC, GA4 data via `api_cache` table)
+- [x] SQLite Caching (30-min default TTL for SC/GA4 data; audit uses 1-week TTL via `api_cache` table)
 - [x] Refresh Button (global nav, clears cache + refreshes page)
 - [x] DB-Managed Sites (sites stored in SQLite, Config UI for CRUD + discovery, no hardcoded domains)
 - [x] SA key stored in SQLite via Config tab (DB takes priority over env var)
@@ -175,7 +175,7 @@ Dev tooling:
 - Server-side API routes for all Google API calls (keys never exposed to client)
 - SA key never shown in UI — Config tab shows a status indicator only
 - Audit checks run server-side via fetch against live sites (Googlebot UA)
-- SQLite caching (30-min TTL) for audit, SC, and GA4 data via `api_cache` table
+- SQLite caching (30-min default TTL for SC/GA4 data; audit uses 1-week TTL) via `api_cache` table
 - Refresh button in nav clears cache via `DELETE /api/cache` and re-fetches all data
 - Historical snapshots stored in `data/seo-tools.db` (excluded from git)
 - Sitemap sync runs inside the Next.js server process every 6h — no external cron needed
