@@ -11,6 +11,8 @@ import {
   type DiscoveredGa4Property,
 } from './ga4-discovery';
 
+const GOOGLE_API_TIMEOUT_MS = 30_000;
+
 function getAdminClient() {
   return new AnalyticsAdminServiceClient({ auth: getAuth() });
 }
@@ -20,7 +22,7 @@ function getDataClient() {
 
 async function fetchDiscoveredGa4Properties(): Promise<DiscoveredGa4Property[] | null> {
   if (!hasGoogleCredentials()) return null;
-  const [summaries] = await getAdminClient().listAccountSummaries({});
+  const [summaries] = await getAdminClient().listAccountSummaries({}, { timeout: GOOGLE_API_TIMEOUT_MS });
   return summaries.flatMap((account) => (
     (account.propertySummaries ?? []).flatMap((property) => {
       const displayName = property.displayName?.trim();
@@ -129,7 +131,7 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
           { name: 'bounceRate' },
           { name: 'averageSessionDuration' },
         ],
-      }),
+      }, { timeout: GOOGLE_API_TIMEOUT_MS }),
       dataClient.runReport({
         property: normalizedPropertyId,
         dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'yesterday' }],
@@ -142,7 +144,7 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
         ],
         orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
         limit: 15,
-      }),
+      }, { timeout: GOOGLE_API_TIMEOUT_MS }),
       dataClient.runReport({
         property: normalizedPropertyId,
         dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'yesterday' }],
@@ -156,7 +158,7 @@ async function getAnalytics(propertyId: string, days: number = 7): Promise<GA4Da
         ],
         orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
         limit: 10,
-      }),
+      }, { timeout: GOOGLE_API_TIMEOUT_MS }),
     ]);
 
     type IRow = NonNullable<typeof metricsRes[0]['rows']>[number];

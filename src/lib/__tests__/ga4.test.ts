@@ -447,6 +447,7 @@ describe('cachedGetAnalytics', () => {
 
     expect(mockRunReport).toHaveBeenCalledWith(
       expect.objectContaining({ property: 'properties/99999' }),
+      { timeout: 30000 },
     );
   });
 
@@ -465,6 +466,7 @@ describe('cachedGetAnalytics', () => {
     );
     expect(mockRunReport).toHaveBeenCalledWith(
       expect.objectContaining({ property: 'properties/99999' }),
+      { timeout: 30000 },
     );
   });
 });
