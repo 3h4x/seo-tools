@@ -35,9 +35,12 @@ function findClosest(
 export function computeKeywordDeltas(history: HistoryRow[], today: string): KeywordDelta[] {
   const byQuery = new Map<string, HistoryRow[]>();
   for (const row of history) {
-    const existing = byQuery.get(row.query) ?? [];
-    existing.push(row);
-    byQuery.set(row.query, existing);
+    let rows = byQuery.get(row.query);
+    if (!rows) {
+      rows = [];
+      byQuery.set(row.query, rows);
+    }
+    rows.push(row);
   }
 
   const target7d = addDateOnlyDays(today, -7);
