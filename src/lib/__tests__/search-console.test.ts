@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockQuery = vi.fn();
 const mockSitemapsList = vi.fn();
+const GOOGLE_API_OPTIONS = { timeout: 30_000 };
 
 vi.mock('../google-auth', () => ({ getAuth: () => ({}) }));
 vi.mock('@googleapis/searchconsole', () => ({
@@ -58,6 +59,7 @@ describe('getSearchConsolePagesForPeriod', () => {
 
     expect(mockQuery).toHaveBeenCalledWith(
       expect.objectContaining({ siteUrl: 'sc-domain:example.com' }),
+      GOOGLE_API_OPTIONS,
     );
   });
 
@@ -68,6 +70,7 @@ describe('getSearchConsolePagesForPeriod', () => {
 
     expect(mockQuery).toHaveBeenCalledWith(
       expect.objectContaining({ siteUrl: 'sc-domain:example.com' }),
+      GOOGLE_API_OPTIONS,
     );
   });
 
@@ -78,6 +81,7 @@ describe('getSearchConsolePagesForPeriod', () => {
 
     expect(mockQuery).toHaveBeenCalledWith(
       expect.objectContaining({ siteUrl: 'https://example.com/' }),
+      GOOGLE_API_OPTIONS,
     );
   });
 
@@ -104,6 +108,7 @@ describe('getSearchConsolePagesForPeriod', () => {
       expect.objectContaining({
         requestBody: expect.objectContaining({ rowLimit: 500 }),
       }),
+      GOOGLE_API_OPTIONS,
     );
   });
 
@@ -304,7 +309,7 @@ describe('cachedGetSitemapSubmissions', () => {
 
     await cachedGetSitemapSubmissions('example.com');
 
-    expect(mockSitemapsList).toHaveBeenCalledWith({ siteUrl: 'sc-domain:example.com' });
+    expect(mockSitemapsList).toHaveBeenCalledWith({ siteUrl: 'sc-domain:example.com' }, GOOGLE_API_OPTIONS);
   });
 
   it('returns empty array on API error', async () => {
@@ -366,7 +371,7 @@ describe('cachedGetSitemapSubmissions', () => {
 
     await cachedGetSitemapSubmissions('https://example.com/');
 
-    expect(mockSitemapsList).toHaveBeenCalledWith({ siteUrl: 'https://example.com/' });
+    expect(mockSitemapsList).toHaveBeenCalledWith({ siteUrl: 'https://example.com/' }, GOOGLE_API_OPTIONS);
   });
 });
 

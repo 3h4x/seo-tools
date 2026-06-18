@@ -3,6 +3,8 @@ import { getAuth } from './google-auth';
 import { daysAgo } from './format';
 import { withCache, type ProviderResult } from './db';
 
+const GOOGLE_API_TIMEOUT_MS = 30_000;
+
 function getSc() {
   return new searchconsole_v1.Searchconsole({ auth: getAuth() });
 }
@@ -25,7 +27,7 @@ async function getSearchConsoleData(siteUrl: string, days: number = 7) {
         dimensions: [],
         rowLimit: 1,
       },
-    });
+    }, { timeout: GOOGLE_API_TIMEOUT_MS });
 
     const data = response.data.rows?.[0] || { clicks: 0, impressions: 0, ctr: 0, position: 0 };
 
@@ -92,7 +94,7 @@ async function getSearchConsoleDataWithComparison(
           dimensions: [],
           rowLimit: 1,
         },
-      }),
+      }, { timeout: GOOGLE_API_TIMEOUT_MS }),
       sc.searchanalytics.query({
         siteUrl: url,
         requestBody: {
@@ -101,7 +103,7 @@ async function getSearchConsoleDataWithComparison(
           dimensions: [],
           rowLimit: 1,
         },
-      }),
+      }, { timeout: GOOGLE_API_TIMEOUT_MS }),
     ]);
 
     const parse = (row: searchconsole_v1.Schema$ApiDataRow | undefined): SCAggregates => ({
@@ -134,7 +136,7 @@ async function getSearchConsoleQueries(
         dimensions: ['query'],
         rowLimit: 20,
       },
-    });
+    }, { timeout: GOOGLE_API_TIMEOUT_MS });
 
     return (response.data.rows || []).map((row) => ({
       query: row.keys?.[0] || '',
@@ -160,7 +162,7 @@ async function queryScPages(
     const response = await sc.searchanalytics.query({
       siteUrl: formatSiteUrl(siteUrl),
       requestBody: { startDate, endDate, dimensions: ['page'], rowLimit },
-    });
+    }, { timeout: GOOGLE_API_TIMEOUT_MS });
     return (response.data.rows || []).map((row) => ({
       page: row.keys?.[0] || '',
       clicks: row.clicks || 0,
@@ -211,7 +213,7 @@ async function getQueriesForPage(
           }],
         }],
       },
-    });
+    }, { timeout: GOOGLE_API_TIMEOUT_MS });
     return (response.data.rows || []).map((row) => ({
       query: row.keys?.[0] || '',
       clicks: row.clicks || 0,
@@ -270,7 +272,7 @@ export interface SitemapSubmission {
 async function getSitemapSubmissions(siteUrl: string): Promise<SitemapSubmission[]> {
   try {
     const url = formatSiteUrl(siteUrl);
-    const res = await getSc().sitemaps.list({ siteUrl: url });
+    const res = await getSc().sitemaps.list({ siteUrl: url }, { timeout: GOOGLE_API_TIMEOUT_MS });
     return (res.data.sitemap || []).map(m => ({
       path: m.path || '',
       lastSubmitted: m.lastSubmitted || null,
