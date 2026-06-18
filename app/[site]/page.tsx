@@ -128,11 +128,10 @@ export default async function SiteDashboardPage({
   params: Promise<{ site: string }>;
   searchParams: Promise<{ days?: QueryParamValue }>;
 }) {
-  const { site: siteId } = await params;
+  const [{ site: siteId }, sp] = await Promise.all([params, searchParams]);
   const site = await loadOrFallback(`SiteDashboard site ${siteId}`, getManagedSite(siteId), null);
   if (!site) notFound();
 
-  const sp = await searchParams;
   const days = parseAllowedIntegerParam(sp.days, VALID_DAYS, 7);
   const hasSearchConsole = site.searchConsole !== false;
 
