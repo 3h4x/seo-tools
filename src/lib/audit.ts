@@ -44,10 +44,8 @@ const SC_SAMPLE_LIMIT = 5;
 async function auditSite(site: Site): Promise<SiteAuditResult> {
   const skip = new Set(normalizeSkipChecks(site.skipChecks));
   const shouldVerifyBrokenLinks = !skip.has('internalLinks') && !skip.has('brokenLinks');
-  const robotsTxt = await checkRobotsTxt(site.domain);
-
-  const [rawSitemap, ttfb, security, scSitemapFreshness, scTopPageUrls, indexNow, urlInspection] = await Promise.all([
-    checkSitemap(site.domain, robotsTxt.sitemapUrl),
+  const [robotsTxt, ttfb, security, scSitemapFreshness, scTopPageUrls, indexNow, urlInspection] = await Promise.all([
+    checkRobotsTxt(site.domain),
     checkTtfb(site.domain),
     checkSecurity(site.domain),
     checkScSitemapFreshness(site),
@@ -55,6 +53,7 @@ async function auditSite(site: Site): Promise<SiteAuditResult> {
     checkIndexNowKey(site) as Promise<CheckResult>,
     checkUrlInspectionForSite(site),
   ]);
+  const rawSitemap = await checkSitemap(site.domain, robotsTxt.sitemapUrl);
   const sitemap = await enrichSitemapResult(rawSitemap);
 
   const sampledPages = sampleAuditPages(
