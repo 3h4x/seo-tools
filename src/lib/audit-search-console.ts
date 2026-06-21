@@ -71,9 +71,14 @@ function describeUrlInspectionStatus(
   };
 }
 
-async function checkUrlInspection(scUrl: string, pageUrl: string, page: string): Promise<UrlInspectionPageResult> {
+async function checkUrlInspection(
+  sc: searchconsole_v1.Searchconsole,
+  scUrl: string,
+  pageUrl: string,
+  page: string,
+): Promise<UrlInspectionPageResult> {
   try {
-    const response = await getSc().urlInspection.index.inspect({
+    const response = await sc.urlInspection.index.inspect({
       requestBody: {
         inspectionUrl: pageUrl,
         siteUrl: scUrl,
@@ -103,6 +108,7 @@ export async function checkUrlInspectionForSite(site: Site): Promise<UrlInspecti
   if (site.searchConsole === false || site.testPages.length === 0) return [];
 
   const scUrl = getSCUrl(site);
+  const sc = getSc();
   return Promise.all(
     site.testPages.map(async (page) => {
       const pageUrl = toAbsoluteAuditUrl(site.domain, page);
@@ -110,7 +116,7 @@ export async function checkUrlInspectionForSite(site: Site): Promise<UrlInspecti
       const cached = await withCache<UrlInspectionPageResult>(
         'url-inspection',
         cacheId,
-        () => checkUrlInspection(scUrl, pageUrl, page),
+        () => checkUrlInspection(sc, scUrl, pageUrl, page),
         CACHE_TTL_DAY,
       );
 
