@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -124,6 +124,12 @@ export default function DailyTrafficChart({ days }: { days: number }) {
     };
   }, [days]);
 
+  const today = todayDateOnly();
+  const collectedDates = useMemo(() => data ? Object.keys(data).sort() : [], [data]);
+  const latestCollected = collectedDates[collectedDates.length - 1];
+  const dates = useMemo(() => collectedDates.includes(today) ? collectedDates : [...collectedDates, today], [collectedDates, today]);
+  const allSiteIds = useMemo(() => [...new Set(dates.flatMap(d => Object.keys(data?.[d] ?? {})))].sort(), [data, dates]);
+
   if (loadError) {
     return <DailyTrafficError message={loadError} />;
   }
@@ -132,10 +138,6 @@ export default function DailyTrafficChart({ days }: { days: number }) {
     return <DailyTrafficSkeleton />;
   }
 
-  const collectedDates = Object.keys(data).sort();
-  const today = todayDateOnly();
-  const latestCollected = collectedDates[collectedDates.length - 1];
-  const dates = collectedDates.includes(today) ? collectedDates : [...collectedDates, today];
   if (collectedDates.length < 2) {
     return (
       <Notice size="panel">
@@ -146,7 +148,6 @@ export default function DailyTrafficChart({ days }: { days: number }) {
     );
   }
 
-  const allSiteIds = [...new Set(dates.flatMap(d => Object.keys(data[d] ?? {})))].sort();
   const siteIds = allSiteIds.filter(id => !hiddenSites.has(id));
   const siteToggleOptions = allSiteIds
     .filter(id => dates.some(d => {
