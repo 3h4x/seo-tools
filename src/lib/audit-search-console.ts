@@ -18,6 +18,10 @@ function getSc() {
   return new searchconsole_v1.Searchconsole({ auth: getAuth() });
 }
 
+function providerErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown provider error';
+}
+
 function formatScUrl(site: Site): string {
   const scUrl = getSCUrl(site);
   return scUrl.startsWith('sc-domain:') || scUrl.startsWith('http') ? scUrl : `sc-domain:${scUrl}`;
@@ -178,7 +182,7 @@ export async function checkScSitemapFreshness(site: Site): Promise<CheckResult> 
       details: mostRecentPath,
     };
   } catch (e) {
-    return { status: 'error', label: 'SC Sitemap', message: `Could not check: ${(e as Error).message.slice(0, 60)}` };
+    return { status: 'error', label: 'SC Sitemap', message: `Could not check: ${providerErrorMessage(e).slice(0, 60)}` };
   }
 }
 
@@ -246,7 +250,7 @@ export async function checkIndexingCoverage(site: Site, sitemapUrlCount?: number
       coveragePct,
     };
   } catch (e) {
-    return { status: 'error', label: 'Indexing', message: `Could not check: ${(e as Error).message.slice(0, 60)}` };
+    return { status: 'error', label: 'Indexing', message: `Could not check: ${providerErrorMessage(e).slice(0, 60)}` };
   }
 }
 
