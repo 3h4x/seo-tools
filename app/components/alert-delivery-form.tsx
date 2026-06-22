@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormInput, FormLabel, FormTextarea, Notice, Spinner } from '@/components/ui';
+import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormCheckbox, FormInput, FormLabel, FormTextarea, Notice, Spinner } from '@/components/ui';
 import { formatNetworkError, getMutationResult } from '@/lib/request-result';
 
 type Source = 'db' | 'env' | 'none';
@@ -11,7 +11,10 @@ type FormState = {
   fromEmail: string;
   toEmail: string;
   webhookUrl: string;
+  weeklyDigestEnabled: boolean;
 };
+
+export type AlertDeliverySavePayload = FormState;
 
 export type AlertConfigResponse = {
   config: {
@@ -19,6 +22,7 @@ export type AlertConfigResponse = {
     toEmail: string;
     hasResendApiKey: boolean;
     hasWebhookUrl: boolean;
+    weeklyDigestEnabled: boolean;
   };
   sources: {
     resendApiKey: Source;
@@ -83,12 +87,23 @@ export async function clearAlertDeliveryOverrides(fetcher: typeof fetch = fetch)
   return loadAlertDeliveryConfig(fetcher);
 }
 
+export function buildAlertDeliverySavePayload(form: FormState): AlertDeliverySavePayload {
+  return {
+    resendApiKey: form.resendApiKey,
+    fromEmail: form.fromEmail,
+    toEmail: form.toEmail,
+    webhookUrl: form.webhookUrl,
+    weeklyDigestEnabled: form.weeklyDigestEnabled,
+  };
+}
+
 export default function AlertDeliveryForm() {
   const [form, setForm] = useState<FormState>({
     resendApiKey: '',
     fromEmail: '',
     toEmail: '',
     webhookUrl: '',
+    weeklyDigestEnabled: false,
   });
   const [sources, setSources] = useState<AlertConfigResponse['sources'] | null>(null);
   const [hasResendApiKey, setHasResendApiKey] = useState(false);
@@ -103,6 +118,7 @@ export default function AlertDeliveryForm() {
       fromEmail: data.config.fromEmail,
       toEmail: data.config.toEmail,
       webhookUrl: '',
+      weeklyDigestEnabled: data.config.weeklyDigestEnabled,
     });
     setSources(data.sources);
     setHasResendApiKey(data.config.hasResendApiKey);
@@ -127,7 +143,7 @@ export default function AlertDeliveryForm() {
       const res = await fetch('/api/config/alerts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(buildAlertDeliverySavePayload(form)),
       });
       const result = await getMutationResult(res, 'Save failed');
       if (!result.ok) {
@@ -231,6 +247,14 @@ export default function AlertDeliveryForm() {
             onChange={(e) => { setForm((current) => ({ ...current, webhookUrl: e.target.value })); setError(''); setSuccess(''); }}
           />
         </div>
+        <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-300">
+          <FormCheckbox
+            id="alert-weekly-digest"
+            checked={form.weeklyDigestEnabled}
+            onChange={(e) => { setForm((current) => ({ ...current, weeklyDigestEnabled: e.target.checked })); setError(''); setSuccess(''); }}
+          />
+          Weekly email digest
+        </label>
       </div>
 
       {error && (

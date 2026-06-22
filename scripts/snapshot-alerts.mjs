@@ -358,6 +358,14 @@ function getConfig(db, key) {
   return typeof row?.value === 'string' ? row.value : null;
 }
 
+function setConfig(db, key, value) {
+  db.prepare(
+    `INSERT INTO config (key, value)
+     VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+  ).run(key, value);
+}
+
 function getConfigValue(db, dbKey, envKey) {
   const dbValue = getConfig(db, dbKey)?.trim() ?? '';
   if (dbValue) {
@@ -408,7 +416,7 @@ function formatMetric(metric, value) {
   return Number.isInteger(value) ? value.toLocaleString() : value.toFixed(1);
 }
 
-async function sendEmailAlert(config, payload) {
+async function sendResendEmail(config, subject, text, html = null) {
   if (!config.resendApiKey || !config.fromEmail || config.toEmails.length === 0) {
     throw new Error('Email delivery requires Resend API key, from email, and at least one recipient');
   }
@@ -418,20 +426,6 @@ async function sendEmailAlert(config, payload) {
       throw new Error(`Invalid alert email: ${email}`);
     }
   }
-
-  const previous = formatMetric(payload.metric, payload.previousValue);
-  const current = formatMetric(payload.metric, payload.currentValue);
-  const subject = `[seo-tools] ${payload.siteName} ${metricLabel(payload.metric)} dropped ${payload.deltaPct.toFixed(1)}%`;
-  const text = [
-    `${payload.siteName} (${payload.domain}) triggered an alert.`,
-    '',
-    `Metric: ${metricLabel(payload.metric)}`,
-    `Threshold: ${payload.thresholdPct}%`,
-    `Drop: ${payload.deltaPct.toFixed(1)}%`,
-    `Previous: ${previous}`,
-    `Current: ${current}`,
-    `Snapshot date: ${payload.snapshotDate}`,
-  ].join('\n');
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS);
@@ -450,6 +444,7 @@ async function sendEmailAlert(config, payload) {
         to: config.toEmails,
         subject,
         text,
+        ...(html ? { html } : {}),
       }),
     });
   } finally {
@@ -460,6 +455,24 @@ async function sendEmailAlert(config, payload) {
     const body = await res.text().catch(() => '');
     throw new Error(body.trim() || `Email send failed (${res.status})`);
   }
+}
+
+async function sendEmailAlert(config, payload) {
+  const previous = formatMetric(payload.metric, payload.previousValue);
+  const current = formatMetric(payload.metric, payload.currentValue);
+  const subject = `[seo-tools] ${payload.siteName} ${metricLabel(payload.metric)} dropped ${payload.deltaPct.toFixed(1)}%`;
+  const text = [
+    `${payload.siteName} (${payload.domain}) triggered an alert.`,
+    '',
+    `Metric: ${metricLabel(payload.metric)}`,
+    `Threshold: ${payload.thresholdPct}%`,
+    `Drop: ${payload.deltaPct.toFixed(1)}%`,
+    `Previous: ${previous}`,
+    `Current: ${current}`,
+    `Snapshot date: ${payload.snapshotDate}`,
+  ].join('\n');
+
+  await sendResendEmail(config, subject, text);
 }
 
 async function sendWebhookAlert(config, payload) {
@@ -515,6 +528,225 @@ async function sendAlertNotifications(db, channels, payload) {
   return {
     deliveredChannels,
     deliveryError: errors.length > 0 ? errors.join(' | ') : null,
+  };
+}
+
+function dateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function parseDateOnly(value) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day, 12);
+}
+
+function addDateOnlyDays(value, days) {
+  const date = parseDateOnly(value);
+  date.setDate(date.getDate() + days);
+  return dateStr(date);
+}
+
+function isWeeklyDigestDay(snapshotDate) {
+  return parseDateOnly(snapshotDate).getDay() === 1;
+}
+
+function tableExists(db, tableName) {
+  return Boolean(db.prepare("SELECT 1 as found FROM sqlite_master WHERE type = 'table' AND name = ?").get(tableName)?.found);
+}
+
+function tableColumns(db, tableName) {
+  if (!tableExists(db, tableName)) {
+    return new Set();
+  }
+  return new Set(db.prepare(`PRAGMA table_info(${tableName})`).all().map((column) => column.name));
+}
+
+function metricDigestValue(current, previous) {
+  if (typeof current !== 'number' || !Number.isFinite(current)) {
+    return null;
+  }
+
+  if (typeof previous !== 'number' || !Number.isFinite(previous) || previous === 0) {
+    return { current, previous: previous ?? null, deltaPct: null };
+  }
+
+  return {
+    current,
+    previous,
+    deltaPct: Math.round((((current - previous) / previous) * 100) * 10) / 10,
+  };
+}
+
+function rowsBySite(rows) {
+  return new Map(rows.map((row) => [row.site_id, row.value]));
+}
+
+function getWeeklyDigestSites(db) {
+  if (!tableExists(db, 'sites')) {
+    return [];
+  }
+
+  const columns = tableColumns(db, 'sites');
+  const searchConsoleSelect = columns.has('search_console') ? 'search_console' : '1 as search_console';
+  const ga4Select = columns.has('ga4_property_id') ? 'ga4_property_id' : 'NULL as ga4_property_id';
+  const orderBy = columns.has('sort_order') ? 'sort_order ASC, id ASC' : 'id ASC';
+
+  return db.prepare(
+    `SELECT id, name, domain, ${searchConsoleSelect}, ${ga4Select}
+     FROM sites
+     ORDER BY ${orderBy}`,
+  ).all().map((site) => ({
+    id: site.id,
+    name: site.name,
+    domain: site.domain,
+    searchConsole: site.search_console !== 0,
+    ga4PropertyId: site.ga4_property_id,
+  }));
+}
+
+function getScClicksBySite(db, date) {
+  if (!tableExists(db, 'sc_snapshots')) {
+    return new Map();
+  }
+  return rowsBySite(db.prepare(
+    `SELECT site_id, SUM(clicks) as value
+     FROM sc_snapshots
+     WHERE date = ?
+     GROUP BY site_id`,
+  ).all(date));
+}
+
+function getGa4SessionsBySite(db, date) {
+  if (!tableExists(db, 'ga4_snapshots')) {
+    return new Map();
+  }
+  return rowsBySite(db.prepare(
+    `SELECT site_id, sessions as value
+     FROM ga4_snapshots
+     WHERE date = ?`,
+  ).all(date));
+}
+
+function getAuditScoreBySite(db, date) {
+  if (!tableExists(db, 'audit_snapshots')) {
+    return new Map();
+  }
+  return rowsBySite(db.prepare(
+    `SELECT
+       site_id,
+       CASE
+         WHEN (pass_count + warn_count + fail_count) > 0
+           THEN ROUND((pass_count * 100.0) / (pass_count + warn_count + fail_count), 1)
+         ELSE NULL
+       END as value
+     FROM audit_snapshots
+     WHERE date = ?`,
+  ).all(date));
+}
+
+function getWeeklyAlertCount(db, previousDate, snapshotDate) {
+  if (!tableExists(db, 'alert_events')) {
+    return 0;
+  }
+  const row = db.prepare(
+    `SELECT COUNT(*) as count
+     FROM alert_events
+     WHERE snapshot_date > ? AND snapshot_date <= ?`,
+  ).get(previousDate, snapshotDate);
+  return row?.count ?? 0;
+}
+
+export function buildWeeklyDigestPayloadForCli(db, snapshotDate) {
+  const sites = getWeeklyDigestSites(db);
+  if (sites.length === 0) {
+    return null;
+  }
+
+  const previousDate = addDateOnlyDays(snapshotDate, -7);
+  const currentSc = getScClicksBySite(db, snapshotDate);
+  const previousSc = getScClicksBySite(db, previousDate);
+  const currentGa4 = getGa4SessionsBySite(db, snapshotDate);
+  const previousGa4 = getGa4SessionsBySite(db, previousDate);
+  const currentAudit = getAuditScoreBySite(db, snapshotDate);
+  const previousAudit = getAuditScoreBySite(db, previousDate);
+
+  return {
+    snapshotDate,
+    previousDate,
+    alertCount: getWeeklyAlertCount(db, previousDate, snapshotDate),
+    sites: sites.map((site) => ({
+      siteName: site.name,
+      domain: site.domain,
+      scClicks: site.searchConsole
+        ? metricDigestValue(currentSc.get(site.id), previousSc.get(site.id))
+        : null,
+      ga4Sessions: site.ga4PropertyId
+        ? metricDigestValue(currentGa4.get(site.id), previousGa4.get(site.id))
+        : null,
+      auditScore: metricDigestValue(currentAudit.get(site.id), previousAudit.get(site.id)),
+    })),
+  };
+}
+
+function formatDigestValue(value, suffix = '') {
+  if (!value) return 'n/a';
+  const formatted = Number.isInteger(value.current) ? value.current.toLocaleString() : value.current.toFixed(1);
+  if (value.deltaPct === null) return `${formatted}${suffix}`;
+  const sign = value.deltaPct > 0 ? '+' : '';
+  return `${formatted}${suffix} (${sign}${value.deltaPct.toFixed(1)}%)`;
+}
+
+async function sendWeeklyDigestEmailForCli(db, payload) {
+  const config = getAlertDeliveryConfig(db);
+  const subject = `[seo-tools] Weekly SEO digest for ${payload.snapshotDate}`;
+  const rows = payload.sites.map((site) => [
+    `${site.siteName} (${site.domain})`,
+    `SC clicks: ${formatDigestValue(site.scClicks)}`,
+    `GA4 sessions: ${formatDigestValue(site.ga4Sessions)}`,
+    `Audit score: ${formatDigestValue(site.auditScore, '%')}`,
+  ].join('\n  '));
+  const text = [
+    `Weekly SEO digest for ${payload.snapshotDate}`,
+    `Compared with ${payload.previousDate}`,
+    `Alerts fired this week: ${payload.alertCount}`,
+    '',
+    ...rows,
+  ].join('\n\n');
+
+  try {
+    await sendResendEmail(config, subject, text);
+    return { deliveredChannels: ['email'], deliveryError: null };
+  } catch (error) {
+    return { deliveredChannels: [], deliveryError: `email: ${error.message}` };
+  }
+}
+
+export async function processWeeklyDigestForCli(db, snapshotDate, options = {}) {
+  if (getConfig(db, 'alert_weekly_digest_enabled') !== '1') {
+    return { sent: false, skipped: 'disabled', deliveryError: null };
+  }
+  if (!isWeeklyDigestDay(snapshotDate)) {
+    return { sent: false, skipped: 'not-weekly-run', deliveryError: null };
+  }
+  if (getConfig(db, 'alert_weekly_digest_last_sent_date') === snapshotDate) {
+    return { sent: false, skipped: 'already-sent', deliveryError: null };
+  }
+
+  const payload = buildWeeklyDigestPayloadForCli(db, snapshotDate);
+  if (!payload) {
+    return { sent: false, skipped: 'no-sites', deliveryError: null };
+  }
+
+  const sendDigest = options.sendDigest ?? ((digestPayload) => sendWeeklyDigestEmailForCli(db, digestPayload));
+  const delivery = await sendDigest(payload);
+  if (!delivery.deliveryError) {
+    setConfig(db, 'alert_weekly_digest_last_sent_date', snapshotDate);
+  }
+
+  return {
+    sent: delivery.deliveredChannels.includes('email'),
+    skipped: null,
+    deliveryError: delivery.deliveryError,
   };
 }
 

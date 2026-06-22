@@ -44,7 +44,13 @@ beforeEach(() => {
 describe('GET /api/config/alerts', () => {
   it('returns the current delivery config payload', async () => {
     mockGetAlertDeliveryConfigResponse.mockReturnValue({
-      config: { fromEmail: 'alerts@example.com', toEmail: 'ops@example.com', hasResendApiKey: true, hasWebhookUrl: true },
+      config: {
+        fromEmail: 'alerts@example.com',
+        toEmail: 'ops@example.com',
+        hasResendApiKey: true,
+        hasWebhookUrl: true,
+        weeklyDigestEnabled: true,
+      },
       sources: { resendApiKey: 'db', fromEmail: 'db', toEmail: 'env', webhookUrl: 'db' },
     });
 
@@ -52,7 +58,13 @@ describe('GET /api/config/alerts', () => {
 
     const payload = await res.json();
     expect(payload).toEqual({
-      config: { fromEmail: 'alerts@example.com', toEmail: 'ops@example.com', hasResendApiKey: true, hasWebhookUrl: true },
+      config: {
+        fromEmail: 'alerts@example.com',
+        toEmail: 'ops@example.com',
+        hasResendApiKey: true,
+        hasWebhookUrl: true,
+        weeklyDigestEnabled: true,
+      },
       sources: { resendApiKey: 'db', fromEmail: 'db', toEmail: 'env', webhookUrl: 'db' },
     });
     expect(JSON.stringify(payload)).not.toContain('hooks.example.com');
@@ -89,17 +101,22 @@ describe('POST /api/config/alerts', () => {
       fromEmail: 'alerts@example.com',
       toEmail: 'ops@example.com',
       webhookUrl: '',
+      weeklyDigestEnabled: true,
     });
 
-    const res = await POST(postReq({ resendApiKey: 're_123' }));
+    const res = await POST(postReq({ resendApiKey: 're_123', weeklyDigestEnabled: true }));
 
     expect(res.status).toBe(200);
-    expect(mockValidateAlertDeliveryInput).toHaveBeenCalledWith({ resendApiKey: 're_123' });
+    expect(mockValidateAlertDeliveryInput).toHaveBeenCalledWith({
+      resendApiKey: 're_123',
+      weeklyDigestEnabled: true,
+    });
     expect(mockSaveAlertDeliveryConfig).toHaveBeenCalledWith({
       resendApiKey: 're_123',
       fromEmail: 'alerts@example.com',
       toEmail: 'ops@example.com',
       webhookUrl: '',
+      weeklyDigestEnabled: true,
     });
   });
 
@@ -121,6 +138,7 @@ describe('POST /api/config/alerts', () => {
       fromEmail: 'alerts@example.com',
       toEmail: 'ops@example.com',
       webhookUrl: '',
+      weeklyDigestEnabled: false,
     });
     mockSaveAlertDeliveryConfig.mockImplementation(() => {
       throw new Error('disk full');

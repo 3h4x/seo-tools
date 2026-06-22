@@ -6,7 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { openDatabase } from '../src/lib/sqlite-driver.js';
 import { normalizeGa4PropertyId } from './ga4-property.mjs';
-import { ALERT_SCHEMA_SQL, processSnapshotAlertsForCli } from './snapshot-alerts.mjs';
+import { ALERT_SCHEMA_SQL, processSnapshotAlertsForCli, processWeeklyDigestForCli } from './snapshot-alerts.mjs';
 import { loadCliSites } from './seo-sites.mjs';
 
 // Init DB and load SA key
@@ -286,6 +286,14 @@ async function takeSnapshot() {
     }
     for (const error of alertResult.errors) {
       console.log(`  Alerts: ${error}`);
+    }
+
+    const digestResult = await processWeeklyDigestForCli(db, today);
+    if (digestResult.sent) {
+      console.log('  Weekly digest: sent');
+    }
+    if (digestResult.deliveryError) {
+      console.log(`  Weekly digest: ${digestResult.deliveryError}`);
     }
 
     finishSnapshotRun({ lockOwner, success: true });

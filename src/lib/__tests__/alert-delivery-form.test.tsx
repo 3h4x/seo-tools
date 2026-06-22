@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import AlertDeliveryForm, {
+  buildAlertDeliverySavePayload,
   clearAlertDeliveryOverrides,
   formatAlertConfigError,
   readAlertConfigResponse,
@@ -17,7 +18,13 @@ function jsonResponse(body: unknown, status = 200): Response {
 describe('readAlertConfigResponse', () => {
   it('returns a valid alert config response payload', async () => {
     const payload: AlertConfigResponse = {
-      config: { fromEmail: 'a@x', toEmail: 'b@x', hasResendApiKey: false, hasWebhookUrl: false },
+      config: {
+        fromEmail: 'a@x',
+        toEmail: 'b@x',
+        hasResendApiKey: false,
+        hasWebhookUrl: false,
+        weeklyDigestEnabled: false,
+      },
       sources: { resendApiKey: 'none', fromEmail: 'none', toEmail: 'none', webhookUrl: 'none' },
     };
     await expect(readAlertConfigResponse(jsonResponse(payload))).resolves.toEqual(payload);
@@ -41,6 +48,22 @@ describe('readAlertConfigResponse', () => {
 });
 
 describe('AlertDeliveryForm helpers', () => {
+  it.each([true, false])('includes weekly digest enabled=%s in the save payload', (weeklyDigestEnabled) => {
+    expect(buildAlertDeliverySavePayload({
+      resendApiKey: 're_123',
+      fromEmail: 'alerts@example.com',
+      toEmail: 'ops@example.com',
+      webhookUrl: 'https://hooks.example.com/seo-alerts',
+      weeklyDigestEnabled,
+    })).toEqual({
+      resendApiKey: 're_123',
+      fromEmail: 'alerts@example.com',
+      toEmail: 'ops@example.com',
+      webhookUrl: 'https://hooks.example.com/seo-alerts',
+      weeklyDigestEnabled,
+    });
+  });
+
   it('maps storage failure codes while preserving validation messages', () => {
     expect(formatAlertConfigError('failed_to_save_alert_config', 'Save failed')).toBe(
       'Could not save alert delivery config. Check server logs.',
@@ -60,6 +83,7 @@ describe('AlertDeliveryForm helpers', () => {
         toEmail: 'ops@example.com,seo@example.com',
         hasResendApiKey: true,
         hasWebhookUrl: true,
+        weeklyDigestEnabled: true,
       },
       sources: {
         resendApiKey: 'env',
@@ -98,5 +122,6 @@ describe('AlertDeliveryForm', () => {
     expect(html).toContain('for="alert-from-email"');
     expect(html).toContain('for="alert-to-email"');
     expect(html).toContain('for="alert-webhook-url"');
+    expect(html).toContain('id="alert-weekly-digest"');
   });
 });

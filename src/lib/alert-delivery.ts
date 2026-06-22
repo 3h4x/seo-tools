@@ -8,7 +8,9 @@ type ConfigSource = 'db' | 'env' | 'none';
 
 type AlertDeliveryConfigKey = 'resendApiKey' | 'fromEmail' | 'toEmail' | 'webhookUrl';
 
-type AlertDeliveryStored = Record<AlertDeliveryConfigKey, string>;
+type AlertDeliveryStored = Record<AlertDeliveryConfigKey, string> & {
+  weeklyDigestEnabled: boolean;
+};
 
 export interface AlertDeliveryConfig {
   resendApiKey: string | null;
@@ -23,6 +25,7 @@ export interface AlertDeliveryConfigResponse {
     toEmail: string;
     hasResendApiKey: boolean;
     hasWebhookUrl: boolean;
+    weeklyDigestEnabled: boolean;
   };
   sources: Record<AlertDeliveryConfigKey, ConfigSource>;
 }
@@ -42,6 +45,27 @@ export interface AlertNotificationPayload {
 export interface AlertDeliveryResult {
   deliveredChannels: AlertChannel[];
   deliveryError: string | null;
+}
+
+export interface WeeklyDigestSiteSummary {
+  siteName: string;
+  domain: string;
+  scClicks: MetricDigestValue | null;
+  ga4Sessions: MetricDigestValue | null;
+  auditScore: MetricDigestValue | null;
+}
+
+export interface MetricDigestValue {
+  current: number;
+  previous: number | null;
+  deltaPct: number | null;
+}
+
+export interface WeeklyDigestEmailPayload {
+  snapshotDate: string;
+  previousDate: string;
+  alertCount: number;
+  sites: WeeklyDigestSiteSummary[];
 }
 
 const CONFIG_KEYS: Record<AlertDeliveryConfigKey, { db: string; env: string }> = {
@@ -234,24 +258,19 @@ function metricLabel(metric: AlertMetric): string {
   }
 }
 
-async function sendEmailAlert(config: AlertDeliveryConfig, payload: AlertNotificationPayload): Promise<void> {
+function getWeeklyDigestEnabled(): boolean {
+  return getConfig('alert_weekly_digest_enabled') === '1';
+}
+
+async function sendResendEmail(
+  config: AlertDeliveryConfig,
+  subject: string,
+  text: string,
+  html: string,
+): Promise<void> {
   if (!config.resendApiKey || !config.fromEmail || config.toEmails.length === 0) {
     throw new Error('Email delivery requires Resend API key, from email, and at least one recipient');
   }
-
-  const subject = `[seo-tools] ${payload.siteName} ${metricLabel(payload.metric)} dropped ${payload.deltaPct.toFixed(1)}%`;
-  const previous = formatMetric(payload.metric, payload.previousValue);
-  const current = formatMetric(payload.metric, payload.currentValue);
-  const text = [
-    `${payload.siteName} (${payload.domain}) triggered an alert.`,
-    '',
-    `Metric: ${metricLabel(payload.metric)}`,
-    `Threshold: ${payload.thresholdPct}%`,
-    `Drop: ${payload.deltaPct.toFixed(1)}%`,
-    `Previous: ${previous}`,
-    `Current: ${current}`,
-    `Snapshot date: ${payload.snapshotDate}`,
-  ].join('\n');
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS);
@@ -270,15 +289,7 @@ async function sendEmailAlert(config: AlertDeliveryConfig, payload: AlertNotific
         to: config.toEmails,
         subject,
         text,
-        html: `<p><strong>${payload.siteName}</strong> (${payload.domain}) triggered an alert.</p>
-<ul>
-  <li>Metric: ${metricLabel(payload.metric)}</li>
-  <li>Threshold: ${payload.thresholdPct}%</li>
-  <li>Drop: ${payload.deltaPct.toFixed(1)}%</li>
-  <li>Previous: ${previous}</li>
-  <li>Current: ${current}</li>
-  <li>Snapshot date: ${payload.snapshotDate}</li>
-</ul>`,
+        html,
       }),
     });
   } finally {
@@ -289,6 +300,32 @@ async function sendEmailAlert(config: AlertDeliveryConfig, payload: AlertNotific
     const body = await res.text().catch(() => '');
     throw new Error(body.trim() || `Email send failed (${res.status})`);
   }
+}
+
+async function sendEmailAlert(config: AlertDeliveryConfig, payload: AlertNotificationPayload): Promise<void> {
+  const subject = `[seo-tools] ${payload.siteName} ${metricLabel(payload.metric)} dropped ${payload.deltaPct.toFixed(1)}%`;
+  const previous = formatMetric(payload.metric, payload.previousValue);
+  const current = formatMetric(payload.metric, payload.currentValue);
+  const text = [
+    `${payload.siteName} (${payload.domain}) triggered an alert.`,
+    '',
+    `Metric: ${metricLabel(payload.metric)}`,
+    `Threshold: ${payload.thresholdPct}%`,
+    `Drop: ${payload.deltaPct.toFixed(1)}%`,
+    `Previous: ${previous}`,
+    `Current: ${current}`,
+    `Snapshot date: ${payload.snapshotDate}`,
+  ].join('\n');
+
+  await sendResendEmail(config, subject, text, `<p><strong>${payload.siteName}</strong> (${payload.domain}) triggered an alert.</p>
+<ul>
+  <li>Metric: ${metricLabel(payload.metric)}</li>
+  <li>Threshold: ${payload.thresholdPct}%</li>
+  <li>Drop: ${payload.deltaPct.toFixed(1)}%</li>
+  <li>Previous: ${previous}</li>
+  <li>Current: ${current}</li>
+  <li>Snapshot date: ${payload.snapshotDate}</li>
+</ul>`);
 }
 
 function postPinnedHttpsJson(target: ResolvedWebhookTarget, body: unknown, signal: AbortSignal): Promise<void> {
@@ -542,6 +579,7 @@ export function getAlertDeliveryConfigResponse(): AlertDeliveryConfigResponse {
       toEmail: toEmail.value ?? '',
       hasResendApiKey: Boolean(resendApiKey.value),
       hasWebhookUrl: Boolean(webhookUrl.value),
+      weeklyDigestEnabled: getWeeklyDigestEnabled(),
     },
     sources: {
       resendApiKey: resendApiKey.source,
@@ -558,6 +596,7 @@ export function validateAlertDeliveryInput(raw: unknown): AlertDeliveryStored {
   const fromEmail = typeof body.fromEmail === 'string' ? body.fromEmail.trim() : '';
   const toEmail = typeof body.toEmail === 'string' ? body.toEmail.trim() : '';
   const webhookUrl = typeof body.webhookUrl === 'string' ? body.webhookUrl.trim() : '';
+  const weeklyDigestEnabled = body.weeklyDigestEnabled === true;
 
   if (fromEmail && !EMAIL_RE.test(fromEmail)) {
     throw new Error('From email must be a valid email address');
@@ -578,11 +617,13 @@ export function validateAlertDeliveryInput(raw: unknown): AlertDeliveryStored {
     fromEmail,
     toEmail,
     webhookUrl,
+    weeklyDigestEnabled,
   };
 }
 
 export function saveAlertDeliveryConfig(config: AlertDeliveryStored): void {
-  for (const [field, value] of Object.entries(config) as Array<[AlertDeliveryConfigKey, string]>) {
+  for (const field of Object.keys(CONFIG_KEYS) as AlertDeliveryConfigKey[]) {
+    const value = config[field];
     const dbKey = CONFIG_KEYS[field].db;
     if (value) {
       setConfig(dbKey, value);
@@ -590,12 +631,14 @@ export function saveAlertDeliveryConfig(config: AlertDeliveryStored): void {
       deleteConfig(dbKey);
     }
   }
+  setConfig('alert_weekly_digest_enabled', config.weeklyDigestEnabled ? '1' : '0');
 }
 
 export function clearAlertDeliveryConfig(): void {
   for (const { db } of Object.values(CONFIG_KEYS)) {
     deleteConfig(db);
   }
+  deleteConfig('alert_weekly_digest_enabled');
 }
 
 export async function sendAlertNotifications(
@@ -623,4 +666,61 @@ export async function sendAlertNotifications(
     deliveredChannels,
     deliveryError: errors.length > 0 ? errors.join(' | ') : null,
   };
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatDigestValue(value: MetricDigestValue | null, suffix = ''): string {
+  if (!value) return 'n/a';
+  const formatted = Number.isInteger(value.current) ? value.current.toLocaleString() : value.current.toFixed(1);
+  if (value.deltaPct === null) return `${formatted}${suffix}`;
+  const sign = value.deltaPct > 0 ? '+' : '';
+  return `${formatted}${suffix} (${sign}${value.deltaPct.toFixed(1)}%)`;
+}
+
+export async function sendWeeklyDigestEmail(payload: WeeklyDigestEmailPayload): Promise<AlertDeliveryResult> {
+  const config = getAlertDeliveryConfig();
+  const subject = `[seo-tools] Weekly SEO digest for ${payload.snapshotDate}`;
+  const rows = payload.sites.map((site) => [
+    `${site.siteName} (${site.domain})`,
+    `SC clicks: ${formatDigestValue(site.scClicks)}`,
+    `GA4 sessions: ${formatDigestValue(site.ga4Sessions)}`,
+    `Audit score: ${formatDigestValue(site.auditScore, '%')}`,
+  ].join('\n  '));
+  const text = [
+    `Weekly SEO digest for ${payload.snapshotDate}`,
+    `Compared with ${payload.previousDate}`,
+    `Alerts fired this week: ${payload.alertCount}`,
+    '',
+    ...rows,
+  ].join('\n\n');
+  const htmlRows = payload.sites.map((site) => `<tr>
+  <td>${escapeHtml(site.siteName)}<br><span>${escapeHtml(site.domain)}</span></td>
+  <td>${escapeHtml(formatDigestValue(site.scClicks))}</td>
+  <td>${escapeHtml(formatDigestValue(site.ga4Sessions))}</td>
+  <td>${escapeHtml(formatDigestValue(site.auditScore, '%'))}</td>
+</tr>`).join('');
+
+  try {
+    await sendResendEmail(
+      config,
+      subject,
+      text,
+      `<p><strong>Weekly SEO digest for ${payload.snapshotDate}</strong></p>
+<p>Compared with ${payload.previousDate}. Alerts fired this week: ${payload.alertCount}.</p>
+<table>
+  <thead><tr><th>Site</th><th>SC clicks</th><th>GA4 sessions</th><th>Audit score</th></tr></thead>
+  <tbody>${htmlRows}</tbody>
+</table>`,
+    );
+    return { deliveredChannels: ['email'], deliveryError: null };
+  } catch (error) {
+    return { deliveredChannels: [], deliveryError: `email: ${(error as Error).message}` };
+  }
 }

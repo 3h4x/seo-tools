@@ -109,6 +109,7 @@ describe('alert delivery config', () => {
         toEmail: 'ops@example.com',
         hasResendApiKey: true,
         hasWebhookUrl: true,
+        weeklyDigestEnabled: false,
       },
       sources: {
         resendApiKey: 'db',
@@ -138,6 +139,7 @@ describe('alert delivery config', () => {
         toEmail: 'ops@example.com',
         hasResendApiKey: false,
         hasWebhookUrl: true,
+        weeklyDigestEnabled: false,
       },
       sources: {
         webhookUrl: 'db',
@@ -165,6 +167,18 @@ describe('alert delivery config', () => {
     saveAlertDeliveryConfig(normalized);
 
     expect(getConfig('alert_webhook_url')).toBe('https://hooks.example.com/new-token');
+  });
+
+  it('stores the weekly digest enabled flag with delivery config', () => {
+    const normalized = validateAlertDeliveryInput({
+      fromEmail: 'alerts@example.com',
+      toEmail: 'ops@example.com',
+      weeklyDigestEnabled: true,
+    });
+    saveAlertDeliveryConfig(normalized);
+
+    expect(getConfig('alert_weekly_digest_enabled')).toBe('1');
+    expect(getAlertDeliveryConfigResponse().config.weeklyDigestEnabled).toBe(true);
   });
 
   it.each([

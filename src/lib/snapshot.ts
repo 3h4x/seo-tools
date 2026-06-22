@@ -2,14 +2,20 @@ import { randomUUID } from 'node:crypto';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { getAuth } from './google-auth';
-import { getDb } from './db';
+import { dbGetSites, getConfig, getDb, setConfig, type SqliteDatabase } from './db';
 import { discoverPropertyIds } from './ga4';
 import { normalizeGa4PropertyId } from './ga4-property';
 import { getSCUrl } from './sites';
 import { runSiteAudit } from './audit';
 import { normalizeSkipChecks } from './skip-checks';
 import { processSnapshotAlerts } from './alerts';
-import { dateOnlyDaysBack, todayDateOnly } from './date-only';
+import {
+  sendWeeklyDigestEmail,
+  type MetricDigestValue,
+  type WeeklyDigestEmailPayload,
+  type WeeklyDigestSiteSummary,
+} from './alert-delivery';
+import { addDateOnlyDays, dateOnlyDaysBack, parseDateOnly, todayDateOnly } from './date-only';
 
 export interface SnapshotResult {
   date: string;
@@ -31,11 +37,24 @@ interface SnapshotRunRow {
 
 type ScheduledSnapshotResult = 'started' | 'skipped-not-due' | 'skipped-running';
 
+interface ValueRow {
+  site_id: string;
+  value: number | null;
+}
+
+interface WeeklyDigestResult {
+  sent: boolean;
+  skipped: 'disabled' | 'not-weekly-run' | 'already-sent' | 'no-sites' | null;
+  deliveryError: string | null;
+}
+
 const GOOGLE_API_TIMEOUT_MS = 30_000;
 const SNAPSHOT_JOB_KEY = 'daily';
 const SNAPSHOT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const SNAPSHOT_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const SNAPSHOT_STALE_LOCK_MS = 6 * 60 * 60 * 1000;
+const WEEKLY_DIGEST_ENABLED_KEY = 'alert_weekly_digest_enabled';
+const WEEKLY_DIGEST_LAST_SENT_KEY = 'alert_weekly_digest_last_sent_date';
 
 let snapshotRunning = false;
 let schedulerIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -154,6 +173,129 @@ function hasFreshLock(state: SnapshotRunRow, now: number = Date.now()): boolean 
   return state.status === 'running'
     && typeof state.last_started_at === 'number'
     && now - state.last_started_at < SNAPSHOT_STALE_LOCK_MS;
+}
+
+function isWeeklyDigestDay(snapshotDate: string): boolean {
+  return parseDateOnly(snapshotDate).getDay() === 1;
+}
+
+function metricValue(current: number | null | undefined, previous: number | null | undefined): MetricDigestValue | null {
+  if (typeof current !== 'number' || !Number.isFinite(current)) {
+    return null;
+  }
+
+  if (typeof previous !== 'number' || !Number.isFinite(previous) || previous === 0) {
+    return { current, previous: previous ?? null, deltaPct: null };
+  }
+
+  return {
+    current,
+    previous,
+    deltaPct: Math.round((((current - previous) / previous) * 100) * 10) / 10,
+  };
+}
+
+function rowsBySite(rows: ValueRow[]): Map<string, number | null> {
+  return new Map(rows.map((row) => [row.site_id, row.value]));
+}
+
+function getScClicksBySite(db: SqliteDatabase, date: string): Map<string, number | null> {
+  return rowsBySite(db.prepare(
+    `SELECT site_id, SUM(clicks) as value
+     FROM sc_snapshots
+     WHERE date = ?
+     GROUP BY site_id`,
+  ).all(date) as ValueRow[]);
+}
+
+function getGa4SessionsBySite(db: SqliteDatabase, date: string): Map<string, number | null> {
+  return rowsBySite(db.prepare(
+    `SELECT site_id, sessions as value
+     FROM ga4_snapshots
+     WHERE date = ?`,
+  ).all(date) as ValueRow[]);
+}
+
+function getAuditScoreBySite(db: SqliteDatabase, date: string): Map<string, number | null> {
+  return rowsBySite(db.prepare(
+    `SELECT
+       site_id,
+       CASE
+         WHEN (pass_count + warn_count + fail_count) > 0
+           THEN ROUND((pass_count * 100.0) / (pass_count + warn_count + fail_count), 1)
+         ELSE NULL
+       END as value
+     FROM audit_snapshots
+     WHERE date = ?`,
+  ).all(date) as ValueRow[]);
+}
+
+function buildWeeklyDigestPayload(snapshotDate: string): WeeklyDigestEmailPayload | null {
+  const sites = dbGetSites();
+  if (sites.length === 0) {
+    return null;
+  }
+
+  const previousDate = addDateOnlyDays(snapshotDate, -7);
+  const db = getDb();
+  const currentSc = getScClicksBySite(db, snapshotDate);
+  const previousSc = getScClicksBySite(db, previousDate);
+  const currentGa4 = getGa4SessionsBySite(db, snapshotDate);
+  const previousGa4 = getGa4SessionsBySite(db, previousDate);
+  const currentAudit = getAuditScoreBySite(db, snapshotDate);
+  const previousAudit = getAuditScoreBySite(db, previousDate);
+  const alertRow = db.prepare(
+    `SELECT COUNT(*) as count
+     FROM alert_events
+     WHERE snapshot_date > ? AND snapshot_date <= ?`,
+  ).get(previousDate, snapshotDate) as { count: number } | undefined;
+
+  const summaries: WeeklyDigestSiteSummary[] = sites.map((site) => ({
+    siteName: site.name,
+    domain: site.domain,
+    scClicks: site.searchConsole === false
+      ? null
+      : metricValue(currentSc.get(site.id), previousSc.get(site.id)),
+    ga4Sessions: site.ga4PropertyId
+      ? metricValue(currentGa4.get(site.id), previousGa4.get(site.id))
+      : null,
+    auditScore: metricValue(currentAudit.get(site.id), previousAudit.get(site.id)),
+  }));
+
+  return {
+    snapshotDate,
+    previousDate,
+    alertCount: alertRow?.count ?? 0,
+    sites: summaries,
+  };
+}
+
+async function processWeeklyDigest(snapshotDate: string): Promise<WeeklyDigestResult> {
+  if (getConfig(WEEKLY_DIGEST_ENABLED_KEY) !== '1') {
+    return { sent: false, skipped: 'disabled', deliveryError: null };
+  }
+  if (!isWeeklyDigestDay(snapshotDate)) {
+    return { sent: false, skipped: 'not-weekly-run', deliveryError: null };
+  }
+  if (getConfig(WEEKLY_DIGEST_LAST_SENT_KEY) === snapshotDate) {
+    return { sent: false, skipped: 'already-sent', deliveryError: null };
+  }
+
+  const payload = buildWeeklyDigestPayload(snapshotDate);
+  if (!payload) {
+    return { sent: false, skipped: 'no-sites', deliveryError: null };
+  }
+
+  const delivery = await sendWeeklyDigestEmail(payload);
+  if (!delivery.deliveryError) {
+    setConfig(WEEKLY_DIGEST_LAST_SENT_KEY, snapshotDate);
+  }
+
+  return {
+    sent: delivery.deliveredChannels.includes('email'),
+    skipped: null,
+    deliveryError: delivery.deliveryError,
+  };
 }
 
 function acquireSnapshotLock(now: number = Date.now()): string {
@@ -372,6 +514,10 @@ async function doSnapshot(): Promise<SnapshotResult> {
 
   const alertResult = await processSnapshotAlerts(today);
   errors.push(...alertResult.errors);
+  const digestResult = await processWeeklyDigest(today);
+  if (digestResult.deliveryError) {
+    errors.push(`Weekly digest: ${digestResult.deliveryError}`);
+  }
 
   return { date: today, sc: scCount, keywords: kwCount, ga4: ga4Count, ttfb: ttfbCount, errors };
 }

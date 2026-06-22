@@ -11,7 +11,12 @@ vi.mock('node:dns/promises', () => ({
   lookup: lookupMock,
 }));
 
-import { ensureAlertTables, processSnapshotAlertsForCli } from '../../../scripts/snapshot-alerts.mjs';
+import {
+  buildWeeklyDigestPayloadForCli,
+  ensureAlertTables,
+  processSnapshotAlertsForCli,
+  processWeeklyDigestForCli,
+} from '../../../scripts/snapshot-alerts.mjs';
 
 function makeDb() {
   const db = openDatabase(':memory:');
@@ -93,6 +98,68 @@ function seedDrop(db: ReturnType<typeof makeDb>) {
     25,
     JSON.stringify(['email']),
   );
+}
+
+function seedWeeklyDigestHistory(db: ReturnType<typeof makeDb>) {
+  db.exec('ALTER TABLE sites ADD COLUMN ga4_property_id TEXT');
+  db.prepare('UPDATE sites SET ga4_property_id = ? WHERE id = ?').run('properties/123', 'site-a');
+  db.prepare('INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+    'site-a',
+    '2026-06-15',
+    'https://a.example.com/',
+    80,
+    1000,
+    0.08,
+    3,
+  );
+  db.prepare('INSERT INTO sc_snapshots (site_id, date, page_url, clicks, impressions, ctr, position) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+    'site-a',
+    '2026-06-22',
+    'https://a.example.com/',
+    100,
+    1100,
+    0.09,
+    3,
+  );
+  db.prepare('INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+    'site-a',
+    '2026-06-15',
+    100,
+    90,
+    200,
+    0.4,
+    20,
+  );
+  db.prepare('INSERT INTO ga4_snapshots (site_id, date, users, sessions, views, bounce_rate, avg_duration) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+    'site-a',
+    '2026-06-22',
+    120,
+    99,
+    250,
+    0.4,
+    20,
+  );
+  db.prepare('INSERT INTO audit_snapshots (site_id, date, pass_count, warn_count, fail_count, checks_json) VALUES (?, ?, ?, ?, ?, ?)').run(
+    'site-a',
+    '2026-06-15',
+    8,
+    2,
+    0,
+    '{}',
+  );
+  db.prepare('INSERT INTO audit_snapshots (site_id, date, pass_count, warn_count, fail_count, checks_json) VALUES (?, ?, ?, ?, ?, ?)').run(
+    'site-a',
+    '2026-06-22',
+    9,
+    1,
+    0,
+    '{}',
+  );
+  db.prepare(
+    `INSERT INTO alert_events (
+      site_id, rule_id, metric, threshold_pct, previous_value, current_value, delta_pct, snapshot_date
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run('site-a', 1, 'sc_clicks', 25, 100, 50, 50, '2026-06-22');
 }
 
 type PinnedLookup = (
@@ -397,5 +464,66 @@ describe('CLI snapshot alerts', () => {
       errors: ['Alert site-a/sc_clicks: webhook: Webhook URL must use a public host'],
     });
     expect(httpsRequestMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('CLI weekly digest', () => {
+  let db: ReturnType<typeof makeDb>;
+
+  beforeEach(() => {
+    db = makeDb();
+    seedDrop(db);
+  });
+
+  it('builds the digest payload from standalone CLI snapshot tables', () => {
+    seedWeeklyDigestHistory(db);
+
+    expect(buildWeeklyDigestPayloadForCli(db, '2026-06-22')).toMatchObject({
+      snapshotDate: '2026-06-22',
+      previousDate: '2026-06-15',
+      alertCount: 1,
+      sites: [
+        {
+          siteName: 'Site A',
+          domain: 'a.example.com',
+          scClicks: { current: 100, previous: 80, deltaPct: 25 },
+          ga4Sessions: { current: 99, previous: 90, deltaPct: 10 },
+          auditScore: { current: 90, previous: 80, deltaPct: 12.5 },
+        },
+      ],
+    });
+  });
+
+  it('sends once on Monday when enabled', async () => {
+    db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('alert_weekly_digest_enabled', '1');
+    const sendDigest = vi.fn(async () => ({ deliveredChannels: ['email'], deliveryError: null }));
+
+    const first = await processWeeklyDigestForCli(db, '2026-06-22', { sendDigest });
+    const second = await processWeeklyDigestForCli(db, '2026-06-22', { sendDigest });
+
+    expect(first).toEqual({ sent: true, skipped: null, deliveryError: null });
+    expect(second).toEqual({ sent: false, skipped: 'already-sent', deliveryError: null });
+    expect(sendDigest).toHaveBeenCalledTimes(1);
+    expect(db.prepare("SELECT value FROM config WHERE key = 'alert_weekly_digest_last_sent_date'").get()).toEqual({
+      value: '2026-06-22',
+    });
+  });
+
+  it('skips disabled and non-Monday CLI runs', async () => {
+    const sendDigest = vi.fn(async () => ({ deliveredChannels: ['email'], deliveryError: null }));
+
+    await expect(processWeeklyDigestForCli(db, '2026-06-22', { sendDigest })).resolves.toEqual({
+      sent: false,
+      skipped: 'disabled',
+      deliveryError: null,
+    });
+
+    db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('alert_weekly_digest_enabled', '1');
+    await expect(processWeeklyDigestForCli(db, '2026-06-23', { sendDigest })).resolves.toEqual({
+      sent: false,
+      skipped: 'not-weekly-run',
+      deliveryError: null,
+    });
+    expect(sendDigest).not.toHaveBeenCalled();
   });
 });
