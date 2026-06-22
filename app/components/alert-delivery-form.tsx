@@ -247,14 +247,14 @@ export default function AlertDeliveryForm() {
             onChange={(e) => { setForm((current) => ({ ...current, webhookUrl: e.target.value })); setError(''); setSuccess(''); }}
           />
         </div>
-        <label className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-300">
+        <FormLabel className="md:col-span-2 flex items-center gap-2 text-sm text-neutral-300">
           <FormCheckbox
             id="alert-weekly-digest"
             checked={form.weeklyDigestEnabled}
             onChange={(e) => { setForm((current) => ({ ...current, weeklyDigestEnabled: e.target.checked })); setError(''); setSuccess(''); }}
           />
           Weekly email digest
-        </label>
+        </FormLabel>
       </div>
 
       {error && (
