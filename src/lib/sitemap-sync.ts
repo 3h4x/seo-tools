@@ -74,6 +74,10 @@ export function hashContent(xml: string): string {
   return createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function runSitemapSync(): Promise<void> {
   ensureTable();
   const db = getDb();
@@ -102,7 +106,7 @@ export async function runSitemapSync(): Promise<void> {
     try {
       xml = await fetchSitemap(site.sitemapUrl);
     } catch (e) {
-      console.error(`[sitemap-sync] ${site.id}: fetch error — ${(e as Error).message}`);
+      console.error(`[sitemap-sync] ${site.id}: fetch error — ${getErrorMessage(e)}`);
       errors++;
       continue;
     }
@@ -142,7 +146,7 @@ export async function runSitemapSync(): Promise<void> {
       upsertState.run({ site_id: site.id, sitemap_url: site.sitemapUrl, content_hash: hash, url_count: urlCount, latest_lastmod: latestLastmod, last_submitted_at: now, last_checked_at: now, submit_count: newCount });
       submitted++;
     } catch (e) {
-      console.error(`[sitemap-sync] ${site.id}: submit error — ${(e as Error).message?.slice(0, 80)}`);
+      console.error(`[sitemap-sync] ${site.id}: submit error — ${getErrorMessage(e).slice(0, 80)}`);
       errors++;
       upsertState.run({ site_id: site.id, sitemap_url: site.sitemapUrl, content_hash: hash, url_count: urlCount, latest_lastmod: latestLastmod, last_submitted_at: prev?.last_submitted_at ?? null, last_checked_at: now, submit_count: prev?.submit_count ?? 0 });
     }
@@ -177,10 +181,10 @@ export function startSitemapSync(): void {
   if (_intervalId) return;
 
   // Run immediately on startup, then every 6h
-  runSitemapSync().catch(e => console.error('[sitemap-sync] startup error:', (e as Error).message));
+  runSitemapSync().catch(e => console.error('[sitemap-sync] startup error:', getErrorMessage(e)));
 
   _intervalId = setInterval(() => {
-    runSitemapSync().catch(e => console.error('[sitemap-sync] interval error:', (e as Error).message));
+    runSitemapSync().catch(e => console.error('[sitemap-sync] interval error:', getErrorMessage(e)));
   }, CHECK_INTERVAL_MS);
   registerSitemapSyncShutdown();
 
