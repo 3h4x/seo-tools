@@ -50,7 +50,9 @@ function normalizeErrorCode(value: unknown): number | string | null {
 }
 
 function classifyProviderError(error: unknown): ProviderDiagnostic {
-  const details = error as { code?: unknown; status?: unknown; message?: unknown };
+  const details = typeof error === 'object' && error !== null
+    ? error as { code?: unknown; status?: unknown; message?: unknown }
+    : {};
   const code = normalizeErrorCode(details.code) ?? normalizeErrorCode(details.status);
   const message = typeof details.message === 'string'
     ? details.message
