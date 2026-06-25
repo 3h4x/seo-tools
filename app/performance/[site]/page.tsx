@@ -21,6 +21,17 @@ import { PerformanceSourceBadge } from '../../components/performance-source-badg
 
 export const revalidate = 300;
 
+const SLOWEST_PAGE_COLUMNS: DataTableColumn[] = [
+  { label: 'Path', rowHeader: true, className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2 font-mono text-xs font-normal text-left text-neutral-300' },
+  { label: 'Samples', align: 'right', className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2 text-right font-mono text-neutral-400' },
+  ...CWV_METRIC_ORDER.map((name) => ({
+    label: name,
+    align: 'right' as const,
+    className: 'px-3 py-2 font-semibold',
+    cellClassName: 'px-3 py-2 text-right',
+  })),
+];
+
 export default async function PerfSiteDetail({
   params,
   searchParams,
@@ -46,16 +57,6 @@ export default async function PerfSiteDetail({
   const psiNeedsKey = perf.needsKey;
   const psiMobile = psi.mobile;
   const psiDesktop = psi.desktop;
-  const slowestPageColumns: DataTableColumn[] = [
-    { label: 'Path', rowHeader: true, className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2 font-mono text-xs font-normal text-left text-neutral-300' },
-    { label: 'Samples', align: 'right', className: 'px-3 py-2 font-semibold', cellClassName: 'px-3 py-2 text-right font-mono text-neutral-400' },
-    ...CWV_METRIC_ORDER.map((name) => ({
-      label: name,
-      align: 'right' as const,
-      className: 'px-3 py-2 font-semibold',
-      cellClassName: 'px-3 py-2 text-right',
-    })),
-  ];
   const slowestPageRows: ReactNode[][] = [];
   const slowestPageRowKeys: string[] = [];
 
@@ -189,7 +190,7 @@ export default async function PerfSiteDetail({
           <h2 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">Slowest pages</h2>
           <Surface padding="none" className="overflow-hidden">
             <DataTable
-              columns={slowestPageColumns}
+              columns={SLOWEST_PAGE_COLUMNS}
               rows={slowestPageRows}
               caption="Slowest pages by Core Web Vitals samples"
               rowKeys={slowestPageRowKeys}

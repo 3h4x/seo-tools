@@ -152,7 +152,9 @@ export async function checkScSitemapFreshness(site: Site): Promise<CheckResult> 
     let mostRecentPath = '';
     for (const sm of sitemaps) {
       if (sm.lastDownloaded) {
-        const d = new Date(sm.lastDownloaded);
+        const downloadedAt = Date.parse(sm.lastDownloaded);
+        if (!Number.isFinite(downloadedAt)) continue;
+        const d = new Date(downloadedAt);
         if (!mostRecentDownload || d > mostRecentDownload) {
           mostRecentDownload = d;
           mostRecentPath = sm.path || '';

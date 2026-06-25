@@ -658,7 +658,7 @@ export async function sendAlertNotifications(
       }
       deliveredChannels.push(channel);
     } catch (error) {
-      errors.push(`${channel}: ${(error as Error).message}`);
+      errors.push(`${channel}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -721,6 +721,6 @@ export async function sendWeeklyDigestEmail(payload: WeeklyDigestEmailPayload): 
     );
     return { deliveredChannels: ['email'], deliveryError: null };
   } catch (error) {
-    return { deliveredChannels: [], deliveryError: `email: ${(error as Error).message}` };
+    return { deliveredChannels: [], deliveryError: `email: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
