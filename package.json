@@ -5,7 +5,7 @@
   "packageManager": "pnpm@11.0.0",
   "scripts": {
     "dev": "docker compose -f docker-compose.dev.yml up --build",
-    "build": "node scripts/run-local-bin.mjs next build",
+    "build": "node scripts/run-local-bin.mjs next build --webpack",
     "start": "node scripts/run-local-bin.mjs next start",
     "lint": "node scripts/run-local-bin.mjs eslint",
     "check": "node scripts/run-local-bin.mjs tsc --noEmit",
