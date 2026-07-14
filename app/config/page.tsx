@@ -158,11 +158,11 @@ export default function ConfigPage() {
       <Divider />
       <OperationalStatusPanel statuses={statuses} error={statusError} />
       <Divider />
-      <PagespeedKeyForm />
-      <Divider />
       <AlertDeliveryForm />
       <Divider />
       <AlertRulesManager sites={sites} />
+      <Divider />
+      <PagespeedKeyForm />
       <Divider />
       <SitesManager initialSites={sites} hasAuth={hasAuth} />
     </div>

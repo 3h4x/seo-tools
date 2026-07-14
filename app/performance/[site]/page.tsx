@@ -94,7 +94,16 @@ export default async function PerfSiteDetail({
 
       {psiNeedsKey && (
         <Notice tone="warning" size="sm">
-          PageSpeed Insights rate-limited. Add a free API key in{' '}
+          PageSpeed Insights rate-limited. Get a free API key at{' '}
+          <TextLink
+            href="https://console.cloud.google.com/apis/library/pagespeedonline.googleapis.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            console.cloud.google.com
+          </TextLink>{' '}
+          (enable &quot;PageSpeed Insights API&quot; {'→'} Credentials), then paste it in{' '}
           <TextLink href="/config" className="underline">Config</TextLink> to lift the per-IP cap.
         </Notice>
       )}
