@@ -2,6 +2,7 @@
 import { randomUUID } from 'node:crypto';
 import { GoogleAuth } from 'google-auth-library';
 import { searchconsole_v1 } from '@googleapis/searchconsole';
+import { AnalyticsAdminServiceClient } from '@google-analytics/admin';
 import path from 'node:path';
 import fs from 'node:fs';
 import { openDatabase } from '../src/lib/sqlite-driver.js';
@@ -26,6 +27,8 @@ if (creds.private_key) creds.private_key = creds.private_key.replace(/\\n/g, '\n
 
 const auth = new GoogleAuth({ credentials: creds, scopes: ['https://www.googleapis.com/auth/webmasters'] });
 const sc = new searchconsole_v1.Searchconsole({ auth });
+const analyticsAdminAuth = new GoogleAuth({ credentials: creds, scopes: ['https://www.googleapis.com/auth/analytics.edit'] });
+const analyticsAdmin = new AnalyticsAdminServiceClient({ auth: analyticsAdminAuth });
 const SNAPSHOT_JOB_KEY = 'daily';
 const SNAPSHOT_STALE_LOCK_MS = 6 * 60 * 60 * 1000;
 
@@ -52,6 +55,7 @@ const commands = {
   snapshot: takeSnapshot,
   pages: showPages,
   check: checkReachability,
+  'register-cwv': registerCwv,
   help: showHelp,
 };
 
@@ -362,6 +366,72 @@ const UAS = [
   { name: 'Googlebot', ua: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' },
 ];
 
+const CWV_DIMENSION_DEFS = [
+  { parameterName: 'metric_name', displayName: 'Metric Name', description: 'Core Web Vitals metric name (LCP, INP, CLS, FCP, TTFB)' },
+  { parameterName: 'metric_rating', displayName: 'Metric Rating', description: 'Core Web Vitals rating (good, needs-improvement, poor)' },
+];
+const CWV_METRIC_PARAM = 'metric_value';
+
+async function registerCwv() {
+  const domainArg = process.argv[3];
+  if (!domainArg) {
+    console.error('Usage: pnpm seo register-cwv <domain>');
+    process.exit(1);
+  }
+
+  const sites = loadSites();
+  const site = sites.find(s => s.domain === domainArg || s.id === domainArg);
+  if (!site) {
+    console.error(`Unknown site: ${domainArg}`);
+    console.error(`Available: ${sites.map(s => s.id).join(', ')}`);
+    process.exit(1);
+  }
+  if (!site.ga4PropertyId) {
+    console.error(`${site.id} has no GA4 property configured`);
+    process.exit(1);
+  }
+
+  const parent = normalizeGa4PropertyId(site.ga4PropertyId).startsWith('properties/')
+    ? normalizeGa4PropertyId(site.ga4PropertyId)
+    : `properties/${normalizeGa4PropertyId(site.ga4PropertyId)}`;
+
+  const [existingDimensions] = await analyticsAdmin.listCustomDimensions({ parent });
+  const existingDimensionParams = new Set((existingDimensions ?? []).map(d => d.parameterName));
+
+  for (const dim of CWV_DIMENSION_DEFS) {
+    if (existingDimensionParams.has(dim.parameterName)) {
+      console.log(`Dimension already exists: ${dim.parameterName}`);
+      continue;
+    }
+    await analyticsAdmin.createCustomDimension({
+      parent,
+      customDimension: { parameterName: dim.parameterName, displayName: dim.displayName, description: dim.description, scope: 'EVENT' },
+    });
+    console.log(`Created dimension: ${dim.parameterName}`);
+  }
+
+  const [existingMetrics] = await analyticsAdmin.listCustomMetrics({ parent });
+  const existingMetricParams = new Set((existingMetrics ?? []).map(m => m.parameterName));
+
+  if (existingMetricParams.has(CWV_METRIC_PARAM)) {
+    console.log(`Metric already exists: ${CWV_METRIC_PARAM}`);
+  } else {
+    await analyticsAdmin.createCustomMetric({
+      parent,
+      customMetric: {
+        parameterName: CWV_METRIC_PARAM,
+        displayName: 'Metric Value',
+        description: 'Core Web Vitals metric value (milliseconds for timing metrics; CLS is unitless but shares this param)',
+        measurementUnit: 'MILLISECONDS',
+        scope: 'EVENT',
+      },
+    });
+    console.log(`Created metric: ${CWV_METRIC_PARAM}`);
+  }
+
+  console.log(`\nDone. GA4 Data API queries for ${site.id} may take 24–48h to reflect new custom definitions.`);
+}
+
 async function checkReachability() {
   const sites = loadSites();
   if (sites.length === 0) {
@@ -464,6 +534,7 @@ Commands:
   pages             Show top Search Console pages for a site
   snapshot          Take a data snapshot (SC + GA4) and process alerts
   check [id]        Check reachability of all sites (or one) with different UAs
+  register-cwv      Register GA4 custom dimensions/metric for CWV RUM (domain or id)
   help              Show this help`);
 }
 
