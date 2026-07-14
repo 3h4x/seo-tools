@@ -150,7 +150,8 @@ export default function PagespeedKeyForm() {
         )}
       </div>
       <p className="text-xs text-neutral-500">
-        Optional. Lifts the unauthenticated rate limit for the Performance tab&apos;s lab + CrUX field
+        One key covers Performance checks for every site in Managed Sites below — not per-site.
+        Optional, but lifts the unauthenticated rate limit for the Performance tab&apos;s lab + CrUX field
         data. Get one free at{' '}
         <TextLink
           href="https://console.cloud.google.com/apis/library/pagespeedonline.googleapis.com"
