@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormInput, FormLabel, Notice, Skeleton, Spinner, Surface } from '@/components/ui';
+import { ConfigSourceBadge, ConfiguredNotice, FormButton, FormInput, FormLabel, Notice, Skeleton, Spinner, Surface, TextLink } from '@/components/ui';
 import { formatConfigMutationError, formatNetworkError, getMutationResult } from '@/lib/request-result';
 import { SkeletonChipRow } from './skeletons';
 
@@ -151,8 +151,16 @@ export default function PagespeedKeyForm() {
       </div>
       <p className="text-xs text-neutral-500">
         Optional. Lifts the unauthenticated rate limit for the Performance tab&apos;s lab + CrUX field
-        data. Get one free at <span className="font-mono">console.cloud.google.com</span> {'\u2192'} enable
-        {' '}&quot;PageSpeed Insights API&quot; {'\u2192'} Credentials.
+        data. Get one free at{' '}
+        <TextLink
+          href="https://console.cloud.google.com/apis/library/pagespeedonline.googleapis.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono underline"
+        >
+          console.cloud.google.com
+        </TextLink>{' '}
+        {'\u2192'} enable &quot;PageSpeed Insights API&quot; {'\u2192'} Credentials.
       </p>
 
       {hasKey && !input && (
