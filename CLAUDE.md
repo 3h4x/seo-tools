@@ -42,7 +42,7 @@ Each site record stores: id, name, domain, SC URL override, GA4 property ID, sta
 - [x] Sitemaps submitted to Search Console (all 6 sites)
 - [x] Dashboard Overview Page (Real-time metrics)
 - [x] Navigation & Routing
-- [x] CLI tool (`pnpm seo <command>`: sites, sitemaps, submit-sitemap, stats, pages, snapshot, check)
+- [x] CLI tool (`pnpm seo <command>`: sites, sitemaps, submit-sitemap, stats, pages, snapshot, check, register-cwv)
 - [x] GA4 Analytics on Dashboard (active users, sessions, page views, traffic sources)
 - [x] SEO Health Audit Logic (robots.txt, Sitemap, Meta tags)
 - [x] Detailed Analytics Reporting Pages
@@ -166,7 +166,7 @@ Required to populate the RUM source. The in-app `CwvSetupGuide` component (`app/
 
 1. Push `core_web_vitals` events to `dataLayer` from the site (web-vitals package: `onLCP/onINP/onCLS/onFCP/onTTFB`) with params `vitals_name`, `vitals_value`, `vitals_id`, `vitals_rating`.
 2. GTM: Data Layer Variables (`vitals_name`, `vitals_value`, `vitals_id`), Custom Event trigger on `core_web_vitals`, GA4 Event tag forwarding `metric_name` / `metric_value` / `metric_id` (+ optional `metric_rating`).
-3. GA4 Admin → Custom definitions: register `Metric Name` (event-scoped dimension, param `metric_name`), `Metric Rating` (dimension, param `metric_rating`), and `Metric Value` (event-scoped custom **metric**, param `metric_value`, unit Milliseconds). Names/params must match exactly — `performance.ts` queries them via `customEvent:metric_name` and `customEvent:metric_value`.
+3. GA4 Admin → Custom definitions: register `Metric Name` (event-scoped dimension, param `metric_name`), `Metric Rating` (dimension, param `metric_rating`), and `Metric Value` (event-scoped custom **metric**, param `metric_value`, unit Milliseconds). Names/params must match exactly — `performance.ts` queries them via `customEvent:metric_name` and `customEvent:metric_value`. Run `pnpm seo register-cwv <domain>` instead of doing this by hand in the GA4 Admin console — it uses the same service account (already has `analytics.edit` scope) and is idempotent, so it's safe to re-run.
 
 After publishing, expect 24–48h before custom-dimension data is queryable via the Data API (the `RUM 24h` badge surfaces this state).
 
@@ -213,6 +213,7 @@ pnpm seo submit-sitemap <domain> <url>  # CLI: submit a sitemap
 pnpm seo pages <domain>  # CLI: top Search Console pages for one site
 pnpm seo snapshot   # CLI: take SC + GA4 snapshot for trend tracking
 pnpm seo check      # CLI: reachability check (Googlebot UA) for all sites
+pnpm seo register-cwv <domain>  # CLI: register GA4 custom dimensions/metric needed for CWV RUM
 pnpm type-check     # TypeScript type checking (preferred over pnpm build for quick validation)
 ```
 
