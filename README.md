@@ -110,6 +110,7 @@ pnpm type-check    # TypeScript check
 pnpm lint          # ESLint
 pnpm seo snapshot  # take SC + GA4 snapshot and process alerts
 pnpm seo check     # reachability check for all sites
+pnpm seo register-cwv <domain>  # register GA4 custom dimensions/metric for CWV RUM
 ```
 
 Pre-commit hooks (lint + type-check + test) run automatically via husky.

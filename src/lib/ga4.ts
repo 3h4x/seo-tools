@@ -81,6 +81,71 @@ export async function discoverPropertyIds(): Promise<Site[]> {
   return (await discoverPropertyIdsWithStatus()).sites;
 }
 
+const CWV_DIMENSION_DEFS = [
+  { parameterName: 'metric_name', displayName: 'Metric Name', description: 'Core Web Vitals metric name (LCP, INP, CLS, FCP, TTFB)' },
+  { parameterName: 'metric_rating', displayName: 'Metric Rating', description: 'Core Web Vitals rating (good, needs-improvement, poor)' },
+] as const;
+
+const CWV_METRIC_PARAM = 'metric_value';
+
+export interface CwvDefinitionResult {
+  created: string[];
+  alreadyExists: string[];
+}
+
+function toPropertyPath(propertyId: string): string {
+  return propertyId.startsWith('properties/') ? propertyId : `properties/${propertyId}`;
+}
+
+/** Registers the GA4 custom dimensions/metric that seo-tools' RUM query (customEvent:metric_name, customEvent:metric_value) depends on. Idempotent — skips definitions that already exist. */
+export async function registerCwvCustomDefinitions(propertyId: string): Promise<CwvDefinitionResult> {
+  const client = getAdminClient();
+  const parent = toPropertyPath(propertyId);
+  const created: string[] = [];
+  const alreadyExists: string[] = [];
+
+  const [existingDimensions] = await client.listCustomDimensions({ parent });
+  const existingDimensionParams = new Set((existingDimensions ?? []).map((d) => d.parameterName));
+
+  for (const dim of CWV_DIMENSION_DEFS) {
+    if (existingDimensionParams.has(dim.parameterName)) {
+      alreadyExists.push(dim.parameterName);
+      continue;
+    }
+    await client.createCustomDimension({
+      parent,
+      customDimension: {
+        parameterName: dim.parameterName,
+        displayName: dim.displayName,
+        description: dim.description,
+        scope: 'EVENT',
+      },
+    });
+    created.push(dim.parameterName);
+  }
+
+  const [existingMetrics] = await client.listCustomMetrics({ parent });
+  const existingMetricParams = new Set((existingMetrics ?? []).map((m) => m.parameterName));
+
+  if (existingMetricParams.has(CWV_METRIC_PARAM)) {
+    alreadyExists.push(CWV_METRIC_PARAM);
+  } else {
+    await client.createCustomMetric({
+      parent,
+      customMetric: {
+        parameterName: CWV_METRIC_PARAM,
+        displayName: 'Metric Value',
+        description: 'Core Web Vitals metric value (milliseconds for timing metrics; CLS is unitless but shares this param)',
+        measurementUnit: 'MILLISECONDS',
+        scope: 'EVENT',
+      },
+    });
+    created.push(CWV_METRIC_PARAM);
+  }
+
+  return { created, alreadyExists };
+}
+
 interface GA4Metrics {
   users: number;
   sessions: number;

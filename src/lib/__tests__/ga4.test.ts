@@ -2,12 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockListAccountSummaries = vi.fn();
 const mockRunReport = vi.fn();
+const mockListCustomDimensions = vi.fn();
+const mockCreateCustomDimension = vi.fn();
+const mockListCustomMetrics = vi.fn();
+const mockCreateCustomMetric = vi.fn();
 
 const mockHasGoogleCredentials = vi.fn(() => true);
 vi.mock('../google-auth', () => ({ getAuth: () => ({}), hasGoogleCredentials: () => mockHasGoogleCredentials() }));
 vi.mock('@google-analytics/admin', () => ({
   AnalyticsAdminServiceClient: class {
     listAccountSummaries = mockListAccountSummaries;
+    listCustomDimensions = mockListCustomDimensions;
+    createCustomDimension = mockCreateCustomDimension;
+    listCustomMetrics = mockListCustomMetrics;
+    createCustomMetric = mockCreateCustomMetric;
   },
 }));
 vi.mock('@google-analytics/data', () => ({
@@ -24,7 +32,7 @@ vi.mock('../sites', () => ({
 }));
 
 import { clearCacheEntry, withCache } from '../db';
-import { cachedGetDiscoveredGa4Properties, clearGa4DiscoveryCache, discoverPropertyIds, discoverPropertyIdsWithStatus, cachedGetAnalytics } from '../ga4';
+import { cachedGetDiscoveredGa4Properties, clearGa4DiscoveryCache, discoverPropertyIds, discoverPropertyIdsWithStatus, cachedGetAnalytics, registerCwvCustomDefinitions } from '../ga4';
 import { getManagedSites } from '../sites';
 
 beforeEach(() => {
@@ -468,5 +476,59 @@ describe('cachedGetAnalytics', () => {
       expect.objectContaining({ property: 'properties/99999' }),
       { timeout: 30000 },
     );
+  });
+});
+
+describe('registerCwvCustomDefinitions', () => {
+  it('creates both dimensions and the metric when none exist', async () => {
+    mockListCustomDimensions.mockResolvedValue([[]]);
+    mockCreateCustomDimension.mockResolvedValue([{}]);
+    mockListCustomMetrics.mockResolvedValue([[]]);
+    mockCreateCustomMetric.mockResolvedValue([{}]);
+
+    const result = await registerCwvCustomDefinitions('properties/12345');
+
+    expect(result.created).toEqual(['metric_name', 'metric_rating', 'metric_value']);
+    expect(result.alreadyExists).toEqual([]);
+    expect(mockCreateCustomDimension).toHaveBeenCalledWith({
+      parent: 'properties/12345',
+      customDimension: { parameterName: 'metric_name', displayName: 'Metric Name', description: expect.any(String), scope: 'EVENT' },
+    });
+    expect(mockCreateCustomMetric).toHaveBeenCalledWith({
+      parent: 'properties/12345',
+      customMetric: {
+        parameterName: 'metric_value',
+        displayName: 'Metric Value',
+        description: expect.any(String),
+        measurementUnit: 'MILLISECONDS',
+        scope: 'EVENT',
+      },
+    });
+  });
+
+  it('skips definitions that already exist', async () => {
+    mockListCustomDimensions.mockResolvedValue([[
+      { parameterName: 'metric_name' },
+      { parameterName: 'metric_rating' },
+    ]]);
+    mockListCustomMetrics.mockResolvedValue([[{ parameterName: 'metric_value' }]]);
+
+    const result = await registerCwvCustomDefinitions('properties/12345');
+
+    expect(result.created).toEqual([]);
+    expect(result.alreadyExists).toEqual(['metric_name', 'metric_rating', 'metric_value']);
+    expect(mockCreateCustomDimension).not.toHaveBeenCalled();
+    expect(mockCreateCustomMetric).not.toHaveBeenCalled();
+  });
+
+  it('normalizes a bare property id into the properties/ path', async () => {
+    mockListCustomDimensions.mockResolvedValue([[]]);
+    mockCreateCustomDimension.mockResolvedValue([{}]);
+    mockListCustomMetrics.mockResolvedValue([[]]);
+    mockCreateCustomMetric.mockResolvedValue([{}]);
+
+    await registerCwvCustomDefinitions('12345');
+
+    expect(mockListCustomDimensions).toHaveBeenCalledWith({ parent: 'properties/12345' });
   });
 });
