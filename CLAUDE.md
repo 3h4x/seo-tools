@@ -254,6 +254,18 @@ Storage & charting:
 - Trend charts use `recharts` (AreaChart) — rendered client-side, data passed from server components
 - Dark theme default (dark neutrals, monospace accents)
 
+## Design System / shadcn Scaffolding
+
+Part of a workspace-wide effort to standardize Tailwind + shadcn/ui conventions across every React app in `~/workspace/` (already landed in `volumino/web/`, see https://github.com/3h4x/volumino/pull/9, /pull/10, /pull/11). `seo-tools` now has the scaffolding layer; existing hand-rolled components were **not** migrated.
+
+- `components.json` — shadcn CLI config: style `new-york`, TSX, base color `neutral`, RSC enabled (this is a real Next.js App Router app, unlike volumino's Vite SPA). Lets you run `npx shadcn add <component>` to pull in more primitives that pick up this theme automatically — but see the CLI caveat below before doing so.
+- `src/lib/utils.ts` — the `cn()` helper (`clsx` + `tailwind-merge`), same pattern as volumino's `client/lib/utils.js`.
+- `src/components/ui/button.tsx`, `input.tsx`, `card.tsx` — hand-built primitives using `class-variance-authority`, canonical shadcn `new-york` shape. **`badge.tsx` was deliberately skipped** — `src/components/ui/badge.tsx` already exists with its own incompatible API (`tone`/`shape`/`size` props, see `docs/UI.md`) and is used throughout `app/`; adding a shadcn `Badge` under the same filename/alias would either collide or silently break every existing usage. If a shadcn-style badge is ever wanted, it needs a different export name or a deliberate migration of all call sites, not a drive-by scaffold.
+- `app/globals.css`'s new `@theme` block maps shadcn's standard semantic aliases (`--color-background`, `--color-primary`, `--color-muted`, `--color-destructive`, etc.) onto this app's *existing* dark neutral/emerald palette — via `var(--color-neutral-950)`, `var(--color-emerald-500)`, `var(--color-red-500)` (Tailwind v4's own built-in scale, already used directly throughout `app/` and `src/components/ui/*`) — so future shadcn-CLI-added components inherit the current look instead of shadcn's stock zinc/slate/OKLCH defaults.
+- The `@/*` alias (`tsconfig.json`) maps to `src/*`, so `components.json`'s `ui`/`lib`/`components` aliases resolve to `src/components/ui`, `src/lib`, `src/components` — consistent with the existing `docs/UI.md` primitives, not a parallel structure.
+- **CLI caveat:** `npx shadcn@latest init` today (shadcn CLI v4.x) is a different, much heavier tool than the one volumino's scaffolding was built with — it ships a "preset" system (Nova/Vega/Maia/...), pulls in `@base-ui/react`, `tw-animate-css`, `lucide-react`, and a `shadcn` runtime dependency, wires up Geist via `next/font/google`, and overwrites `app/globals.css`/`app/layout.tsx` with a full light+dark OKLCH sidebar/chart token system unrelated to this app's look. It was tried and reverted here in favor of hand-building `components.json` + the primitives above, matching volumino's minimal approach. If you run `npx shadcn add <component>` later, expect it to try to install those same extra dependencies for that one component — review the diff before accepting.
+- This `ui/` layer is scaffolding only — no existing component (`FormButton`, `FormInput`, `Badge`, `Surface`, etc. in `src/components/ui/`) was migrated to use it. Keep new operational-dashboard UI in the existing hand-rolled primitives per `docs/UI.md` unless a future task explicitly decides to migrate.
+
 ## Dependency & Supply-Chain Security
 
 1. Always commit `pnpm-lock.yaml` — never delete it or install without it.

@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+@theme {
+  /* shadcn/ui semantic aliases -- mapped onto this dashboard's existing dark
+     neutral + emerald palette (see app/layout.tsx and src/components/ui/*)
+     instead of shadcn's stock zinc/slate defaults, so components pulled in
+     later via `npx shadcn add <name>` inherit the current look for free. */
+  --color-background: var(--color-neutral-950);
+  --color-foreground: var(--color-neutral-200);
+  --color-card: var(--color-neutral-900);
+  --color-card-foreground: var(--color-neutral-200);
+  --color-popover: var(--color-neutral-900);
+  --color-popover-foreground: var(--color-neutral-200);
+  --color-primary: var(--color-emerald-500);
+  --color-primary-foreground: var(--color-neutral-950);
+  --color-secondary: var(--color-neutral-800);
+  --color-secondary-foreground: var(--color-neutral-200);
+  --color-muted: var(--color-neutral-800);
+  --color-muted-foreground: var(--color-neutral-400);
+  --color-accent: var(--color-neutral-800);
+  --color-accent-foreground: var(--color-neutral-200);
+  --color-destructive: var(--color-red-500);
+  --color-destructive-foreground: var(--color-neutral-50);
+  --color-border: var(--color-neutral-800);
+  --color-input: var(--color-neutral-800);
+  --color-ring: var(--color-emerald-500);
+  --radius: 0.5rem;
+}
